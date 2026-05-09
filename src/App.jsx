@@ -70,34 +70,26 @@ const getProductDetails = (product) => {
   };
 };
 
+// Initialisation des produits avec un score fictif de "ventes" pour le futur
 const PRODUCTS = [
-  // --- GMAIL (Mise à jour des prix) ---
-  { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 5.43 },
-  { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 3.24 },
-  { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 9.50 },
-  { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 28.00 },
-
-  // --- YOUTUBE MONETIZED ---
-  { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00 },
-  { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00 },
-  { id: 103, name: 'Chaîne YouTube Monétisée – 5k Subs – Sans Strike – 2016', category: 'youtube_monetized', price: 350.00 },
-  
-  // --- YOUTUBE NOT MONETIZED ---
-  { id: 201, name: 'Chaîne YouTube 2016 – 0 Vidéos – Éligible Monétisation', category: 'youtube_not_monetized', price: 12.50 },
-  { id: 202, name: 'Chaîne YouTube 2019 – 500 Subs – Prête à l\'emploi', category: 'youtube_not_monetized', price: 15.00 },
-  { id: 203, name: 'Chaîne YouTube 2011 – Éligible Monétisation – 100% Propre', category: 'youtube_not_monetized', price: 25.00 },
-
-  // --- YOUTUBE AGED & CPA ---
-  { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19 },
-  { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49 },
-  { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99 },
-  { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80 },
-  { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88 },
-  
-  // --- FACEBOOK ---
-  { id: 24, name: 'Compte Facebook US Ancien (50+ Amis) - Spécial Ads', category: 'facebook', price: 35.00 },
-  { id: 25, name: 'Compte Facebook BM Créé - Ancienneté 2015', category: 'facebook', price: 45.00 },
-  { id: 26, name: 'Page Facebook de Fan - 1k à 5k J\'aime - Organique', category: 'facebook', price: 60.00 },
+  { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 5.43, sales: 150 },
+  { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 3.24, sales: 200 },
+  { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 9.50, sales: 85 },
+  { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 28.00, sales: 45 },
+  { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00, sales: 12 },
+  { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00, sales: 8 },
+  { id: 103, name: 'Chaîne YouTube Monétisée – 5k Subs – Sans Strike – 2016', category: 'youtube_monetized', price: 350.00, sales: 5 },
+  { id: 201, name: 'Chaîne YouTube 2016 – 0 Vidéos – Éligible Monétisation', category: 'youtube_not_monetized', price: 12.50, sales: 30 },
+  { id: 202, name: 'Chaîne YouTube 2019 – 500 Subs – Prête à l\'emploi', category: 'youtube_not_monetized', price: 15.00, sales: 25 },
+  { id: 203, name: 'Chaîne YouTube 2011 – Éligible Monétisation – 100% Propre', category: 'youtube_not_monetized', price: 25.00, sales: 15 },
+  { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19, sales: 90 },
+  { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49, sales: 110 },
+  { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99, sales: 70 },
+  { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80, sales: 40 },
+  { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88, sales: 3 },
+  { id: 24, name: 'Compte Facebook US Ancien (50+ Amis) - Spécial Ads', category: 'facebook', price: 35.00, sales: 20 },
+  { id: 25, name: 'Compte Facebook BM Créé - Ancienneté 2015', category: 'facebook', price: 45.00, sales: 15 },
+  { id: 26, name: 'Page Facebook de Fan - 1k à 5k J\'aime - Organique', category: 'facebook', price: 60.00, sales: 10 },
 ].map(p => ({ ...p, details: getProductDetails(p) }));
 
 // ==========================================
@@ -129,7 +121,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
           <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
             <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Minus size={14} /></button>
             <div className="w-8 text-center text-xs font-bold">{localQty}</div>
-            <button onClick={() => setLocalQty(localQty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Plus size={14} /></button>
+            <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Plus size={14} /></button>
           </div>
           <button onClick={() => addToCart(product, localQty)} className="flex-grow bg-gray-900 text-white h-10 rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-primary transition-all shadow-lg shadow-black/5">Ajouter</button>
         </div>
@@ -192,7 +184,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
         </div>
         <div className="flex-grow">
           <div className="flex justify-between items-center mb-10 border-b border-gray-100 pb-6">
-            <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles</div>
+            <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles • Trié par prix croissant</div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map(product => (
@@ -336,7 +328,10 @@ function App() {
       if (priceRange === '10-50') return p.price > 10 && p.price <= 50;
       if (priceRange === 'over50') return p.price > 50;
       return true;
-    });
+    })
+    // LOGIQUE DE TRI : Moins cher en premier (par défaut)
+    // On pourra changer pour (b.sales - a.sales) plus tard
+    .sort((a, b) => a.price - b.price);
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const addToCart = (product, quantity = 1) => {
