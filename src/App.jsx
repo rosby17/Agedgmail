@@ -6,23 +6,22 @@ import { supabase } from './supabaseClient';
 // COMPOSANTS LOGOS SVG
 // ==========================================
 
-const YouTubeLogo = ({ size = 24 }) => (
-  <svg width={size * 4} height={size} viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" fill="#FF0000"/>
-    <path d="m9.66 15.14 5.92-3.39-5.92-3.39v6.78z" fill="#fff"/>
-    <text x="30" y="18" fill="#000" style={{ font: "bold 16px sans-serif", letterSpacing: "-0.5px" }}>YouTube</text>
-  </svg>
+const YouTubeLogo = ({ size = 24, className = "" }) => (
+  <img 
+    src="/youtube-logo.png" 
+    alt="YouTube" 
+    style={{ height: size }} 
+    className={`object-contain ${className}`}
+  />
 );
 
-const GmailLogo = ({ size = 24 }) => (
-  <svg width={size * 3} height={size} viewBox="0 0 70 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M5.33 18.67V7.33l6.67 5 6.67-5v11.34h-4V11l-2.67 2h-1.33L8 11v7.67H5.33z" fill="#EA4335"/>
-    <path d="M18.67 7.33v11.34h2.66c1.48 0 2.67-1.19 2.67-2.67V7.33h-5.33z" fill="#FBBC04"/>
-    <path d="M5.33 7.33h5.34v5l-5.34-4z" fill="#C5221F"/>
-    <path d="M18.67 7.33h-5.34l5.34 4v-4z" fill="#4285F4"/>
-    <path d="M2.67 18.67h2.66V7.33c0-1.48-1.19-2.66-2.66-2.66H1.33v11.33c0 1.48 1.19 2.67 2.67 2.67z" fill="#34A853"/>
-    <text x="32" y="18" fill="#5F6368" style={{ font: "500 16px 'Product Sans', sans-serif" }}>Gmail</text>
-  </svg>
+const GmailLogo = ({ size = 24, className = "" }) => (
+  <img 
+    src="/gmail-logo.png" 
+    alt="Gmail" 
+    style={{ height: size }} 
+    className={`object-contain ${className}`}
+  />
 );
 
 // ==========================================
