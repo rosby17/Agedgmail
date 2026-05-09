@@ -30,7 +30,6 @@ const CATEGORIES = [
   { id: 'all', name: 'Tous les produits' },
   { id: 'email', name: 'Email (Gmail)' },
   { id: 'youtube_aged', name: 'Chaînes Youtube Anciennes' },
-  { id: 'youtube_live', name: 'Chaînes Livestream' },
   { id: 'youtube_cpa', name: 'Chaînes Spéciales CPA' },
   { id: 'social', name: 'Facebook / Twitter / Insta' },
 ];
@@ -62,8 +61,6 @@ const PRODUCTS = [
   { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99 },
   { id: 4, name: 'Chaîne Youtube 2018 – 2020 avec vidéo', category: 'youtube_aged', price: 6.80 },
   { id: 5, name: 'Chaîne Youtube 2021 – 2024 avec vidéo', category: 'youtube_aged', price: 6.15 },
-  { id: 6, name: 'Livestream – 2006~2009 – 1k Abonnés + 1K+ Vues', category: 'youtube_live', price: 49.80 },
-  { id: 7, name: 'Livestream – 2006~2009 – 1k Abonnés et nouvelles vidéos', category: 'youtube_live', price: 39.00 },
   { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80 },
   { id: 9, name: 'Chaîne Spéciale 2006-2010 avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 25.80 },
   { id: 10, name: 'Chaîne Spéciale 2006-2010 avec 50k à 100k vues ORGANIQUES', category: 'youtube_cpa', price: 32.88 },
