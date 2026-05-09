@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 // ==========================================
@@ -37,6 +37,35 @@ const CATEGORIES = [
   { id: 'social', name: 'Facebook / Twitter / Insta' },
 ];
 
+// Fonction pour générer des détails par défaut selon la catégorie
+const getProductDetails = (product) => {
+  const commonTerms = "Veuillez lire les spécifications avant d'acheter. Vous êtes responsable de toutes les actions sur le compte. Utilisez des IP résidentielles fraîches. Changez les accès après 48h seulement.";
+  const refundPolicy = "Garantie de 5 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès.";
+  
+  if (product.category === 'email') {
+    return {
+      info: "Âge : 2017 - 2023 | Vérifié par tél : Aléatoire | Pays : US | Format : Gmail | Pass | Récup",
+      note: "Le Gmail est aléatoire. Option de connexion : 'Confirmer l'email de récupération'. Changez les infos après 48h.",
+      terms: commonTerms,
+      refund: refundPolicy
+    };
+  }
+  if (product.category.includes('youtube')) {
+    return {
+      info: `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Abonnés : Aléatoire | Contenu : ${product.name.includes('sans') ? 'Propre' : 'Vidéos incluses'}`,
+      note: "Parfait pour l'automation YT. Évitez les VPN gratuits pour la première connexion. Accès via Gmail inclus.",
+      terms: commonTerms,
+      refund: refundPolicy
+    };
+  }
+  return {
+    info: "Compte haute qualité | Vérifié | Prêt à l'emploi",
+    note: "Suivez scrupuleusement les consignes de sécurité envoyées par mail après achat.",
+    terms: commonTerms,
+    refund: refundPolicy
+  };
+};
+
 const PRODUCTS = [
   { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19, stock: true },
   { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49, stock: true },
@@ -62,7 +91,7 @@ const PRODUCTS = [
   { id: 22, name: 'Instagram 2010 – 2024 | FARM | 400 – 1K Abonnés', category: 'social', price: 30.00, stock: true },
   { id: 23, name: 'Twitter (X) Pays Aléatoire (2007 – 2020)', category: 'social', price: 40.00, stock: true },
   { id: 24, name: 'Facebook US Ancien (30+ Amis)', category: 'social', price: 35.00, stock: true },
-];
+].map(p => ({ ...p, details: getProductDetails(p) }));
 
 // ==========================================
 // COMPOSANTS PARTAGES
@@ -145,29 +174,17 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
             </div>
           </div>
           <div className="relative h-[500px] hidden lg:block">
-            {/* Carte Flottante 1 */}
             <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50">
               <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><YouTubeLogo size={40} /></div>
-              <div>
-                <div className="text-sm font-black text-gray-900">YouTube 2014</div>
-                <div className="text-primary font-bold">$6.19</div>
-              </div>
+              <div><div className="text-sm font-black text-gray-900">YouTube 2014</div><div className="text-primary font-bold">$6.19</div></div>
             </div>
-            {/* Carte Flottante 2 */}
             <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50">
               <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><GmailLogo size={40} /></div>
-              <div>
-                <div className="text-sm font-black text-gray-900">Gmail US 2010</div>
-                <div className="text-primary font-bold">$1.43</div>
-              </div>
+              <div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$1.43</div></div>
             </div>
-            {/* Carte Flottante 3 */}
             <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-50">
               <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div>
-              <div>
-                <div className="text-sm font-black text-gray-900">Instantané</div>
-                <div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div>
-              </div>
+              <div><div className="text-sm font-black text-gray-900">Instantané</div><div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div></div>
             </div>
           </div>
         </div>
@@ -194,15 +211,9 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
               const [localQty, setLocalQty] = useState(1);
               return (
                 <div key={product.id} className="bg-white group">
-                  <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative">
+                  <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
                     <div className="w-full h-full p-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
-                      {product.category.includes('youtube') ? (
-                        <YouTubeLogo size={55} className="w-full h-full object-contain" />
-                      ) : product.category === 'email' ? (
-                        <GmailLogo size={55} className="w-full h-full object-contain" />
-                      ) : (
-                        <Share2 size={50} className="text-gray-300" />
-                      )}
+                      {product.category.includes('youtube') ? <YouTubeLogo size={55} className="w-full h-full object-contain" /> : product.category === 'email' ? <GmailLogo size={55} className="w-full h-full object-contain" /> : <Share2 size={50} className="text-gray-300" />}
                     </div>
                   </div>
                   <div className="space-y-4 px-2">
@@ -211,19 +222,13 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
                       <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>{product.name}</h3>
                     </div>
                     <div className="text-xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</div>
-                    
                     <div className="flex items-center gap-3 pt-2">
                       <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
                         <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Minus size={14} /></button>
                         <div className="w-8 text-center text-xs font-bold">{localQty}</div>
                         <button onClick={() => setLocalQty(localQty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Plus size={14} /></button>
                       </div>
-                      <button 
-                        onClick={() => addToCart(product, localQty)} 
-                        className="flex-grow bg-gray-900 text-white h-10 rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-primary transition-all shadow-lg shadow-black/5"
-                      >
-                        Ajouter
-                      </button>
+                      <button onClick={() => addToCart(product, localQty)} className="flex-grow bg-gray-900 text-white h-10 rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-primary transition-all shadow-lg shadow-black/5">Ajouter</button>
                     </div>
                   </div>
                 </div>
@@ -240,24 +245,63 @@ const ProductView = ({ product, addToCart, navigate }) => {
   const [quantity, setQuantity] = useState(1);
   return (
     <div className="max-w-7xl mx-auto px-6 py-20">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
-        <div className="bg-gray-50 rounded-[3rem] aspect-square flex items-center justify-center"><div className="scale-[2]">{product.category.includes('youtube') ? <YouTubeLogo size={60} /> : product.category === 'email' ? <GmailLogo size={60} /> : <Share2 size={60} />}</div></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
+        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center p-20 border border-gray-100">
+          <div className="w-full h-full flex items-center justify-center scale-150">
+            {product.category.includes('youtube') ? <YouTubeLogo size={100} className="w-full" /> : product.category === 'email' ? <GmailLogo size={100} className="w-full" /> : <Share2 size={80} />}
+          </div>
+        </div>
         <div className="flex flex-col justify-center">
           <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><button onClick={() => navigate('home')} className="hover:text-primary">ACCUEIL</button><span>/</span><span className="text-primary">{CATEGORIES.find(c => c.id === product.category)?.name}</span></nav>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">{product.name}</h1>
-          <div className="text-4xl font-bold text-primary mb-12">${product.price.toFixed(2)}</div>
+          <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tighter leading-tight">{product.name}</h1>
+          <div className="text-4xl font-black text-primary mb-12">${product.price.toFixed(2)}</div>
+          
           <div className="flex items-center gap-6 mb-12">
             <div className="flex items-center bg-gray-100 rounded-full p-2">
-              <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-full transition-all"><Minus size={18} /></button>
-              <div className="w-12 text-center font-bold text-lg">{quantity}</div>
-              <button onClick={() => setQuantity(quantity + 1)} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-full transition-all"><Plus size={18} /></button>
+              <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Minus size={20} /></button>
+              <div className="w-16 text-center font-black text-xl">{quantity}</div>
+              <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Plus size={20} /></button>
             </div>
-            <button onClick={() => addToCart(product, quantity)} className="flex-grow bg-gray-900 text-white h-16 rounded-full font-bold text-lg hover:bg-black transition-all">Ajouter au Panier</button>
+            <button onClick={() => addToCart(product, quantity)} className="flex-grow bg-gray-900 text-white h-20 rounded-full font-bold text-xl hover:bg-primary transition-all shadow-2xl shadow-black/10 uppercase tracking-widest">Ajouter au Panier</button>
           </div>
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 text-sm text-gray-500"><Zap size={18} className="text-primary" /> Livraison instantanée garantie</div>
-            <div className="flex items-center gap-4 text-sm text-gray-500"><ShieldAlert size={18} className="text-primary" /> Garantie de remplacement 24h</div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><Zap size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Livraison Instantanée</span></div>
+            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><ShieldCheck size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Garantie 5 Jours</span></div>
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 border-t border-gray-100 pt-20">
+        <div className="lg:col-span-2 space-y-16">
+          <section>
+            <h3 className="flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8"><Info size={16} className="text-primary"/> Informations</h3>
+            <div className="bg-white border border-gray-100 p-10 rounded-[2.5rem] shadow-soft leading-relaxed text-gray-600 space-y-4 font-medium">
+              {product.details.info.split(' | ').map((line, i) => <div key={i} className="flex justify-between border-b border-gray-50 pb-3"><span>{line.split(' : ')[0]}</span><span className="text-gray-900 font-bold">{line.split(' : ')[1]}</span></div>)}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8"><Clock size={16} className="text-primary"/> À Noter (Important)</h3>
+            <div className="bg-primary/5 border border-primary/10 p-10 rounded-[2.5rem] text-primaryDark leading-relaxed font-medium italic">
+              {product.details.note}
+            </div>
+          </section>
+        </div>
+
+        <div className="space-y-12">
+          <section>
+            <h3 className="flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8"><ShieldAlert size={16} className="text-primary"/> Conditions</h3>
+            <div className="text-sm text-gray-500 leading-relaxed space-y-4">
+              {product.details.terms.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
+            </div>
+          </section>
+          <section>
+            <h3 className="flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8"><RefreshCcw size={16} className="text-primary"/> Remboursement</h3>
+            <div className="text-sm text-gray-400 leading-relaxed p-6 bg-gray-50 rounded-3xl border border-gray-100">
+              {product.details.refund}
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -265,7 +309,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
 };
 
 const PaymentView = ({ cartTotal, navigate, clearCart }) => {
-  const [method, setMethod] = useState('binance'); // 'binance' or 'classic'
+  const [method, setMethod] = useState('binance');
   const [copied, setCopied] = useState(false);
   const binanceId = "38066101";
 
@@ -273,82 +317,30 @@ const PaymentView = ({ cartTotal, navigate, clearCart }) => {
     <div className="max-w-7xl mx-auto px-6 py-20">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         <div className="lg:col-span-2">
-          <h2 className="text-4xl font-bold text-gray-900 mb-12">Finaliser la Commande</h2>
-          
+          <h2 className="text-4xl font-bold text-gray-900 mb-12 tracking-tight">Finaliser la Commande</h2>
           <div className="space-y-8">
-            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8">
+            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft">
               <h3 className="text-lg font-bold mb-8">1. Sélectionner une Méthode de Paiement</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button 
-                  onClick={() => setMethod('binance')}
-                  className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'binance' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
-                >
-                  {method === 'binance' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
-                  <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center mb-4 text-white font-bold">B</div>
-                  <div className="font-bold text-gray-900 mb-1">Binance Pay</div>
-                  <div className="text-xs text-primary font-bold uppercase tracking-wider">Recommandé (Zéro Frais)</div>
-                </button>
-                <button 
-                  onClick={() => setMethod('classic')}
-                  className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'classic' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
-                >
-                  {method === 'classic' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-4 text-white"><Wallet size={20} /></div>
-                  <div className="font-bold text-gray-900 mb-1">Crypto Classique</div>
-                  <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">BTC, LTC, DOGE, USDT...</div>
-                </button>
+                <button onClick={() => setMethod('binance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'binance' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>{method === 'binance' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}<div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center mb-4 text-white font-bold">B</div><div className="font-bold text-gray-900 mb-1">Binance Pay</div><div className="text-xs text-primary font-bold uppercase tracking-wider">Recommandé (Zéro Frais)</div></button>
+                <button onClick={() => setMethod('classic')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'classic' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>{method === 'classic' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}<div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-4 text-white"><Wallet size={20} /></div><div className="font-bold text-gray-900 mb-1">Crypto Classique</div><div className="text-xs text-gray-400 font-bold uppercase tracking-wider">BTC, LTC, DOGE, USDT...</div></button>
               </div>
             </div>
-
-            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10">
+            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft">
               <h3 className="text-lg font-bold mb-8">2. Instructions de Paiement</h3>
-              
               {method === 'binance' ? (
                 <div className="space-y-8">
-                  <div className="bg-gray-50 p-8 rounded-[2rem] text-center border border-gray-100">
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">ID Binance du destinataire</div>
-                    <div className="flex items-center justify-center gap-4 mb-4">
-                      <span className="text-4xl font-mono font-bold text-gray-900">{binanceId}</span>
-                      <button onClick={() => { navigator.clipboard.writeText(binanceId); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-3 bg-white rounded-xl shadow-soft hover:bg-gray-50 transition-all">
-                        {copied ? <CheckCircle size={20} className="text-green-500" /> : <Copy size={20} />}
-                      </button>
-                    </div>
-                    <div className="text-sm font-bold text-primary">Pseudo : CLIVERS237</div>
-                  </div>
-                  <ol className="space-y-4 text-sm text-gray-600 list-decimal list-inside leading-relaxed font-medium">
-                    <li>Ouvrez l'application Binance &gt; Portefeuille &gt; Pay</li>
-                    <li>Utilisez l'ID ci-dessus pour envoyer le montant exact.</li>
-                    <li>Envoyez la preuve de paiement à notre support.</li>
-                  </ol>
+                  <div className="bg-gray-50 p-8 rounded-[2rem] text-center border border-gray-100"><div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">ID Binance du destinataire</div><div className="flex items-center justify-center gap-4 mb-4"><span className="text-4xl font-mono font-bold text-gray-900">{binanceId}</span><button onClick={() => { navigator.clipboard.writeText(binanceId); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-3 bg-white rounded-xl shadow-soft hover:bg-gray-50 transition-all">{copied ? <CheckCircle size={20} className="text-green-500" /> : <Copy size={20} />}</button></div><div className="text-sm font-bold text-primary">Pseudo : CLIVERS237</div></div>
+                  <ol className="space-y-4 text-sm text-gray-600 list-decimal list-inside leading-relaxed font-medium"><li>Ouvrez l'application Binance &gt; Portefeuille &gt; Pay</li><li>Utilisez l'ID ci-dessus pour envoyer le montant exact.</li><li>Envoyez la preuve de paiement à notre support.</li></ol>
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500"><ExternalLink size={40} /></div>
-                  <p className="text-gray-500 mb-8 max-w-sm mx-auto">Vous allez être redirigé vers notre plateforme sécurisée **CoinPayments** pour finaliser votre transaction.</p>
-                  <a href="https://www.coinpayments.net" target="_blank" className="inline-flex items-center gap-3 bg-blue-600 text-white px-10 py-5 rounded-full font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">
-                    Procéder via CoinPayments
-                  </a>
-                </div>
+                <div className="text-center py-12"><div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500"><ExternalLink size={40} /></div><p className="text-gray-500 mb-8 max-w-sm mx-auto">Vous allez être redirigé vers notre plateforme sécurisée **CoinPayments** pour finaliser votre transaction.</p><a href="https://www.coinpayments.net" target="_blank" className="inline-flex items-center gap-3 bg-blue-600 text-white px-10 py-5 rounded-full font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">Procéder via CoinPayments</a></div>
               )}
             </div>
-            
-            <button onClick={() => { clearCart(); navigate('home'); alert("Commande enregistrée !"); }} className="w-full bg-primary text-white py-6 rounded-[2rem] font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/30">
-              J'ai complété le paiement
-            </button>
+            <button onClick={() => { clearCart(); navigate('home'); alert("Commande enregistrée !"); }} className="w-full bg-primary text-white py-6 rounded-[2rem] font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/30">J'ai complété le paiement</button>
           </div>
         </div>
-
-        <div className="h-fit sticky top-32">
-          <div className="bg-gray-900 text-white p-10 rounded-[3rem] shadow-2xl">
-            <h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Votre Panier</h3>
-            <div className="space-y-6 mb-10 text-sm font-medium text-gray-400">
-              <div className="flex justify-between"><span>Sous-total</span><span className="text-white">${cartTotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Frais Réseau</span><span className="text-primary">GRATUIT</span></div>
-            </div>
-            <div className="flex justify-between text-3xl font-bold mb-4"><span>Total</span><span>${cartTotal.toFixed(2)}</span></div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Sécurisé par Chiffrement SSL</div>
-          </div>
-        </div>
+        <div className="h-fit sticky top-32"><div className="bg-gray-900 text-white p-10 rounded-[3rem] shadow-2xl"><h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Votre Panier</h3><div className="space-y-6 mb-10 text-sm font-medium text-gray-400"><div className="flex justify-between"><span>Sous-total</span><span className="text-white">${cartTotal.toFixed(2)}</span></div><div className="flex justify-between"><span>Frais Réseau</span><span className="text-primary">GRATUIT</span></div></div><div className="flex justify-between text-3xl font-bold mb-4"><span>Total</span><span>${cartTotal.toFixed(2)}</span></div><div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Sécurisé par Chiffrement SSL</div></div></div>
       </div>
     </div>
   );
@@ -356,7 +348,7 @@ const PaymentView = ({ cartTotal, navigate, clearCart }) => {
 
 const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigate }) => {
   return (
-    <div className="max-w-4xl mx-auto py-20 px-6">
+    <div className="max-w-4xl mx-auto py-20 px-6 font-sans">
       <div className="flex items-center justify-between mb-16">
         <h2 className="text-5xl font-bold text-gray-900 tracking-tighter">Votre Panier</h2>
         <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline uppercase tracking-widest">Continuer les achats</button>
@@ -366,7 +358,7 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
       ) : (
         <div className="space-y-6">
           {cart.map((item) => (
-            <div key={item.id} className="bg-white border border-gray-100 p-8 rounded-[2.5rem] flex items-center justify-between group">
+            <div key={item.id} className="bg-white border border-gray-100 p-8 rounded-[2.5rem] flex items-center justify-between group shadow-soft">
               <div className="flex items-center gap-8">
                 <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform">{item.category.includes('youtube') ? <YouTubeLogo size={32} /> : item.category === 'email' ? <GmailLogo size={32} /> : <Share2 size={32} />}</div>
                 <div><h4 className="font-bold text-gray-900 mb-1">{item.name}</h4><p className="text-primary font-bold">${item.price.toFixed(2)}</p></div>
@@ -402,25 +394,7 @@ const AuthView = ({ navigate }) => {
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label><input type="email" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="name@email.com" /></div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="••••••••" /></div>
           <button className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-black/10">{isLogin ? 'Se Connecter' : 'S\'inscrire'}</button>
-          <button 
-            type="button" 
-            onClick={async () => {
-              if (!supabase) {
-                alert("Erreur : La connexion à la base de données n'est pas configurée. Vérifiez vos clés API dans Vercel.");
-                return;
-              }
-              const { error } = await supabase.auth.signInWithOAuth({ 
-                provider: 'google',
-                options: {
-                  redirectTo: window.location.origin
-                }
-              });
-              if (error) alert("Erreur Google Auth : " + error.message);
-            }} 
-            className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all"
-          >
-            Google
-          </button>
+          <button type="button" onClick={async () => { if (!supabase) { alert("Erreur : La connexion à la base de données n'est pas configurée. Vérifiez vos clés API dans Vercel."); return; } const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); if (error) alert("Erreur Google Auth : " + error.message); }} className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all">Google</button>
         </form>
         <button onClick={() => setIsLogin(!isLogin)} className="w-full mt-8 text-center text-sm font-bold text-gray-400 hover:text-primary transition-colors">{isLogin ? "Créer un compte" : "Déjà membre ?"}</button>
       </div>
@@ -490,25 +464,16 @@ const Footer = () => (
       </div>
       <div>
         <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Navigation</h4>
-        <ul className="space-y-4 text-sm text-gray-500 font-medium">
-          <li><a href="#" className="hover:text-primary">Catalogue</a></li>
-          <li><a href="#" className="hover:text-primary">Contact</a></li>
-          <li><a href="#" className="hover:text-primary">Confidentialité</a></li>
-        </ul>
+        <ul className="space-y-4 text-sm text-gray-500 font-medium"><li><a href="#" className="hover:text-primary">Catalogue</a></li><li><a href="#" className="hover:text-primary">Contact</a></li><li><a href="#" className="hover:text-primary">Confidentialité</a></li></ul>
       </div>
       <div>
         <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Paiement</h4>
-        <div className="flex flex-wrap gap-2">
-          {['BTC', 'ETH', 'LTC', 'USDT'].map(c => <span key={c} className="px-3 py-1 bg-white rounded-lg border border-gray-200 text-[10px] font-black">{c}</span>)}
-        </div>
+        <div className="flex flex-wrap gap-2">{['BTC', 'ETH', 'LTC', 'USDT'].map(c => <span key={c} className="px-3 py-1 bg-white rounded-lg border border-gray-200 text-[10px] font-black">{c}</span>)}</div>
       </div>
     </div>
     <div className="max-w-7xl mx-auto pt-10 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
       <div className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">© 2026 AGEDGMAILYT • ALL RIGHTS RESERVED</div>
-      <div className="flex gap-4 items-center">
-        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Système Opérationnel</span>
-      </div>
+      <div className="flex gap-4 items-center"><div className="w-2 h-2 bg-primary rounded-full animate-pulse" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Système Opérationnel</span></div>
     </div>
   </footer>
 );
