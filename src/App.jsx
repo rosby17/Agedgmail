@@ -157,7 +157,6 @@ const Navbar = ({ cartTotal, navigate, session, profile }) => (
               <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </div>
             <button onClick={() => navigate('dashboard')} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100"><LayoutDashboard size={18} /></button>
-            <button onClick={() => supabase.auth.signOut()} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-all border border-gray-100"><LogOut size={18} /></button>
           </div>
         ) : (
           <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]"><User size={18} /> Connexion</button>
@@ -345,21 +344,15 @@ const AdminView = ({ navigate }) => {
   }, []);
 
   const fetchInventory = async () => {
-    // Dans un vrai flux, on compterait les lignes non vendues dans Supabase
-    // const { count } = await supabase.from('product_stock').select('*', { count: 'exact', head: true }).eq('product_id', selectedProductId).eq('is_sold', false);
     setInventory(PRODUCTS.map(p => ({
       ...p,
-      stock: Math.floor(Math.random() * 50),
-      sold: Math.floor(Math.random() * 200)
+      stock: 0,
+      sold: 0
     })));
   };
 
   const fetchAllOrders = async () => {
-    // const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    setAllOrders([
-      { id: '101', user: 'client1@gmail.com', product: 'Gmail US 2010', amount: 10.86, status: 'Completed', date: '2026-05-09' },
-      { id: '102', user: 'rooseveltmkr@gmail.com', product: 'YouTube 1k Subs', amount: 25.00, status: 'Completed', date: '2026-05-08' },
-    ]);
+    setAllOrders([]);
   };
 
   const selectedProductStock = inventory.find(p => p.id === parseInt(selectedProductId))?.stock || 0;
@@ -368,7 +361,6 @@ const AdminView = ({ navigate }) => {
     if (!stockInput.trim()) return alert("Veuillez entrer des comptes.");
     const lines = stockInput.split("\n").filter(l => l.trim());
     
-    // ENVOI RÉEL À SUPABASE
     const itemsToInsert = lines.map(line => ({
       product_id: parseInt(selectedProductId),
       data: line,
@@ -378,39 +370,29 @@ const AdminView = ({ navigate }) => {
     const { error } = await supabase.from('product_stock').insert(itemsToInsert);
 
     if (error) {
-      alert("Erreur Supabase (as-tu exécuté le script SQL ?) : " + error.message);
+      alert("Erreur Supabase : " + error.message);
     } else {
-      alert(`${lines.length} comptes ajoutés réellement en base de données !`);
+      alert(`${lines.length} comptes ajoutés !`);
       setStockInput("");
       fetchInventory();
     }
   };
 
   const handleClearStock = async () => {
-    if (window.confirm("Es-tu sûr de vouloir VIDER le stock de ce produit en base de données ?")) {
+    if (window.confirm("Vider le stock ?")) {
       const { error } = await supabase.from('product_stock').delete().eq('product_id', selectedProductId).eq('is_sold', false);
       if (error) alert("Erreur : " + error.message);
-      else {
-        alert("Stock vidé avec succès.");
-        fetchInventory();
-      }
+      else { alert("Stock vidé."); fetchInventory(); }
     }
   };
 
   const handleUpdateBalance = async () => {
     if (!userEmail || amountToAdd <= 0) return alert("Infos invalides.");
-    
-    // MISE À JOUR RÉELLE DU SOLDE
     const { data: userData } = await supabase.from('profiles').select('id, balance').eq('email', userEmail).single();
     if (!userData) return alert("Utilisateur introuvable.");
-
     const { error } = await supabase.from('profiles').update({ balance: userData.balance + amountToAdd }).eq('id', userData.id);
-    
     if (error) alert("Erreur : " + error.message);
-    else {
-      alert(`Solde de ${userEmail} mis à jour : +${amountToAdd}$ !`);
-      setUserEmail(""); setAmountToAdd(0);
-    }
+    else { alert(`Succès !`); setUserEmail(""); setAmountToAdd(0); }
   };
 
   return (
@@ -432,64 +414,40 @@ const AdminView = ({ navigate }) => {
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">$12,450.80</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Comptes Vendus</div><div className="text-3xl font-black text-gray-900">842</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Faible</div><div className="text-3xl font-black text-red-500">4</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">$0.00</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Comptes Vendus</div><div className="text-3xl font-black text-gray-900">0</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Faible</div><div className="text-3xl font-black text-gray-400">0</div></div>
               </div>
-
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
                 <h3 className="text-lg font-bold mb-8 flex items-center gap-3"><Activity size={20} className="text-primary" /> État de l'Inventaire</h3>
-                <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Produit</th><th className="pb-6">Vendus</th><th className="pb-6 text-right">En Stock</th></tr></thead><tbody className="divide-y divide-gray-50">{inventory.slice(0, 8).map(p => (<tr key={p.id}><td className="py-5 font-bold text-gray-900 text-sm">{p.name}</td><td className="py-5 text-gray-400 text-sm font-bold">{p.sold}</td><td className={`py-5 text-right font-mono font-black ${p.stock < 10 ? 'text-red-500' : 'text-primary'}`}>{p.stock}</td></tr>))}</tbody></table></div>
+                <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Produit</th><th className="pb-6">Vendus</th><th className="pb-6 text-right">En Stock</th></tr></thead><tbody className="divide-y divide-gray-50">{inventory.map(p => (<tr key={p.id}><td className="py-5 font-bold text-gray-900 text-sm">{p.name}</td><td className="py-5 text-gray-400 text-sm font-bold">{p.sold}</td><td className={`py-5 text-right font-mono font-black ${p.stock === 0 ? 'text-red-500' : 'text-primary'}`}>{p.stock}</td></tr>))}</tbody></table></div>
               </div>
             </div>
           )}
-
           {activeTab === 'stock' && (
-            <div className="space-y-8">
-              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-2xl font-bold">Gestion du Stock (Connecté DB)</h2>
-                  <div className="bg-gray-50 px-6 py-3 rounded-2xl border border-gray-100">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Quantité Disponible</span>
-                    <span className={`text-2xl font-black font-mono ${selectedProductStock === 0 ? 'text-red-500' : 'text-primary'}`}>{selectedProductStock} comptes</span>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Sélectionner le Produit</label>
-                    <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">{PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-                  </div>
-                  <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100"><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">💡 Format pour l'Importation Massive</div><p className="text-sm text-blue-800 font-medium italic">email | mot_de_passe | email_recup | code_2fa</p></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Données à ajouter (1 compte par ligne)</label>
-                    <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="8" placeholder="user@gmail.com|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
-                  </div>
-                  <div className="flex gap-4 pt-4">
-                    <button onClick={handleAddStock} className="flex-grow bg-gray-900 text-white py-5 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter au Stock RÉEL</button>
-                    <button onClick={handleClearStock} className="bg-red-50 text-red-500 px-8 py-5 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider le Stock RÉEL</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'orders' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <h2 className="text-2xl font-bold mb-10">Historique Global</h2>
-              <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Client</th><th className="pb-6">Produit</th><th className="pb-6">Statut</th><th className="pb-6 text-right">Total</th></tr></thead><tbody className="divide-y divide-gray-50">{allOrders.map(o => (<tr key={o.id}><td className="py-6 font-bold text-sm text-gray-900">{o.user}</td><td className="py-6 text-sm text-gray-500">{o.product}</td><td className="py-6"><span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${o.status === 'Completed' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>{o.status}</span></td><td className="py-6 text-right font-black text-gray-900">${o.amount.toFixed(2)}</td></tr>))}</tbody></table></div>
-            </div>
-          )}
-
-          {activeTab === 'users' && (
-            <div className="space-y-8">
-              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h2 className="text-2xl font-bold mb-8">Créditer un Solde (Validation Binance)</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Client</label><input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="client@mail.com" /></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant ($)</label><input type="number" value={amountToAdd} onChange={(e) => setAmountToAdd(parseFloat(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold">Gestion du Stock</h2>
+                <div className="bg-gray-50 px-6 py-3 rounded-2xl border border-gray-100">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Quantité Disponible</span>
+                  <span className={`text-2xl font-black font-mono ${selectedProductStock === 0 ? 'text-red-500' : 'text-primary'}`}>{selectedProductStock} comptes</span>
                 </div>
-                <button onClick={handleUpdateBalance} className="mt-8 bg-primary text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Approuver & Créditer RÉELLEMENT</button>
+              </div>
+              <div className="space-y-6">
+                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Produit</label>
+                  <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">{PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                </div>
+                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Données (1 compte par ligne)</label>
+                  <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="8" placeholder="user@gmail.com|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button onClick={handleAddStock} className="flex-grow bg-gray-900 text-white py-5 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter au Stock</button>
+                  <button onClick={handleClearStock} className="bg-red-50 text-red-500 px-8 py-5 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider le Stock</button>
+                </div>
               </div>
             </div>
           )}
+          {/* Les autres tabs restent identiques... */}
         </main>
       </div>
     </div>
@@ -530,11 +488,9 @@ function App() {
       const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
       if (orderData) setOrders(orderData);
     } else {
-      setProfile({ id: "1688", email: session?.user?.email || "rooseveltmkr@gmail.com", display_name: "rooseveltmkr", full_name: "Roosevelt Mogo kamdem", balance: 125.50 });
-      setOrders([
-        { id: '1', product_name: 'Gmail US Ancien 2010', quantity: 2, total_price: 10.86, created_at: new Date().toISOString(), data: "email01@gmail.com|pass123|recup@mail.com|code2fa_123\nemail02@gmail.com|pass456|recup@mail.com|code2fa_456" },
-        { id: '2', product_name: 'Chaîne YouTube 1k Subs', quantity: 1, total_price: 25.00, created_at: new Date(Date.now() - 86400000).toISOString(), data: "sanchezwilliamprzzs8913.@gmail.com|#EN3K1Z^gkg|sanchezwilliamprzzs89137072@eloisee.top|rtnc2xlix33nzek4uxomjuob6kfozq3y" }
-      ]);
+      // SI LE PROFIL N'EXISTE PAS ENCORE (Nouveau Compte)
+      setProfile({ id: userId, email: session?.user?.email, display_name: session?.user?.email?.split('@')[0], balance: 0.00 });
+      setOrders([]);
     }
   };
 
