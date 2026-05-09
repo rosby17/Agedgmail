@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 // ==========================================
@@ -199,6 +199,14 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [viewOrder, setViewOrder] = useState(null);
 
+  const sidebarItems = [
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'orders', label: 'Orders', icon: History },
+    { id: 'downloads', label: 'Downloads', icon: Download },
+    { id: 'address', label: 'Address', icon: MapPin },
+    { id: 'settings', label: 'Account details', icon: User },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       {/* MODALE DE VISUALISATION DES ACCÈS */}
@@ -220,12 +228,6 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   <button onClick={() => { navigator.clipboard.writeText(viewOrder.data); alert("Copié !"); }} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all"><Copy size={16} /></button>
                 </div>
               </div>
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 text-xs text-gray-500 leading-relaxed">
-                  <ShieldCheck size={18} className="text-green-500 shrink-0" />
-                  <p>Utilisez une IP propre pour la première connexion. Attendez 48h avant de modifier les informations de sécurité.</p>
-                </div>
-              </div>
               <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
             </div>
           </div>
@@ -236,19 +238,22 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
         <aside className="w-full lg:w-64 flex-shrink-0">
           <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-soft sticky top-32">
             <div className="flex items-center gap-4 mb-10 pb-6 border-b border-gray-50">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">{profile?.email?.[0].toUpperCase()}</div>
-              <div className="overflow-hidden"><div className="text-sm font-black text-gray-900 truncate">{profile?.full_name || "Utilisateur"}</div><div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">{profile?.email}</div></div>
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">{profile?.display_name?.[0].toUpperCase() || profile?.email?.[0].toUpperCase()}</div>
+              <div className="overflow-hidden">
+                <div className="text-sm font-black text-gray-900 truncate">{profile?.display_name || "Utilisateur"}</div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">#{profile?.id?.slice(0, 4) || "1688"}</div>
+              </div>
             </div>
             <nav className="space-y-2">
-              <button onClick={() => setActiveTab('overview')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'}`}><LayoutDashboard size={18} /> Aperçu</button>
-              <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'orders' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'}`}><History size={18} /> Commandes</button>
-              <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'settings' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'}`}><Settings size={18} /> Paramètres</button>
+              {sidebarItems.map(item => (
+                <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'}`}><item.icon size={18} /> {item.label}</button>
+              ))}
             </nav>
-            <div className="mt-10 pt-6 border-t border-gray-50"><button onClick={() => supabase.auth.signOut()} className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all"><LogOut size={18} /> Déconnexion</button></div>
+            <div className="mt-10 pt-6 border-t border-gray-50"><button onClick={() => supabase.auth.signOut()} className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all"><LogOut size={18} /> Logout</button></div>
           </div>
         </aside>
 
-        <main className="flex-grow space-y-8">
+        <main className="flex-grow">
           {activeTab === 'overview' && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -269,56 +274,50 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   <button onClick={() => setViewOrder(orders[0])} disabled={!orders[0]} className="text-sm font-black text-primary hover:underline flex items-center gap-2 mt-6 disabled:text-gray-300">Voir les accès <ChevronRight size={16} /></button>
                 </div>
               </div>
-              <section className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h3 className="text-lg font-bold mb-8">Activités Récentes</h3>
-                {orders.length === 0 ? (
-                  <div className="text-center py-10"><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore effectué d'achats.</p></div>
-                ) : (
-                  <div className="space-y-6">
-                    {orders.slice(0, 3).map(order => (
-                      <div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><History size={18} /></div>
-                          <div><div className="text-sm font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleDateString()}</div></div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-sm font-black text-gray-900">${order.total_price.toFixed(2)}</div>
-                          <button onClick={() => setViewOrder(order)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-primary transition-all"><Eye size={18} /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
+              <section className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h3 className="text-lg font-bold mb-8">Activités Récentes</h3>{orders.length === 0 ? (<div className="text-center py-10"><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore effectué d'achats.</p></div>) : (<div className="space-y-6">{orders.slice(0, 3).map(order => (<div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0"><div className="flex items-center gap-4"><div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><History size={18} /></div><div><div className="text-sm font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleDateString()}</div></div></div><div className="flex items-center gap-4"><div className="text-sm font-black text-gray-900">${order.total_price.toFixed(2)}</div><button onClick={() => setViewOrder(order)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-primary transition-all"><Eye size={18} /></button></div></div>))}</div>)}</section>
             </div>
           )}
 
           {activeTab === 'orders' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Historique des Commandes</h2>
-              {orders.length === 0 ? (
-                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Aucune commande trouvée.</p></div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Commande</th><th className="pb-6">Date</th><th className="pb-6">Actions</th><th className="pb-6 text-right">Total</th></tr></thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {orders.map(order => (
-                        <tr key={order.id} className="group">
-                          <td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantité: {order.quantity}</div></td>
-                          <td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
-                          <td className="py-6"><button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500"><Eye size={14} /> Voir les accès</button></td>
-                          <td className="py-6 text-right font-black text-gray-900">${order.total_price.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Orders</h2>
+              {orders.length === 0 ? (<div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Aucune commande trouvée.</p></div>) : (
+                <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Commande</th><th className="pb-6">Date</th><th className="pb-6">Actions</th><th className="pb-6 text-right">Total</th></tr></thead><tbody className="divide-y divide-gray-50">{orders.map(order => (<tr key={order.id} className="group"><td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantité: {order.quantity}</div></td><td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td><td className="py-6"><button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500"><Eye size={14} /> Voir les accès</button></td><td className="py-6 text-right font-black text-gray-900">${order.total_price.toFixed(2)}</td></tr>))}</tbody></table></div>
               )}
             </div>
           )}
 
-          {activeTab === 'settings' && (<div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Paramètres du Compte</h2><form className="space-y-8 max-w-lg" onSubmit={(e) => { e.preventDefault(); alert("Profil mis à jour (Simulation)"); }}><div className="grid grid-cols-1 gap-6"><div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nom Complet</label><input type="text" defaultValue={profile?.full_name} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="John Doe" /></div><div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email (Lecture seule)</label><input type="email" value={profile?.email} disabled className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div></div><button type="submit" className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10">Sauvegarder les modifications</button></form></div>)}
+          {activeTab === 'downloads' && (<div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Downloads</h2><div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Vos téléchargements apparaîtront ici.</p></div></div>)}
+          {activeTab === 'address' && (<div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Addresses</h2><p className="text-gray-400 text-sm mb-10">Les adresses suivantes seront utilisées sur la page de validation de commande par défaut.</p><div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100"><div><h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Billing Address</h3><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore configuré ce type d'adresse.</p><button className="mt-6 text-sm font-black text-primary hover:underline">Add</button></div></div><div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100"><div><h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Shipping Address</h3><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore configuré ce type d'adresse.</p><button className="mt-6 text-sm font-black text-primary hover:underline">Add</button></div></div></div></div>)}
+
+          {activeTab === 'settings' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Account details</h2>
+              <form className="space-y-10" onSubmit={(e) => { e.preventDefault(); alert("Profil mis à jour (Simulation)"); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">First name *</label><input type="text" defaultValue="Roosevelt" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Last name *</label><input type="text" defaultValue="Mogo kamdem" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Display name *</label>
+                  <input type="text" defaultValue="rooseveltmkr" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+                  <p className="text-[10px] text-gray-400 italic mt-2">This will be how your name will be displayed in the account section and in reviews</p>
+                </div>
+                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email address *</label><input type="email" defaultValue={profile?.email} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                
+                <div className="pt-10 border-t border-gray-50">
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-8">Password change</h3>
+                  <div className="space-y-6">
+                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Current password (leave blank to leave unchanged)</label><input type="password" placeholder="••••••••••••••" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">New password (leave blank to leave unchanged)</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Confirm new password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                  </div>
+                </div>
+
+                <button type="submit" className="bg-gray-900 text-white px-12 py-5 rounded-full font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10">Save changes</button>
+              </form>
+            </div>
+          )}
         </main>
       </div>
     </div>
@@ -359,7 +358,7 @@ function App() {
       const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
       if (orderData) setOrders(orderData);
     } else {
-      setProfile({ email: session?.user?.email, full_name: "Utilisateur Démo", balance: 125.50 });
+      setProfile({ id: "1688", email: session?.user?.email || "rooseveltmkr@gmail.com", display_name: "rooseveltmkr", full_name: "Roosevelt Mogo kamdem", balance: 125.50 });
       setOrders([
         { id: '1', product_name: 'Gmail US Ancien 2010', quantity: 2, total_price: 10.86, created_at: new Date().toISOString(), data: "gmail01@gmail.com:pass123:recup@mail.com\ngmail02@gmail.com:pass456:recup@mail.com" },
         { id: '2', product_name: 'Chaîne YouTube 1k Subs', quantity: 1, total_price: 25.00, created_at: new Date(Date.now() - 86400000).toISOString(), data: "yt-channel-auth:token-secure-12345" }
