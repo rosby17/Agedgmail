@@ -615,7 +615,7 @@ function App() {
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
-        {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} />}
+        {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && <AdminView navigate={navigate} />}
       </div>
       <SupportChat />
@@ -669,11 +669,32 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
   </div>
 );
 
-const PaymentView = ({ cartTotal, navigate, clearCart, profile }) => {
+const PaymentView = ({ cartTotal, navigate, clearCart, profile, session }) => {
   const [method, setMethod] = useState('balance');
   const [copied, setCopied] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const binanceId = "38066101";
   const canPayWithBalance = (profile?.balance || 0) >= cartTotal;
+
+  const handleCryptomusPayment = async () => {
+    if (!session) { navigate('auth'); return; }
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: { amount: cartTotal, userId: session.user.id }
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Erreur : impossible de générer le lien. Vérifiez que la Edge Function est déployée.');
+      }
+    } catch (err) {
+      alert('Erreur technique : ' + (err.message || 'Edge Function introuvable.'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
@@ -696,6 +717,12 @@ const PaymentView = ({ cartTotal, navigate, clearCart, profile }) => {
                   <div className="font-bold text-gray-900 mb-1">Binance Pay</div>
                   <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Rechargement Direct</div>
                 </button>
+                <button onClick={() => setMethod('cryptomus')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'cryptomus' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                  {method === 'cryptomus' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
+                  <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xs">₿</div>
+                  <div className="font-bold text-gray-900 mb-1">Crypto (Automatique)</div>
+                  <div className="text-xs text-primary font-bold uppercase tracking-wider">BTC • ETH • USDT • +50</div>
+                </button>
               </div>
             </div>
             <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft">
@@ -705,8 +732,23 @@ const PaymentView = ({ cartTotal, navigate, clearCart, profile }) => {
                   {canPayWithBalance ? (<div className="bg-green-50 p-6 rounded-2xl flex items-center gap-4 text-green-700 font-medium"><CheckCircle /> Votre solde est suffisant.</div>) : (<div className="bg-red-50 p-6 rounded-2xl flex items-center gap-4 text-red-700 font-medium"><ShieldAlert /> Solde insuffisant.</div>)}
                   <button disabled={!canPayWithBalance} onClick={() => { clearCart(); navigate('dashboard'); alert("Achat réussi !"); }} className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl ${canPayWithBalance ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>Confirmer le Paiement (${cartTotal.toFixed(2)})</button>
                 </div>
-              ) : (
+              ) : method === 'binance' ? (
                 <div className="space-y-8"><div className="bg-gray-50 p-8 rounded-[2rem] text-center border border-gray-100"><div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">ID Binance pour le rechargement</div><div className="flex items-center justify-center gap-4 mb-4"><span className="text-4xl font-mono font-bold text-gray-900">{binanceId}</span><button onClick={() => { navigator.clipboard.writeText(binanceId); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-3 bg-white rounded-xl shadow-soft">{copied ? <CheckCircle size={20} className="text-green-500" /> : <Copy size={20} />}</button></div><div className="text-sm font-bold text-primary">Pseudo : CLIVERS237</div></div><p className="text-xs text-gray-400 text-center">Envoyez le montant souhaité. Votre solde sera crédité après validation manuelle.</p></div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-purple-50 p-6 rounded-2xl flex items-center gap-4 text-purple-700 font-medium border border-purple-100">
+                    <ShieldCheck size={24} />
+                    <div><div className="font-bold">Paiement sécurisé via Cryptomus</div><div className="text-xs text-purple-500 mt-1">Accepte BTC, ETH, USDT, LTC et +50 cryptomonnaies.</div></div>
+                  </div>
+                  <button
+                    onClick={handleCryptomusPayment}
+                    disabled={isProcessing}
+                    className="w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl bg-purple-600 text-white hover:bg-purple-700 shadow-purple-600/30 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? <><RefreshCcw size={20} className="animate-spin" /> Connexion à Cryptomus...</> : <><ExternalLink size={20} /> Payer ${cartTotal.toFixed(2)} en Crypto</>}
+                  </button>
+                  <p className="text-xs text-gray-400 text-center">Vous serez redirigé vers la page de paiement Cryptomus. Votre solde sera crédité automatiquement après confirmation.</p>
+                </div>
               )}
             </div>
           </div>
