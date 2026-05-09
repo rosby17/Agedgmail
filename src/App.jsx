@@ -40,7 +40,7 @@ const CATEGORIES = [
 // Fonction pour générer des détails par défaut selon la catégorie
 const getProductDetails = (product) => {
   const commonTerms = "Veuillez lire les spécifications avant d'acheter. Vous êtes responsable de toutes les actions sur le compte. Utilisez des IP résidentielles fraîches. Changez les accès après 48h seulement.";
-  const refundPolicy = "Garantie de 5 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès.";
+  const refundPolicy = "Garantie de 3 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès.";
   
   if (product.category === 'email') {
     return {
@@ -52,10 +52,10 @@ const getProductDetails = (product) => {
   }
   if (product.category.includes('youtube')) {
     return {
-      info: `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Abonnés : Aléatoire | Contenu : ${product.name.includes('sans') ? 'Propre' : 'Vidéos incluses'}`,
+      info: `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Abonnés : Aléatoire | Contenu : Propre | Statut : Non-Monétisé | Sanctions : Aucune`,
       note: "Parfait pour l'automation YT. Évitez les VPN gratuits, privilégiez les proxys résidentiels pour travailler avec. Accès via Gmail inclus.",
       terms: commonTerms,
-      refund: refundPolicy
+      refund: "Garantie de 3 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès."
     };
   }
   return {
