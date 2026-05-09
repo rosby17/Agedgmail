@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, DollarSign, Activity, FileText } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 // ==========================================
-// CONFIGURATION ADMIN (À MODIFIER)
+// CONFIGURATION ADMIN
 // ==========================================
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com"; 
 
@@ -34,7 +34,7 @@ const FacebookIcon = ({ className = "" }) => (
 );
 
 // ==========================================
-// MOCK DATA: CATALOGUE PRODUITS
+// CATALOGUE PRODUITS
 // ==========================================
 
 const CATEGORIES = [
@@ -331,28 +331,36 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
 // ==========================================
 
 const AdminView = ({ navigate }) => {
-  const [activeTab, setActiveTab] = useState('stock');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedProductId, setSelectedProductId] = useState(PRODUCTS[0].id);
   const [stockInput, setStockInput] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [amountToAdd, setAmountToAdd] = useState(0);
-  const [recentUsers, setRecentUsers] = useState([
-    { id: '1', email: 'client@gmail.com', balance: 45.00, created_at: '2026-05-01' },
-    { id: '2', email: 'rooseveltmkr@gmail.com', balance: 125.50, created_at: '2026-04-28' },
+  
+  // Mock Data pour les Stats détaillées
+  const [allOrders, setAllOrders] = useState([
+    { id: '101', user: 'client1@gmail.com', product: 'Gmail US 2010', amount: 10.86, status: 'Completed', date: '2026-05-09' },
+    { id: '102', user: 'rooseveltmkr@gmail.com', product: 'YouTube 1k Subs', amount: 25.00, status: 'Completed', date: '2026-05-08' },
+    { id: '103', user: 'newbie@gmail.com', product: 'Gmail Pack 10', amount: 28.00, status: 'Pending', date: '2026-05-09' },
   ]);
+
+  const [inventory, setInventory] = useState(PRODUCTS.map(p => ({
+    ...p,
+    stock: Math.floor(Math.random() * 50),
+    sold: Math.floor(Math.random() * 200)
+  })));
 
   const handleAddStock = () => {
     if (!stockInput.trim()) return alert("Veuillez entrer des comptes.");
     const lines = stockInput.split("\n").filter(l => l.trim());
-    alert(`${lines.length} comptes ajoutés en stock pour le produit ID: ${selectedProductId} ! (Simulation)`);
+    alert(`${lines.length} comptes ajoutés ! (Simulation)`);
     setStockInput("");
   };
 
   const handleUpdateBalance = () => {
     if (!userEmail || amountToAdd <= 0) return alert("Infos invalides.");
-    alert(`Solde de ${userEmail} mis à jour : +${amountToAdd}$ ! (Simulation)`);
-    setUserEmail("");
-    setAmountToAdd(0);
+    alert(`Solde de ${userEmail} mis à jour : +${amountToAdd}$ !`);
+    setUserEmail(""); setAmountToAdd(0);
   };
 
   return (
@@ -363,67 +371,65 @@ const AdminView = ({ navigate }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-        <div className="lg:col-span-1 space-y-4">
-          <button onClick={() => setActiveTab('stock')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'stock' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><Database size={18} /> Gestion Stock</button>
-          <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><Users size={18} /> Utilisateurs & Solde</button>
-          <button onClick={() => setActiveTab('stats')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'stats' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><TrendingUp size={18} /> Statistiques Ventes</button>
-        </div>
+        <aside className="lg:col-span-1 space-y-2">
+          <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'dashboard' ? 'bg-gray-900 text-white shadow-xl' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><LayoutDashboard size={18} /> Vue d'ensemble</button>
+          <button onClick={() => setActiveTab('stock')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'stock' ? 'bg-gray-900 text-white shadow-xl' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><Database size={18} /> Gérer le Stock</button>
+          <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'orders' ? 'bg-gray-900 text-white shadow-xl' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><FileText size={18} /> Toutes les Commandes</button>
+          <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-gray-900 text-white shadow-xl' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><Users size={18} /> Clients & Crédits</button>
+        </aside>
 
-        <div className="lg:col-span-3 space-y-8">
+        <main className="lg:col-span-3 space-y-8">
+          {activeTab === 'dashboard' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">$12,450.80</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Comptes Vendus</div><div className="text-3xl font-black text-gray-900">842</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Faible</div><div className="text-3xl font-black text-red-500">4</div></div>
+              </div>
+
+              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <h3 className="text-lg font-bold mb-8 flex items-center gap-3"><Activity size={20} className="text-primary" /> État de l'Inventaire</h3>
+                <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Produit</th><th className="pb-6">Vendus</th><th className="pb-6 text-right">En Stock</th></tr></thead><tbody className="divide-y divide-gray-50">{inventory.slice(0, 8).map(p => (<tr key={p.id}><td className="py-5 font-bold text-gray-900 text-sm">{p.name}</td><td className="py-5 text-gray-400 text-sm font-bold">{p.sold}</td><td className={`py-5 text-right font-mono font-black ${p.stock < 10 ? 'text-red-500' : 'text-primary'}`}>{p.stock}</td></tr>))}</tbody></table></div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'stock' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <h2 className="text-2xl font-bold mb-8">Ajouter du Stock (Bulk)</h2>
+              <h2 className="text-2xl font-bold mb-8">Importation Massive</h2>
               <div className="space-y-6">
-                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mb-6">
-                  <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">💡 Format Recommandé</div>
-                  <p className="text-sm text-blue-800 font-medium italic">email | mot_de_passe | email_recup | code_2fa</p>
-                </div>
+                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mb-6"><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">💡 Format</div><p className="text-sm text-blue-800 font-medium italic">email | mot_de_passe | email_recup | code_2fa</p></div>
                 <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Choisir le Produit</label>
-                  <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">
-                    {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name} - ${p.price}</option>)}
-                  </select>
+                  <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">{PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
                 </div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Coller les comptes (1 par ligne)</label>
-                  <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="10" placeholder="email|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
+                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Données (1 compte par ligne)</label>
+                  <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="10" placeholder="user@gmail.com|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
                 </div>
-                <button onClick={handleAddStock} className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primary transition-all">Enregistrer en Stock</button>
+                <button onClick={handleAddStock} className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primary transition-all">Mettre en Vente</button>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'orders' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold mb-10">Historique Global</h2>
+              <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Client</th><th className="pb-6">Produit</th><th className="pb-6">Statut</th><th className="pb-6 text-right">Total</th></tr></thead><tbody className="divide-y divide-gray-50">{allOrders.map(o => (<tr key={o.id}><td className="py-6 font-bold text-sm text-gray-900">{o.user}</td><td className="py-6 text-sm text-gray-500">{o.product}</td><td className="py-6"><span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${o.status === 'Completed' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>{o.status}</span></td><td className="py-6 text-right font-black text-gray-900">${o.amount.toFixed(2)}</td></tr>))}</tbody></table></div>
             </div>
           )}
 
           {activeTab === 'users' && (
             <div className="space-y-8">
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h2 className="text-2xl font-bold mb-8">Recharger le Solde d'un Client</h2>
+                <h2 className="text-2xl font-bold mb-8">Créditer un Solde (Binance Pay)</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email du Client</label><input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="client@gmail.com" /></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant à ajouter ($)</label><input type="number" value={amountToAdd} onChange={(e) => setAmountToAdd(parseFloat(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Client</label><input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="client@mail.com" /></div>
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant ($)</label><input type="number" value={amountToAdd} onChange={(e) => setAmountToAdd(parseFloat(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
                 </div>
-                <button onClick={handleUpdateBalance} className="mt-8 bg-primary text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Valider le Rechargement</button>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h2 className="text-2xl font-bold mb-8">Utilisateurs Récents</h2>
-                <table className="w-full text-left">
-                  <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Email</th><th className="pb-6">Date Inscr.</th><th className="pb-6 text-right">Solde</th></tr></thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {recentUsers.map(user => (<tr key={user.id}><td className="py-6 font-bold text-gray-900">{user.email}</td><td className="py-6 text-sm text-gray-400">{user.created_at}</td><td className="py-6 text-right font-black text-primary">${user.balance.toFixed(2)}</td></tr>))}
-                  </tbody>
-                </table>
+                <button onClick={handleUpdateBalance} className="mt-8 bg-primary text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Approuver & Créditer</button>
               </div>
             </div>
           )}
-
-          {activeTab === 'stats' && (
-            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <h2 className="text-2xl font-bold mb-8">Statistiques de Ventes</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                <div className="bg-gray-50 p-8 rounded-3xl"><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Revenu Total</div><div className="text-3xl font-black text-gray-900">$4,520.00</div></div>
-                <div className="bg-gray-50 p-8 rounded-3xl"><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Commandes</div><div className="text-3xl font-black text-gray-900">142</div></div>
-                <div className="bg-gray-50 p-8 rounded-3xl"><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Comptes en Stock</div><div className="text-3xl font-black text-primary">850</div></div>
-              </div>
-            </div>
-          )}
-        </div>
+        </main>
       </div>
     </div>
   );
