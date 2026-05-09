@@ -119,22 +119,55 @@ const Navbar = ({ cartTotal, cartItemCount, navigate, session }) => {
 const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCart, navigate, setSelectedProduct }) => {
   return (
     <>
-      <section className="bg-white pt-24 pb-32">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-primary/5 text-primary px-4 py-2 rounded-full text-xs font-bold mb-8 uppercase tracking-widest border border-primary/10">
-            ⭐ Leader du Marché Aged Gmail
+      <section className="bg-[#FCFCFD] pt-20 pb-24 overflow-hidden relative border-b border-gray-100 font-sans">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+          <div className="max-w-xl">
+            <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6">
+              🔥 N°1 des Comptes Anciens
+            </div>
+            <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">
+              Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span>
+            </h1>
+            <p className="text-gray-500 text-lg mb-8 leading-relaxed">
+              Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence. Accès instantané et paiement sécurisé en Crypto.
+            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              <button onClick={() => window.scrollTo({top: 800, behavior: 'smooth'})} className="bg-primary text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-primaryDark transition-all shadow-xl shadow-primary/20">
+                Voir le catalogue
+              </button>
+              <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
+                <span>Paiement 100% Crypto</span>
+                <div className="flex gap-1">
+                  <div className="w-6 h-6 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₿</div>
+                  <div className="w-6 h-6 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">Ξ</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="text-6xl md:text-7xl font-bold text-gray-900 mb-8 leading-[1.05] tracking-tighter max-w-4xl mx-auto">
-            Boostez votre automation avec des <span className="text-primary italic">Comptes d'Elite.</span>
-          </h1>
-          <p className="text-gray-500 text-lg mb-12 max-w-2xl mx-auto leading-relaxed">
-            Évitez les bans et le mur algorithmique. Utilisez nos comptes Gmail et YouTube anciens (Aged) pour une visibilité instantanée.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button onClick={() => window.scrollTo({top: 800, behavior: 'smooth'})} className="bg-primary text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-primaryDark transition-all shadow-xl shadow-primary/20">Explorer le Catalogue</button>
-            <div className="flex -space-x-3">
-              {[1,2,3,4].map(i => <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-gray-200" />)}
-              <div className="pl-6 text-sm text-gray-500 font-medium">+1,200 clients satisfaits</div>
+          <div className="relative h-[500px] hidden lg:block">
+            {/* Carte Flottante 1 */}
+            <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50">
+              <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><YouTubeLogo size={40} /></div>
+              <div>
+                <div className="text-sm font-black text-gray-900">YouTube 2014</div>
+                <div className="text-primary font-bold">$6.19</div>
+              </div>
+            </div>
+            {/* Carte Flottante 2 */}
+            <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50">
+              <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><GmailLogo size={40} /></div>
+              <div>
+                <div className="text-sm font-black text-gray-900">Gmail US 2010</div>
+                <div className="text-primary font-bold">$1.43</div>
+              </div>
+            </div>
+            {/* Carte Flottante 3 */}
+            <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-50">
+              <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div>
+              <div>
+                <div className="text-sm font-black text-gray-900">Instantané</div>
+                <div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div>
+              </div>
             </div>
           </div>
         </div>
