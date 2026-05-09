@@ -34,17 +34,18 @@ const FacebookIcon = ({ className = "" }) => (
 
 const CATEGORIES = [
   { id: 'all', name: 'Tous les produits' },
-  { id: 'youtube_monetized', name: 'Chaînes Monétisées' },
-  { id: 'youtube_not_monetized', name: 'Chaînes Non-Monétisées' },
   { id: 'email', name: 'Email (Gmail)' },
   { id: 'youtube_aged', name: 'Chaînes Youtube Anciennes' },
-  { id: 'youtube_cpa', name: 'Chaînes Spéciales CPA' },
-  { id: 'facebook', name: 'Pages Facebook' },
+  { id: 'youtube_monetized', name: 'Chaînes Monétisées' },
+  { id: 'youtube_not_monetized', name: 'Chaînes Non-Monétisées' },
+  { id: 'youtube_cpa', name: 'Chaînes Spéciales' },
+  { id: 'facebook', name: 'Page Facebook' },
 ];
 
 const PRICE_RANGES = [
   { id: 'all', name: 'Tous les prix' },
-  { id: 'under10', name: 'Moins de 10$' },
+  { id: 'under5', name: 'Moins de 5$' },
+  { id: '5-10', name: '5$ - 10$' },
   { id: '10-50', name: '10$ - 50$' },
   { id: 'over50', name: 'Plus de 50$' },
 ];
@@ -60,9 +61,9 @@ const getProductDetails = (product) => {
       ? "Âge : Ancien (2012-2020) | Amis : 50+ | Statut : Vérifié | Qualité : Verte"
       : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${isMonetized ? '✅ Monétisée' : '❌ Non-Monétisée'} | Contenu : Propre`,
     note: product.category === 'facebook'
-      ? "Idéal pour le Meta Ads. Compte stable avec historique. Ne pas lancer de publicités avant 48h de chauffe."
+      ? "Idéal pour le Meta Ads. Compte stable avec historique."
       : product.category.includes('youtube')
-      ? `Parfait pour le business YT. ${isMonetized ? 'Générez des revenus dès le premier upload.' : 'Éligible pour une future monétisation.'} Privilégiez les proxys résidentiels.`
+      ? `Parfait pour le business YT. ${isMonetized ? 'Générez des revenus dès le premier upload.' : 'Éligible pour une future monétisation.'}`
       : "Gmail aléatoire. Connexion via 'Email de récupération'.",
     terms: commonTerms,
     refund: "Garantie de 3 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès."
@@ -83,14 +84,17 @@ const PRODUCTS = [
   // --- GMAIL ---
   { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 1.43 },
   { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 1.00 },
+  { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 4.50 },
+  { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 8.50 },
 
   // --- YOUTUBE AGED & CPA ---
   { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19 },
   { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49 },
+  { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99 },
   { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80 },
   { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88 },
   
-  // --- FACEBOOK ONLY ---
+  // --- FACEBOOK ---
   { id: 24, name: 'Compte Facebook US Ancien (50+ Amis) - Spécial Ads', category: 'facebook', price: 35.00 },
   { id: 25, name: 'Compte Facebook BM Créé - Ancienneté 2015', category: 'facebook', price: 45.00 },
   { id: 26, name: 'Page Facebook de Fan - 1k à 5k J\'aime - Organique', category: 'facebook', price: 60.00 },
@@ -140,7 +144,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6">🔥 N°1 des Comptes Anciens</div>
             <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span></h1>
-            <p className="text-gray-500 text-lg mb-8 leading-relaxed">Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence. Accès instantané et paiement sécurisé en Crypto.</p>
+            <p className="text-gray-500 text-lg mb-8 leading-relaxed">Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence.</p>
             <div className="flex flex-col sm:flex-row sm:items-center gap-6">
               <button onClick={() => { const el = document.getElementById('catalog'); if(el) el.scrollIntoView({behavior: 'smooth'}); }} className="bg-primary text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-primaryDark transition-all shadow-xl shadow-primary/20">Voir le catalogue</button>
               <div className="flex items-center gap-2 text-gray-500 text-sm font-medium"><span>Paiement 100% Crypto</span><div className="flex gap-1"><div className="w-6 h-6 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₿</div><div className="w-6 h-6 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">Ξ</div></div></div>
@@ -158,7 +162,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
         <div className="w-full lg:w-72 flex-shrink-0">
           <div className="sticky top-32 space-y-12">
             <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Catégories</h3>
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Catégories</h3>
               <ul className="space-y-2">
                 {CATEGORIES.map(cat => (
                   <li key={cat.id}>
@@ -169,7 +173,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
             </div>
 
             <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Filtrer par Prix</h3>
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Filtrer par Prix</h3>
               <ul className="space-y-2">
                 {PRICE_RANGES.map(range => (
                   <li key={range.id}>
@@ -181,8 +185,8 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
           </div>
         </div>
         <div className="flex-grow">
-          <div className="flex justify-between items-center mb-10">
-            <div className="text-sm text-gray-400 font-medium">{filteredProducts.length} produits trouvés</div>
+          <div className="flex justify-between items-center mb-10 border-b border-gray-100 pb-6">
+            <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles</div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map(product => (
@@ -321,8 +325,9 @@ function App() {
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .filter(p => {
       if (priceRange === 'all') return true;
-      if (priceRange === 'under10') return p.price < 10;
-      if (priceRange === '10-50') return p.price >= 10 && p.price <= 50;
+      if (priceRange === 'under5') return p.price < 5;
+      if (priceRange === '5-10') return p.price >= 5 && p.price <= 10;
+      if (priceRange === '10-50') return p.price > 10 && p.price <= 50;
       if (priceRange === 'over50') return p.price > 50;
       return true;
     });
