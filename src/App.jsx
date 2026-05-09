@@ -433,15 +433,16 @@ const AdminView = ({ navigate }) => {
   }, []);
 
   const fetchInventory = async () => {
-    setInventory(PRODUCTS.map(p => ({
-      ...p,
-      stock: 0,
-      sold: 0
-    })));
+    const { data: stockData } = await supabase.from('product_stock').select('product_id, is_sold');
+    setInventory(PRODUCTS.map(p => {
+      const items = stockData?.filter(s => s.product_id === p.id) || [];
+      return { ...p, stock: items.filter(s => !s.is_sold).length, sold: items.filter(s => s.is_sold).length };
+    }));
   };
 
   const fetchAllOrders = async () => {
-    setAllOrders([]);
+    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    setAllOrders(data || []);
   };
 
   const selectedProductStock = inventory.find(p => p.id === parseInt(selectedProductId))?.stock || 0;
@@ -500,19 +501,24 @@ const AdminView = ({ navigate }) => {
         </aside>
 
         <main className="lg:col-span-3 space-y-8">
-          {activeTab === 'dashboard' && (
+          {activeTab === 'dashboard' && (() => {
+            const totalRevenue = allOrders.reduce((sum, o) => sum + (o.total_price || 0), 0);
+            const totalSold = inventory.reduce((sum, p) => sum + p.sold, 0);
+            const lowStockCount = inventory.filter(p => p.stock > 0 && p.stock < 5).length;
+            return (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">$0.00</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Comptes Vendus</div><div className="text-3xl font-black text-gray-900">0</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Faible</div><div className="text-3xl font-black text-gray-400">0</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">${totalRevenue.toFixed(2)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Comptes Vendus</div><div className="text-3xl font-black text-gray-900">{totalSold}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Faible</div><div className={`text-3xl font-black ${lowStockCount > 0 ? 'text-yellow-500' : 'text-gray-400'}`}>{lowStockCount}</div></div>
               </div>
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
                 <h3 className="text-lg font-bold mb-8 flex items-center gap-3"><Activity size={20} className="text-primary" /> État de l'Inventaire</h3>
                 <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Produit</th><th className="pb-6">Vendus</th><th className="pb-6 text-right">En Stock</th></tr></thead><tbody className="divide-y divide-gray-50">{inventory.map(p => (<tr key={p.id}><td className="py-5 font-bold text-gray-900 text-sm">{p.name}</td><td className="py-5 text-gray-400 text-sm font-bold">{p.sold}</td><td className={`py-5 text-right font-mono font-black ${p.stock === 0 ? 'text-red-500' : 'text-primary'}`}>{p.stock}</td></tr>))}</tbody></table></div>
               </div>
             </div>
-          )}
+            );
+          })()}
           {activeTab === 'stock' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
               <div className="flex justify-between items-center mb-8">
@@ -533,6 +539,42 @@ const AdminView = ({ navigate }) => {
                   <button onClick={handleAddStock} className="flex-grow bg-gray-900 text-white py-5 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter au Stock</button>
                   <button onClick={handleClearStock} className="bg-red-50 text-red-500 px-8 py-5 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider le Stock</button>
                 </div>
+              </div>
+            </div>
+          )}
+          {activeTab === 'orders' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Toutes les Commandes</h2>
+              {allOrders.length === 0 ? (
+                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Aucune commande trouvée.</p></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Produit</th><th className="pb-6">Client</th><th className="pb-6">Date</th><th className="pb-6">Qté</th><th className="pb-6 text-right">Total</th></tr></thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {allOrders.map(order => (
+                        <tr key={order.id}>
+                          <td className="py-5 font-bold text-gray-900 text-sm">{order.product_name}</td>
+                          <td className="py-5 text-gray-400 text-sm font-mono">{order.user_id?.slice(0, 8)}…</td>
+                          <td className="py-5 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                          <td className="py-5 text-sm font-bold text-gray-700">{order.quantity}</td>
+                          <td className="py-5 text-right font-black text-gray-900">${order.total_price?.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === 'users' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight">Clients & Crédits</h2>
+              <p className="text-gray-400 text-sm mb-10">Rechercher un utilisateur et ajuster son solde.</p>
+              <div className="space-y-6 max-w-md">
+                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Client</label><input type="email" value={userEmail} onChange={e => setUserEmail(e.target.value)} placeholder="client@email.com" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant à Ajouter ($)</label><input type="number" min="0" step="0.01" value={amountToAdd} onChange={e => setAmountToAdd(parseFloat(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                <button onClick={handleUpdateBalance} className="bg-primary text-white px-10 py-5 rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all flex items-center gap-2"><CircleDollarSign size={18} /> Créditer le Compte</button>
               </div>
             </div>
           )}
@@ -761,18 +803,46 @@ const PaymentView = ({ cartTotal, navigate, clearCart, profile, session }) => {
 
 const AuthView = ({ navigate }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate('dashboard');
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        alert("Inscription réussie ! Vérifiez votre email pour confirmer votre compte.");
+        navigate('home');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-20 px-6 font-sans">
       <div className="w-full max-w-md bg-white p-12 rounded-[3rem] shadow-soft border border-gray-100">
         <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">{isLogin ? 'Bon Retour' : 'Bienvenue'}</h2>
         <p className="text-gray-400 text-sm mb-10 leading-relaxed">Veuillez entrer vos accès pour continuer.</p>
-        <form className="space-y-6">
-          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label><input type="email" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="name@email.com" /></div>
-          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="••••••••" /></div>
-          <button className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-black/10">{isLogin ? 'Se Connecter' : 'S\'inscrire'}</button>
+        {error && <div className="bg-red-50 text-red-600 text-sm font-medium p-4 rounded-2xl mb-6 border border-red-100">{error}</div>}
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="name@email.com" /></div>
+          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="••••••••" /></div>
+          <button type="submit" disabled={loading} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-black/10 disabled:opacity-60 disabled:cursor-not-allowed">{loading ? 'Chargement...' : isLogin ? 'Se Connecter' : "S'inscrire"}</button>
           <button type="button" onClick={async () => { if (!supabase) { alert("Erreur : Supabase non configuré."); return; } const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); if (error) alert("Erreur : " + error.message); }} className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all">Google</button>
         </form>
-        <button onClick={() => setIsLogin(!isLogin)} className="w-full mt-8 text-center text-sm font-bold text-gray-400 hover:text-primary transition-colors">{isLogin ? "Créer un compte" : "Déjà membre ?"}</button>
+        <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="w-full mt-8 text-center text-sm font-bold text-gray-400 hover:text-primary transition-colors">{isLogin ? "Créer un compte" : "Déjà membre ?"}</button>
       </div>
     </div>
   );
