@@ -1,6 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2 } from 'lucide-react';
 import { supabase } from './supabaseClient';
+
+// ==========================================
+// COMPOSANTS LOGOS SVG
+// ==========================================
+
+const YouTubeLogo = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" fill="#FF0000"/>
+    <path d="m9.66 15.14 5.92-3.39-5.92-3.39v6.78z" fill="#fff"/>
+  </svg>
+);
+
+const GmailLogo = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" fill="#F2F2F2"/>
+    <path d="M22 6v12c0 1.1-.9 2-2 2h-2V8l-6 4-6-4v12H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h1.2L12 10.5 18.8 4H20c1.1 0 2 .9 2 2z" fill="#EA4335"/>
+    <path d="M22 6v2l-10 6.5L2 8V6c0-1.1.9-2 2-2h1.2L12 10.5 18.8 4H20c1.1 0 2 .9 2 2z" fill="#C5221F"/>
+    <path d="M2 18V6c0-1.1.9-2 2-2h1.2L12 10.5 18.8 4H20c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2h-2V8l-6 4-6-4v12H4c-1.1 0-2-.9-2-2z" fill="#EA4335"/>
+  </svg>
+);
 
 // ==========================================
 // MOCK DATA: CATALOGUE PRODUITS
@@ -206,8 +226,8 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
 
           <div className="relative h-[400px] hidden lg:block">
             <div className="absolute top-[10%] right-[10%] bg-white p-4 rounded-xl shadow-soft flex items-center gap-4 animate-float-slow z-10">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <PlayCircle className="text-red-600" size={24} />
+              <div className="w-12 h-12 flex items-center justify-center">
+                <YouTubeLogo size={40} />
               </div>
               <div>
                 <div className="text-sm font-bold text-gray-900">Chaîne YT 2014</div>
@@ -215,8 +235,8 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
               </div>
             </div>
             <div className="absolute top-[40%] left-[10%] bg-white p-4 rounded-xl shadow-soft flex items-center gap-4 animate-float-medium z-20">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <span className="text-red-600 font-bold text-xl">G</span>
+              <div className="w-12 h-12 flex items-center justify-center">
+                <GmailLogo size={40} />
               </div>
               <div>
                 <div className="text-sm font-bold text-gray-900">Gmail US 2010</div>
@@ -301,8 +321,10 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
               {filteredProducts.map(product => (
                 <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col h-full hover:shadow-md transition-shadow duration-300 group cursor-pointer" onClick={() => handleProductClick(product)}>
                   <div className="bg-gray-50 rounded-lg p-4 mb-4 flex items-center justify-center aspect-video relative overflow-hidden">
-                    <div className="font-sans font-bold text-gray-300 text-lg text-center px-4 group-hover:scale-105 transition-transform duration-500">
-                      {product.category.toUpperCase().replace('_', ' ')}
+                    <div className="group-hover:scale-110 transition-transform duration-500">
+                      {product.category.includes('youtube') ? <YouTubeLogo size={60} /> : 
+                       product.category === 'email' ? <GmailLogo size={60} /> : 
+                       <Share2 size={60} className="text-gray-300" />}
                     </div>
                   </div>
                   <div className="flex-grow">
@@ -364,16 +386,11 @@ const ProductView = ({ product, addToCart, navigate }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
         {/* Product Image Placeholder */}
         <div className="bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-center p-12 aspect-[4/3] relative overflow-hidden group">
-          {product.category.includes('youtube') ? (
-            <div className="flex items-center justify-center gap-4 opacity-80 group-hover:scale-105 transition-transform duration-500">
-              <PlayCircle size={80} className="text-red-600" fill="currentColor" />
-              <span className="text-5xl font-bold tracking-tighter text-gray-900">YouTube</span>
-            </div>
-          ) : (
-            <div className="text-4xl font-bold text-gray-300">
-              {categoryName}
-            </div>
-          )}
+          <div className="group-hover:scale-105 transition-transform duration-500">
+            {product.category.includes('youtube') ? <YouTubeLogo size={120} /> : 
+             product.category === 'email' ? <GmailLogo size={120} /> : 
+             <Share2 size={120} className="text-gray-300" />}
+          </div>
         </div>
 
         {/* Product Details */}
@@ -681,7 +698,9 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
               <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center font-bold text-gray-300 text-xs text-center">
-                    {item.category.split('_')[0].toUpperCase()}
+                    {item.category.includes('youtube') ? <YouTubeLogo size={32} /> : 
+                     item.category === 'email' ? <GmailLogo size={32} /> : 
+                     <Share2 size={32} className="text-gray-300" />}
                   </div>
                   <div>
                     <h4 className="font-bold text-gray-900 text-sm">{item.name}</h4>
