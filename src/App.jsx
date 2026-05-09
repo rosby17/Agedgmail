@@ -9,44 +9,44 @@ import { supabase } from './supabaseClient';
 const CATEGORIES = [
   { id: 'all', name: 'Tous les produits' },
   { id: 'email', name: 'Email (Gmail)' },
-  { id: 'youtube_aged', name: 'Aged Youtube Channel' },
-  { id: 'youtube_live', name: 'Livestream Channel' },
-  { id: 'youtube_cpa', name: 'CPA Channel' },
+  { id: 'youtube_aged', name: 'Chaînes Youtube Anciennes' },
+  { id: 'youtube_live', name: 'Chaînes Livestream' },
+  { id: 'youtube_cpa', name: 'Chaînes Spéciales CPA' },
   { id: 'social', name: 'Facebook / Twitter / Insta' },
 ];
 
 const PRODUCTS = [
   // YouTube Aged
-  { id: 1, name: 'Youtube channel 2014 – 2019 without video', category: 'youtube_aged', price: 6.19, stock: true },
-  { id: 2, name: 'Youtube channel 2022 – 2025 without video', category: 'youtube_aged', price: 5.49, stock: true },
-  { id: 3, name: 'Youtube channel 2018 – 2021 without video', category: 'youtube_aged', price: 5.99, stock: true },
-  { id: 4, name: 'Youtube channel 2018 – 2020 with video', category: 'youtube_aged', price: 6.80, stock: true },
-  { id: 5, name: 'Youtube channel 2021 – 2024 with video', category: 'youtube_aged', price: 6.15, stock: true },
+  { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19, stock: true },
+  { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49, stock: true },
+  { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99, stock: true },
+  { id: 4, name: 'Chaîne Youtube 2018 – 2020 avec vidéo', category: 'youtube_aged', price: 6.80, stock: true },
+  { id: 5, name: 'Chaîne Youtube 2021 – 2024 avec vidéo', category: 'youtube_aged', price: 6.15, stock: true },
   
   // YouTube Livestream
-  { id: 6, name: 'Livestream – 2006~2009 – 1k Subs + 1K+ Views', category: 'youtube_live', price: 49.80, stock: true },
-  { id: 7, name: 'Livestream – 2006~2009 – 1k Subs and new videos', category: 'youtube_live', price: 39.00, stock: true },
+  { id: 6, name: 'Livestream – 2006~2009 – 1k Abonnés + 1K+ Vues', category: 'youtube_live', price: 49.80, stock: true },
+  { id: 7, name: 'Livestream – 2006~2009 – 1k Abonnés et nouvelles vidéos', category: 'youtube_live', price: 39.00, stock: true },
 
   // YouTube CPA
-  { id: 8, name: 'Special Channel 2011-202x with ORGANIC 10k to 50k views', category: 'youtube_cpa', price: 19.80, stock: true },
-  { id: 9, name: 'Special Channel 2006-2010 with ORGANIC 10k to 50k views', category: 'youtube_cpa', price: 25.80, stock: true },
-  { id: 10, name: 'Special Channel 2006-2010 with ORGANIC 50k to 100k views', category: 'youtube_cpa', price: 32.88, stock: true },
-  { id: 11, name: 'Special Channel 2006-2010 with ORGANIC 100k to 300k views', category: 'youtube_cpa', price: 44.88, stock: true },
-  { id: 12, name: 'Special Channel 2006-2010 with ORGANIC 300k to 500k views', category: 'youtube_cpa', price: 68.88, stock: true },
-  { id: 13, name: 'Special Channel 2011-202x with ORGANIC 1M views+', category: 'youtube_cpa', price: 296.88, stock: true },
-  { id: 14, name: 'Special Channel 2011-202x with ORGANIC 300k to 500k views', category: 'youtube_cpa', price: 62.88, stock: true },
-  { id: 15, name: 'Special Channel 2011-202x with ORGANIC 100k to 300k views', category: 'youtube_cpa', price: 38.88, stock: true },
-  { id: 16, name: 'Special Channel 2011-202x with ORGANIC 50k to 100k views', category: 'youtube_cpa', price: 26.80, stock: true },
-  { id: 17, name: 'Special Channel 2006-2010 with ORGANIC 1M views+', category: 'youtube_cpa', price: 302.88, stock: true },
-  { id: 18, name: 'Special Channel 2006-2010 with ORGANIC 500k to 1M views', category: 'youtube_cpa', price: 146.88, stock: true },
+  { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80, stock: true },
+  { id: 9, name: 'Chaîne Spéciale 2006-2010 avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 25.80, stock: true },
+  { id: 10, name: 'Chaîne Spéciale 2006-2010 avec 50k à 100k vues ORGANIQUES', category: 'youtube_cpa', price: 32.88, stock: true },
+  { id: 11, name: 'Chaîne Spéciale 2006-2010 avec 100k à 300k vues ORGANIQUES', category: 'youtube_cpa', price: 44.88, stock: true },
+  { id: 12, name: 'Chaîne Spéciale 2006-2010 avec 300k à 500k vues ORGANIQUES', category: 'youtube_cpa', price: 68.88, stock: true },
+  { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88, stock: true },
+  { id: 14, name: 'Chaîne Spéciale 2011-202x avec 300k à 500k vues ORGANIQUES', category: 'youtube_cpa', price: 62.88, stock: true },
+  { id: 15, name: 'Chaîne Spéciale 2011-202x avec 100k à 300k vues ORGANIQUES', category: 'youtube_cpa', price: 38.88, stock: true },
+  { id: 16, name: 'Chaîne Spéciale 2011-202x avec 50k à 100k vues ORGANIQUES', category: 'youtube_cpa', price: 26.80, stock: true },
+  { id: 17, name: 'Chaîne Spéciale 2006-2010 avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 302.88, stock: true },
+  { id: 18, name: 'Chaîne Spéciale 2006-2010 avec 500k à 1M vues ORGANIQUES', category: 'youtube_cpa', price: 146.88, stock: true },
 
   // Email & Social
-  { id: 19, name: 'Age Gmail US 2010 – 2025', category: 'email', price: 15.00, stock: true },
-  { id: 20, name: 'Age Gmail Random Country 2020 – 2025', category: 'email', price: 5.00, stock: true },
-  { id: 21, name: 'Old Discord Account 2017-2019', category: 'social', price: 25.00, stock: true },
-  { id: 22, name: 'Instagram 2010 – 2024 | FARM | 400 – 1K Followers', category: 'social', price: 30.00, stock: true },
-  { id: 23, name: 'Aged Twitter (X) Random Country (2007 – 2020)', category: 'social', price: 40.00, stock: true },
-  { id: 24, name: 'Aged Facebook US (30+ Friends)', category: 'social', price: 35.00, stock: true },
+  { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 15.00, stock: true },
+  { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 5.00, stock: true },
+  { id: 21, name: 'Compte Discord Ancien 2017-2019', category: 'social', price: 25.00, stock: true },
+  { id: 22, name: 'Instagram 2010 – 2024 | FARM | 400 – 1K Abonnés', category: 'social', price: 30.00, stock: true },
+  { id: 23, name: 'Twitter (X) Pays Aléatoire (2007 – 2020)', category: 'social', price: 40.00, stock: true },
+  { id: 24, name: 'Facebook US Ancien (30+ Amis)', category: 'social', price: 35.00, stock: true },
 ];
 
 // ==========================================
@@ -66,11 +66,11 @@ const Navbar = ({ cartTotal, cartItemCount, navigate, session }) => {
       {/* Top Bar */}
       <div className="bg-dark text-white text-xs py-2 px-6 flex justify-between items-center">
         <div className="flex gap-4">
-          <button onClick={() => navigate('home')} className="hover:text-primary transition-colors">Home</button>
-          <a href="#" className="hover:text-primary transition-colors">Service</a>
-          <a href="#" className="hover:text-primary transition-colors">Resources</a>
+          <button onClick={() => navigate('home')} className="hover:text-primary transition-colors">Accueil</button>
+          <a href="#" className="hover:text-primary transition-colors">Services</a>
+          <a href="#" className="hover:text-primary transition-colors">Ressources</a>
           <a href="#" className="hover:text-primary transition-colors">FAQ</a>
-          <a href="#" className="hover:text-primary transition-colors">Contact Us</a>
+          <a href="#" className="hover:text-primary transition-colors">Contactez-nous</a>
         </div>
         <div>
           <a href="mailto:support@agedgmailyt.com" className="hover:text-primary transition-colors">support@agedgmailyt.com</a>
@@ -88,7 +88,7 @@ const Navbar = ({ cartTotal, cartItemCount, navigate, session }) => {
           <Search size={18} className="text-gray-400" />
           <input 
             type="text" 
-            placeholder="Search for..." 
+            placeholder="Rechercher un produit..." 
             className="bg-transparent border-none outline-none ml-2 w-full text-sm font-sans"
           />
         </div>
@@ -102,13 +102,13 @@ const Navbar = ({ cartTotal, cartItemCount, navigate, session }) => {
               </span>
               <button onClick={handleLogout} className="flex items-center gap-2 text-sm font-sans font-medium text-gray-700 hover:text-red-500 transition-colors">
                 <LogOut size={18} />
-                <span className="hidden md:inline">Logout</span>
+                <span className="hidden md:inline">Déconnexion</span>
               </button>
             </div>
           ) : (
             <button onClick={() => navigate('auth')} className="flex items-center gap-2 text-sm font-sans font-medium text-gray-700 hover:text-primary transition-colors">
               <User size={18} />
-              <span className="hidden md:inline">Login / Register</span>
+              <span className="hidden md:inline">Connexion / Inscription</span>
             </button>
           )}
           
@@ -123,7 +123,7 @@ const Navbar = ({ cartTotal, cartItemCount, navigate, session }) => {
                 </span>
               )}
             </div>
-            <span className="hidden md:inline font-mono">Cart / ${cartTotal.toFixed(2)}</span>
+            <span className="hidden md:inline font-mono">Panier / ${cartTotal.toFixed(2)}</span>
           </button>
         </div>
       </div>
@@ -139,27 +139,27 @@ const Footer = () => (
           AgedGmail<span className="text-primary">YT</span>
         </div>
         <p className="text-gray-500 text-sm max-w-xs leading-relaxed">
-          High Quality Social Media Accounts and Services. Secure payments and instant delivery.
+          Comptes et services de médias sociaux de haute qualité. Paiements sécurisés et livraison instantanée.
         </p>
       </div>
       <div>
-        <h4 className="font-bold text-gray-900 mb-4">Quick Links</h4>
+        <h4 className="font-bold text-gray-900 mb-4">Liens Rapides</h4>
         <ul className="space-y-3 text-sm text-gray-500">
-          <li><a href="#" className="hover:text-primary transition-colors">Account</a></li>
-          <li><a href="#" className="hover:text-primary transition-colors">Service</a></li>
-          <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+          <li><a href="#" className="hover:text-primary transition-colors">Mon Compte</a></li>
+          <li><a href="#" className="hover:text-primary transition-colors">Services</a></li>
+          <li><a href="#" className="hover:text-primary transition-colors">Politique de Confidentialité</a></li>
         </ul>
       </div>
       <div>
         <h4 className="font-bold text-gray-900 mb-4">Contact</h4>
         <ul className="space-y-3 text-sm text-gray-500">
           <li className="flex items-center gap-2"><Mail size={16} /> support@agedgmailyt.com</li>
-          <li className="flex items-center gap-2"><CheckCircle size={16} className="text-primary" /> Delivered within 24h</li>
+          <li className="flex items-center gap-2"><CheckCircle size={16} className="text-primary" /> Livré sous 24h</li>
         </ul>
       </div>
     </div>
     <div className="max-w-7xl mx-auto border-t border-gray-100 pt-8 text-center text-sm text-gray-400">
-      © 2026 AgedGmailYT. All rights reserved.
+      © 2026 AgedGmailYT. Tous droits réservés.
     </div>
   </footer>
 );
@@ -241,10 +241,10 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
       <div className="bg-white border-b border-gray-100 py-8 px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { icon: <CheckCircle size={24} className="text-primary" />, title: 'High Quality', desc: 'Accounts and services are good as described.' },
-            { icon: <Headphones size={24} className="text-primary" />, title: 'Reliable Support', desc: 'Feel free to contact us.' },
-            { icon: <Mail size={24} className="text-primary" />, title: 'Mail Delivery', desc: 'Delivered to your inbox within 24 hours.' },
-            { icon: <ShieldAlert size={24} className="text-primary" />, title: 'Guarantee Policy', desc: 'Refund/replacement during warranty.' },
+            { icon: <CheckCircle size={24} className="text-primary" />, title: 'Haute Qualité', desc: 'Les comptes et services sont conformes aux descriptions.' },
+            { icon: <Headphones size={24} className="text-primary" />, title: 'Support Fiable', desc: 'N\'hésitez pas à nous contacter pour toute question.' },
+            { icon: <Mail size={24} className="text-primary" />, title: 'Livraison Mail', desc: 'Livré dans votre boîte de réception sous 24 heures.' },
+            { icon: <ShieldAlert size={24} className="text-primary" />, title: 'Garantie Totale', desc: 'Remboursement ou remplacement durant la garantie.' },
           ].map((item, idx) => (
             <div key={idx} className="flex gap-4 items-start">
               <div className="mt-1">{item.icon}</div>
@@ -263,7 +263,7 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
         <div className="w-full lg:w-64 flex-shrink-0">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-32">
             <h3 className="font-sans font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
-              <Filter size={18} /> Categories
+              <Filter size={18} /> Catégories
             </h3>
             <ul className="space-y-1">
               {CATEGORIES.map(cat => (
@@ -292,7 +292,7 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
               {CATEGORIES.find(c => c.id === activeCategory)?.name}
             </h2>
             <span className="text-sm text-gray-500 bg-white px-3 py-1 border border-gray-100 rounded-full">
-              Showing {filteredProducts.length} results
+              Affichage de {filteredProducts.length} résultats
             </span>
           </div>
 
@@ -307,7 +307,7 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
                   </div>
                   <div className="flex-grow">
                     <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded">
-                      {CATEGORIES.find(c => c.id === product.category)?.name || 'Account'}
+                      {CATEGORIES.find(c => c.id === product.category)?.name || 'Compte'}
                     </span>
                     <h3 className="font-sans font-bold text-gray-900 mt-3 text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
                       {product.name}
@@ -321,7 +321,7 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
                       onClick={(e) => { e.stopPropagation(); addToCart(product, 1); }}
                       className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-xs font-sans font-bold hover:bg-primary hover:text-white transition-colors"
                     >
-                      Add to Cart
+                      Ajouter
                     </button>
                   </div>
                 </div>
@@ -329,7 +329,7 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-              <p className="text-gray-500">No products found in this category.</p>
+              <p className="text-gray-500">Aucun produit trouvé dans cette catégorie.</p>
             </div>
           )}
         </div>
@@ -340,7 +340,7 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
 
 const ProductView = ({ product, addToCart, navigate }) => {
   const [quantity, setQuantity] = useState(1);
-  const categoryName = CATEGORIES.find(c => c.id === product.category)?.name || 'Account';
+  const categoryName = CATEGORIES.find(c => c.id === product.category)?.name || 'Compte';
 
   const handleDecrease = () => {
     if (quantity > 1) setQuantity(quantity - 1);
@@ -354,11 +354,11 @@ const ProductView = ({ product, addToCart, navigate }) => {
     <div className="max-w-7xl mx-auto px-6 py-12">
       {/* Breadcrumb */}
       <nav className="flex text-sm text-gray-500 mb-8 uppercase tracking-wider font-bold text-[10px]">
-        <button onClick={() => navigate('home')} className="hover:text-primary transition-colors">HOME</button>
+        <button onClick={() => navigate('home')} className="hover:text-primary transition-colors">ACCUEIL</button>
         <span className="mx-2">/</span>
-        <span>{categoryName}</span>
+        <span>{categoryName.toUpperCase()}</span>
         <span className="mx-2">/</span>
-        <span className="text-gray-900">{product.name}</span>
+        <span className="text-gray-900">{product.name.toUpperCase()}</span>
       </nav>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
@@ -386,21 +386,21 @@ const ProductView = ({ product, addToCart, navigate }) => {
           </div>
 
           <div className="mb-8">
-            <h4 className="font-bold border-b border-gray-200 pb-2 mb-4 text-sm tracking-wider uppercase">Information</h4>
+            <h4 className="font-bold border-b border-gray-200 pb-2 mb-4 text-sm tracking-wider uppercase">Informations</h4>
             <ul className="space-y-3 text-sm text-gray-600 list-disc list-inside marker:text-gray-300">
               {product.category.includes('youtube') ? (
                 <>
-                  <li>Age/Year: Random</li>
-                  <li>Phone Verified: Random</li>
-                  <li>Video: 0</li>
-                  <li>Account Format: GMAIL | PASSWORD | RECOVERYMAIL</li>
-                  <li>Log in by option "Confirm recovery email address"</li>
+                  <li>Âge/Année : Aléatoire</li>
+                  <li>Téléphone vérifié : Oui</li>
+                  <li>Nombre de vidéos : 0</li>
+                  <li>Format : GMAIL | MOT DE PASSE | MAIL DE RÉCUPÉRATION</li>
+                  <li>Connexion via l'option "Confirmer l'e-mail de récupération"</li>
                 </>
               ) : (
                 <>
-                  <li>Format: STANDARD FORMAT</li>
-                  <li>Delivered instantly or within 24h max</li>
-                  <li>Safe & Secure Accounts</li>
+                  <li>Format : FORMAT STANDARD</li>
+                  <li>Livré instantanément ou sous 24h max</li>
+                  <li>Comptes sûrs et sécurisés</li>
                 </>
               )}
             </ul>
@@ -430,13 +430,13 @@ const ProductView = ({ product, addToCart, navigate }) => {
               onClick={() => addToCart(product, quantity)}
               className="btn-primary flex-grow text-center justify-center py-3.5"
             >
-              ADD TO CART
+              AJOUTER AU PANIER
             </button>
           </div>
 
           <div className="border-t border-gray-100 pt-6 text-sm text-gray-500 space-y-2">
-            <div><span className="font-bold text-gray-900 mr-2">SKU:</span> agedy-{product.id}</div>
-            <div><span className="font-bold text-gray-900 mr-2">Categories:</span> <span className="text-primary">{categoryName}</span></div>
+            <div><span className="font-bold text-gray-900 mr-2">SKU :</span> agedy-{product.id}</div>
+            <div><span className="font-bold text-gray-900 mr-2">Catégories :</span> <span className="text-primary">{categoryName}</span></div>
           </div>
         </div>
       </div>
@@ -448,18 +448,18 @@ const ProductView = ({ product, addToCart, navigate }) => {
             Description
           </button>
           <button className="pb-4 text-gray-500 font-bold text-sm tracking-wider uppercase hover:text-gray-900 transition-colors">
-            Reviews (0)
+            Avis (0)
           </button>
         </div>
         
         <div>
-          <h4 className="font-bold uppercase tracking-wider text-sm mb-4">Note</h4>
+          <h4 className="font-bold uppercase tracking-wider text-sm mb-4">Note Importante</h4>
           <ul className="space-y-4 text-sm text-gray-600 list-disc list-inside marker:text-gray-400 leading-relaxed max-w-4xl">
-            <li>Channels are random from years ago. You can't choose which channel or year you want specifically.</li>
-            <li>Channels have been created several years ago. They will undoubtedly help you gain more exposure, improve rankings, and drive traffic.</li>
-            <li>Good for any Youtube method.</li>
-            <li>If this is your first time buying, please start with a small quantity to test.</li>
-            <li>Always change the password, recovery email, device activity, phone number, and enable two-step verification to protect your accounts. <strong>But only after at least 48 hours from your 1st log in.</strong></li>
+            <li>Les chaînes sont sélectionnées aléatoirement parmi les années disponibles.</li>
+            <li>Ces chaînes ont été créées il y a plusieurs années, ce qui aide grandement pour le référencement et la visibilité.</li>
+            <li>Idéal pour toutes les méthodes de YouTube Automation.</li>
+            <li>S'il s'agit de votre premier achat, nous vous conseillons de commencer par une petite quantité pour tester.</li>
+            <li>Changez toujours le mot de passe et le mail de récupération après l'achat. <strong>Mais attendez au moins 48 heures après votre première connexion.</strong></li>
           </ul>
         </div>
       </div>
@@ -479,7 +479,7 @@ const AuthView = ({ navigate }) => {
   const handleAuth = async (e) => {
     e.preventDefault();
     if (!supabase) {
-      setErrorMsg("Veuillez configurer vos clés Supabase dans .env.local");
+      setErrorMsg("Veuillez configurer vos clés Supabase.");
       return;
     }
     
@@ -501,7 +501,7 @@ const AuthView = ({ navigate }) => {
           }
         });
         if (error) throw error;
-        setSuccessMsg("Vérifiez vos emails pour le lien de confirmation !");
+        setSuccessMsg("Vérifiez vos e-mails pour confirmer votre compte !");
       }
     } catch (error) {
       setErrorMsg(error.message);
@@ -512,7 +512,7 @@ const AuthView = ({ navigate }) => {
 
   const handleGoogleLogin = async () => {
     if (!supabase) {
-      setErrorMsg("Veuillez configurer vos clés Supabase dans .env.local");
+      setErrorMsg("Veuillez configurer vos clés Supabase.");
       return;
     }
     try {
@@ -532,14 +532,14 @@ const AuthView = ({ navigate }) => {
     <div className="min-h-[80vh] flex items-center justify-center py-20 px-6">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-soft border border-gray-100">
         <button onClick={() => navigate('home')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary mb-8 transition-colors">
-          <ArrowLeft size={16} /> Back to store
+          <ArrowLeft size={16} /> Retour à la boutique
         </button>
         
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          {isLogin ? 'Welcome Back' : 'Create Account'}
+          {isLogin ? 'Bon retour !' : 'Créer un compte'}
         </h2>
         <p className="text-gray-500 text-sm mb-6">
-          {isLogin ? 'Sign in to access your purchased accounts.' : 'Join AgedSMM to start boosting your presence.'}
+          {isLogin ? 'Connectez-vous pour accéder à vos achats.' : 'Rejoignez-nous pour booster votre présence digitale.'}
         </p>
 
         {errorMsg && (
@@ -557,30 +557,30 @@ const AuthView = ({ navigate }) => {
         <form className="space-y-4" onSubmit={handleAuth}>
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nom Complet</label>
               <input 
                 type="text" 
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
-                placeholder="John Doe" 
+                placeholder="Ex: Jean Dupont" 
               />
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Adresse E-mail</label>
             <input 
               type="email" 
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
-              placeholder="you@example.com" 
+              placeholder="votre@email.com" 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
             <input 
               type="password" 
               required
@@ -593,16 +593,16 @@ const AuthView = ({ navigate }) => {
 
           {isLogin && (
             <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-gray-600">
+              <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" className="rounded text-primary focus:ring-primary border-gray-300" />
-                Remember me
+                Se souvenir de moi
               </label>
-              <a href="#" className="text-primary hover:underline">Lost password?</a>
+              <a href="#" className="text-primary hover:underline">Mot de passe oublié ?</a>
             </div>
           )}
 
           <button type="submit" disabled={loading} className="w-full btn-primary mt-6 disabled:opacity-70 disabled:cursor-not-allowed">
-            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+            {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'S\'inscrire')}
           </button>
 
           <div className="relative my-6">
@@ -610,7 +610,7 @@ const AuthView = ({ navigate }) => {
               <div className="w-full border-t border-gray-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              <span className="px-2 bg-white text-gray-500">Ou continuer avec</span>
             </div>
           </div>
 
@@ -633,7 +633,7 @@ const AuthView = ({ navigate }) => {
                 fill="#FBBC05"
               />
               <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 fill="#EA4335"
               />
             </svg>
@@ -643,12 +643,12 @@ const AuthView = ({ navigate }) => {
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
           <p className="text-sm text-gray-600">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}
+            {isLogin ? "Vous n'avez pas de compte ?" : "Déjà un compte ?"}
             <button 
               onClick={() => { setIsLogin(!isLogin); setErrorMsg(null); setSuccessMsg(null); }} 
               className="ml-2 text-primary font-bold hover:underline"
             >
-              {isLogin ? 'Sign up' : 'Sign in'}
+              {isLogin ? 'S\'inscrire' : 'Se connecter'}
             </button>
           </p>
         </div>
@@ -661,17 +661,17 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
   return (
     <div className="min-h-[80vh] max-w-4xl mx-auto py-16 px-6">
       <button onClick={() => navigate('home')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary mb-8 transition-colors">
-        <ArrowLeft size={16} /> Continue Shopping
+        <ArrowLeft size={16} /> Continuer mes achats
       </button>
       
-      <h2 className="text-3xl font-bold text-gray-900 mb-8">Your Cart</h2>
+      <h2 className="text-3xl font-bold text-gray-900 mb-8">Votre Panier</h2>
 
       {cart.length === 0 ? (
         <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center">
           <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500 mb-6">Your cart is currently empty.</p>
+          <p className="text-gray-500 mb-6">Votre panier est actuellement vide.</p>
           <button onClick={() => navigate('home')} className="btn-primary inline-flex">
-            Return to shop
+            Retourner à la boutique
           </button>
         </div>
       ) : (
@@ -721,13 +721,13 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-            <h3 className="font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Order Summary</h3>
+            <h3 className="font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Résumé de la commande</h3>
             <div className="flex justify-between mb-4 text-gray-600">
-              <span>Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
+              <span>Sous-total ({cart.reduce((sum, item) => sum + item.quantity, 0)} articles)</span>
               <span>${cartTotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between mb-6 text-gray-600">
-              <span>Crypto Discount</span>
+              <span>Remise Crypto</span>
               <span className="text-primary">-$0.00</span>
             </div>
             <div className="flex justify-between font-bold text-xl text-gray-900 mb-8 pt-4 border-t border-gray-100">
@@ -735,10 +735,10 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
               <span>${cartTotal.toFixed(2)}</span>
             </div>
             <button className="w-full btn-primary bg-gray-900 hover:bg-black mb-3">
-              Checkout with Crypto
+              Payer en Crypto
             </button>
             <p className="text-xs text-gray-500 text-center flex items-center justify-center gap-2">
-              <ShieldAlert size={12} /> Secure encrypted payment
+              <ShieldAlert size={12} /> Paiement sécurisé et chiffré
             </p>
           </div>
         </div>
@@ -778,7 +778,6 @@ function App() {
     ? PRODUCTS 
     : PRODUCTS.filter(p => p.category === activeCategory);
 
-  // Calcule le total en multipliant le prix par la quantité
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
 
@@ -831,8 +830,6 @@ function App() {
             product={selectedProduct} 
             addToCart={(p, q) => {
               addToCart(p, q);
-              // Optionnel : naviguer vers le panier automatiquement
-              // navigate('cart'); 
             }}
             navigate={navigate} 
           />
