@@ -190,26 +190,45 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
         </div>
         <div className="flex-grow">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white group cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
-                <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden p-8 border border-gray-100 group-hover:border-primary/30 transition-all duration-500">
-                  <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
-                    {product.category.includes('youtube') ? (
-                      <YouTubeLogo size={50} className="w-full" />
-                    ) : product.category === 'email' ? (
-                      <GmailLogo size={50} className="w-full" />
-                    ) : (
-                      <Share2 size={50} className="text-gray-300" />
-                    )}
+            {filteredProducts.map(product => {
+              const [localQty, setLocalQty] = useState(1);
+              return (
+                <div key={product.id} className="bg-white group">
+                  <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative">
+                    <div className="w-full h-full p-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
+                      {product.category.includes('youtube') ? (
+                        <YouTubeLogo size={55} className="w-full h-full object-contain" />
+                      ) : product.category === 'email' ? (
+                        <GmailLogo size={55} className="w-full h-full object-contain" />
+                      ) : (
+                        <Share2 size={50} className="text-gray-300" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-4 px-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
+                      <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>{product.name}</h3>
+                    </div>
+                    <div className="text-xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</div>
+                    
+                    <div className="flex items-center gap-3 pt-2">
+                      <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
+                        <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Minus size={14} /></button>
+                        <div className="w-8 text-center text-xs font-bold">{localQty}</div>
+                        <button onClick={() => setLocalQty(localQty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Plus size={14} /></button>
+                      </div>
+                      <button 
+                        onClick={() => addToCart(product, localQty)} 
+                        className="flex-grow bg-gray-900 text-white h-10 rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-primary transition-all shadow-lg shadow-black/5"
+                      >
+                        Ajouter
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2 px-2">
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
-                  <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors min-h-[2.5rem]">{product.name}</h3>
-                  <div className="text-lg font-black text-gray-900 font-mono pt-2">${product.price.toFixed(2)}</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
