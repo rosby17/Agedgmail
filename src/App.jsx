@@ -53,7 +53,7 @@ const getProductDetails = (product) => {
   if (product.category.includes('youtube')) {
     return {
       info: `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Abonnés : Aléatoire | Contenu : ${product.name.includes('sans') ? 'Propre' : 'Vidéos incluses'}`,
-      note: "Parfait pour l'automation YT. Évitez les VPN gratuits pour la première connexion. Accès via Gmail inclus.",
+      note: "Parfait pour l'automation YT. Évitez les VPN gratuits, privilégiez les proxys résidentiels pour travailler avec. Accès via Gmail inclus.",
       terms: commonTerms,
       refund: refundPolicy
     };
