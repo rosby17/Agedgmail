@@ -7,30 +7,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#13B87A', // The emerald green from the image
-        primaryDark: '#0E9B66', // Darker shade for hover
-        primaryLight: '#E6F8F0', // Light background for badges
-        background: '#FAFAFA',
-        dark: '#1F2937', // gray-800
-        text: '#6B7280', // gray-500
+        primary: "#13B87A",
+        primaryDark: "#0E8E5D",
+        dark: "#121212",
+        background: "#FFFFFF",
       },
       fontFamily: {
-        sans: ['"Space Grotesk"', 'sans-serif'],
-        serif: ['"DM Serif Display"', 'serif'],
-        mono: ['"Space Mono"', 'monospace'],
+        sans: ["'Plus Jakarta Sans'", "Inter", "sans-serif"],
+        mono: ["'IBM Plex Mono'", "monospace"],
       },
       boxShadow: {
-        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+        'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
       },
       animation: {
         'float-slow': 'float 6s ease-in-out infinite',
-        'float-medium': 'float 5s ease-in-out infinite',
-        'float-fast': 'float 4s ease-in-out infinite',
+        'float-medium': 'float 4s ease-in-out infinite',
+        'float-fast': 'float 3s ease-in-out infinite',
       },
       keyframes: {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-15px)' },
+          '50%': { transform: 'translateY(-20px)' },
         }
       }
     },
