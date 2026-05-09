@@ -28,6 +28,8 @@ const GmailLogo = ({ className = "" }) => (
 
 const CATEGORIES = [
   { id: 'all', name: 'Tous les produits' },
+  { id: 'youtube_monetized', name: 'Chaînes Monétisées' },
+  { id: 'youtube_not_monetized', name: 'Chaînes Non-Monétisées' },
   { id: 'email', name: 'Email (Gmail)' },
   { id: 'youtube_aged', name: 'Chaînes Youtube Anciennes' },
   { id: 'youtube_cpa', name: 'Chaînes Spéciales CPA' },
@@ -43,35 +45,36 @@ const PRICE_RANGES = [
 
 const getProductDetails = (product) => {
   const commonTerms = "Veuillez lire les spécifications avant d'acheter. Vous êtes responsable de toutes les actions sur le compte. Utilisez des IP résidentielles fraîches. Changez les accès après 48h seulement.";
+  const isMonetized = product.category === 'youtube_monetized';
+  
   return {
     info: product.category === 'email' 
       ? "Âge : 2017 - 2023 | Pays : US | Format : Gmail/Pass/Récup" 
-      : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Abonnés : Aléatoire | Contenu : Propre | Statut : Non-Monétisé`,
+      : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${isMonetized ? '✅ Monétisée' : '❌ Non-Monétisée'} | Contenu : Propre`,
     note: product.category.includes('youtube')
-      ? "Parfait pour l'automation YT. Évitez les VPN gratuits, privilégiez les proxys résidentiels. Accès Gmail inclus."
-      : "Gmail aléatoire. Connexion via 'Email de récupération'. Changez les accès après 48h.",
+      ? `Parfait pour le business YT. ${isMonetized ? 'Générez des revenus dès le premier upload.' : 'Éligible pour une future monétisation.'} Privilégiez les proxys résidentiels.`
+      : "Gmail aléatoire. Connexion via 'Email de récupération'.",
     terms: commonTerms,
     refund: "Garantie de 3 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès."
   };
 };
 
 const PRODUCTS = [
+  // --- NOUVELLES CATEGORIES ---
+  { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00 },
+  { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00 },
+  { id: 103, name: 'Chaîne YouTube Monétisée – 5k Subs – Sans Strike – 2016', category: 'youtube_monetized', price: 350.00 },
+  
+  { id: 201, name: 'Chaîne YouTube 2016 – 0 Vidéos – Éligible Monétisation', category: 'youtube_not_monetized', price: 12.50 },
+  { id: 202, name: 'Chaîne YouTube 2019 – 500 Subs – Prête à l\'emploi', category: 'youtube_not_monetized', price: 15.00 },
+  { id: 203, name: 'Chaîne YouTube 2011 – Éligible Monétisation – 100% Propre', category: 'youtube_not_monetized', price: 25.00 },
+
+  // --- ANCIENNES CATEGORIES ---
   { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19 },
   { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49 },
   { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99 },
-  { id: 4, name: 'Chaîne Youtube 2018 – 2020 avec vidéo', category: 'youtube_aged', price: 6.80 },
-  { id: 5, name: 'Chaîne Youtube 2021 – 2024 avec vidéo', category: 'youtube_aged', price: 6.15 },
   { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80 },
-  { id: 9, name: 'Chaîne Spéciale 2006-2010 avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 25.80 },
-  { id: 10, name: 'Chaîne Spéciale 2006-2010 avec 50k à 100k vues ORGANIQUES', category: 'youtube_cpa', price: 32.88 },
-  { id: 11, name: 'Chaîne Spéciale 2006-2010 avec 100k à 300k vues ORGANIQUES', category: 'youtube_cpa', price: 44.88 },
-  { id: 12, name: 'Chaîne Spéciale 2006-2010 avec 300k à 500k vues ORGANIQUES', category: 'youtube_cpa', price: 68.88 },
   { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88 },
-  { id: 14, name: 'Chaîne Spéciale 2011-202x avec 300k à 500k vues ORGANIQUES', category: 'youtube_cpa', price: 62.88 },
-  { id: 15, name: 'Chaîne Spéciale 2011-202x avec 100k à 300k vues ORGANIQUES', category: 'youtube_cpa', price: 38.88 },
-  { id: 16, name: 'Chaîne Spéciale 2011-202x avec 50k à 100k vues ORGANIQUES', category: 'youtube_cpa', price: 26.80 },
-  { id: 17, name: 'Chaîne Spéciale 2006-2010 avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 302.88 },
-  { id: 18, name: 'Chaîne Spéciale 2006-2010 avec 500k à 1M vues ORGANIQUES', category: 'youtube_cpa', price: 146.88 },
   { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 1.43 },
   { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 1.00 },
   { id: 21, name: 'Compte Discord Ancien 2017-2019', category: 'social', price: 25.00 },
@@ -126,7 +129,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
             <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span></h1>
             <p className="text-gray-500 text-lg mb-8 leading-relaxed">Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence. Accès instantané et paiement sécurisé en Crypto.</p>
             <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-              <button onClick={() => window.scrollTo({top: 800, behavior: 'smooth'})} className="bg-primary text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-primaryDark transition-all shadow-xl shadow-primary/20">Voir le catalogue</button>
+              <button onClick={() => { const el = document.getElementById('catalog'); if(el) el.scrollIntoView({behavior: 'smooth'}); }} className="bg-primary text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-primaryDark transition-all shadow-xl shadow-primary/20">Voir le catalogue</button>
               <div className="flex items-center gap-2 text-gray-500 text-sm font-medium"><span>Paiement 100% Crypto</span><div className="flex gap-1"><div className="w-6 h-6 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₿</div><div className="w-6 h-6 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">Ξ</div></div></div>
             </div>
           </div>
