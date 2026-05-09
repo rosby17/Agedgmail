@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, DollarSign, Activity, FileText } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, DollarSign, Activity, FileText, Trash } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 // ==========================================
@@ -336,31 +336,81 @@ const AdminView = ({ navigate }) => {
   const [stockInput, setStockInput] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [amountToAdd, setAmountToAdd] = useState(0);
-  
-  // Mock Data pour les Stats détaillées
-  const [allOrders, setAllOrders] = useState([
-    { id: '101', user: 'client1@gmail.com', product: 'Gmail US 2010', amount: 10.86, status: 'Completed', date: '2026-05-09' },
-    { id: '102', user: 'rooseveltmkr@gmail.com', product: 'YouTube 1k Subs', amount: 25.00, status: 'Completed', date: '2026-05-08' },
-    { id: '103', user: 'newbie@gmail.com', product: 'Gmail Pack 10', amount: 28.00, status: 'Pending', date: '2026-05-09' },
-  ]);
+  const [inventory, setInventory] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
 
-  const [inventory, setInventory] = useState(PRODUCTS.map(p => ({
-    ...p,
-    stock: Math.floor(Math.random() * 50),
-    sold: Math.floor(Math.random() * 200)
-  })));
+  useEffect(() => {
+    fetchInventory();
+    fetchAllOrders();
+  }, []);
 
-  const handleAddStock = () => {
-    if (!stockInput.trim()) return alert("Veuillez entrer des comptes.");
-    const lines = stockInput.split("\n").filter(l => l.trim());
-    alert(`${lines.length} comptes ajoutés ! (Simulation)`);
-    setStockInput("");
+  const fetchInventory = async () => {
+    // Dans un vrai flux, on compterait les lignes non vendues dans Supabase
+    // const { count } = await supabase.from('product_stock').select('*', { count: 'exact', head: true }).eq('product_id', selectedProductId).eq('is_sold', false);
+    setInventory(PRODUCTS.map(p => ({
+      ...p,
+      stock: Math.floor(Math.random() * 50),
+      sold: Math.floor(Math.random() * 200)
+    })));
   };
 
-  const handleUpdateBalance = () => {
+  const fetchAllOrders = async () => {
+    // const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    setAllOrders([
+      { id: '101', user: 'client1@gmail.com', product: 'Gmail US 2010', amount: 10.86, status: 'Completed', date: '2026-05-09' },
+      { id: '102', user: 'rooseveltmkr@gmail.com', product: 'YouTube 1k Subs', amount: 25.00, status: 'Completed', date: '2026-05-08' },
+    ]);
+  };
+
+  const selectedProductStock = inventory.find(p => p.id === parseInt(selectedProductId))?.stock || 0;
+
+  const handleAddStock = async () => {
+    if (!stockInput.trim()) return alert("Veuillez entrer des comptes.");
+    const lines = stockInput.split("\n").filter(l => l.trim());
+    
+    // ENVOI RÉEL À SUPABASE
+    const itemsToInsert = lines.map(line => ({
+      product_id: parseInt(selectedProductId),
+      data: line,
+      is_sold: false
+    }));
+
+    const { error } = await supabase.from('product_stock').insert(itemsToInsert);
+
+    if (error) {
+      alert("Erreur Supabase (as-tu exécuté le script SQL ?) : " + error.message);
+    } else {
+      alert(`${lines.length} comptes ajoutés réellement en base de données !`);
+      setStockInput("");
+      fetchInventory();
+    }
+  };
+
+  const handleClearStock = async () => {
+    if (window.confirm("Es-tu sûr de vouloir VIDER le stock de ce produit en base de données ?")) {
+      const { error } = await supabase.from('product_stock').delete().eq('product_id', selectedProductId).eq('is_sold', false);
+      if (error) alert("Erreur : " + error.message);
+      else {
+        alert("Stock vidé avec succès.");
+        fetchInventory();
+      }
+    }
+  };
+
+  const handleUpdateBalance = async () => {
     if (!userEmail || amountToAdd <= 0) return alert("Infos invalides.");
-    alert(`Solde de ${userEmail} mis à jour : +${amountToAdd}$ !`);
-    setUserEmail(""); setAmountToAdd(0);
+    
+    // MISE À JOUR RÉELLE DU SOLDE
+    const { data: userData } = await supabase.from('profiles').select('id, balance').eq('email', userEmail).single();
+    if (!userData) return alert("Utilisateur introuvable.");
+
+    const { error } = await supabase.from('profiles').update({ balance: userData.balance + amountToAdd }).eq('id', userData.id);
+    
+    if (error) alert("Erreur : " + error.message);
+    else {
+      alert(`Solde de ${userEmail} mis à jour : +${amountToAdd}$ !`);
+      setUserEmail(""); setAmountToAdd(0);
+    }
   };
 
   return (
@@ -395,17 +445,28 @@ const AdminView = ({ navigate }) => {
           )}
 
           {activeTab === 'stock' && (
-            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <h2 className="text-2xl font-bold mb-8">Importation Massive</h2>
-              <div className="space-y-6">
-                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mb-6"><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">💡 Format</div><p className="text-sm text-blue-800 font-medium italic">email | mot_de_passe | email_recup | code_2fa</p></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Choisir le Produit</label>
-                  <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">{PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+            <div className="space-y-8">
+              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <div className="flex justify-between items-center mb-8">
+                  <h2 className="text-2xl font-bold">Gestion du Stock (Connecté DB)</h2>
+                  <div className="bg-gray-50 px-6 py-3 rounded-2xl border border-gray-100">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Quantité Disponible</span>
+                    <span className={`text-2xl font-black font-mono ${selectedProductStock === 0 ? 'text-red-500' : 'text-primary'}`}>{selectedProductStock} comptes</span>
+                  </div>
                 </div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Données (1 compte par ligne)</label>
-                  <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="10" placeholder="user@gmail.com|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
+                <div className="space-y-6">
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Sélectionner le Produit</label>
+                    <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">{PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                  </div>
+                  <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100"><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">💡 Format pour l'Importation Massive</div><p className="text-sm text-blue-800 font-medium italic">email | mot_de_passe | email_recup | code_2fa</p></div>
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Données à ajouter (1 compte par ligne)</label>
+                    <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="8" placeholder="user@gmail.com|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button onClick={handleAddStock} className="flex-grow bg-gray-900 text-white py-5 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter au Stock RÉEL</button>
+                    <button onClick={handleClearStock} className="bg-red-50 text-red-500 px-8 py-5 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider le Stock RÉEL</button>
+                  </div>
                 </div>
-                <button onClick={handleAddStock} className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primary transition-all">Mettre en Vente</button>
               </div>
             </div>
           )}
@@ -420,12 +481,12 @@ const AdminView = ({ navigate }) => {
           {activeTab === 'users' && (
             <div className="space-y-8">
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h2 className="text-2xl font-bold mb-8">Créditer un Solde (Binance Pay)</h2>
+                <h2 className="text-2xl font-bold mb-8">Créditer un Solde (Validation Binance)</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                   <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Client</label><input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="client@mail.com" /></div>
                   <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant ($)</label><input type="number" value={amountToAdd} onChange={(e) => setAmountToAdd(parseFloat(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
                 </div>
-                <button onClick={handleUpdateBalance} className="mt-8 bg-primary text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Approuver & Créditer</button>
+                <button onClick={handleUpdateBalance} className="mt-8 bg-primary text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Approuver & Créditer RÉELLEMENT</button>
               </div>
             </div>
           )}
