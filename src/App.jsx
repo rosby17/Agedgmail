@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 // ==========================================
@@ -76,31 +76,22 @@ const getProductDetails = (product) => {
 };
 
 const PRODUCTS = [
-  // --- YOUTUBE NOT MONETIZED (Basé sur les abonnés) ---
   { id: 201, name: 'Chaîne YouTube – 1k Abonnés – Prête pour Monétisation', category: 'youtube_not_monetized', price: 25.00, sales: 150 },
   { id: 202, name: 'Chaîne YouTube – 2k Abonnés – Trafic Organique', category: 'youtube_not_monetized', price: 45.00, sales: 90 },
   { id: 203, name: 'Chaîne YouTube – 5k Abonnés – Spécial Business', category: 'youtube_not_monetized', price: 95.00, sales: 40 },
   { id: 204, name: 'Chaîne YouTube – 10k Abonnés – Pack Autorité', category: 'youtube_not_monetized', price: 175.00, sales: 20 },
-
-  // --- YOUTUBE MONETIZED ---
   { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00, sales: 12 },
   { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00, sales: 8 },
   { id: 103, name: 'Chaîne YouTube Monétisée – 5k Subs – Sans Strike – 2016', category: 'youtube_monetized', price: 350.00, sales: 5 },
-  
-  // --- GMAIL ---
   { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 5.43, sales: 150 },
   { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 3.24, sales: 200 },
   { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 9.50, sales: 85 },
   { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 28.00, sales: 45 },
-
-  // --- YOUTUBE AGED & CPA ---
   { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19, sales: 90 },
   { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49, sales: 110 },
   { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99, sales: 70 },
   { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80, sales: 40 },
   { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88, sales: 3 },
-  
-  // --- FACEBOOK ---
   { id: 24, name: 'Compte Facebook US Ancien (50+ Amis) - Spécial Ads', category: 'facebook', price: 35.00, sales: 20 },
   { id: 25, name: 'Compte Facebook BM Créé - Ancienneté 2015', category: 'facebook', price: 45.00, sales: 15 },
   { id: 26, name: 'Page Facebook de Fan - 1k à 5k J\'aime - Organique', category: 'facebook', price: 60.00, sales: 10 },
@@ -119,17 +110,11 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
       <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
         <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden px-10 relative">
           {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={50} className="text-gray-300" />}
-          
-          {isUS && product.category === 'email' && (
-            <div className="absolute bottom-4 right-8 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-lg shadow-primary/20 tracking-tighter">US</div>
-          )}
+          {isUS && product.category === 'email' && <div className="absolute bottom-4 right-8 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-lg shadow-primary/20 tracking-tighter">US</div>}
         </div>
       </div>
       <div className="space-y-4 px-2">
-        <div>
-          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
-          <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>{product.name}</h3>
-        </div>
+        <div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div><h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>{product.name}</h3></div>
         <div className="text-xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</div>
         <div className="flex items-center gap-3 pt-2">
           <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
@@ -148,81 +133,8 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 // VUES PRINCIPALES
 // ==========================================
 
-const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange, filteredProducts, addToCart, navigate, setSelectedProduct }) => {
-  return (
-    <>
-      <section className="bg-[#FCFCFD] pt-20 pb-24 overflow-hidden relative border-b border-gray-100 font-sans">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
-          <div className="max-w-xl">
-            <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6">🔥 N°1 des Comptes Anciens</div>
-            <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span></h1>
-            <p className="text-gray-500 text-lg mb-8 leading-relaxed">Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence.</p>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-              <button onClick={() => { const el = document.getElementById('catalog'); if(el) el.scrollIntoView({behavior: 'smooth'}); }} className="bg-primary text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-primaryDark transition-all shadow-xl shadow-primary/20">Voir le catalogue</button>
-              <div className="flex items-center gap-2 text-gray-500 text-sm font-medium"><span>Paiement 100% Crypto</span><div className="flex gap-1"><div className="w-6 h-6 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₿</div><div className="w-6 h-6 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">Ξ</div></div></div>
-            </div>
-          </div>
-          <div className="relative h-[500px] hidden lg:block">
-            <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><YouTubeLogo /></div><div><div className="text-sm font-black text-gray-900">YouTube 2014</div><div className="text-primary font-bold">$6.19</div></div></div>
-            <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div><div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$5.43</div></div></div>
-            <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-50"><div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div><div><div className="text-sm font-black text-gray-900">Instantané</div><div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div></div></div>
-          </div>
-        </div>
-      </section>
-
-      <main id="catalog" className="max-w-7xl mx-auto px-6 py-20 flex flex-col lg:flex-row gap-12">
-        <div className="w-full lg:w-72 flex-shrink-0">
-          <div className="sticky top-32 space-y-12">
-            <div>
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Catégories</h3>
-              <ul className="space-y-2">
-                {CATEGORIES.map(cat => (
-                  <li key={cat.id}>
-                    <button onClick={() => setActiveCategory(cat.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-900 text-white shadow-xl' : 'hover:bg-gray-100 text-gray-600'}`}>{cat.name}</button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Filtrer par Prix</h3>
-              <ul className="space-y-2">
-                {PRICE_RANGES.map(range => (
-                  <li key={range.id}>
-                    <button onClick={() => setPriceRange(range.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${priceRange === range.id ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'hover:bg-gray-100 text-gray-600'}`}>{range.name}</button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div className="flex-grow">
-          <div className="flex justify-between items-center mb-10 border-b border-gray-100 pb-6">
-            <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles • Trié par prix croissant</div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProducts.map(product => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                addToCart={addToCart} 
-                navigate={navigate} 
-                setSelectedProduct={setSelectedProduct} 
-              />
-            ))}
-          </div>
-        </div>
-      </main>
-    </>
-  );
-};
-
-// ==========================================
-// AUTRES COMPOSANTS
-// ==========================================
-
-const Navbar = ({ cartTotal, navigate, session }) => (
-  <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+const Navbar = ({ cartTotal, navigate, session, profile }) => (
+  <header className="bg-white border-b border-gray-200 sticky top-0 z-50 font-sans">
     <div className="bg-dark text-white text-[10px] py-1.5 px-6 flex justify-between items-center font-medium tracking-wide uppercase">
       <div className="flex gap-6"><button onClick={() => navigate('home')}>Accueil</button><button>Services</button><button>FAQ</button><button>Contact</button></div>
       <div className="hidden md:block">Livraison Instantanée • Support 24/7</div>
@@ -230,17 +142,263 @@ const Navbar = ({ cartTotal, navigate, session }) => (
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <button onClick={() => navigate('home')} className="font-bold text-2xl tracking-tight">AgedGmail<span className="text-primary">YT</span></button>
       <div className="flex items-center gap-6">
-        {session ? <button onClick={() => supabase.auth.signOut()} className="text-sm font-bold text-gray-700 hover:text-red-500 flex items-center gap-2"><LogOut size={18} /></button> : <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]"><User size={18} /> Connexion</button>}
+        {session ? (
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex flex-col items-end border-r border-gray-100 pr-4">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mon Solde</span>
+              <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
+            </div>
+            <button onClick={() => navigate('dashboard')} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100"><LayoutDashboard size={18} /></button>
+            <button onClick={() => supabase.auth.signOut()} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-all border border-gray-100"><LogOut size={18} /></button>
+          </div>
+        ) : (
+          <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]"><User size={18} /> Connexion</button>
+        )}
         <button onClick={() => navigate('cart')} className="bg-gray-900 text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black transition-all shadow-lg shadow-black/10"><ShoppingCart size={18} /><span className="border-l border-white/20 pl-3">PANIER / ${cartTotal.toFixed(2)}</span></button>
       </div>
     </div>
   </header>
 );
 
+const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange, filteredProducts, addToCart, navigate, setSelectedProduct }) => (
+  <>
+    <section className="bg-[#FCFCFD] pt-20 pb-24 overflow-hidden relative border-b border-gray-100 font-sans">
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+        <div className="max-w-xl">
+          <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6">🔥 N°1 des Comptes Anciens</div>
+          <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span></h1>
+          <p className="text-gray-500 text-lg mb-8 leading-relaxed">Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+            <button onClick={() => document.getElementById('catalog')?.scrollIntoView({behavior: 'smooth'})} className="bg-primary text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-primaryDark transition-all shadow-xl shadow-primary/20">Voir le catalogue</button>
+            <div className="flex items-center gap-2 text-gray-500 text-sm font-medium"><span>Paiement 100% Crypto</span><div className="flex gap-1"><div className="w-6 h-6 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₿</div><div className="w-6 h-6 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">Ξ</div></div></div>
+          </div>
+        </div>
+        <div className="relative h-[500px] hidden lg:block">
+          <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><YouTubeLogo /></div><div><div className="text-sm font-black text-gray-900">YouTube 2014</div><div className="text-primary font-bold">$6.19</div></div></div>
+          <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div><div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$5.43</div></div></div>
+          <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-50"><div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div><div><div className="text-sm font-black text-gray-900">Instantané</div><div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div></div></div>
+        </div>
+      </div>
+    </section>
+    <main id="catalog" className="max-w-7xl mx-auto px-6 py-20 flex flex-col lg:flex-row gap-12 font-sans">
+      <div className="w-full lg:w-72 flex-shrink-0">
+        <div className="sticky top-32 space-y-12">
+          <div><h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Catégories</h3><ul className="space-y-2">{CATEGORIES.map(cat => (<li key={cat.id}><button onClick={() => setActiveCategory(cat.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-900 text-white shadow-xl' : 'hover:bg-gray-100 text-gray-600'}`}>{cat.name}</button></li>))}</ul></div>
+          <div><h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Filtrer par Prix</h3><ul className="space-y-2">{PRICE_RANGES.map(range => (<li key={range.id}><button onClick={() => setPriceRange(range.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${priceRange === range.id ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'hover:bg-gray-100 text-gray-600'}`}>{range.name}</button></li>))}</ul></div>
+        </div>
+      </div>
+      <div className="flex-grow">
+        <div className="flex justify-between items-center mb-10 border-b border-gray-100 pb-6"><div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles • Trié par prix croissant</div></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">{filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />))}</div>
+      </div>
+    </main>
+  </>
+);
+
+const DashboardView = ({ profile, navigate, orders = [] }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
+      <div className="flex flex-col lg:flex-row gap-12">
+        <aside className="w-full lg:w-64 flex-shrink-0">
+          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-soft sticky top-32">
+            <div className="flex items-center gap-4 mb-10 pb-6 border-b border-gray-50">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">{profile?.email?.[0].toUpperCase()}</div>
+              <div className="overflow-hidden">
+                <div className="text-sm font-black text-gray-900 truncate">{profile?.full_name || "Utilisateur"}</div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">{profile?.email}</div>
+              </div>
+            </div>
+            <nav className="space-y-2">
+              <button onClick={() => setActiveTab('overview')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'}`}><LayoutDashboard size={18} /> Aperçu</button>
+              <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'orders' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'}`}><History size={18} /> Commandes</button>
+              <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'settings' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'}`}><Settings size={18} /> Paramètres</button>
+            </nav>
+            <div className="mt-10 pt-6 border-t border-gray-50">
+              <button onClick={() => supabase.auth.signOut()} className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all"><LogOut size={18} /> Déconnexion</button>
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex-grow space-y-8">
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-gray-900 rounded-[3rem] p-10 text-white relative overflow-hidden group shadow-2xl">
+                  <div className="relative z-10">
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Solde Actuel</div>
+                    <div className="text-5xl font-black mb-10 font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
+                    <button onClick={() => navigate('payment')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 inline-flex"><Plus size={18} /> Recharger le compte</button>
+                  </div>
+                  <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5 group-hover:scale-110 transition-transform duration-700" />
+                </div>
+                <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft flex flex-col justify-between">
+                  <div>
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Dernière Commande</div>
+                    <div className="text-xl font-bold text-gray-900 mb-2">{orders[0]?.product_name || "Aucune commande"}</div>
+                    <div className="text-sm text-gray-400 font-medium">Effectuée le {orders[0]?.created_at ? new Date(orders[0].created_at).toLocaleDateString() : "--/--/----"}</div>
+                  </div>
+                  <button onClick={() => setActiveTab('orders')} className="text-sm font-black text-primary hover:underline flex items-center gap-2 mt-6">Voir tout l'historique <ChevronRight size={16} /></button>
+                </div>
+              </div>
+              <section className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <h3 className="text-lg font-bold mb-8">Activités Récentes</h3>
+                {orders.length === 0 ? (
+                  <div className="text-center py-10"><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore effectué d'achats.</p></div>
+                ) : (
+                  <div className="space-y-6">
+                    {orders.slice(0, 3).map(order => (
+                      <div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><History size={18} /></div>
+                          <div><div className="text-sm font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleDateString()}</div></div>
+                        </div>
+                        <div className="text-sm font-black text-gray-900">${order.total_price.toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'orders' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Historique des Commandes</h2>
+              {orders.length === 0 ? (
+                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Aucune commande trouvée.</p></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Commande</th><th className="pb-6">Date</th><th className="pb-6">Statut</th><th className="pb-6 text-right">Total</th></tr></thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {orders.map(order => (
+                        <tr key={order.id} className="group">
+                          <td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantité: {order.quantity}</div></td>
+                          <td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                          <td className="py-6"><span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-[10px] font-black uppercase tracking-tighter">Complété</span></td>
+                          <td className="py-6 text-right font-black text-gray-900">${order.total_price.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Paramètres du Compte</h2>
+              <form className="space-y-8 max-w-lg" onSubmit={(e) => { e.preventDefault(); alert("Profil mis à jour (Simulation)"); }}>
+                <div className="grid grid-cols-1 gap-6">
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nom Complet</label><input type="text" defaultValue={profile?.full_name} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="John Doe" /></div>
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email (Lecture seule)</label><input type="email" value={profile?.email} disabled className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div>
+                </div>
+                <button type="submit" className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10">Sauvegarder les modifications</button>
+              </form>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// LOGIQUE PRINCIPALE
+// ==========================================
+
+function App() {
+  const [currentView, setCurrentView] = useState('home');
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [priceRange, setPriceRange] = useState('all');
+  const [cart, setCart] = useState([]);
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchProfile(session.user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchProfile(session.user.id);
+      else { setProfile(null); setOrders([]); }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId) => {
+    // Dans une app réelle, on fetcherait depuis 'profiles' et 'orders'
+    // Ici on simule pour l'instant si les tables ne sont pas encore prêtes
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (data) {
+      setProfile(data);
+      const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+      if (orderData) setOrders(orderData);
+    } else {
+      // Simulation pour le développement
+      setProfile({ email: session?.user?.email, full_name: "Utilisateur Démo", balance: 125.50 });
+      setOrders([
+        { id: '1', product_name: 'Gmail US Ancien 2010', quantity: 2, total_price: 10.86, created_at: new Date().toISOString() },
+        { id: '2', product_name: 'Chaîne YouTube 1k Subs', quantity: 1, total_price: 25.00, created_at: new Date(Date.now() - 86400000).toISOString() }
+      ]);
+    }
+  };
+
+  const filteredProducts = PRODUCTS
+    .filter(p => activeCategory === 'all' || p.category === activeCategory)
+    .filter(p => {
+      if (priceRange === 'all') return true;
+      if (priceRange === 'under5') return p.price < 5;
+      if (priceRange === '5-10') return p.price >= 5 && p.price <= 10;
+      if (priceRange === '10-50') return p.price > 10 && p.price <= 50;
+      if (priceRange === 'over50') return p.price > 50;
+      return true;
+    })
+    .sort((a, b) => a.price - b.price);
+
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const addToCart = (product, quantity = 1) => {
+    setCart(prevCart => {
+      const idx = prevCart.findIndex(item => item.id === product.id);
+      if (idx >= 0) { const nc = [...prevCart]; nc[idx].quantity += quantity; return nc; }
+      return [...prevCart, { ...product, quantity }];
+    });
+  };
+  const updateCartQuantity = (id, q) => { if (q < 1) return; setCart(pc => pc.map(i => i.id === id ? { ...i, quantity: q } : i)); };
+  const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
+  const clearCart = () => setCart([]);
+  const navigate = (v) => { setCurrentView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  return (
+    <div className="min-h-screen bg-white font-sans flex flex-col">
+      <Navbar cartTotal={cartTotal} navigate={navigate} session={session} profile={profile} />
+      <div className="flex-grow">
+        {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />}
+        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
+        {currentView === 'auth' && <AuthView navigate={navigate} />}
+        {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
+        {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
+        {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} />}
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+// ==========================================
+// VUES SECONDAIRES (Paiement, Cart, etc.)
+// ==========================================
+
 const ProductView = ({ product, addToCart, navigate }) => {
   const [quantity, setQuantity] = useState(1);
   return (
-    <div className="max-w-7xl mx-auto px-6 py-20">
+    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
         <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative"><div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden">{product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}</div>{product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}</div>
         <div className="flex flex-col justify-center">
@@ -278,22 +436,60 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
   </div>
 );
 
-const PaymentView = ({ cartTotal, navigate, clearCart }) => {
-  const [method, setMethod] = useState('binance');
+const PaymentView = ({ cartTotal, navigate, clearCart, profile }) => {
+  const [method, setMethod] = useState('balance');
   const [copied, setCopied] = useState(false);
   const binanceId = "38066101";
+  const canPayWithBalance = (profile?.balance || 0) >= cartTotal;
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-20">
+    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         <div className="lg:col-span-2">
           <h2 className="text-4xl font-bold text-gray-900 mb-12 tracking-tight">Finaliser la Commande</h2>
           <div className="space-y-8">
-            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft"><h3 className="text-lg font-bold mb-8">1. Sélectionner une Méthode de Paiement</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><button onClick={() => setMethod('binance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'binance' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>{method === 'binance' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}<div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center mb-4 text-white font-bold">B</div><div className="font-bold text-gray-900 mb-1">Binance Pay</div><div className="text-xs text-primary font-bold uppercase tracking-wider">Recommandé (Zéro Frais)</div></button><button onClick={() => setMethod('classic')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'classic' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>{method === 'classic' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}<div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-4 text-white"><Wallet size={20} /></div><div className="font-bold text-gray-900 mb-1">Crypto Classique</div><div className="text-xs text-gray-400 font-bold uppercase tracking-wider">BTC, LTC, DOGE, USDT...</div></button></div></div>
-            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft"><h3 className="text-lg font-bold mb-8">2. Instructions de Paiement</h3>{method === 'binance' ? <div className="space-y-8"><div className="bg-gray-50 p-8 rounded-[2rem] text-center border border-gray-100"><div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">ID Binance du destinataire</div><div className="flex items-center justify-center gap-4 mb-4"><span className="text-4xl font-mono font-bold text-gray-900">{binanceId}</span><button onClick={() => { navigator.clipboard.writeText(binanceId); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-3 bg-white rounded-xl shadow-soft hover:bg-gray-50 transition-all">{copied ? <CheckCircle size={20} className="text-green-500" /> : <Copy size={20} />}</button></div><div className="text-sm font-bold text-primary">Pseudo : CLIVERS237</div></div><ol className="space-y-4 text-sm text-gray-600 list-decimal list-inside leading-relaxed font-medium"><li>Ouvrez l'application Binance &gt; Portefeuille &gt; Pay</li><li>Utilisez l'ID ci-dessus pour envoyer le montant exact.</li><li>Envoyez la preuve de paiement à notre support.</li></ol></div> : <div className="text-center py-12"><div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500"><ExternalLink size={40} /></div><p className="text-gray-500 mb-8 max-w-sm mx-auto">Vous allez être redirigé vers notre plateforme sécurisée **CoinPayments** pour finaliser votre transaction.</p><a href="https://www.coinpayments.net" target="_blank" className="inline-flex items-center gap-3 bg-blue-600 text-white px-10 py-5 rounded-full font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">Procéder via CoinPayments</a></div>}</div>
-            <button onClick={() => { clearCart(); navigate('home'); alert("Commande enregistrée !"); }} className="w-full bg-primary text-white py-6 rounded-[2rem] font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/30">J'ai complété le paiement</button>
+            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft">
+              <h3 className="text-lg font-bold mb-8">1. Sélectionner une Méthode de Paiement</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onClick={() => setMethod('balance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'balance' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                  {method === 'balance' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary"><Wallet size={20} /></div>
+                  <div className="font-bold text-gray-900 mb-1">Solde du Compte</div>
+                  <div className="text-xs text-primary font-bold uppercase tracking-wider">Disponible: ${profile?.balance?.toFixed(2) || "0.00"}</div>
+                </button>
+                <button onClick={() => setMethod('binance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'binance' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                  {method === 'binance' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
+                  <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center mb-4 text-white font-bold">B</div>
+                  <div className="font-bold text-gray-900 mb-1">Binance Pay</div>
+                  <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Rechargement Direct</div>
+                </button>
+              </div>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft">
+              <h3 className="text-lg font-bold mb-8">2. Validation du Paiement</h3>
+              {method === 'balance' ? (
+                <div className="space-y-6">
+                  {canPayWithBalance ? (
+                    <div className="bg-green-50 p-6 rounded-2xl flex items-center gap-4 text-green-700 font-medium"><CheckCircle /> Votre solde est suffisant pour cet achat.</div>
+                  ) : (
+                    <div className="bg-red-50 p-6 rounded-2xl flex items-center gap-4 text-red-700 font-medium"><ShieldAlert /> Solde insuffisant. Veuillez recharger votre compte via Binance Pay.</div>
+                  )}
+                  <button disabled={!canPayWithBalance} onClick={() => { clearCart(); navigate('dashboard'); alert("Achat réussi via solde !"); }} className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl ${canPayWithBalance ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>Confirmer le Paiement (${cartTotal.toFixed(2)})</button>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  <div className="bg-gray-50 p-8 rounded-[2rem] text-center border border-gray-100">
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">ID Binance pour le rechargement</div>
+                    <div className="flex items-center justify-center gap-4 mb-4"><span className="text-4xl font-mono font-bold text-gray-900">{binanceId}</span><button onClick={() => { navigator.clipboard.writeText(binanceId); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-3 bg-white rounded-xl shadow-soft">{copied ? <CheckCircle size={20} className="text-green-500" /> : <Copy size={20} />}</button></div>
+                    <div className="text-sm font-bold text-primary">Pseudo : CLIVERS237</div>
+                  </div>
+                  <p className="text-xs text-gray-400 text-center">Envoyez le montant souhaité pour recharger votre compte. Votre solde sera crédité après validation manuelle.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        <div className="h-fit sticky top-32"><div className="bg-gray-900 text-white p-10 rounded-[3rem] shadow-2xl"><h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Votre Panier</h3><div className="space-y-6 mb-10 text-sm font-medium text-gray-400"><div className="flex justify-between"><span>Sous-total</span><span className="text-white">${cartTotal.toFixed(2)}</span></div><div className="flex justify-between"><span>Frais Réseau</span><span className="text-primary">GRATUIT</span></div></div><div className="flex justify-between text-3xl font-bold mb-4"><span>Total</span><span>${cartTotal.toFixed(2)}</span></div><div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Sécurisé par Chiffrement SSL</div></div></div>
+        <div className="h-fit sticky top-32"><div className="bg-gray-900 text-white p-10 rounded-[3rem] shadow-2xl"><h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Résumé</h3><div className="space-y-6 mb-10 text-sm font-medium text-gray-400"><div className="flex justify-between"><span>Sous-total</span><span className="text-white">${cartTotal.toFixed(2)}</span></div><div className="flex justify-between"><span>Solde Actuel</span><span className="text-primary">${profile?.balance?.toFixed(2) || "0.00"}</span></div></div><div className="flex justify-between text-3xl font-bold mb-4"><span>Total</span><span>${cartTotal.toFixed(2)}</span></div><div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Sécurisé par Chiffrement SSL</div></div></div>
       </div>
     </div>
   );
@@ -302,7 +498,7 @@ const PaymentView = ({ cartTotal, navigate, clearCart }) => {
 const AuthView = ({ navigate }) => {
   const [isLogin, setIsLogin] = useState(true);
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-20 px-6">
+    <div className="min-h-[80vh] flex items-center justify-center py-20 px-6 font-sans">
       <div className="w-full max-w-md bg-white p-12 rounded-[3rem] shadow-soft border border-gray-100">
         <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">{isLogin ? 'Bon Retour' : 'Bienvenue'}</h2>
         <p className="text-gray-400 text-sm mb-10 leading-relaxed">Veuillez entrer vos accès pour continuer sur la plateforme.</p>
@@ -310,7 +506,7 @@ const AuthView = ({ navigate }) => {
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label><input type="email" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="name@email.com" /></div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="••••••••" /></div>
           <button className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-black/10">{isLogin ? 'Se Connecter' : 'S\'inscrire'}</button>
-          <button type="button" onClick={async () => { if (!supabase) { alert("Erreur : La connexion à la base de données n'est pas configurée."); return; } const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); if (error) alert("Erreur : " + error.message); }} className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all">Google</button>
+          <button type="button" onClick={async () => { if (!supabase) { alert("Erreur : Supabase non configuré."); return; } const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); if (error) alert("Erreur : " + error.message); }} className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all">Google</button>
         </form>
         <button onClick={() => setIsLogin(!isLogin)} className="w-full mt-8 text-center text-sm font-bold text-gray-400 hover:text-primary transition-colors">{isLogin ? "Créer un compte" : "Déjà membre ?"}</button>
       </div>
@@ -318,75 +514,14 @@ const AuthView = ({ navigate }) => {
   );
 };
 
-function App() {
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [priceRange, setPriceRange] = useState('all');
-  const [cart, setCart] = useState([]);
-  const [session, setSession] = useState(null);
-
-  useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const filteredProducts = PRODUCTS
-    .filter(p => activeCategory === 'all' || p.category === activeCategory)
-    .filter(p => {
-      if (priceRange === 'all') return true;
-      if (priceRange === 'under5') return p.price < 5;
-      if (priceRange === '5-10') return p.price >= 5 && p.price <= 10;
-      if (priceRange === '10-50') return p.price > 10 && p.price <= 50;
-      if (priceRange === 'over50') return p.price > 50;
-      return true;
-    })
-    .sort((a, b) => a.price - b.price);
-
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const addToCart = (product, quantity = 1) => {
-    setCart(prevCart => {
-      const idx = prevCart.findIndex(item => item.id === product.id);
-      if (idx >= 0) { const nc = [...prevCart]; nc[idx].quantity += quantity; return nc; }
-      return [...prevCart, { ...product, quantity }];
-    });
-  };
-  const updateCartQuantity = (id, q) => { if (q < 1) return; setCart(pc => pc.map(i => i.id === id ? { ...i, quantity: q } : i)); };
-  const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
-  const clearCart = () => setCart([]);
-  const navigate = (v) => { setCurrentView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-
-  return (
-    <div className="min-h-screen bg-white font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} navigate={navigate} session={session} />
-      <div className="flex-grow">
-        {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />}
-        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
-        {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
-        {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} />}
-      </div>
-      <Footer />
-    </div>
-  );
-}
-
 const Footer = () => (
-  <footer className="bg-gray-50 pt-32 pb-16 px-6">
+  <footer className="bg-gray-50 pt-32 pb-16 px-6 font-sans">
     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
-      <div className="md:col-span-2">
-        <div className="font-bold text-2xl mb-6">AgedGmail<span className="text-primary">YT</span></div>
-        <p className="text-gray-400 text-sm max-w-sm leading-relaxed mb-8">Votre partenaire de confiance pour l'achat de comptes anciens et de services médias sociaux.</p>
-      </div>
-      <div><h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Navigation</h4><ul className="space-y-4 text-sm text-gray-500 font-medium"><li><button onClick={() => window.scrollTo({top: 0})}>Catalogue</button></li><li><button>Contact</button></li></ul></div>
+      <div className="md:col-span-2"><div className="font-bold text-2xl mb-6">AgedGmail<span className="text-primary">YT</span></div><p className="text-gray-400 text-sm max-w-sm leading-relaxed mb-8">Votre partenaire de confiance pour l'achat de comptes anciens et de services médias sociaux.</p></div>
+      <div><h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Navigation</h4><ul className="space-y-4 text-sm text-gray-500 font-medium"><li><button>Catalogue</button></li><li><button>Contact</button></li></ul></div>
       <div><h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Paiement</h4><div className="flex flex-wrap gap-2">{['BTC', 'ETH', 'LTC', 'USDT'].map(c => <span key={c} className="px-3 py-1 bg-white rounded-lg border border-gray-200 text-[10px] font-black">{c}</span>)}</div></div>
     </div>
-    <div className="max-w-7xl mx-auto pt-10 border-t border-gray-200 flex flex-col md:row justify-between items-center gap-6">
-      <div className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">© 2026 AGEDGMAILYT • ALL RIGHTS RESERVED</div>
-      <div className="flex gap-4 items-center"><div className="w-2 h-2 bg-primary rounded-full animate-pulse" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Système Opérationnel</span></div>
-    </div>
+    <div className="max-w-7xl mx-auto pt-10 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6"><div className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">© 2026 AGEDGMAILYT • ALL RIGHTS RESERVED</div><div className="flex gap-4 items-center"><div className="w-2 h-2 bg-primary rounded-full animate-pulse" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Système Opérationnel</span></div></div>
   </footer>
 );
 
