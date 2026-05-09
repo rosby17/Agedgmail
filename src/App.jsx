@@ -53,15 +53,20 @@ const PRICE_RANGES = [
 const getProductDetails = (product) => {
   const commonTerms = "Veuillez lire les spécifications avant d'acheter. Vous êtes responsable de toutes les actions sur le compte. Utilisez des IP résidentielles fraîches. Changez les accès après 48h seulement.";
   const isMonetized = product.category === 'youtube_monetized';
+  const isNotMonetized = product.category === 'youtube_not_monetized';
   
   return {
     info: product.category === 'email' 
       ? `Âge : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Pays : ${product.name.includes('US') ? 'US' : 'Aléatoire'} | Format : Gmail/Pass/Récup` 
       : product.category === 'facebook'
       ? "Âge : Ancien (2012-2020) | Amis : 50+ | Statut : Vérifié | Qualité : Verte"
+      : isNotMonetized 
+      ? `Abonnés : ${product.name.split(' – ')[1]} | Éligibilité : Immédiate | Contenu : Aucun`
       : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${isMonetized ? '✅ Monétisée' : '❌ Non-Monétisée'} | Contenu : Propre`,
     note: product.category === 'facebook'
       ? "Idéal pour le Meta Ads. Compte stable avec historique."
+      : isNotMonetized
+      ? "Nous vendons ici le nombre d'abonnés. Chaîne propre prête pour lancer votre processus de monétisation."
       : product.category.includes('youtube')
       ? `Parfait pour le business YT. ${isMonetized ? 'Générez des revenus dès le premier upload.' : 'Éligible pour une future monétisation.'}`
       : "Gmail aléatoire. Connexion via 'Email de récupération'.",
@@ -70,23 +75,32 @@ const getProductDetails = (product) => {
   };
 };
 
-// Initialisation des produits avec un score fictif de "ventes" pour le futur
 const PRODUCTS = [
+  // --- YOUTUBE NOT MONETIZED (Basé sur les abonnés) ---
+  { id: 201, name: 'Chaîne YouTube – 1k Abonnés – Prête pour Monétisation', category: 'youtube_not_monetized', price: 25.00, sales: 150 },
+  { id: 202, name: 'Chaîne YouTube – 2k Abonnés – Trafic Organique', category: 'youtube_not_monetized', price: 45.00, sales: 90 },
+  { id: 203, name: 'Chaîne YouTube – 5k Abonnés – Spécial Business', category: 'youtube_not_monetized', price: 95.00, sales: 40 },
+  { id: 204, name: 'Chaîne YouTube – 10k Abonnés – Pack Autorité', category: 'youtube_not_monetized', price: 175.00, sales: 20 },
+
+  // --- YOUTUBE MONETIZED ---
+  { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00, sales: 12 },
+  { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00, sales: 8 },
+  { id: 103, name: 'Chaîne YouTube Monétisée – 5k Subs – Sans Strike – 2016', category: 'youtube_monetized', price: 350.00, sales: 5 },
+  
+  // --- GMAIL ---
   { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 5.43, sales: 150 },
   { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 3.24, sales: 200 },
   { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 9.50, sales: 85 },
   { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 28.00, sales: 45 },
-  { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00, sales: 12 },
-  { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00, sales: 8 },
-  { id: 103, name: 'Chaîne YouTube Monétisée – 5k Subs – Sans Strike – 2016', category: 'youtube_monetized', price: 350.00, sales: 5 },
-  { id: 201, name: 'Chaîne YouTube 2016 – 0 Vidéos – Éligible Monétisation', category: 'youtube_not_monetized', price: 12.50, sales: 30 },
-  { id: 202, name: 'Chaîne YouTube 2019 – 500 Subs – Prête à l\'emploi', category: 'youtube_not_monetized', price: 15.00, sales: 25 },
-  { id: 203, name: 'Chaîne YouTube 2011 – Éligible Monétisation – 100% Propre', category: 'youtube_not_monetized', price: 25.00, sales: 15 },
+
+  // --- YOUTUBE AGED & CPA ---
   { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19, sales: 90 },
   { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49, sales: 110 },
   { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99, sales: 70 },
   { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80, sales: 40 },
   { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88, sales: 3 },
+  
+  // --- FACEBOOK ---
   { id: 24, name: 'Compte Facebook US Ancien (50+ Amis) - Spécial Ads', category: 'facebook', price: 35.00, sales: 20 },
   { id: 25, name: 'Compte Facebook BM Créé - Ancienneté 2015', category: 'facebook', price: 45.00, sales: 15 },
   { id: 26, name: 'Page Facebook de Fan - 1k à 5k J\'aime - Organique', category: 'facebook', price: 60.00, sales: 10 },
@@ -329,8 +343,6 @@ function App() {
       if (priceRange === 'over50') return p.price > 50;
       return true;
     })
-    // LOGIQUE DE TRI : Moins cher en premier (par défaut)
-    // On pourra changer pour (b.sales - a.sales) plus tard
     .sort((a, b) => a.price - b.price);
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -371,7 +383,7 @@ const Footer = () => (
       <div><h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Navigation</h4><ul className="space-y-4 text-sm text-gray-500 font-medium"><li><button onClick={() => window.scrollTo({top: 0})}>Catalogue</button></li><li><button>Contact</button></li></ul></div>
       <div><h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Paiement</h4><div className="flex flex-wrap gap-2">{['BTC', 'ETH', 'LTC', 'USDT'].map(c => <span key={c} className="px-3 py-1 bg-white rounded-lg border border-gray-200 text-[10px] font-black">{c}</span>)}</div></div>
     </div>
-    <div className="max-w-7xl mx-auto pt-10 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
+    <div className="max-w-7xl mx-auto pt-10 border-t border-gray-200 flex flex-col md:row justify-between items-center gap-6">
       <div className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">© 2026 AGEDGMAILYT • ALL RIGHTS RESERVED</div>
       <div className="flex gap-4 items-center"><div className="w-2 h-2 bg-primary rounded-full animate-pulse" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Système Opérationnel</span></div>
     </div>
