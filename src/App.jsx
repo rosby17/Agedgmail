@@ -56,7 +56,7 @@ const getProductDetails = (product) => {
   
   return {
     info: product.category === 'email' 
-      ? "Âge : 2017 - 2023 | Pays : US | Format : Gmail/Pass/Récup" 
+      ? `Âge : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Pays : ${product.name.includes('US') ? 'US' : 'Aléatoire'} | Format : Gmail/Pass/Récup` 
       : product.category === 'facebook'
       ? "Âge : Ancien (2012-2020) | Amis : 50+ | Statut : Vérifié | Qualité : Verte"
       : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${isMonetized ? '✅ Monétisée' : '❌ Non-Monétisée'} | Contenu : Propre`,
@@ -71,6 +71,12 @@ const getProductDetails = (product) => {
 };
 
 const PRODUCTS = [
+  // --- GMAIL (Mise à jour des prix) ---
+  { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 5.43 },
+  { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 3.24 },
+  { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 9.50 },
+  { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 28.00 },
+
   // --- YOUTUBE MONETIZED ---
   { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00 },
   { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00 },
@@ -80,12 +86,6 @@ const PRODUCTS = [
   { id: 201, name: 'Chaîne YouTube 2016 – 0 Vidéos – Éligible Monétisation', category: 'youtube_not_monetized', price: 12.50 },
   { id: 202, name: 'Chaîne YouTube 2019 – 500 Subs – Prête à l\'emploi', category: 'youtube_not_monetized', price: 15.00 },
   { id: 203, name: 'Chaîne YouTube 2011 – Éligible Monétisation – 100% Propre', category: 'youtube_not_monetized', price: 25.00 },
-
-  // --- GMAIL ---
-  { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 1.43 },
-  { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 1.00 },
-  { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 4.50 },
-  { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 8.50 },
 
   // --- YOUTUBE AGED & CPA ---
   { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19 },
@@ -106,11 +106,17 @@ const PRODUCTS = [
 
 const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
   const [localQty, setLocalQty] = useState(1);
+  const isUS = product.name.includes('US');
+
   return (
     <div className="bg-white group">
       <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
-        <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden px-10">
+        <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden px-10 relative">
           {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={50} className="text-gray-300" />}
+          
+          {isUS && product.category === 'email' && (
+            <div className="absolute bottom-4 right-8 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-lg shadow-primary/20 tracking-tighter">US</div>
+          )}
         </div>
       </div>
       <div className="space-y-4 px-2">
@@ -152,7 +158,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
           </div>
           <div className="relative h-[500px] hidden lg:block">
             <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><YouTubeLogo /></div><div><div className="text-sm font-black text-gray-900">YouTube 2014</div><div className="text-primary font-bold">$6.19</div></div></div>
-            <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div><div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$1.43</div></div></div>
+            <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div><div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$5.43</div></div></div>
             <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-50"><div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div><div><div className="text-sm font-black text-gray-900">Instantané</div><div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div></div></div>
           </div>
         </div>
@@ -230,7 +236,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
   return (
     <div className="max-w-7xl mx-auto px-6 py-20">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
-        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden"><div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden">{product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}</div></div>
+        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative"><div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden">{product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}</div>{product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}</div>
         <div className="flex flex-col justify-center">
           <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><button onClick={() => navigate('home')} className="hover:text-primary">ACCUEIL</button><span>/</span><span className="text-primary">{CATEGORIES.find(c => c.id === product.category)?.name}</span></nav>
           <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tighter leading-tight">{product.name}</h1>
@@ -260,7 +266,7 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
   <div className="max-w-4xl mx-auto py-20 px-6 font-sans">
     <div className="flex items-center justify-between mb-16"><h2 className="text-5xl font-bold text-gray-900 tracking-tighter">Votre Panier</h2><button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline uppercase tracking-widest">Continuer les achats</button></div>
     {cart.length === 0 ? <div className="text-center py-20 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Votre panier est vide.</p></div> : <div className="space-y-6">
-      {cart.map((item) => <div key={item.id} className="bg-white border border-gray-100 p-8 rounded-[2.5rem] flex items-center justify-between group shadow-soft"><div className="flex items-center gap-8"><div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform">{item.category.includes('youtube') ? <YouTubeLogo /> : item.category === 'email' ? <GmailLogo /> : item.category === 'facebook' ? <FacebookIcon className="w-10 h-10 text-blue-600" /> : <Share2 size={32} />}</div><div><h4 className="font-bold text-gray-900 mb-1">{item.name}</h4><p className="text-primary font-bold">${item.price.toFixed(2)}</p></div></div><div className="flex items-center gap-10"><div className="flex items-center bg-gray-100 rounded-full p-1.5"><button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-full transition-all"><Minus size={14} /></button><div className="w-10 text-center font-bold">{item.quantity}</div><button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-full transition-all"><Plus size={14} /></button></div><button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={22} /></button></div></div>)}
+      {cart.map((item) => <div key={item.id} className="bg-white border border-gray-100 p-8 rounded-[2.5rem] flex items-center justify-between group shadow-soft"><div className="flex items-center gap-8"><div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform relative">{item.category.includes('youtube') ? <YouTubeLogo /> : item.category === 'email' ? <GmailLogo /> : item.category === 'facebook' ? <FacebookIcon className="w-10 h-10 text-blue-600" /> : <Share2 size={32} />}{item.name.includes('US') && item.category === 'email' && <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[8px] font-black px-1 rounded">US</div>}</div><div><h4 className="font-bold text-gray-900 mb-1">{item.name}</h4><p className="text-primary font-bold">${item.price.toFixed(2)}</p></div></div><div className="flex items-center gap-10"><div className="flex items-center bg-gray-100 rounded-full p-1.5"><button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-full transition-all"><Minus size={14} /></button><div className="w-10 text-center font-bold">{item.quantity}</div><button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-full transition-all"><Plus size={14} /></button></div><button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={22} /></button></div></div>)}
       <div className="pt-10 flex flex-col items-end"><div className="text-4xl font-bold text-gray-900 mb-8 tracking-tighter">Total: ${cartTotal.toFixed(2)}</div><button onClick={() => navigate('payment')} className="bg-primary text-white px-16 py-6 rounded-full font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/20">Passer au Paiement</button></div>
     </div>}
   </div>
