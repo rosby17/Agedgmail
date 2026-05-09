@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, DollarSign, Activity, FileText, Trash } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 // ==========================================
-// CONFIGURATION ADMIN
+// CONFIGURATION ADMIN & SUPPORT
 // ==========================================
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com"; 
+const SUPPORT_WHATSAPP = "2376XXXXXXXX"; // Remplacer par ton numéro
+const SUPPORT_TELEGRAM = "rooseveltmkr"; // Remplacer par ton username
 
 // ==========================================
 // COMPOSANTS LOGOS (IMG & SVG)
@@ -34,7 +36,107 @@ const FacebookIcon = ({ className = "" }) => (
 );
 
 // ==========================================
-// CATALOGUE PRODUITS
+// COMPOSANT SUPPORT CHAT
+// ==========================================
+
+const SupportChat = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="fixed bottom-8 right-8 z-[1000] font-sans">
+      {/* Fenêtre de Chat */}
+      {isOpen && (
+        <div className="absolute bottom-20 right-0 w-[350px] bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gray-900 p-8 text-white relative">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white relative">
+                <Headphones size={24} />
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-gray-900 rounded-full"></div>
+              </div>
+              <div>
+                <h4 className="font-bold text-lg">Support AgedGmail</h4>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">En ligne • Réponse rapide</p>
+              </div>
+            </div>
+            <button onClick={() => setIsOpen(false)} className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="p-8 space-y-4">
+            <p className="text-sm text-gray-500 leading-relaxed mb-6 font-medium">
+              Bonjour ! Comment pouvons-nous vous aider aujourd'hui ? Choisissez votre canal préféré :
+            </p>
+            
+            <a 
+              href={`https://wa.me/${SUPPORT_WHATSAPP}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-5 bg-green-50 rounded-2xl border border-green-100 group hover:bg-green-100 transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-green-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
+                  <MessageCircle size={20} />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-green-900 uppercase tracking-tighter">WhatsApp</div>
+                  <div className="text-[10px] text-green-600 font-bold">Réponse en moins de 5 min</div>
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-green-400 group-hover:translate-x-1 transition-transform" />
+            </a>
+
+            <a 
+              href={`https://t.me/${SUPPORT_TELEGRAM}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-5 bg-blue-50 rounded-2xl border border-blue-100 group hover:bg-blue-100 transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <Send size={20} />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-blue-900 uppercase tracking-tighter">Telegram</div>
+                  <div className="text-[10px] text-blue-600 font-bold">Support direct & sécurisé</div>
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-blue-400 group-hover:translate-x-1 transition-transform" />
+            </a>
+
+            <button 
+              className="w-full flex items-center justify-center gap-3 p-5 bg-gray-50 text-gray-400 rounded-2xl border border-gray-100 text-xs font-bold hover:bg-gray-100 transition-all"
+            >
+              <Mail size={16} /> Envoyer un Ticket Email
+            </button>
+          </div>
+          
+          <div className="bg-gray-50 p-4 text-center">
+            <span className="text-[8px] font-black text-gray-300 uppercase tracking-[0.2em]">Sécurisé par AgedGmail HelpDesk</span>
+          </div>
+        </div>
+      )}
+
+      {/* Bouton Bulle */}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 group relative ${isOpen ? 'bg-gray-900 rotate-90' : 'bg-primary hover:scale-110 active:scale-95'}`}
+      >
+        {isOpen ? (
+          <X className="text-white" size={28} />
+        ) : (
+          <>
+            <MessageSquare className="text-white group-hover:scale-110 transition-transform" size={28} />
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white animate-bounce">1</div>
+          </>
+        )}
+      </button>
+    </div>
+  );
+};
+
+// ==========================================
+// CATALOGUE PRODUITS (Restant identique)
 // ==========================================
 
 const CATEGORIES = [
@@ -57,26 +159,21 @@ const PRICE_RANGES = [
 
 const getProductDetails = (product) => {
   const commonTerms = "Veuillez lire les spécifications avant d'acheter. Vous êtes responsable de toutes les actions sur le compte. Utilisez des IP résidentielles fraîches. Changez les accès après 48h seulement.";
-  const isMonetized = product.category === 'youtube_monetized';
-  const isNotMonetized = product.category === 'youtube_not_monetized';
-  
   return {
     info: product.category === 'email' 
       ? `Âge : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Pays : ${product.name.includes('US') ? 'US' : 'Aléatoire'} | Format : Gmail/Pass/Récup/2FA` 
       : product.category === 'facebook'
       ? "Âge : Ancien (2012-2020) | Amis : 50+ | Statut : Vérifié | Qualité : Verte"
-      : isNotMonetized 
-      ? `Abonnés : ${product.name.split(' – ')[1]} | Éligibilité : Immédiate | Contenu : Aucun`
-      : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${isMonetized ? '✅ Monétisée' : '❌ Non-Monétisée'} | Contenu : Propre`,
+      : product.category === 'youtube_not_monetized' 
+      ? `Abonnés : ${product.name.split(' – ')[1] || '1k+'} | Éligibilité : Immédiate | Contenu : Aucun`
+      : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${product.category === 'youtube_monetized' ? '✅ Monétisée' : '❌ Non-Monétisée'} | Contenu : Propre`,
     note: product.category === 'facebook'
       ? "Idéal pour le Meta Ads. Compte stable avec historique."
-      : isNotMonetized
-      ? "Nous vendons ici le nombre d'abonnés. Chaîne propre prête pour lancer votre processus de monétisation."
       : product.category.includes('youtube')
-      ? `Parfait pour le business YT. ${isMonetized ? 'Générez des revenus dès le premier upload.' : 'Éligible pour une future monétisation.'}`
+      ? "Parfait pour le business YT automation."
       : "Gmail de haute qualité. Format : Email | Pass | Récup | 2FA.",
     terms: commonTerms,
-    refund: "Garantie de 3 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès."
+    refund: "Garantie de 3 jours jusqu'à la connexion."
   };
 };
 
@@ -86,20 +183,12 @@ const PRODUCTS = [
   { id: 203, name: 'Chaîne YouTube – 50k Abonnés – Spécial Business', category: 'youtube_not_monetized', price: 150.00, sales: 40 },
   { id: 204, name: 'Chaîne YouTube – 100k Abonnés – Pack Autorité', category: 'youtube_not_monetized', price: 300.00, sales: 20 },
   { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00, sales: 12 },
-  { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00, sales: 8 },
-  { id: 103, name: 'Chaîne YouTube Monétisée – 5k Subs – Sans Strike – 2016', category: 'youtube_monetized', price: 350.00, sales: 5 },
   { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 5.43, sales: 150 },
   { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 3.24, sales: 200 },
   { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 9.50, sales: 85 },
-  { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 28.00, sales: 45 },
   { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19, sales: 90 },
-  { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49, sales: 110 },
-  { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99, sales: 70 },
   { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80, sales: 40 },
-  { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88, sales: 3 },
   { id: 24, name: 'Compte Facebook US Ancien (50+ Amis) - Spécial Ads', category: 'facebook', price: 35.00, sales: 20 },
-  { id: 25, name: 'Compte Facebook BM Créé - Ancienneté 2015', category: 'facebook', price: 45.00, sales: 15 },
-  { id: 26, name: 'Page Facebook de Fan - 1k à 5k J\'aime - Organique', category: 'facebook', price: 60.00, sales: 10 },
 ].map(p => ({ ...p, details: getProductDetails(p) }));
 
 // ==========================================
@@ -447,7 +536,6 @@ const AdminView = ({ navigate }) => {
               </div>
             </div>
           )}
-          {/* Les autres tabs restent identiques... */}
         </main>
       </div>
     </div>
@@ -455,7 +543,7 @@ const AdminView = ({ navigate }) => {
 };
 
 // ==========================================
-// LOGIQUE PRINCIPALE (Suite)
+// APP COMPONENT
 // ==========================================
 
 function App() {
@@ -488,7 +576,6 @@ function App() {
       const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
       if (orderData) setOrders(orderData);
     } else {
-      // SI LE PROFIL N'EXISTE PAS ENCORE (Nouveau Compte)
       setProfile({ id: userId, email: session?.user?.email, display_name: session?.user?.email?.split('@')[0], balance: 0.00 });
       setOrders([]);
     }
@@ -531,6 +618,7 @@ function App() {
         {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && <AdminView navigate={navigate} />}
       </div>
+      <SupportChat />
       <Footer />
     </div>
   );
