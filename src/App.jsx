@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 // ==========================================
 // MOCK DATA: CATALOGUE PRODUITS
@@ -39,7 +40,7 @@ const PRODUCTS = [
   { id: 17, name: 'Special Channel 2006-2010 with ORGANIC 1M views+', category: 'youtube_cpa', price: 302.88, stock: true },
   { id: 18, name: 'Special Channel 2006-2010 with ORGANIC 500k to 1M views', category: 'youtube_cpa', price: 146.88, stock: true },
 
-  // Email & Social (Garde-fous pour le reste du catalogue)
+  // Email & Social
   { id: 19, name: 'Age Gmail US 2010 – 2025', category: 'email', price: 15.00, stock: true },
   { id: 20, name: 'Age Gmail Random Country 2020 – 2025', category: 'email', price: 5.00, stock: true },
   { id: 21, name: 'Old Discord Account 2017-2019', category: 'social', price: 25.00, stock: true },
@@ -52,7 +53,14 @@ const PRODUCTS = [
 // COMPOSANTS PARTAGES
 // ==========================================
 
-const Navbar = ({ cartTotal, cartItems, navigate }) => {
+const Navbar = ({ cartTotal, cartItemCount, navigate, session }) => {
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+      navigate('home');
+    }
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       {/* Top Bar */}
@@ -87,19 +95,31 @@ const Navbar = ({ cartTotal, cartItems, navigate }) => {
 
         {/* Actions */}
         <div className="flex items-center gap-6">
-          <button onClick={() => navigate('auth')} className="flex items-center gap-2 text-sm font-sans font-medium text-gray-700 hover:text-primary transition-colors">
-            <User size={18} />
-            <span className="hidden md:inline">Login / Register</span>
-          </button>
+          {session ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600 hidden md:inline">
+                {session.user.email}
+              </span>
+              <button onClick={handleLogout} className="flex items-center gap-2 text-sm font-sans font-medium text-gray-700 hover:text-red-500 transition-colors">
+                <LogOut size={18} />
+                <span className="hidden md:inline">Logout</span>
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => navigate('auth')} className="flex items-center gap-2 text-sm font-sans font-medium text-gray-700 hover:text-primary transition-colors">
+              <User size={18} />
+              <span className="hidden md:inline">Login / Register</span>
+            </button>
+          )}
           
           <div className="h-6 w-px bg-gray-200 hidden md:block"></div>
           
           <button onClick={() => navigate('cart')} className="flex items-center gap-2 text-sm font-sans font-medium text-gray-700 hover:text-primary transition-colors group">
             <div className="relative">
               <ShoppingCart size={18} />
-              {cartItems > 0 && (
+              {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
-                  {cartItems}
+                  {cartItemCount}
                 </span>
               )}
             </div>
@@ -148,171 +168,365 @@ const Footer = () => (
 // VUES (VIEWS)
 // ==========================================
 
-const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCart }) => (
-  <>
-    {/* Hero Section */}
-    <section className="bg-[#FCFCFD] pt-20 pb-24 overflow-hidden relative border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
-        <div className="max-w-xl">
-          <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6">
-            🔥 N°1 des Comptes Anciens
-          </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">
-            Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span>
-          </h1>
-          <p className="text-gray-500 text-lg mb-8 leading-relaxed">
-            Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence. Accès instantané et paiement sécurisé en Crypto.
-          </p>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <button onClick={() => window.scrollTo({top: 800, behavior: 'smooth'})} className="btn-primary">
-              Voir le catalogue
-            </button>
-            <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
-              <span>Paiement 100% Crypto</span>
-              <div className="flex gap-1">
-                <div className="w-5 h-5 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₿</div>
-                <div className="w-5 h-5 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">Ξ</div>
-                <div className="w-5 h-5 bg-[#F3BA2F] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₮</div>
+const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCart, navigate, setSelectedProduct }) => {
+  const handleProductClick = (product) => {
+    setSelectedProduct(product);
+    navigate('product');
+  };
+
+  return (
+    <>
+      {/* Hero Section */}
+      <section className="bg-[#FCFCFD] pt-20 pb-24 overflow-hidden relative border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+          <div className="max-w-xl">
+            <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6">
+              🔥 N°1 des Comptes Anciens
+            </div>
+            <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">
+              Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span>
+            </h1>
+            <p className="text-gray-500 text-lg mb-8 leading-relaxed">
+              Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence. Accès instantané et paiement sécurisé en Crypto.
+            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              <button onClick={() => window.scrollTo({top: 800, behavior: 'smooth'})} className="btn-primary">
+                Voir le catalogue
+              </button>
+              <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
+                <span>Paiement 100% Crypto</span>
+                <div className="flex gap-1">
+                  <div className="w-5 h-5 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₿</div>
+                  <div className="w-5 h-5 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">Ξ</div>
+                  <div className="w-5 h-5 bg-[#F3BA2F] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₮</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="relative h-[400px] hidden lg:block">
-          <div className="absolute top-[10%] right-[10%] bg-white p-4 rounded-xl shadow-soft flex items-center gap-4 animate-float-slow z-10">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-              <PlayCircle className="text-red-600" size={24} />
+          <div className="relative h-[400px] hidden lg:block">
+            <div className="absolute top-[10%] right-[10%] bg-white p-4 rounded-xl shadow-soft flex items-center gap-4 animate-float-slow z-10">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <PlayCircle className="text-red-600" size={24} />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-gray-900">Chaîne YT 2014</div>
+                <div className="text-primary font-bold">$6.19</div>
+              </div>
             </div>
-            <div>
-              <div className="text-sm font-bold text-gray-900">Chaîne YT 2014</div>
-              <div className="text-primary font-bold">$3.19</div>
+            <div className="absolute top-[40%] left-[10%] bg-white p-4 rounded-xl shadow-soft flex items-center gap-4 animate-float-medium z-20">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <span className="text-red-600 font-bold text-xl">G</span>
+              </div>
+              <div>
+                <div className="text-sm font-bold text-gray-900">Gmail US 2010</div>
+                <div className="text-primary font-bold">$15.00</div>
+              </div>
             </div>
+            <div className="absolute bottom-[10%] right-[20%] bg-white p-4 rounded-xl shadow-soft flex items-center gap-4 animate-float-fast z-30">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <CircleDollarSign className="text-orange-500" size={24} />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-gray-900">Paiement Crypto</div>
+                <div className="text-primary font-bold">Sécurisé</div>
+              </div>
+            </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl -z-10"></div>
           </div>
-          <div className="absolute top-[40%] left-[10%] bg-white p-4 rounded-xl shadow-soft flex items-center gap-4 animate-float-medium z-20">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-              <span className="text-red-600 font-bold text-xl">G</span>
+        </div>
+      </section>
+
+      {/* Guarantees */}
+      <div className="bg-white border-b border-gray-100 py-8 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { icon: <CheckCircle size={24} className="text-primary" />, title: 'High Quality', desc: 'Accounts and services are good as described.' },
+            { icon: <Headphones size={24} className="text-primary" />, title: 'Reliable Support', desc: 'Feel free to contact us.' },
+            { icon: <Mail size={24} className="text-primary" />, title: 'Mail Delivery', desc: 'Delivered to your inbox within 24 hours.' },
+            { icon: <ShieldAlert size={24} className="text-primary" />, title: 'Guarantee Policy', desc: 'Refund/replacement during warranty.' },
+          ].map((item, idx) => (
+            <div key={idx} className="flex gap-4 items-start">
+              <div className="mt-1">{item.icon}</div>
+              <div>
+                <h4 className="font-sans font-bold text-gray-900">{item.title}</h4>
+                <p className="font-sans text-xs text-gray-500 mt-1">{item.desc}</p>
+              </div>
             </div>
-            <div>
-              <div className="text-sm font-bold text-gray-900">Gmail US 2010</div>
-              <div className="text-primary font-bold">$1.43</div>
-            </div>
-          </div>
-          <div className="absolute bottom-[10%] right-[20%] bg-white p-4 rounded-xl shadow-soft flex items-center gap-4 animate-float-fast z-30">
-            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-              <CircleDollarSign className="text-orange-500" size={24} />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-gray-900">Paiement Crypto</div>
-              <div className="text-primary font-bold">Sécurisé</div>
-            </div>
-          </div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl -z-10"></div>
+          ))}
         </div>
       </div>
-    </section>
 
-    {/* Guarantees */}
-    <div className="bg-white border-b border-gray-100 py-8 px-6">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { icon: <CheckCircle size={24} className="text-primary" />, title: 'High Quality', desc: 'Accounts and services are good as described.' },
-          { icon: <Headphones size={24} className="text-primary" />, title: 'Reliable Support', desc: 'Feel free to contact us.' },
-          { icon: <Mail size={24} className="text-primary" />, title: 'Mail Delivery', desc: 'Delivered to your inbox within 24 hours.' },
-          { icon: <ShieldAlert size={24} className="text-primary" />, title: 'Guarantee Policy', desc: 'Refund/replacement during warranty.' },
-        ].map((item, idx) => (
-          <div key={idx} className="flex gap-4 items-start">
-            <div className="mt-1">{item.icon}</div>
-            <div>
-              <h4 className="font-sans font-bold text-gray-900">{item.title}</h4>
-              <p className="font-sans text-xs text-gray-500 mt-1">{item.desc}</p>
-            </div>
+      {/* Catalog */}
+      <main className="max-w-7xl mx-auto px-6 py-16 flex flex-col lg:flex-row gap-8">
+        {/* Sidebar */}
+        <div className="w-full lg:w-64 flex-shrink-0">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-32">
+            <h3 className="font-sans font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
+              <Filter size={18} /> Categories
+            </h3>
+            <ul className="space-y-1">
+              {CATEGORIES.map(cat => (
+                <li key={cat.id}>
+                  <button 
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`w-full flex items-center justify-between text-left px-3 py-2 rounded-lg text-sm font-sans transition-colors ${
+                      activeCategory === cat.id 
+                        ? 'bg-primary text-white font-medium' 
+                        : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {cat.name}
+                    {activeCategory === cat.id && <ChevronRight size={14} />}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+        
+        {/* Product Grid */}
+        <div className="flex-grow">
+          <div className="mb-8 flex items-center justify-between">
+            <h2 className="font-bold text-2xl text-gray-900">
+              {CATEGORIES.find(c => c.id === activeCategory)?.name}
+            </h2>
+            <span className="text-sm text-gray-500 bg-white px-3 py-1 border border-gray-100 rounded-full">
+              Showing {filteredProducts.length} results
+            </span>
+          </div>
 
-    {/* Catalog */}
-    <main className="max-w-7xl mx-auto px-6 py-16 flex flex-col lg:flex-row gap-8">
-      {/* Sidebar */}
-      <div className="w-full lg:w-64 flex-shrink-0">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-32">
-          <h3 className="font-sans font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
-            <Filter size={18} /> Categories
-          </h3>
-          <ul className="space-y-1">
-            {CATEGORIES.map(cat => (
-              <li key={cat.id}>
-                <button 
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`w-full flex items-center justify-between text-left px-3 py-2 rounded-lg text-sm font-sans transition-colors ${
-                    activeCategory === cat.id 
-                      ? 'bg-primary text-white font-medium' 
-                      : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {cat.name}
-                  {activeCategory === cat.id && <ChevronRight size={14} />}
-                </button>
-              </li>
-            ))}
+          {filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map(product => (
+                <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col h-full hover:shadow-md transition-shadow duration-300 group cursor-pointer" onClick={() => handleProductClick(product)}>
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4 flex items-center justify-center aspect-video relative overflow-hidden">
+                    <div className="font-sans font-bold text-gray-300 text-lg text-center px-4 group-hover:scale-105 transition-transform duration-500">
+                      {product.category.toUpperCase().replace('_', ' ')}
+                    </div>
+                  </div>
+                  <div className="flex-grow">
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded">
+                      {CATEGORIES.find(c => c.id === product.category)?.name || 'Account'}
+                    </span>
+                    <h3 className="font-sans font-bold text-gray-900 mt-3 text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                      {product.name}
+                    </h3>
+                  </div>
+                  <div className="mt-5 flex items-center justify-between">
+                    <div className="font-sans font-bold text-xl text-gray-900">
+                      ${product.price.toFixed(2)}
+                    </div>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); addToCart(product, 1); }}
+                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-xs font-sans font-bold hover:bg-primary hover:text-white transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+              <p className="text-gray-500">No products found in this category.</p>
+            </div>
+          )}
+        </div>
+      </main>
+    </>
+  );
+};
+
+const ProductView = ({ product, addToCart, navigate }) => {
+  const [quantity, setQuantity] = useState(1);
+  const categoryName = CATEGORIES.find(c => c.id === product.category)?.name || 'Account';
+
+  const handleDecrease = () => {
+    if (quantity > 1) setQuantity(quantity - 1);
+  };
+
+  const handleIncrease = () => {
+    setQuantity(quantity + 1);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-12">
+      {/* Breadcrumb */}
+      <nav className="flex text-sm text-gray-500 mb-8 uppercase tracking-wider font-bold text-[10px]">
+        <button onClick={() => navigate('home')} className="hover:text-primary transition-colors">HOME</button>
+        <span className="mx-2">/</span>
+        <span>{categoryName}</span>
+        <span className="mx-2">/</span>
+        <span className="text-gray-900">{product.name}</span>
+      </nav>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+        {/* Product Image Placeholder */}
+        <div className="bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-center p-12 aspect-[4/3] relative overflow-hidden group">
+          {product.category.includes('youtube') ? (
+            <div className="flex items-center justify-center gap-4 opacity-80 group-hover:scale-105 transition-transform duration-500">
+              <PlayCircle size={80} className="text-red-600" fill="currentColor" />
+              <span className="text-5xl font-bold tracking-tighter text-gray-900">YouTube</span>
+            </div>
+          ) : (
+            <div className="text-4xl font-bold text-gray-300">
+              {categoryName}
+            </div>
+          )}
+        </div>
+
+        {/* Product Details */}
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+            {product.name}
+          </h1>
+          <div className="text-3xl font-bold text-primary mb-8">
+            ${product.price.toFixed(2)}
+          </div>
+
+          <div className="mb-8">
+            <h4 className="font-bold border-b border-gray-200 pb-2 mb-4 text-sm tracking-wider uppercase">Information</h4>
+            <ul className="space-y-3 text-sm text-gray-600 list-disc list-inside marker:text-gray-300">
+              {product.category.includes('youtube') ? (
+                <>
+                  <li>Age/Year: Random</li>
+                  <li>Phone Verified: Random</li>
+                  <li>Video: 0</li>
+                  <li>Account Format: GMAIL | PASSWORD | RECOVERYMAIL</li>
+                  <li>Log in by option "Confirm recovery email address"</li>
+                </>
+              ) : (
+                <>
+                  <li>Format: STANDARD FORMAT</li>
+                  <li>Delivered instantly or within 24h max</li>
+                  <li>Safe & Secure Accounts</li>
+                </>
+              )}
+            </ul>
+          </div>
+
+          {/* Add to cart section */}
+          <div className="flex items-center gap-4 mb-8">
+            <div className="flex items-center border border-gray-200 rounded-full overflow-hidden bg-white">
+              <button 
+                onClick={handleDecrease}
+                className="px-4 py-3 text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                <Minus size={16} />
+              </button>
+              <div className="px-4 font-bold font-mono text-gray-900 w-12 text-center select-none">
+                {quantity}
+              </div>
+              <button 
+                onClick={handleIncrease}
+                className="px-4 py-3 text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            
+            <button 
+              onClick={() => addToCart(product, quantity)}
+              className="btn-primary flex-grow text-center justify-center py-3.5"
+            >
+              ADD TO CART
+            </button>
+          </div>
+
+          <div className="border-t border-gray-100 pt-6 text-sm text-gray-500 space-y-2">
+            <div><span className="font-bold text-gray-900 mr-2">SKU:</span> agedy-{product.id}</div>
+            <div><span className="font-bold text-gray-900 mr-2">Categories:</span> <span className="text-primary">{categoryName}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Description Tabs */}
+      <div className="border-t border-gray-200 pt-8">
+        <div className="flex gap-8 border-b border-gray-200 mb-8">
+          <button className="pb-4 border-b-2 border-primary font-bold text-sm tracking-wider uppercase text-gray-900">
+            Description
+          </button>
+          <button className="pb-4 text-gray-500 font-bold text-sm tracking-wider uppercase hover:text-gray-900 transition-colors">
+            Reviews (0)
+          </button>
+        </div>
+        
+        <div>
+          <h4 className="font-bold uppercase tracking-wider text-sm mb-4">Note</h4>
+          <ul className="space-y-4 text-sm text-gray-600 list-disc list-inside marker:text-gray-400 leading-relaxed max-w-4xl">
+            <li>Channels are random from years ago. You can't choose which channel or year you want specifically.</li>
+            <li>Channels have been created several years ago. They will undoubtedly help you gain more exposure, improve rankings, and drive traffic.</li>
+            <li>Good for any Youtube method.</li>
+            <li>If this is your first time buying, please start with a small quantity to test.</li>
+            <li>Always change the password, recovery email, device activity, phone number, and enable two-step verification to protect your accounts. <strong>But only after at least 48 hours from your 1st log in.</strong></li>
           </ul>
         </div>
       </div>
-      
-      {/* Product Grid */}
-      <div className="flex-grow">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="font-bold text-2xl text-gray-900">
-            {CATEGORIES.find(c => c.id === activeCategory)?.name}
-          </h2>
-          <span className="text-sm text-gray-500 bg-white px-3 py-1 border border-gray-100 rounded-full">
-            Showing {filteredProducts.length} results
-          </span>
-        </div>
-
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col h-full hover:shadow-md transition-shadow duration-300 group">
-                <div className="bg-gray-50 rounded-lg p-4 mb-4 flex items-center justify-center aspect-video relative overflow-hidden">
-                  <div className="font-sans font-bold text-gray-300 text-lg text-center px-4 group-hover:scale-105 transition-transform duration-500">
-                    {product.category.toUpperCase().replace('_', ' ')}
-                  </div>
-                </div>
-                <div className="flex-grow">
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded">
-                    {CATEGORIES.find(c => c.id === product.category)?.name || 'Account'}
-                  </span>
-                  <h3 className="font-sans font-bold text-gray-900 mt-3 text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                    {product.name}
-                  </h3>
-                </div>
-                <div className="mt-5 flex items-center justify-between">
-                  <div className="font-sans font-bold text-xl text-gray-900">
-                    ${product.price.toFixed(2)}
-                  </div>
-                  <button 
-                    onClick={() => addToCart(product)}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-xs font-sans font-bold hover:bg-primary hover:text-white transition-colors"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <p className="text-gray-500">No products found in this category.</p>
-          </div>
-        )}
-      </div>
-    </main>
-  </>
-);
+    </div>
+  );
+};
 
 const AuthView = ({ navigate }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    if (!supabase) {
+      setErrorMsg("Veuillez configurer vos clés Supabase dans .env.local");
+      return;
+    }
+    
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate('home');
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName }
+          }
+        });
+        if (error) throw error;
+        setSuccessMsg("Vérifiez vos emails pour le lien de confirmation !");
+      }
+    } catch (error) {
+      setErrorMsg(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (!supabase) {
+      setErrorMsg("Veuillez configurer vos clés Supabase dans .env.local");
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      setErrorMsg(error.message);
+    }
+  };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-20 px-6">
@@ -324,24 +538,57 @@ const AuthView = ({ navigate }) => {
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
           {isLogin ? 'Welcome Back' : 'Create Account'}
         </h2>
-        <p className="text-gray-500 text-sm mb-8">
+        <p className="text-gray-500 text-sm mb-6">
           {isLogin ? 'Sign in to access your purchased accounts.' : 'Join AgedSMM to start boosting your presence.'}
         </p>
 
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        {errorMsg && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-100">
+            {errorMsg}
+          </div>
+        )}
+        
+        {successMsg && (
+          <div className="bg-green-50 text-green-600 p-3 rounded-lg text-sm mb-4 border border-green-100">
+            {successMsg}
+          </div>
+        )}
+
+        <form className="space-y-4" onSubmit={handleAuth}>
           {!isLogin && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <input type="text" className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" placeholder="John Doe" />
+              <input 
+                type="text" 
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
+                placeholder="John Doe" 
+              />
             </div>
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input type="email" className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" placeholder="you@example.com" />
+            <input 
+              type="email" 
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
+              placeholder="you@example.com" 
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="password" className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" placeholder="••••••••" />
+            <input 
+              type="password" 
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
+              placeholder="••••••••" 
+            />
           </div>
 
           {isLogin && (
@@ -354,8 +601,43 @@ const AuthView = ({ navigate }) => {
             </div>
           )}
 
-          <button type="submit" className="w-full btn-primary mt-6">
-            {isLogin ? 'Sign In' : 'Sign Up'}
+          <button type="submit" disabled={loading} className="w-full btn-primary mt-6 disabled:opacity-70 disabled:cursor-not-allowed">
+            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+          </button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <button 
+            type="button" 
+            onClick={handleGoogleLogin}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+            Google
           </button>
         </form>
 
@@ -363,7 +645,7 @@ const AuthView = ({ navigate }) => {
           <p className="text-sm text-gray-600">
             {isLogin ? "Don't have an account?" : "Already have an account?"}
             <button 
-              onClick={() => setIsLogin(!isLogin)} 
+              onClick={() => { setIsLogin(!isLogin); setErrorMsg(null); setSuccessMsg(null); }} 
               className="ml-2 text-primary font-bold hover:underline"
             >
               {isLogin ? 'Sign up' : 'Sign in'}
@@ -375,11 +657,7 @@ const AuthView = ({ navigate }) => {
   );
 };
 
-const CartView = ({ cart, setCart, cartTotal, navigate }) => {
-  const removeFromCart = (indexToRemove) => {
-    setCart(cart.filter((_, index) => index !== indexToRemove));
-  };
-
+const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigate }) => {
   return (
     <div className="min-h-[80vh] max-w-4xl mx-auto py-16 px-6">
       <button onClick={() => navigate('home')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary mb-8 transition-colors">
@@ -399,8 +677,8 @@ const CartView = ({ cart, setCart, cartTotal, navigate }) => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
-            {cart.map((item, index) => (
-              <div key={index} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            {cart.map((item) => (
+              <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center font-bold text-gray-300 text-xs text-center">
                     {item.category.split('_')[0].toUpperCase()}
@@ -410,12 +688,34 @@ const CartView = ({ cart, setCart, cartTotal, navigate }) => {
                     <p className="text-primary font-bold mt-1">${item.price.toFixed(2)}</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => removeFromCart(index)}
-                  className="text-gray-400 hover:text-red-500 transition-colors p-2"
-                >
-                  <Trash2 size={18} />
-                </button>
+                
+                <div className="flex items-center gap-6">
+                  {/* Quantity Selector */}
+                  <div className="flex items-center border border-gray-200 rounded-full overflow-hidden bg-white">
+                    <button 
+                      onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                      className="px-2 py-1 text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <div className="w-8 font-mono text-center text-sm font-bold select-none">
+                      {item.quantity}
+                    </div>
+                    <button 
+                      onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                      className="px-2 py-1 text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+
+                  <button 
+                    onClick={() => removeFromCart(item.id)}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -423,7 +723,7 @@ const CartView = ({ cart, setCart, cartTotal, navigate }) => {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
             <h3 className="font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Order Summary</h3>
             <div className="flex justify-between mb-4 text-gray-600">
-              <span>Subtotal ({cart.length} items)</span>
+              <span>Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
               <span>${cartTotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between mb-6 text-gray-600">
@@ -452,18 +752,58 @@ const CartView = ({ cart, setCart, cartTotal, navigate }) => {
 // ==========================================
 
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'auth', 'cart'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'product', 'auth', 'cart'
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [cart, setCart] = useState([]);
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const filteredProducts = activeCategory === 'all' 
     ? PRODUCTS 
     : PRODUCTS.filter(p => p.category === activeCategory);
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
+  // Calcule le total en multipliant le prix par la quantité
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
 
-  const addToCart = (product) => {
-    setCart([...cart, product]);
+  const addToCart = (product, quantity = 1) => {
+    setCart(prevCart => {
+      const existingItemIndex = prevCart.findIndex(item => item.id === product.id);
+      if (existingItemIndex >= 0) {
+        const newCart = [...prevCart];
+        newCart[existingItemIndex].quantity += quantity;
+        return newCart;
+      } else {
+        return [...prevCart, { ...product, quantity }];
+      }
+    });
+  };
+
+  const updateCartQuantity = (productId, newQuantity) => {
+    if (newQuantity < 1) return;
+    setCart(prevCart => prevCart.map(item => 
+      item.id === productId ? { ...item, quantity: newQuantity } : item
+    ));
+  };
+
+  const removeFromCart = (productId) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== productId));
   };
 
   const navigate = (view) => {
@@ -473,7 +813,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background selection:bg-primary selection:text-white font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} cartItems={cart.length} navigate={navigate} />
+      <Navbar cartTotal={cartTotal} cartItemCount={cartItemCount} navigate={navigate} session={session} />
       
       <div className="flex-grow">
         {currentView === 'home' && (
@@ -482,10 +822,31 @@ function App() {
             setActiveCategory={setActiveCategory} 
             filteredProducts={filteredProducts} 
             addToCart={addToCart} 
+            navigate={navigate}
+            setSelectedProduct={setSelectedProduct}
+          />
+        )}
+        {currentView === 'product' && selectedProduct && (
+          <ProductView 
+            product={selectedProduct} 
+            addToCart={(p, q) => {
+              addToCart(p, q);
+              // Optionnel : naviguer vers le panier automatiquement
+              // navigate('cart'); 
+            }}
+            navigate={navigate} 
           />
         )}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'cart' && <CartView cart={cart} setCart={setCart} cartTotal={cartTotal} navigate={navigate} />}
+        {currentView === 'cart' && (
+          <CartView 
+            cart={cart} 
+            updateCartQuantity={updateCartQuantity}
+            removeFromCart={removeFromCart} 
+            cartTotal={cartTotal} 
+            navigate={navigate} 
+          />
+        )}
       </div>
 
       <Footer />
