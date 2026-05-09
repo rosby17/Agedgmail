@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp } from 'lucide-react';
 import { supabase } from './supabaseClient';
+
+// ==========================================
+// CONFIGURATION ADMIN (À MODIFIER)
+// ==========================================
+const ADMIN_EMAIL = "rooseveltmkr@gmail.com"; // Ton email pour accéder à l'admin
 
 // ==========================================
 // COMPOSANTS LOGOS (IMG & SVG)
@@ -142,6 +147,9 @@ const Navbar = ({ cartTotal, navigate, session, profile }) => (
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <button onClick={() => navigate('home')} className="font-bold text-2xl tracking-tight">AgedGmail<span className="text-primary">YT</span></button>
       <div className="flex items-center gap-6">
+        {session && session.user.email === ADMIN_EMAIL && (
+          <button onClick={() => navigate('admin')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20"><Shield size={14} /> Admin</button>
+        )}
         {session ? (
           <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end border-r border-gray-100 pr-4">
@@ -209,15 +217,11 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      {/* MODALE DE VISUALISATION DES ACCÈS */}
       {viewOrder && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-bold">{viewOrder.product_name}</h3>
-                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Vos identifiants de connexion</p>
-              </div>
+              <div><h3 className="text-xl font-bold">{viewOrder.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Vos identifiants de connexion</p></div>
               <button onClick={() => setViewOrder(null)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
             </div>
             <div className="p-10 space-y-8">
@@ -304,7 +308,6 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   <p className="text-[10px] text-gray-400 italic mt-2">This will be how your name will be displayed in the account section and in reviews</p>
                 </div>
                 <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email address *</label><input type="email" defaultValue={profile?.email} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
-                
                 <div className="pt-10 border-t border-gray-50">
                   <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-8">Password change</h3>
                   <div className="space-y-6">
@@ -313,7 +316,6 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                     <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Confirm new password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
                   </div>
                 </div>
-
                 <button type="submit" className="bg-gray-900 text-white px-12 py-5 rounded-full font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10">Save changes</button>
               </form>
             </div>
@@ -325,7 +327,106 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
 };
 
 // ==========================================
-// LOGIQUE PRINCIPALE
+// VUE ADMINISTRATEUR (PRIVÉE)
+// ==========================================
+
+const AdminView = ({ navigate }) => {
+  const [activeTab, setActiveTab] = useState('stock');
+  const [selectedProductId, setSelectedProductId] = useState(PRODUCTS[0].id);
+  const [stockInput, setStockInput] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [amountToAdd, setAmountToAdd] = useState(0);
+  const [recentUsers, setRecentUsers] = useState([
+    { id: '1', email: 'client@gmail.com', balance: 45.00, created_at: '2026-05-01' },
+    { id: '2', email: 'rooseveltmkr@gmail.com', balance: 125.50, created_at: '2026-04-28' },
+  ]);
+
+  const handleAddStock = () => {
+    if (!stockInput.trim()) return alert("Veuillez entrer des comptes.");
+    const lines = stockInput.split("\n").filter(l => l.trim());
+    alert(`${lines.length} comptes ajoutés en stock pour le produit ID: ${selectedProductId} ! (Simulation)`);
+    setStockInput("");
+  };
+
+  const handleUpdateBalance = () => {
+    if (!userEmail || amountToAdd <= 0) return alert("Infos invalides.");
+    alert(`Solde de ${userEmail} mis à jour : +${amountToAdd}$ ! (Simulation)`);
+    setUserEmail("");
+    setAmountToAdd(0);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
+      <div className="flex items-center justify-between mb-12">
+        <div><h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Console Administration</h1><p className="text-gray-400 text-sm mt-2">Gestion globale du stock, des utilisateurs et des ventes.</p></div>
+        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><ArrowLeft size={16} /> Retour au site</button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        <div className="lg:col-span-1 space-y-4">
+          <button onClick={() => setActiveTab('stock')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'stock' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><Database size={18} /> Gestion Stock</button>
+          <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><Users size={18} /> Utilisateurs & Solde</button>
+          <button onClick={() => setActiveTab('stats')} className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === 'stats' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}><TrendingUp size={18} /> Statistiques Ventes</button>
+        </div>
+
+        <div className="lg:col-span-3 space-y-8">
+          {activeTab === 'stock' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold mb-8">Ajouter du Stock (Bulk)</h2>
+              <div className="space-y-6">
+                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Choisir le Produit</label>
+                  <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">
+                    {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name} - ${p.price}</option>)}
+                  </select>
+                </div>
+                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Coller les comptes (1 par ligne)</label>
+                  <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="10" placeholder="email:pass:recup&#10;email:pass:recup" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
+                </div>
+                <button onClick={handleAddStock} className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primary transition-all">Enregistrer en Stock</button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div className="space-y-8">
+              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <h2 className="text-2xl font-bold mb-8">Recharger le Solde d'un Client</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email du Client</label><input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="client@gmail.com" /></div>
+                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant à ajouter ($)</label><input type="number" value={amountToAdd} onChange={(e) => setAmountToAdd(parseFloat(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
+                </div>
+                <button onClick={handleUpdateBalance} className="mt-8 bg-primary text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Valider le Rechargement</button>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <h2 className="text-2xl font-bold mb-8">Utilisateurs Récents</h2>
+                <table className="w-full text-left">
+                  <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Email</th><th className="pb-6">Date Inscr.</th><th className="pb-6 text-right">Solde</th></tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {recentUsers.map(user => (<tr key={user.id}><td className="py-6 font-bold text-gray-900">{user.email}</td><td className="py-6 text-sm text-gray-400">{user.created_at}</td><td className="py-6 text-right font-black text-primary">${user.balance.toFixed(2)}</td></tr>))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'stats' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold mb-8">Statistiques de Ventes</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div className="bg-gray-50 p-8 rounded-3xl"><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Revenu Total</div><div className="text-3xl font-black text-gray-900">$4,520.00</div></div>
+                <div className="bg-gray-50 p-8 rounded-3xl"><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Commandes</div><div className="text-3xl font-black text-gray-900">142</div></div>
+                <div className="bg-gray-50 p-8 rounded-3xl"><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Comptes en Stock</div><div className="text-3xl font-black text-primary">850</div></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// LOGIQUE PRINCIPALE (Suite)
 // ==========================================
 
 function App() {
@@ -401,6 +502,7 @@ function App() {
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
         {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} />}
+        {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && <AdminView navigate={navigate} />}
       </div>
       <Footer />
     </div>
