@@ -3,24 +3,22 @@ import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert,
 import { supabase } from './supabaseClient';
 
 // ==========================================
-// COMPOSANTS LOGOS (IMG)
+// COMPOSANTS LOGOS (IMG) - OPTIMISÉS POUR REMPLIR L'ESPACE
 // ==========================================
 
-const YouTubeLogo = ({ size = 24, className = "" }) => (
+const YouTubeLogo = ({ className = "" }) => (
   <img 
     src="/youtube-logo.png" 
     alt="YouTube" 
-    style={{ height: size }} 
-    className={`object-contain ${className}`}
+    className={`w-full h-full object-contain scale-125 ${className}`}
   />
 );
 
-const GmailLogo = ({ size = 24, className = "" }) => (
+const GmailLogo = ({ className = "" }) => (
   <img 
     src="/gmail-logo.png" 
     alt="Gmail" 
-    style={{ height: size }} 
-    className={`object-contain ${className}`}
+    className={`w-full h-full object-contain scale-125 ${className}`}
   />
 );
 
@@ -37,7 +35,6 @@ const CATEGORIES = [
   { id: 'social', name: 'Facebook / Twitter / Insta' },
 ];
 
-// Fonction pour générer des détails par défaut selon la catégorie
 const getProductDetails = (product) => {
   const commonTerms = "Veuillez lire les spécifications avant d'acheter. Vous êtes responsable de toutes les actions sur le compte. Utilisez des IP résidentielles fraîches. Changez les accès après 48h seulement.";
   const refundPolicy = "Garantie de 3 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès.";
@@ -174,12 +171,12 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
             </div>
           </div>
           <div className="relative h-[500px] hidden lg:block">
-            <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50">
-              <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><YouTubeLogo size={40} /></div>
+            <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50 overflow-hidden">
+              <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl overflow-hidden"><YouTubeLogo /></div>
               <div><div className="text-sm font-black text-gray-900">YouTube 2014</div><div className="text-primary font-bold">$6.19</div></div>
             </div>
-            <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50">
-              <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><GmailLogo size={40} /></div>
+            <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50 overflow-hidden">
+              <div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div>
               <div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$1.43</div></div>
             </div>
             <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-50">
@@ -212,8 +209,8 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
               return (
                 <div key={product.id} className="bg-white group">
                   <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
-                    <div className="w-full h-full p-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
-                      {product.category.includes('youtube') ? <YouTubeLogo size={55} className="w-full h-full object-contain" /> : product.category === 'email' ? <GmailLogo size={55} className="w-full h-full object-contain" /> : <Share2 size={50} className="text-gray-300" />}
+                    <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden">
+                      {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : <Share2 size={50} className="text-gray-300" />}
                     </div>
                   </div>
                   <div className="space-y-4 px-2">
@@ -246,9 +243,9 @@ const ProductView = ({ product, addToCart, navigate }) => {
   return (
     <div className="max-w-7xl mx-auto px-6 py-20">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
-        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center p-20 border border-gray-100">
-          <div className="w-full h-full flex items-center justify-center scale-150">
-            {product.category.includes('youtube') ? <YouTubeLogo size={100} className="w-full" /> : product.category === 'email' ? <GmailLogo size={100} className="w-full" /> : <Share2 size={80} />}
+        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden">
+          <div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden">
+            {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : <Share2 size={80} />}
           </div>
         </div>
         <div className="flex flex-col justify-center">
@@ -267,7 +264,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><Zap size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Livraison Instantanée</span></div>
-            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><ShieldCheck size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Garantie 5 Jours</span></div>
+            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><ShieldCheck size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Garantie 3 Jours</span></div>
           </div>
         </div>
       </div>
@@ -360,7 +357,7 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
           {cart.map((item) => (
             <div key={item.id} className="bg-white border border-gray-100 p-8 rounded-[2.5rem] flex items-center justify-between group shadow-soft">
               <div className="flex items-center gap-8">
-                <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform">{item.category.includes('youtube') ? <YouTubeLogo size={32} /> : item.category === 'email' ? <GmailLogo size={32} /> : <Share2 size={32} />}</div>
+                <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform">{item.category.includes('youtube') ? <YouTubeLogo /> : item.category === 'email' ? <GmailLogo /> : <Share2 size={32} />}</div>
                 <div><h4 className="font-bold text-gray-900 mb-1">{item.name}</h4><p className="text-primary font-bold">${item.price.toFixed(2)}</p></div>
               </div>
               <div className="flex items-center gap-10">
