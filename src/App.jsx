@@ -350,7 +350,25 @@ const AuthView = ({ navigate }) => {
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label><input type="email" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="name@email.com" /></div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="••••••••" /></div>
           <button className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-black/10">{isLogin ? 'Se Connecter' : 'S\'inscrire'}</button>
-          <button type="button" onClick={async () => await supabase.auth.signInWithOAuth({ provider: 'google' })} className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all">Google</button>
+          <button 
+            type="button" 
+            onClick={async () => {
+              if (!supabase) {
+                alert("Erreur : La connexion à la base de données n'est pas configurée. Vérifiez vos clés API dans Vercel.");
+                return;
+              }
+              const { error } = await supabase.auth.signInWithOAuth({ 
+                provider: 'google',
+                options: {
+                  redirectTo: window.location.origin
+                }
+              });
+              if (error) alert("Erreur Google Auth : " + error.message);
+            }} 
+            className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all"
+          >
+            Google
+          </button>
         </form>
         <button onClick={() => setIsLogin(!isLogin)} className="w-full mt-8 text-center text-sm font-bold text-gray-400 hover:text-primary transition-colors">{isLogin ? "Créer un compte" : "Déjà membre ?"}</button>
       </div>
