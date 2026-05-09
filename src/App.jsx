@@ -158,19 +158,22 @@ const HomeView = ({ activeCategory, setActiveCategory, filteredProducts, addToCa
         <div className="flex-grow">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white border border-gray-100 rounded-[2.5rem] p-6 hover:border-primary/50 transition-all duration-500 group cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
-                <div className="aspect-[4/3] bg-gray-50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden relative">
-                  <div className="group-hover:scale-110 transition-transform duration-700">
-                    {product.category.includes('youtube') ? <YouTubeLogo size={40} /> : product.category === 'email' ? <GmailLogo size={40} /> : <Share2 size={40} className="text-gray-300" />}
+              <div key={product.id} className="bg-white group cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
+                <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden p-8 border border-gray-100 group-hover:border-primary/30 transition-all duration-500">
+                  <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
+                    {product.category.includes('youtube') ? (
+                      <YouTubeLogo size={50} className="w-full" />
+                    ) : product.category === 'email' ? (
+                      <GmailLogo size={50} className="w-full" />
+                    ) : (
+                      <Share2 size={50} className="text-gray-300" />
+                    )}
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
-                  <h3 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors">{product.name}</h3>
-                  <div className="flex items-center justify-between pt-4">
-                    <div className="text-2xl font-bold text-gray-900 font-mono">${product.price.toFixed(2)}</div>
-                    <button onClick={(e) => { e.stopPropagation(); addToCart(product, 1); }} className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-all"><Plus size={20} /></button>
-                  </div>
+                <div className="space-y-2 px-2">
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
+                  <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors min-h-[2.5rem]">{product.name}</h3>
+                  <div className="text-lg font-black text-gray-900 font-mono pt-2">${product.price.toFixed(2)}</div>
                 </div>
               </div>
             ))}
