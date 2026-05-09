@@ -5,7 +5,7 @@ import { supabase } from './supabaseClient';
 // ==========================================
 // CONFIGURATION ADMIN (À MODIFIER)
 // ==========================================
-const ADMIN_EMAIL = "rooseveltmkr@gmail.com"; // Ton email pour accéder à l'admin
+const ADMIN_EMAIL = "rooseveltmkr@gmail.com"; 
 
 // ==========================================
 // COMPOSANTS LOGOS (IMG & SVG)
@@ -62,7 +62,7 @@ const getProductDetails = (product) => {
   
   return {
     info: product.category === 'email' 
-      ? `Âge : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Pays : ${product.name.includes('US') ? 'US' : 'Aléatoire'} | Format : Gmail/Pass/Récup` 
+      ? `Âge : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Pays : ${product.name.includes('US') ? 'US' : 'Aléatoire'} | Format : Gmail/Pass/Récup/2FA` 
       : product.category === 'facebook'
       ? "Âge : Ancien (2012-2020) | Amis : 50+ | Statut : Vérifié | Qualité : Verte"
       : isNotMonetized 
@@ -74,7 +74,7 @@ const getProductDetails = (product) => {
       ? "Nous vendons ici le nombre d'abonnés. Chaîne propre prête pour lancer votre processus de monétisation."
       : product.category.includes('youtube')
       ? `Parfait pour le business YT. ${isMonetized ? 'Générez des revenus dès le premier upload.' : 'Éligible pour une future monétisation.'}`
-      : "Gmail aléatoire. Connexion via 'Email de récupération'.",
+      : "Gmail de haute qualité. Format : Email | Pass | Récup | 2FA.",
     terms: commonTerms,
     refund: "Garantie de 3 jours jusqu'à la connexion. Remplacement si le compte est banni avant l'accès."
   };
@@ -184,7 +184,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
         <div className="relative h-[500px] hidden lg:block">
           <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><YouTubeLogo /></div><div><div className="text-sm font-black text-gray-900">YouTube 2014</div><div className="text-primary font-bold">$6.19</div></div></div>
           <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-100 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div><div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$5.43</div></div></div>
-          <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-50"><div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div><div><div className="text-sm font-black text-gray-900">Instantané</div><div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div></div></div>
+          <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-100"><div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div><div><div className="text-sm font-black text-gray-900">Instantané</div><div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div></div></div>
         </div>
       </div>
     </section>
@@ -226,7 +226,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
             </div>
             <div className="p-10 space-y-8">
               <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Format : Email | Pass | Récupération</div>
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Format : Email | Password | Recovery | 2FA Code</div>
                 <div className="font-mono text-sm bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center group">
                   <span className="truncate mr-4 text-gray-700">{viewOrder.data || "En attente de livraison..."}</span>
                   <button onClick={() => { navigator.clipboard.writeText(viewOrder.data); alert("Copié !"); }} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all"><Copy size={16} /></button>
@@ -374,13 +374,17 @@ const AdminView = ({ navigate }) => {
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
               <h2 className="text-2xl font-bold mb-8">Ajouter du Stock (Bulk)</h2>
               <div className="space-y-6">
+                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mb-6">
+                  <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">💡 Format Recommandé</div>
+                  <p className="text-sm text-blue-800 font-medium italic">email | mot_de_passe | email_recup | code_2fa</p>
+                </div>
                 <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Choisir le Produit</label>
                   <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">
                     {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name} - ${p.price}</option>)}
                   </select>
                 </div>
                 <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Coller les comptes (1 par ligne)</label>
-                  <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="10" placeholder="email:pass:recup&#10;email:pass:recup" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
+                  <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="10" placeholder="email|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
                 </div>
                 <button onClick={handleAddStock} className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-primary transition-all">Enregistrer en Stock</button>
               </div>
@@ -461,8 +465,8 @@ function App() {
     } else {
       setProfile({ id: "1688", email: session?.user?.email || "rooseveltmkr@gmail.com", display_name: "rooseveltmkr", full_name: "Roosevelt Mogo kamdem", balance: 125.50 });
       setOrders([
-        { id: '1', product_name: 'Gmail US Ancien 2010', quantity: 2, total_price: 10.86, created_at: new Date().toISOString(), data: "gmail01@gmail.com:pass123:recup@mail.com\ngmail02@gmail.com:pass456:recup@mail.com" },
-        { id: '2', product_name: 'Chaîne YouTube 1k Subs', quantity: 1, total_price: 25.00, created_at: new Date(Date.now() - 86400000).toISOString(), data: "yt-channel-auth:token-secure-12345" }
+        { id: '1', product_name: 'Gmail US Ancien 2010', quantity: 2, total_price: 10.86, created_at: new Date().toISOString(), data: "email01@gmail.com|pass123|recup@mail.com|code2fa_123\nemail02@gmail.com|pass456|recup@mail.com|code2fa_456" },
+        { id: '2', product_name: 'Chaîne YouTube 1k Subs', quantity: 1, total_price: 25.00, created_at: new Date(Date.now() - 86400000).toISOString(), data: "sanchezwilliamprzzs8913.@gmail.com|#EN3K1Z^gkg|sanchezwilliamprzzs89137072@eloisee.top|rtnc2xlix33nzek4uxomjuob6kfozq3y" }
       ]);
     }
   };
