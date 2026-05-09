@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 // ==========================================
@@ -76,37 +76,30 @@ const getProductDetails = (product) => {
 };
 
 const PRODUCTS = [
-  // --- YOUTUBE NOT MONETIZED (Mise à jour des prix & paliers) ---
   { id: 201, name: 'Chaîne YouTube – 1k Abonnés – Prête pour Monétisation', category: 'youtube_not_monetized', price: 10.00, sales: 150 },
   { id: 202, name: 'Chaîne YouTube – 10k Abonnés – Trafic Organique', category: 'youtube_not_monetized', price: 50.00, sales: 90 },
   { id: 203, name: 'Chaîne YouTube – 50k Abonnés – Spécial Business', category: 'youtube_not_monetized', price: 150.00, sales: 40 },
   { id: 204, name: 'Chaîne YouTube – 100k Abonnés – Pack Autorité', category: 'youtube_not_monetized', price: 300.00, sales: 20 },
-
-  // --- YOUTUBE MONETIZED ---
   { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00, sales: 12 },
   { id: 102, name: 'Chaîne YouTube Monétisée – Créneau Gaming – 2k Subs – 2020', category: 'youtube_monetized', price: 210.00, sales: 8 },
   { id: 103, name: 'Chaîne YouTube Monétisée – 5k Subs – Sans Strike – 2016', category: 'youtube_monetized', price: 350.00, sales: 5 },
-  
-  // --- GMAIL ---
   { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 5.43, sales: 150 },
   { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 3.24, sales: 200 },
   { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 9.50, sales: 85 },
   { id: 28, name: 'Gmail Pack 10 Comptes – 2022', category: 'email', price: 28.00, sales: 45 },
-
-  // --- YOUTUBE AGED & CPA ---
   { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19, sales: 90 },
   { id: 2, name: 'Chaîne Youtube 2022 – 2025 sans vidéo', category: 'youtube_aged', price: 5.49, sales: 110 },
   { id: 3, name: 'Chaîne Youtube 2018 – 2021 sans vidéo', category: 'youtube_aged', price: 5.99, sales: 70 },
   { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80, sales: 40 },
   { id: 13, name: 'Chaîne Spéciale 2011-202x avec 1M+ vues ORGANIQUES', category: 'youtube_cpa', price: 296.88, sales: 3 },
-  
-  // --- FACEBOOK ---
   { id: 24, name: 'Compte Facebook US Ancien (50+ Amis) - Spécial Ads', category: 'facebook', price: 35.00, sales: 20 },
   { id: 25, name: 'Compte Facebook BM Créé - Ancienneté 2015', category: 'facebook', price: 45.00, sales: 15 },
   { id: 26, name: 'Page Facebook de Fan - 1k à 5k J\'aime - Organique', category: 'facebook', price: 60.00, sales: 10 },
 ].map(p => ({ ...p, details: getProductDetails(p) }));
 
-// ... [Reste du code identique]
+// ==========================================
+// COMPOSANTS DE STRUCTURE
+// ==========================================
 
 const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
   const [localQty, setLocalQty] = useState(1);
@@ -135,6 +128,10 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
     </div>
   );
 };
+
+// ==========================================
+// VUES PRINCIPALES
+// ==========================================
 
 const Navbar = ({ cartTotal, navigate, session, profile }) => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-50 font-sans">
@@ -178,7 +175,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
         </div>
         <div className="relative h-[500px] hidden lg:block">
           <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><YouTubeLogo /></div><div><div className="text-sm font-black text-gray-900">YouTube 2014</div><div className="text-primary font-bold">$6.19</div></div></div>
-          <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div><div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$5.43</div></div></div>
+          <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-100 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div><div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$5.43</div></div></div>
           <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-50"><div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div><div><div className="text-sm font-black text-gray-900">Instantané</div><div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div></div></div>
         </div>
       </div>
@@ -200,8 +197,41 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
 
 const DashboardView = ({ profile, navigate, orders = [] }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [viewOrder, setViewOrder] = useState(null);
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
+      {/* MODALE DE VISUALISATION DES ACCÈS */}
+      {viewOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold">{viewOrder.product_name}</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Vos identifiants de connexion</p>
+              </div>
+              <button onClick={() => setViewOrder(null)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
+            </div>
+            <div className="p-10 space-y-8">
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Format : Email | Pass | Récupération</div>
+                <div className="font-mono text-sm bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center group">
+                  <span className="truncate mr-4 text-gray-700">{viewOrder.data || "En attente de livraison..."}</span>
+                  <button onClick={() => { navigator.clipboard.writeText(viewOrder.data); alert("Copié !"); }} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all"><Copy size={16} /></button>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4 text-xs text-gray-500 leading-relaxed">
+                  <ShieldCheck size={18} className="text-green-500 shrink-0" />
+                  <p>Utilisez une IP propre pour la première connexion. Attendez 48h avant de modifier les informations de sécurité.</p>
+                </div>
+              </div>
+              <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-12">
         <aside className="w-full lg:w-64 flex-shrink-0">
           <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-soft sticky top-32">
@@ -217,15 +247,87 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
             <div className="mt-10 pt-6 border-t border-gray-50"><button onClick={() => supabase.auth.signOut()} className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all"><LogOut size={18} /> Déconnexion</button></div>
           </div>
         </aside>
+
         <main className="flex-grow space-y-8">
-          {activeTab === 'overview' && (<div className="space-y-8"><div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div className="bg-gray-900 rounded-[3rem] p-10 text-white relative overflow-hidden group shadow-2xl"><div className="relative z-10"><div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Solde Actuel</div><div className="text-5xl font-black mb-10 font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div><button onClick={() => navigate('payment')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 inline-flex"><Plus size={18} /> Recharger le compte</button></div><Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5 group-hover:scale-110 transition-transform duration-700" /></div><div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft flex flex-col justify-between"><div><div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Dernière Commande</div><div className="text-xl font-bold text-gray-900 mb-2">{orders[0]?.product_name || "Aucune commande"}</div><div className="text-sm text-gray-400 font-medium">Effectuée le {orders[0]?.created_at ? new Date(orders[0].created_at).toLocaleDateString() : "--/--/----"}</div></div><button onClick={() => setActiveTab('orders')} className="text-sm font-black text-primary hover:underline flex items-center gap-2 mt-6">Voir tout l'historique <ChevronRight size={16} /></button></div></div><section className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h3 className="text-lg font-bold mb-8">Activités Récentes</h3>{orders.length === 0 ? (<div className="text-center py-10"><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore effectué d'achats.</p></div>) : (<div className="space-y-6">{orders.slice(0, 3).map(order => (<div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0"><div className="flex items-center gap-4"><div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><History size={18} /></div><div><div className="text-sm font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleDateString()}</div></div></div><div className="text-sm font-black text-gray-900">${order.total_price.toFixed(2)}</div></div>))}</div>)}</section></div>)}
-          {activeTab === 'orders' && (<div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Historique des Commandes</h2>{orders.length === 0 ? (<div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Aucune commande trouvée.</p></div>) : (<div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Commande</th><th className="pb-6">Date</th><th className="pb-6">Statut</th><th className="pb-6 text-right">Total</th></tr></thead><tbody className="divide-y divide-gray-50">{orders.map(order => (<tr key={order.id} className="group"><td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantité: {order.quantity}</div></td><td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td><td className="py-6"><span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-[10px] font-black uppercase tracking-tighter">Complété</span></td><td className="py-6 text-right font-black text-gray-900">${order.total_price.toFixed(2)}</td></tr>))}</tbody></table></div>)}</div>)}
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-gray-900 rounded-[3rem] p-10 text-white relative overflow-hidden group shadow-2xl">
+                  <div className="relative z-10">
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Solde Actuel</div>
+                    <div className="text-5xl font-black mb-10 font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
+                    <button onClick={() => navigate('payment')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 inline-flex"><Plus size={18} /> Recharger le compte</button>
+                  </div>
+                  <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5 group-hover:scale-110 transition-transform duration-700" />
+                </div>
+                <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft flex flex-col justify-between">
+                  <div>
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Dernière Commande</div>
+                    <div className="text-xl font-bold text-gray-900 mb-2">{orders[0]?.product_name || "Aucune commande"}</div>
+                    <div className="text-sm text-gray-400 font-medium">Effectuée le {orders[0]?.created_at ? new Date(orders[0].created_at).toLocaleDateString() : "--/--/----"}</div>
+                  </div>
+                  <button onClick={() => setViewOrder(orders[0])} disabled={!orders[0]} className="text-sm font-black text-primary hover:underline flex items-center gap-2 mt-6 disabled:text-gray-300">Voir les accès <ChevronRight size={16} /></button>
+                </div>
+              </div>
+              <section className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <h3 className="text-lg font-bold mb-8">Activités Récentes</h3>
+                {orders.length === 0 ? (
+                  <div className="text-center py-10"><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore effectué d'achats.</p></div>
+                ) : (
+                  <div className="space-y-6">
+                    {orders.slice(0, 3).map(order => (
+                      <div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><History size={18} /></div>
+                          <div><div className="text-sm font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleDateString()}</div></div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm font-black text-gray-900">${order.total_price.toFixed(2)}</div>
+                          <button onClick={() => setViewOrder(order)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-primary transition-all"><Eye size={18} /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'orders' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Historique des Commandes</h2>
+              {orders.length === 0 ? (
+                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Aucune commande trouvée.</p></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Commande</th><th className="pb-6">Date</th><th className="pb-6">Actions</th><th className="pb-6 text-right">Total</th></tr></thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {orders.map(order => (
+                        <tr key={order.id} className="group">
+                          <td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantité: {order.quantity}</div></td>
+                          <td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                          <td className="py-6"><button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500"><Eye size={14} /> Voir les accès</button></td>
+                          <td className="py-6 text-right font-black text-gray-900">${order.total_price.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'settings' && (<div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Paramètres du Compte</h2><form className="space-y-8 max-w-lg" onSubmit={(e) => { e.preventDefault(); alert("Profil mis à jour (Simulation)"); }}><div className="grid grid-cols-1 gap-6"><div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nom Complet</label><input type="text" defaultValue={profile?.full_name} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="John Doe" /></div><div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email (Lecture seule)</label><input type="email" value={profile?.email} disabled className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div></div><button type="submit" className="bg-gray-900 text-white px-10 py-4 rounded-full font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10">Sauvegarder les modifications</button></form></div>)}
         </main>
       </div>
     </div>
   );
 };
+
+// ==========================================
+// LOGIQUE PRINCIPALE
+// ==========================================
 
 function App() {
   const [currentView, setCurrentView] = useState('home');
@@ -259,8 +361,8 @@ function App() {
     } else {
       setProfile({ email: session?.user?.email, full_name: "Utilisateur Démo", balance: 125.50 });
       setOrders([
-        { id: '1', product_name: 'Gmail US Ancien 2010', quantity: 2, total_price: 10.86, created_at: new Date().toISOString() },
-        { id: '2', product_name: 'Chaîne YouTube 1k Subs', quantity: 1, total_price: 25.00, created_at: new Date(Date.now() - 86400000).toISOString() }
+        { id: '1', product_name: 'Gmail US Ancien 2010', quantity: 2, total_price: 10.86, created_at: new Date().toISOString(), data: "gmail01@gmail.com:pass123:recup@mail.com\ngmail02@gmail.com:pass456:recup@mail.com" },
+        { id: '2', product_name: 'Chaîne YouTube 1k Subs', quantity: 1, total_price: 25.00, created_at: new Date(Date.now() - 86400000).toISOString(), data: "yt-channel-auth:token-secure-12345" }
       ]);
     }
   };
@@ -305,6 +407,10 @@ function App() {
     </div>
   );
 }
+
+// ==========================================
+// VUES SECONDAIRES (Paiement, Cart, etc.)
+// ==========================================
 
 const ProductView = ({ product, addToCart, navigate }) => {
   const [quantity, setQuantity] = useState(1);
