@@ -296,6 +296,88 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
   </>
 );
 
+const SettingsTab = ({ profile, onUpdate }) => {
+  const [firstName, setFirstName] = useState(profile?.first_name || "");
+  const [lastName, setLastName] = useState(profile?.last_name || "");
+  const [displayName, setDisplayName] = useState(profile?.display_name || "");
+  const [email, setEmail] = useState(profile?.email || "");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [tfaEnabled, setTfaEnabled] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setSuccess(false);
+
+    const { error } = await supabase.from('profiles').upsert({
+      id: profile.id,
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      display_name: displayName,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (!error) {
+      setSuccess(true);
+      setTimeout(() => { setSuccess(false); onUpdate(); }, 2000);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Paramètres du Profil</h2>
+        <form className="space-y-8" onSubmit={handleSave}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Prénom</label><input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: Roosevelt" /></div>
+            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nom</label><input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: Mogo Kamdem" /></div>
+          </div>
+          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pseudo (Public) *</label><input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /><p className="text-[10px] text-gray-400 italic mt-2">C'est le nom qui apparaîtra sur votre tableau de bord et vos avis.</p></div>
+          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Adresse Email *</label><input type="email" value={email} readOnly className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div>
+          <button type="submit" disabled={loading} className={`px-12 py-5 rounded-full font-bold text-sm transition-all shadow-xl shadow-black/10 flex items-center gap-2 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-black'}`}>
+            {loading ? <RefreshCcw size={16} className="animate-spin" /> : success ? '✅ Modifié avec succès' : 'Enregistrer les modifications'}
+          </button>
+        </form>
+      </div>
+
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight flex items-center gap-3"><ShieldCheck size={28} className="text-primary" /> Sécurité & Connexion</h2>
+        <div className="space-y-8">
+          <div className="flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm"><img src="https://www.google.com/favicon.ico" className="w-6 h-6" alt="Google" /></div>
+              <div><h4 className="font-bold text-gray-900">Compte Google</h4><p className="text-xs text-gray-400 font-medium">Connecté via Google Auth</p></div>
+            </div>
+            <button className="px-6 py-3 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all">Dissocier</button>
+          </div>
+
+          <div className="flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary"><CreditCard size={24} /></div>
+              <div><h4 className="font-bold text-gray-900">Authentification à deux facteurs (2FA)</h4><p className="text-xs text-gray-400 font-medium">Ajoutez une couche de sécurité supplémentaire à votre compte.</p></div>
+            </div>
+            <button onClick={() => setTfaEnabled(!tfaEnabled)} className={`w-14 h-7 rounded-full relative transition-all duration-300 ${tfaEnabled ? 'bg-primary' : 'bg-gray-200'}`}>
+              <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 ${tfaEnabled ? 'left-8' : 'left-1'}`} />
+            </button>
+          </div>
+
+          <div className="pt-6 border-t border-gray-100">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Changement de mot de passe</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <input type="password" placeholder="Nouveau mot de passe" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+              <input type="password" placeholder="Confirmer le mot de passe" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+            </div>
+            <button className="text-sm font-black text-primary hover:underline uppercase tracking-wider">Mettre à jour le mot de passe</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ==========================================
 // DASHBOARD VIEW
 // ==========================================
@@ -307,9 +389,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
   const sidebarItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'orders', label: 'Orders', icon: History },
-    { id: 'downloads', label: 'Downloads', icon: Download },
-    { id: 'address', label: 'Address', icon: MapPin },
-    { id: 'settings', label: 'Account details', icon: User },
+    { id: 'settings', label: 'Paramètres', icon: Settings },
   ];
 
   return (
@@ -343,7 +423,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
             <div className="flex items-center gap-4 mb-10 pb-6 border-b border-gray-50">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">{profile?.display_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase()}</div>
               <div className="overflow-hidden">
-                <div className="text-sm font-black text-gray-900 truncate">{profile?.display_name || "Utilisateur"}</div>
+                <div className="text-sm font-black text-gray-900 truncate">{profile?.display_name || profile?.first_name || "Utilisateur"}</div>
                 <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">#{profile?.id?.slice(0, 4) || "1688"}</div>
               </div>
             </div>
@@ -455,30 +535,8 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
             </div>
           )}
 
-          {activeTab === 'downloads' && (<div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Downloads</h2><div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Vos téléchargements apparaîtront ici.</p></div></div>)}
-          {activeTab === 'address' && (<div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft"><h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Addresses</h2><p className="text-gray-400 text-sm mb-10">Les adresses suivantes seront utilisées sur la page de validation de commande par défaut.</p><div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100"><h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Billing Address</h3><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore configuré ce type d'adresse.</p><button className="mt-6 text-sm font-black text-primary hover:underline">Add</button></div><div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100"><h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Shipping Address</h3><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore configuré ce type d'adresse.</p><button className="mt-6 text-sm font-black text-primary hover:underline">Add</button></div></div></div>)}
-
           {activeTab === 'settings' && (
-            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Account details</h2>
-              <form className="space-y-10" onSubmit={(e) => { e.preventDefault(); }}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">First name *</label><input type="text" defaultValue="Roosevelt" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Last name *</label><input type="text" defaultValue="Mogo kamdem" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
-                </div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Display name *</label><input type="text" defaultValue="rooseveltmkr" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /><p className="text-[10px] text-gray-400 italic mt-2">This will be how your name will be displayed in the account section and in reviews</p></div>
-                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email address *</label><input type="email" defaultValue={profile?.email} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
-                <div className="pt-10 border-t border-gray-50">
-                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-8">Password change</h3>
-                  <div className="space-y-6">
-                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Current password (leave blank to leave unchanged)</label><input type="password" placeholder="••••••••••••••" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
-                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">New password (leave blank to leave unchanged)</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
-                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Confirm new password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
-                  </div>
-                </div>
-                <button type="submit" className="bg-gray-900 text-white px-12 py-5 rounded-full font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10">Save changes</button>
-              </form>
-            </div>
+            <SettingsTab profile={profile} onUpdate={() => navigate('dashboard')} />
           )}
         </main>
       </div>
@@ -1450,7 +1508,14 @@ function App() {
       const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
       if (orderData) setOrders(orderData);
     } else {
-      setProfile({ id: userId, email: session?.user?.email, display_name: session?.user?.email?.split('@')[0], balance: 0.00 });
+      setProfile({ 
+        id: userId, 
+        email: session?.user?.email, 
+        display_name: session?.user?.email?.split('@')[0], 
+        first_name: "", 
+        last_name: "",
+        balance: 0.00 
+      });
       setOrders([]);
     }
   };
