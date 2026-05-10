@@ -1065,12 +1065,8 @@ const AdminView = ({
                       </div>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Photo du Produit (URL)</label>
-                          <input type="text" value={productForm.image_url} onChange={e => setProductForm({...productForm, image_url: e.target.value})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20" placeholder="Lien de l'image..." />
-                        </div>
-                        <div>
                           <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
-                          <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows="4" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Détails du produit..." />
+                          <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows="6" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Détails du produit..." />
                         </div>
                         <button onClick={handleSaveProduct} disabled={actionStatus === 'loading'} className="w-full h-14 bg-gray-900 text-white rounded-xl font-bold hover:bg-primary transition-all flex items-center justify-center gap-2">
                           {actionStatus === 'loading' ? <RefreshCcw className="animate-spin" /> : <Save size={18} />}
@@ -1096,8 +1092,8 @@ const AdminView = ({
                         <tr key={p.id} className="group hover:bg-gray-50/50 transition-colors">
                           <td className="py-5">
                             <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-100">
-                                {p.image_url ? <img src={p.image_url} className="w-full h-full object-cover" /> : <Package size={20} className="text-gray-400" />}
+                              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center p-2 border border-gray-100">
+                                {p.category.includes('youtube') ? <YouTubeLogo /> : p.category === 'email' ? <GmailLogo /> : <FacebookIcon className="text-blue-600" />}
                               </div>
                               <div>
                                 <div className="font-bold text-gray-900">{p.name}</div>
@@ -1814,7 +1810,7 @@ function App() {
   const [adminSearch, setAdminSearch] = useState("");
   const [adminPage, setAdminPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [productForm, setProductForm] = useState({ name: '', category: 'email', description: '', price: 0, stock: 0, image_url: '' });
+  const [productForm, setProductForm] = useState({ name: '', category: 'email', description: '', price: 0, stock: 0 });
 
   useEffect(() => {
     fetchProducts();
@@ -1856,7 +1852,7 @@ function App() {
     if (error) alert("Erreur : " + error.message);
     else {
       setEditingProduct(null);
-      setProductForm({ name: '', category: 'email', description: '', price: 0, stock: 0, image_url: '' });
+      setProductForm({ name: '', category: 'email', description: '', price: 0, stock: 0 });
       fetchProducts();
     }
     setActionStatus(null);
