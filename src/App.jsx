@@ -2133,6 +2133,26 @@ const AuthView = ({ navigate }) => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      setErrorMessage("Veuillez entrer votre adresse email pour réinitialiser votre mot de passe.");
+      return;
+    }
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      alert("Un email de réinitialisation a été envoyé !");
+    } catch (err) {
+      setErrorMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({ 
       provider: 'google', 
@@ -2208,7 +2228,7 @@ const AuthView = ({ navigate }) => {
         )}
 
           <div className="mt-10 text-center">
-            <button onClick={() => { /* logic for reset pass */ }} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
+            <button onClick={handleResetPassword} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
               Mot de passe oublié ?
             </button>
           </div>
@@ -2358,8 +2378,13 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
-      if (currentSession) fetchProfile(currentSession.user.id);
-      else { setProfile(null); setOrders([]); }
+      if (currentSession) {
+        fetchProfile(currentSession.user.id);
+        setCurrentView('home');
+      } else { 
+        setProfile(null); 
+        setOrders([]); 
+      }
     });
 
     return () => subscription.unsubscribe();
