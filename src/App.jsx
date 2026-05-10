@@ -2106,6 +2106,7 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTot
 
 const AuthView = ({ navigate }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showForm, setShowForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -2141,43 +2142,47 @@ const AuthView = ({ navigate }) => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-20 px-6 font-sans bg-[#FAFAFB]">
-      <div className="w-full max-w-lg bg-white p-12 rounded-[3.5rem] shadow-[0_32px_64px_-15px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden">
-        {/* Background Accent */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+    <div className="min-h-[90vh] flex items-center justify-center py-20 px-6 font-sans bg-[#F9FAFB]">
+      <div className="w-full max-w-[550px] bg-white p-12 md:p-20 rounded-[4rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.06)] border border-gray-50 flex flex-col items-center">
         
-        <div className="relative z-10">
-          <div className="mb-12">
-            <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center p-4 shadow-inner mb-8">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">
-              {isLogin ? 'Bon Retour' : 'Bienvenue'}
-            </h2>
-            <p className="text-gray-400 font-medium">
-              Accédez à la marketplace N°1 de comptes certifiés.
-            </p>
+        {/* Logo */}
+        <div className="w-16 h-16 mb-12 flex items-center justify-center">
+          <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+        </div>
+
+        {/* Welcome Text */}
+        <div className="text-center mb-16">
+          <h2 className="text-[40px] font-bold text-gray-900 mb-4 tracking-tight leading-none">Bienvenue</h2>
+          <p className="text-gray-400 font-medium text-lg">Marketplace N°1 de comptes certifiés.</p>
+        </div>
+
+        {!showForm ? (
+          <div className="w-full space-y-4">
+            <button 
+              onClick={handleGoogleLogin} 
+              className="w-full h-20 bg-white border border-gray-100 rounded-[2rem] flex items-center justify-center gap-4 hover:bg-gray-50 transition-all group shadow-sm"
+            >
+              <img src="https://www.google.com/favicon.ico" className="w-6 h-6 group-hover:scale-110 transition-transform" alt="Google" />
+              <span className="text-gray-700 font-bold text-lg">Continuer avec Google</span>
+            </button>
+
+            <button 
+              onClick={() => setShowForm(true)}
+              className="w-full h-20 bg-[#10B981] text-white rounded-[2rem] flex items-center justify-center gap-4 hover:bg-[#059669] transition-all shadow-xl shadow-green-500/10"
+            >
+              <Mail size={24} />
+              <span className="font-bold text-lg">Continuer avec Email</span>
+            </button>
           </div>
-
-          <button onClick={handleGoogleLogin} className="w-full bg-white border border-gray-100 py-4 rounded-2xl font-bold flex items-center justify-center gap-4 hover:bg-gray-50 transition-all shadow-sm mb-10 group">
-            <img src="https://www.google.com/favicon.ico" className="w-5 h-5 group-hover:scale-110 transition-transform" alt="Google" />
-            <span className="text-sm text-gray-700">Continuer avec Google</span>
-          </button>
-
-          <div className="relative flex items-center mb-10">
-            <div className="flex-grow border-t border-gray-100"></div>
-            <span className="flex-shrink mx-4 text-[10px] font-black text-gray-300 uppercase tracking-widest">Ou via email</span>
-            <div className="flex-grow border-t border-gray-100"></div>
-          </div>
-
-          <form className="space-y-6" onSubmit={handleAuth}>
+        ) : (
+          <form className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" onSubmit={handleAuth}>
             <div className="space-y-2">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="votre@email.com" />
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="votre@email.com" />
             </div>
             <div className="space-y-2">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mot de passe</label>
-              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="••••••••" />
+              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="••••••••" />
             </div>
 
             {errorMessage && (
@@ -2187,32 +2192,29 @@ const AuthView = ({ navigate }) => {
             )}
 
             <div className="flex gap-4 pt-4">
-              <button type="submit" disabled={loading} className={`flex-grow py-5 rounded-2xl font-bold text-sm transition-all shadow-xl flex items-center justify-center gap-2 ${isLogin ? 'bg-gray-900 text-white hover:bg-black shadow-black/10' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 shadow-none'}`}>
+              <button type="submit" disabled={loading} className="flex-grow h-16 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-2">
                 {loading && <RefreshCcw size={16} className="animate-spin" />}
                 {isLogin ? 'Se Connecter' : "S'inscrire"}
               </button>
-              
-              {!isLogin ? (
-                <button type="button" onClick={() => setIsLogin(true)} className="flex-grow py-5 rounded-2xl font-bold text-sm bg-gray-900 text-white hover:bg-black shadow-xl shadow-black/10 transition-all">
-                   Connexion
-                </button>
-              ) : (
-                <button type="button" onClick={() => setIsLogin(false)} className="flex-grow py-5 rounded-2xl font-bold text-sm bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all">
-                  S'inscrire
-                </button>
-              )}
+              <button type="button" onClick={() => setIsLogin(!isLogin)} className="flex-grow h-16 bg-gray-100 text-gray-500 rounded-2xl font-bold text-sm hover:bg-gray-200 transition-all">
+                {isLogin ? "S'inscrire" : "Connexion"}
+              </button>
             </div>
+            
+            <button type="button" onClick={() => setShowForm(false)} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-4">
+              ← Retour aux options
+            </button>
           </form>
+        )}
 
           <div className="mt-10 text-center">
-             <button onClick={() => { /* logic for reset pass */ }} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
-               Mot de passe oublié ?
-             </button>
+            <button onClick={() => { /* logic for reset pass */ }} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
+              Mot de passe oublié ?
+            </button>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
 };
 
 // ==========================================
