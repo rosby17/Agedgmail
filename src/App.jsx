@@ -1004,7 +1004,11 @@ const AdminView = ({
   setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleExcelProductImport, handleExportExcel, adminSearch, setAdminSearch, 
   adminPage, setAdminPage 
 }) => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
+
+  useEffect(() => {
+    localStorage.setItem('agedgmail_admin_tab', activeTab);
+  }, [activeTab]);
 
   const itemsPerPage = 10;
 
@@ -1898,8 +1902,8 @@ function App() {
     const saved = localStorage.getItem('agedgmail_product');
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
   });
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [priceRange, setPriceRange] = useState('all');
+  const [activeCategory, setActiveCategory] = useState(() => localStorage.getItem('agedgmail_category') || 'all');
+  const [priceRange, setPriceRange] = useState(() => localStorage.getItem('agedgmail_price_range') || 'all');
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem('agedgmail_cart');
     try { return saved ? JSON.parse(saved) : []; } catch { return []; }
@@ -1987,6 +1991,14 @@ function App() {
   useEffect(() => {
     localStorage.setItem('agedgmail_cart', JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem('agedgmail_category', activeCategory);
+  }, [activeCategory]);
+
+  useEffect(() => {
+    localStorage.setItem('agedgmail_price_range', priceRange);
+  }, [priceRange]);
 
   const fetchProducts = async () => {
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
