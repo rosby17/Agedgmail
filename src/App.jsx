@@ -1054,113 +1054,22 @@ const AdminView = ({ navigate }) => {
     reader.readAsBinaryString(file);
   };
 
-  const handleMassImport = async (text) => {
-    if (!text.trim()) return setErrorMessage("Le texte est vide.");
-    setActionStatus('loading');
-    setErrorMessage("");
-    
-    try {
-      // Split lines and filter out headers or empty lines
-      const lines = text.split('\n').filter(l => {
-        const t = l.trim().toLowerCase();
-        return t && !t.startsWith('catégorie') && !t.startsWith('type') && !t.startsWith('#') && !t.includes('mis à jour le');
-      });
-      
-      const itemsToInsert = [];
-      
-      // Mapping names to new official IDs (1-6)
-      const nameToId = {
-        "Ancien Gmail US": 1,
-        "Gmail Random": 2,
-        "Gmail + Chaîne Ancienne": 3,
-        "Gmail + Chaîne Monétisée": 4,
-        "Gmail + Chaîne Non-Monétisée": 5,
-        "Compte Facebook": 6
-      };
-
-      lines.forEach((line, index) => {
-        // Try splitting by Tab first, then by multiple spaces if Tab fails
-        let parts = line.split('\t');
-        if (parts.length < 3) parts = line.split(/\s{2,}/); // Split by 2 or more spaces
-        
-        if (parts.length >= 3) {
-          const typeName = parts[1]?.trim();
-          const email = parts[2]?.trim();
-          const status = parts[3]?.trim();
-          const note = parts[parts.length - 1]?.trim(); // Usually the last column
-          
-          const productId = nameToId[typeName];
-          
-          if (email && productId) {
-            itemsToInsert.push({
-              product_id: productId,
-              data: email + (note && note !== status ? ` | ${note}` : ""),
-              is_sold: status?.toLowerCase().includes('vendu') || false
-            });
-          }
-        }
-      });
-
-      if (itemsToInsert.length === 0) {
-        throw new Error("Aucun compte valide détecté. Assurez-vous de copier tout le tableau, y compris la colonne 'TYPE / CATÉGORIE'.");
-      }
-
-      const { error } = await supabase.from('product_stock').insert(itemsToInsert);
-      if (error) throw error;
-
-      alert(`Succès ! ${itemsToInsert.length} comptes ont été importés.`);
-      setActionStatus('success');
-      fetchInventory();
-      if (typeof fetchStocks === 'function') fetchStocks(); // Update global stocks for HomeView
-      setTimeout(() => setActionStatus(null), 3000);
-    } catch (err) {
-      console.error("Import error:", err);
-      setErrorMessage("Erreur Import : " + err.message);
-      setActionStatus('error');
-    }
-  };
-
-  const handleAddStock = async () => {
-    setErrorMessage("");
-    if (!stockInput.trim()) return setErrorMessage("Veuillez entrer des comptes.");
-    setActionStatus('loading');
-    const lines = stockInput.split("\n").filter(l => l.trim());
-    const itemsToInsert = lines.map(line => ({ product_id: parseInt(selectedProductId), data: line, is_sold: false }));
-    const { error } = await supabase.from('product_stock').insert(itemsToInsert);
-    if (error) { 
-      setErrorMessage("Erreur Supabase : " + error.message); 
-      setActionStatus('error');
-    }
-    else { 
-      setActionStatus('success');
-      setStockInput(""); 
-      fetchInventory(); 
-      setTimeout(() => setActionStatus(null), 3000);
-    }
-  };
-
-  const handleClearStock = async () => {
-    setErrorMessage("");
-    const { error } = await supabase.from('product_stock').delete().eq('product_id', selectedProductId).eq('is_sold', false);
-    if (error) setErrorMessage("Erreur : " + error.message);
-    else { 
-      setActionStatus('success'); 
-      fetchInventory();
-      setTimeout(() => setActionStatus(null), 3000);
-    }
-  };
+const AdminView = ({ 
+  navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers, 
+  actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm, 
+  setProductForm, handleSaveProduct, handleDeleteProduct, adminSearch, setAdminSearch, 
+  adminPage, setAdminPage 
+}) => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const itemsPerPage = 10;
 
   const handleUpdateBalanceManual = async (userId, email, amount) => {
     setActionStatus('loading');
     const { data: userData } = await supabase.from('profiles').select('balance').eq('id', userId).single();
     const { error } = await supabase.from('profiles').update({ balance: (userData?.balance || 0) + amount }).eq('id', userId);
-    if (error) {
-      alert("Erreur : " + error.message);
-      setActionStatus(null);
-    } else {
-      fetchUsers();
-      setActionStatus(null);
-    }
+    if (error) alert("Erreur : " + error.message);
+    else fetchUsers();
+    setActionStatus(null);
   };
 
   return (
@@ -1168,7 +1077,7 @@ const AdminView = ({ navigate }) => {
       <div className="flex items-center justify-between mb-12">
         <div>
           <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Console Administration</h1>
-          <p className="text-gray-400 text-sm mt-2">Gestion globale du stock, des utilisateurs et des ventes.</p>
+          <p className="text-gray-400 text-sm mt-2">Gestion dynamique du catalogue et des clients.</p>
         </div>
         <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><ArrowLeft size={16} /> Retour au site</button>
       </div>
@@ -1177,7 +1086,7 @@ const AdminView = ({ navigate }) => {
         <aside className="lg:col-span-1 space-y-2">
           {[
             { id: 'dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
-            { id: 'stock', label: 'Gérer le Stock', icon: Database },
+            { id: 'stock', label: 'Catalogue Produits', icon: Package },
             { id: 'orders', label: 'Commandes', icon: FileText },
             { id: 'users', label: 'Gestion Clients', icon: Users },
           ].map(item => (
@@ -1189,136 +1098,111 @@ const AdminView = ({ navigate }) => {
         </aside>
 
         <main className="lg:col-span-3 space-y-8">
-          {activeTab === 'dashboard' && (() => {
-            const totalRevenue = allOrders.reduce((sum, o) => sum + (o.total_price || 0), 0);
-            const totalSold = inventory.reduce((sum, p) => sum + p.sold, 0);
-            const lowStockCount = inventory.filter(p => p.stock > 0 && p.stock < 5).length;
-            return (
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">${totalRevenue.toFixed(2)}</div></div>
-                  <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Comptes Vendus</div><div className="text-3xl font-black text-gray-900">{totalSold}</div></div>
-                  <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Faible</div><div className={`text-3xl font-black ${lowStockCount > 0 ? 'text-yellow-500' : 'text-gray-400'}`}>{lowStockCount}</div></div>
+          {activeTab === 'dashboard' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">${allOrders.reduce((s,o) => s + (o.total_price || 0), 0).toFixed(2)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Produits en Ligne</div><div className="text-3xl font-black text-gray-900">{products.length}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Total</div><div className="text-3xl font-black text-gray-900">{products.reduce((s,p) => s + (p.stock || 0), 0)}</div></div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <h3 className="text-lg font-bold mb-8">Statistiques de Vente</h3>
+                <p className="text-gray-400 text-sm italic">Les ventes sont gérées manuellement. Une fois le paiement reçu, livrez le client par email.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'stock' && (
+            <div className="space-y-8">
+              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <div className="flex justify-between items-center mb-10">
+                  <h2 className="text-2xl font-bold">Catalogue Produits</h2>
+                  <button onClick={() => { setEditingProduct(null); setProductForm({ name: '', category: 'email', description: '', price: 0, stock: 0, image_url: '' }); }} className="bg-primary text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2"><Plus size={18} /> Ajouter un Produit</button>
                 </div>
-                <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-                    <h3 className="text-lg font-bold flex items-center gap-3"><Activity size={20} className="text-primary" /> État de l'Inventaire</h3>
-                    <div className="relative w-full md:w-64">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input 
-                        type="text" 
-                        placeholder="Rechercher un produit..." 
-                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-100 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                        value={adminSearch}
-                        onChange={(e) => { setAdminSearch(e.target.value); setAdminPage(1); }}
-                      />
+
+                <div className="grid grid-cols-1 gap-6 mb-12">
+                  <div className="bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100">
+                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8">{editingProduct ? 'Modifier le Produit' : 'Ajouter un nouveau Produit'}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Titre du Produit</label>
+                          <input type="text" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20" placeholder="ex: Gmail Aged 2018" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Catégorie</label>
+                          <select value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold">
+                            <option value="email">Gmail / Email</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="facebook">Facebook</option>
+                            <option value="other">Autre</option>
+                          </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Prix ($)</label>
+                            <input type="number" value={productForm.price} onChange={e => setProductForm({...productForm, price: parseFloat(e.target.value)})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Quantité en Stock</label>
+                            <input type="number" value={productForm.stock} onChange={e => setProductForm({...productForm, stock: parseInt(e.target.value)})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Photo du Produit (URL)</label>
+                          <input type="text" value={productForm.image_url} onChange={e => setProductForm({...productForm, image_url: e.target.value})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20" placeholder="Lien de l'image..." />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
+                          <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows="4" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Détails du produit..." />
+                        </div>
+                        <button onClick={handleSaveProduct} disabled={actionStatus === 'loading'} className="w-full h-14 bg-gray-900 text-white rounded-xl font-bold hover:bg-primary transition-all flex items-center justify-center gap-2">
+                          {actionStatus === 'loading' ? <RefreshCcw className="animate-spin" /> : <Save size={18} />}
+                          {editingProduct ? 'Mettre à jour' : 'Valider le Produit'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Produit</th><th className="pb-6">Vendus</th><th className="pb-6 text-right">En Stock</th></tr></thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {inventory
-                          .filter(p => p.name.toLowerCase().includes(adminSearch.toLowerCase()))
-                          .slice((adminPage - 1) * itemsPerPage, adminPage * itemsPerPage)
-                          .map(p => (
-                            <tr key={p.id}>
-                              <td className="py-5 font-bold text-gray-900 text-sm">{p.name}</td>
-                              <td className="py-5 text-gray-400 text-sm font-bold">{p.sold}</td>
-                              <td className={`py-5 text-right font-mono font-black ${p.stock === 0 ? 'text-red-500' : 'text-primary'}`}>{p.stock}</td>
-                            </tr>
-                          ))
-                        }
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="flex items-center justify-between mt-8 pt-8 border-t border-gray-50">
-                    <button 
-                      onClick={() => setAdminPage(p => Math.max(1, p - 1))}
-                      disabled={adminPage === 1}
-                      className="px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-primary disabled:opacity-30 transition-all"
-                    >
-                      Précédent
-                    </button>
-                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Page {adminPage}</span>
-                    <button 
-                      onClick={() => setAdminPage(p => p + 1)}
-                      disabled={adminPage * itemsPerPage >= inventory.filter(p => p.name.toLowerCase().includes(adminSearch.toLowerCase())).length}
-                      className="px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-primary disabled:opacity-30 transition-all"
-                    >
-                      Suivant
-                    </button>
-                  </div>
                 </div>
-              </div>
-            );
-          })()}
-          {activeTab === 'stock' && (
-            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-bold">Gestion du Stock</h2>
-                <div className="bg-gray-50 px-6 py-3 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Quantité Disponible</span>
-                  <span className={`text-2xl font-black font-mono ${selectedProductStock === 0 ? 'text-red-500' : 'text-primary'}`}>{selectedProductStock} comptes</span>
-                </div>
-              </div>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Sélectionner un Produit</label>
-                  <div className="relative mb-4">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    <input 
-                      type="text" 
-                      placeholder="Filtrer les produits par nom..." 
-                      className="w-full pl-11 pr-4 py-4 rounded-2xl border border-gray-100 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                      value={adminSearch}
-                      onChange={(e) => setAdminSearch(e.target.value)}
-                    />
-                  </div>
-                  <div className="max-h-60 overflow-y-auto border border-gray-100 rounded-2xl divide-y divide-gray-50 mb-8 bg-gray-50/30">
-                    {inventory
-                      .filter(p => p.name.toLowerCase().includes(adminSearch.toLowerCase()))
-                      .map(p => (
-                        <button 
-                          key={p.id}
-                          onClick={() => setSelectedProductId(p.id.toString())}
-                          className={`w-full text-left px-6 py-4 flex items-center justify-between hover:bg-white transition-all group ${selectedProductId === p.id.toString() ? 'bg-white ring-2 ring-primary ring-inset' : ''}`}
-                        >
-                          <div>
-                            <div className="text-sm font-bold text-gray-900">{p.name}</div>
-                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest mt-1">{p.category}</div>
-                          </div>
-                          <div className={`px-3 py-1 rounded-lg text-[10px] font-black font-mono ${p.stock === 0 ? 'bg-red-50 text-red-500' : 'bg-primary/10 text-primary'}`}>
-                            {p.stock} STK
-                          </div>
-                        </button>
-                      ))
-                    }
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Données (1 compte par ligne)</label>
-                  <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="8" placeholder="user@gmail.com|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-                  <button onClick={handleAddStock} className="bg-gray-900 text-white h-16 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter</button>
-                  
-                  <div className="relative h-16">
-                    <input type="file" accept=".xlsx, .xls" onChange={handleExcelUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    <button className="w-full h-full bg-primary/10 text-primary rounded-2xl font-bold text-sm hover:bg-primary/20 transition-all flex items-center justify-center gap-2"><Upload size={18} /> Import Excel</button>
-                  </div>
 
-                  <button 
-                    onClick={() => {
-                      const text = prompt("Collez ici les lignes du tableau STOCK DÉTAILLÉ :");
-                      if (text) handleMassImport(text);
-                    }}
-                    className="h-16 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Copy size={18} /> Import Massif
-                  </button>
-
-                  <button onClick={handleClearStock} className="h-16 bg-red-50 text-red-500 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider</button>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                        <th className="pb-6">Produit</th>
+                        <th className="pb-6">Prix</th>
+                        <th className="pb-6">Stock</th>
+                        <th className="pb-6 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {products.map(p => (
+                        <tr key={p.id} className="group hover:bg-gray-50/50 transition-colors">
+                          <td className="py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-100">
+                                {p.image_url ? <img src={p.image_url} className="w-full h-full object-cover" /> : <Package size={20} className="text-gray-400" />}
+                              </div>
+                              <div>
+                                <div className="font-bold text-gray-900">{p.name}</div>
+                                <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{p.category}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-5 font-mono font-black text-primary">${p.price?.toFixed(2)}</td>
+                          <td className="py-5 font-mono font-bold text-gray-500">{p.stock}</td>
+                          <td className="py-5 text-right">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => { setEditingProduct(p); setProductForm(p); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><Edit size={16} /></button>
+                              <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash size={16} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -1332,69 +1216,30 @@ const AdminView = ({ navigate }) => {
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
               <div className="flex justify-between items-center mb-10">
                 <h2 className="text-2xl font-bold">Gestion Clients</h2>
-                <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} utilisateurs inscrits</div>
+                <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} inscrits</div>
               </div>
-              
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
                       <th className="pb-6">Utilisateur</th>
                       <th className="pb-6">Solde</th>
-                      <th className="pb-6">Statut</th>
-                      <th className="pb-6">Actions Rapides</th>
+                      <th className="pb-6">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {allUsers.map(user => (
-                      <tr key={user.id} className="group">
+                      <tr key={user.id}>
                         <td className="py-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-gray-100 rounded-full overflow-hidden flex items-center justify-center text-gray-400 font-bold">
-                              {user.avatar_url ? <img src={user.avatar_url} className="w-full h-full object-cover" /> : user.display_name?.[0] || user.email?.[0]}
-                            </div>
-                            <div>
-                              <div className="font-bold text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name}` : user.display_name}</div>
-                              <div className="text-xs text-gray-400">{user.email}</div>
-                            </div>
-                          </div>
+                          <div className="font-bold text-gray-900">{user.email}</div>
+                          <div className="text-xs text-gray-400">{user.display_name}</div>
                         </td>
+                        <td className="py-6 font-mono font-black text-primary">${user.balance?.toFixed(2)}</td>
                         <td className="py-6">
-                          <div className="font-black text-primary font-mono">${user.balance?.toFixed(2) || "0.00"}</div>
-                        </td>
-                        <td className="py-6">
-                          <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${user.is_suspended ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
-                            {user.is_suspended ? 'Suspendu' : 'Actif'}
-                          </span>
-                        </td>
-                        <td className="py-6">
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => {
-                              const amount = prompt(`Créditer le compte de ${user.email} ($) :`, "10");
-                              if (amount && !isNaN(amount)) {
-                                handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
-                              }
-                            }} className="p-2 bg-gray-50 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-all" title="Créditer">
-                              <DollarSign size={16} />
-                            </button>
-                            <button onClick={async () => {
-                              const { error } = await supabase.from('profiles').update({ is_suspended: !user.is_suspended }).eq('id', user.id);
-                              if (!error) fetchUsers();
-                            }} className={`p-2 rounded-xl transition-all ${user.is_suspended ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'}`} title={user.is_suspended ? "Activer" : "Suspendre"}>
-                              <ShieldAlert size={16} />
-                            </button>
-                            <a href={`mailto:${user.email}`} className="p-2 bg-gray-50 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all" title="Email">
-                              <Mail size={16} />
-                            </a>
-                            <button onClick={async () => {
-                              if (confirm("Supprimer ce profil ? L'utilisateur ne pourra plus se connecter.")) {
-                                await supabase.from('profiles').delete().eq('id', user.id);
-                                fetchUsers();
-                              }
-                            }} className="p-2 bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Supprimer">
-                              <Trash size={16} />
-                            </button>
-                          </div>
+                          <button onClick={() => {
+                            const amount = prompt("Montant à ajouter ($) :", "10");
+                            if (amount) handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
+                          }} className="p-2 bg-primary/10 text-primary rounded-lg font-bold text-xs">Créditer</button>
                         </td>
                       </tr>
                     ))}
@@ -1680,65 +1525,35 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
     setErrorMessage("");
 
     try {
-      // 1. Double check balance
-      if (profile.balance < cartTotal) {
-        throw new Error("Solde insuffisant.");
-      }
+      if (profile.balance < cartTotal) throw new Error("Solde insuffisant.");
 
-      // 2. Loop through cart items to process one by one (or batch)
       for (const item of cart) {
-        // Fetch available stock for this product
-        const { data: availableStock, error: stockErr } = await supabase
-          .from('product_stock')
-          .select('id, data')
-          .eq('product_id', item.id)
-          .eq('is_sold', false)
-          .limit(item.quantity);
+        // Check stock in products table
+        const { data: p, error: pErr } = await supabase.from('products').select('stock').eq('id', item.id).single();
+        if (pErr || !p || p.stock < item.quantity) throw new Error(`Stock insuffisant pour ${item.name}.`);
 
-        if (stockErr || !availableStock || availableStock.length < item.quantity) {
-          throw new Error(`Stock insuffisant pour ${item.name}.`);
-        }
+        // Decrement stock
+        await supabase.from('products').update({ stock: p.stock - item.quantity }).eq('id', item.id);
 
-        const stockIds = availableStock.map(s => s.id);
-        const deliveryData = availableStock.map(s => s.data).join('\n');
-
-        // 3. Mark as sold
-        const { error: updateErr } = await supabase
-          .from('product_stock')
-          .update({ is_sold: true })
-          .in('id', stockIds);
-
-        if (updateErr) throw updateErr;
-
-        // 4. Create Order
-        const { error: orderErr } = await supabase.from('orders').insert({
+        // Create Order
+        await supabase.from('orders').insert({
           user_id: session.user.id,
           buyer_email: session.user.email,
           product_id: item.id,
           product_name: item.name,
           quantity: item.quantity,
           total_price: item.price * item.quantity,
-          status: 'confirmed',
-          credentials: deliveryData,
-          data: deliveryData,
-          confirmed_at: new Date().toISOString()
+          status: 'paid', // Paid via balance
+          created_at: new Date().toISOString()
         });
-
-        if (orderErr) throw orderErr;
       }
 
-      // 5. Update user balance
-      const { error: balanceErr } = await supabase
-        .from('profiles')
-        .update({ balance: profile.balance - cartTotal })
-        .eq('id', session.user.id);
+      // Update user balance
+      await supabase.from('profiles').update({ balance: profile.balance - cartTotal }).eq('id', session.user.id);
 
-      if (balanceErr) throw balanceErr;
-
-      // 6. Success!
       setPurchaseSuccess(true);
       fetchProfile(session.user.id);
-      fetchStocks();
+      fetchProducts();
       
       setTimeout(() => {
         clearCart();
@@ -2071,6 +1886,7 @@ const Footer = () => (
 // ==========================================
 
 function App() {
+  const [products, setProducts] = useState([]);
   const [currentView, setCurrentView] = useState('home');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -2079,10 +1895,18 @@ function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [stocks, setStocks] = useState({}); // { productId: count }
+  const [allOrders, setAllOrders] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [actionStatus, setActionStatus] = useState(null);
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminPage, setAdminPage] = useState(1);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [productForm, setProductForm] = useState({ name: '', category: 'email', description: '', price: 0, stock: 0, image_url: '' });
 
   useEffect(() => {
-    fetchStocks();
+    fetchProducts();
+    fetchAllOrders();
+    fetchUsers();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchProfile(session.user.id);
@@ -2095,14 +1919,41 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchStocks = async () => {
-    const { data, error } = await supabase.from('product_stock').select('product_id').eq('is_sold', false);
-    if (data) {
-      const counts = data.reduce((acc, item) => {
-        acc[item.product_id] = (acc[item.product_id] || 0) + 1;
-        return acc;
-      }, {});
-      setStocks(counts);
+  const fetchProducts = async () => {
+    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    if (!error && data) setProducts(data);
+  };
+
+  const fetchAllOrders = async () => {
+    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (data) setAllOrders(data);
+  };
+
+  const fetchUsers = async () => {
+    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (data) setAllUsers(data);
+  };
+
+  const handleSaveProduct = async () => {
+    setActionStatus('loading');
+    const { error } = editingProduct 
+      ? await supabase.from('products').update(productForm).eq('id', editingProduct.id)
+      : await supabase.from('products').insert([productForm]);
+    
+    if (error) alert("Erreur : " + error.message);
+    else {
+      setEditingProduct(null);
+      setProductForm({ name: '', category: 'email', description: '', price: 0, stock: 0, image_url: '' });
+      fetchProducts();
+    }
+    setActionStatus(null);
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (confirm("Supprimer ce produit ?")) {
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) alert(error.message);
+      else fetchProducts();
     }
   };
 
@@ -2143,8 +1994,7 @@ function App() {
     }
   };
 
-  const filteredProducts = PRODUCTS
-    .map(p => ({ ...p, stock: stocks[p.id] || 0 }))
+  const filteredProducts = products
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .filter(p => {
       if (priceRange === 'all') return true;
@@ -2180,9 +2030,31 @@ function App() {
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
-        {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchStocks={fetchStocks} />}
+        {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} />}
-        {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && <AdminView navigate={navigate} />}
+        {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
+          <AdminView 
+            navigate={navigate} 
+            products={products}
+            fetchProducts={fetchProducts}
+            allOrders={allOrders}
+            fetchAllOrders={fetchAllOrders}
+            allUsers={allUsers}
+            fetchUsers={fetchUsers}
+            actionStatus={actionStatus}
+            setActionStatus={setActionStatus}
+            editingProduct={editingProduct}
+            setEditingProduct={setEditingProduct}
+            productForm={productForm}
+            setProductForm={setProductForm}
+            handleSaveProduct={handleSaveProduct}
+            handleDeleteProduct={handleDeleteProduct}
+            adminSearch={adminSearch}
+            setAdminSearch={setAdminSearch}
+            adminPage={adminPage}
+            setAdminPage={setAdminPage}
+          />
+        )}
       </div>
       <SupportChat />
       <Footer />
