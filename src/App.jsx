@@ -163,50 +163,55 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
   const isUS = product.name.toUpperCase().includes('US') || product.name.toUpperCase().includes('USA');
 
   return (
-    <div className="bg-white rounded-[3rem] p-5 hover:shadow-2xl hover:shadow-black/5 transition-all duration-500 group flex flex-col border border-gray-100/50 h-full relative">
+    <div className="bg-white flex flex-col h-full font-sans">
+      {/* Logo Area */}
       <div 
-        className="aspect-[1.4] bg-gray-50/50 rounded-[2.5rem] flex items-center justify-center mb-8 overflow-hidden cursor-pointer relative shrink-0 group-hover:bg-white transition-colors duration-500"
+        className="aspect-[1.5] bg-white border border-gray-100 rounded-[2.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0"
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
-        <div className="w-40 h-40 group-hover:scale-110 transition-transform duration-700 flex items-center justify-center relative">
-          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={60} className="text-gray-300" />}
+        <div className="w-full h-full p-8 flex items-center justify-center">
+          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : <FacebookIcon className="w-16 h-16 text-blue-600" />}
         </div>
-        {isUS && product.category === 'email' && <div className="absolute top-8 right-8 bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded-lg backdrop-blur-sm border border-primary/20">US</div>}
+        {isUS && product.category === 'email' && (
+          <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
+        )}
       </div>
       
-      <div className="flex-grow flex flex-col px-2">
-        <div className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.2em] mb-2">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
+      {/* Content */}
+      <div className="flex-grow flex flex-col">
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+          {CATEGORIES.find(c => c.id === product.category)?.name}
+        </div>
         <h3 
-          className="text-xl font-black text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer mb-6 line-clamp-2"
+          className="text-[15px] font-bold text-primary leading-snug cursor-pointer mb-4"
           onClick={() => { setSelectedProduct(product); navigate('product'); }}
         >
           {product.name}
         </h3>
         
-        <div className="mt-auto flex items-end justify-between mb-8">
-          <div>
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Prix Unitaire</div>
-            <div className="text-3xl font-black text-primary font-mono tracking-tighter">${product.price.toFixed(2)}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">En Stock</div>
-            <div className="text-xs font-mono font-bold text-gray-900">{product.stock} pcs</div>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
+          {product.stock <= 0 && (
+            <div className="bg-red-50 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-widest">
+              Rupture
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex items-center bg-gray-50 rounded-2xl p-1 shrink-0 border border-gray-100">
-          <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-gray-900"><Minus size={14} /></button>
-          <div className="w-8 text-center text-xs font-black font-mono">{localQty}</div>
-          <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-gray-900"><Plus size={14} /></button>
+      {/* Actions */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center bg-gray-50 rounded-xl p-1 shrink-0">
+          <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Minus size={14} /></button>
+          <div className="w-8 text-center text-xs font-bold text-gray-900">{localQty}</div>
+          <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Plus size={14} /></button>
         </div>
         <button 
           onClick={() => addToCart(product, localQty)} 
           disabled={product.stock <= 0}
-          className={`flex-grow h-12 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary shadow-black/10 hover:shadow-primary/30' : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'}`}
+          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
         >
-          <ShoppingCart size={16} /> {product.stock > 0 ? 'Ajouter' : 'Rupture'}
+          {product.stock > 0 ? 'Ajouter' : 'Épuisé'}
         </button>
       </div>
     </div>
