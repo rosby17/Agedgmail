@@ -318,7 +318,9 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                 <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Format : Email | Password | Recovery | 2FA Code</div>
                 <div className="font-mono text-sm bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center group">
                   <span className="truncate mr-4 text-gray-700">{viewOrder.data || viewOrder.credentials || "En attente de livraison..."}</span>
-                  <button onClick={() => { navigator.clipboard.writeText(viewOrder.data || viewOrder.credentials || ''); alert("Copié !"); }} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all"><Copy size={16} /></button>
+                  <button onClick={() => { navigator.clipboard.writeText(viewOrder.data || viewOrder.credentials || ''); }} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all" title="Copier">
+                    <Copy size={16} />
+                  </button>
                 </div>
               </div>
               <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
@@ -443,7 +445,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
           {activeTab === 'settings' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
               <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Account details</h2>
-              <form className="space-y-10" onSubmit={(e) => { e.preventDefault(); alert("Profil mis à jour (Simulation)"); }}>
+              <form className="space-y-10" onSubmit={(e) => { e.preventDefault(); }}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">First name *</label><input type="text" defaultValue="Roosevelt" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
                   <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Last name *</label><input type="text" defaultValue="Mogo kamdem" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /></div>
@@ -479,6 +481,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
   const [adminNote, setAdminNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const filtered = filter === 'all'
     ? allOrders
@@ -507,7 +510,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
       });
       
       if (balanceError) {
-        alert("Erreur lors de la mise à jour du solde : " + balanceError.message);
+        setErrorMessage("Erreur lors de la mise à jour du solde : " + balanceError.message);
         setActionLoading(false);
         return;
       }
@@ -524,7 +527,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
     } else {
       // Standard product delivery
       if (!credentials.trim()) { 
-        alert('Entre les credentials !'); 
+        setErrorMessage('Entre les credentials !'); 
         setActionLoading(false);
         return; 
       }
@@ -553,7 +556,6 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
   };
 
   const cancelOrder = async (id) => {
-    if (!window.confirm('Annuler cette commande ?')) return;
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', id);
     fetchAllOrders();
   };
@@ -702,10 +704,15 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                 <input value={adminNote} onChange={e => setAdminNote(e.target.value)} placeholder="ex: Vérifié sur Binance TX #12345"
                   className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm" />
               </div>
-              <button onClick={confirmOrder} disabled={actionLoading || actionSuccess}
-                className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${actionSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-                {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : actionSuccess ? '✅ Action effectuée !' : (selectedOrder.product_name === "Recharge Binance" ? '✅ Valider et Créditer le Solde' : '✅ Confirmer et enregistrer')}
-              </button>
+                {errorMessage && (
+                  <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 animate-pulse">
+                    ⚠️ {errorMessage}
+                  </div>
+                )}
+                <button onClick={confirmOrder} disabled={actionLoading || actionSuccess}
+                  className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${actionSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
+                  {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : actionSuccess ? '✅ Action effectuée !' : (selectedOrder.product_name === "Recharge Binance" ? '✅ Valider et Créditer le Solde' : '✅ Confirmer et enregistrer')}
+                </button>
             </>) : (
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{selectedOrder.product_name === "Recharge Binance" ? "Statut" : "Credentials livrés"}</label>
@@ -732,7 +739,8 @@ const AdminView = ({ navigate }) => {
   const [stockInput, setStockInput] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [amountToAdd, setAmountToAdd] = useState(0);
-  const [actionStatus, setActionStatus] = useState(null); // null, 'loading', 'success'
+  const [actionStatus, setActionStatus] = useState(null); // null, 'loading', 'success', 'error'
+  const [errorMessage, setErrorMessage] = useState("");
   const [inventory, setInventory] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
 
@@ -764,33 +772,47 @@ const AdminView = ({ navigate }) => {
   const selectedProductStock = inventory.find(p => p.id === parseInt(selectedProductId))?.stock || 0;
 
   const handleAddStock = async () => {
-    if (!stockInput.trim()) return alert("Veuillez entrer des comptes.");
+    setErrorMessage("");
+    if (!stockInput.trim()) return setErrorMessage("Veuillez entrer des comptes.");
+    setActionStatus('loading');
     const lines = stockInput.split("\n").filter(l => l.trim());
     const itemsToInsert = lines.map(line => ({ product_id: parseInt(selectedProductId), data: line, is_sold: false }));
     const { error } = await supabase.from('product_stock').insert(itemsToInsert);
-    if (error) { alert("Erreur Supabase : " + error.message); }
-    else { alert(`${lines.length} comptes ajoutés !`); setStockInput(""); fetchInventory(); }
+    if (error) { 
+      setErrorMessage("Erreur Supabase : " + error.message); 
+      setActionStatus('error');
+    }
+    else { 
+      setActionStatus('success');
+      setStockInput(""); 
+      fetchInventory(); 
+      setTimeout(() => setActionStatus(null), 3000);
+    }
   };
 
   const handleClearStock = async () => {
-    if (window.confirm("Vider le stock ?")) {
-      const { error } = await supabase.from('product_stock').delete().eq('product_id', selectedProductId).eq('is_sold', false);
-      if (error) alert("Erreur : " + error.message);
-      else { alert("Stock vidé."); fetchInventory(); }
+    setErrorMessage("");
+    const { error } = await supabase.from('product_stock').delete().eq('product_id', selectedProductId).eq('is_sold', false);
+    if (error) setErrorMessage("Erreur : " + error.message);
+    else { 
+      setActionStatus('success'); 
+      fetchInventory();
+      setTimeout(() => setActionStatus(null), 3000);
     }
   };
 
   const handleUpdateBalance = async () => {
-    if (!userEmail || amountToAdd <= 0) return alert("Infos invalides.");
+    setErrorMessage("");
+    if (!userEmail || amountToAdd <= 0) return setErrorMessage("Infos invalides.");
     setActionStatus('loading');
     const { data: userData } = await supabase.from('profiles').select('id, balance').ilike('email', userEmail.trim()).single();
     if (!userData) {
       setActionStatus(null);
-      return alert("Utilisateur introuvable. Vérifiez l'email.");
+      return setErrorMessage("Utilisateur introuvable. Vérifiez l'email.");
     }
     const { error } = await supabase.from('profiles').update({ balance: userData.balance + amountToAdd }).eq('id', userData.id);
     if (error) {
-      alert("Erreur : " + error.message);
+      setErrorMessage("Erreur : " + error.message);
       setActionStatus(null);
     } else {
       setActionStatus('success');
@@ -897,6 +919,7 @@ const AdminView = ({ navigate }) => {
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant à Ajouter ($)</label>
                   <input type="number" value={amountToAdd} onChange={e => setAmountToAdd(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm font-bold" />
                 </div>
+                {errorMessage && <p className="text-red-500 text-xs font-bold animate-pulse">⚠️ {errorMessage}</p>}
                 <button onClick={handleUpdateBalance} disabled={actionStatus === 'loading' || actionStatus === 'success'} className={`px-8 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${actionStatus === 'success' ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
                   {actionStatus === 'loading' ? <RefreshCcw size={16} className="animate-spin" /> : actionStatus === 'success' ? '✅ Crédité !' : <><DollarSign size={16} /> Créditer le Compte</>}
                 </button>
@@ -918,11 +941,13 @@ const RechargeView = ({ profile, session, navigate }) => {
   const [txId, setTxId] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
+    setError("");
     if (!session) { navigate('auth'); return; }
-    if (!txId.trim()) { alert('Veuillez entrer un ID de transaction valide.'); return; }
-    if (amount <= 0) { alert('Veuillez entrer un montant valide.'); return; }
+    if (!txId.trim()) { setError('Veuillez entrer un ID de transaction valide.'); return; }
+    if (amount <= 0) { setError('Veuillez entrer un montant valide.'); return; }
     
     setLoading(true);
     
@@ -939,7 +964,7 @@ const RechargeView = ({ profile, session, navigate }) => {
     }]);
 
     if (error) {
-      alert("Erreur lors de la soumission : " + error.message);
+      setError("Erreur lors de la soumission : " + error.message);
       setLoading(false);
       return;
     }
@@ -996,6 +1021,7 @@ const RechargeView = ({ profile, session, navigate }) => {
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">ID de Transaction Binance (TX ID) *</label>
             <input type="text" value={txId} onChange={e => setTxId(e.target.value)} placeholder="ex: 123456789012345" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-sm" />
           </div>
+          {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">{error}</div>}
           <button onClick={handleSubmit} disabled={loading || success} className={`w-full py-5 rounded-[2rem] font-bold text-lg transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3 disabled:opacity-50 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
             {loading ? 'Envoi en cours...' : success ? '✅ Demande Envoyée !' : 'Soumettre ma Recharge'}
           </button>
@@ -1032,9 +1058,9 @@ const PaymentView = ({ cartTotal, navigate, clearCart, profile, session }) => {
       });
       if (error) throw error;
       if (data?.url) { window.location.href = data.url; }
-      else { alert('Erreur : impossible de générer le lien. Vérifiez que la Edge Function est déployée.'); }
+      else { console.error('Erreur : impossible de générer le lien. Vérifiez que la Edge Function est déployée.'); }
     } catch (err) {
-      alert('Erreur technique : ' + (err.message || 'Edge Function introuvable.'));
+      console.error(err);
     } finally {
       setIsProcessing(false);
     }
@@ -1250,7 +1276,10 @@ const AuthView = ({ navigate }) => {
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label><input type="email" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="name@email.com" /></div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="••••••••" /></div>
           <button className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-black/10">{isLogin ? 'Se Connecter' : 'S\'inscrire'}</button>
-          <button type="button" onClick={async () => { if (!supabase) { alert("Erreur : Supabase non configuré."); return; } const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); if (error) alert("Erreur : " + error.message); }} className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all">Google</button>
+          <button type="button" onClick={async () => { 
+            const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); 
+            if (error) console.error(error); 
+          }} className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all">Google</button>
         </form>
         <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="w-full mt-8 text-center text-sm font-bold text-gray-400 hover:text-primary transition-colors">{isLogin ? "Créer un compte" : "Déjà membre ?"}</button>
       </div>
