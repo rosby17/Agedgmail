@@ -1037,63 +1037,97 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
       {selectedOrder && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
-          <div className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl p-10 space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-900">
-                {(!selectedOrder.status || selectedOrder.status === 'pending') ? 'Confirmer la commande' : 'Détail commande'}
-              </h3>
-              <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
-                <X size={16} />
+          <div className="relative w-full max-w-4xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-8 animate-in fade-in zoom-in duration-300">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {(!selectedOrder.status || selectedOrder.status === 'pending') ? 'Confirmer la commande' : 'Détail de la commande'}
+                </h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">ID: #{selectedOrder.id.toUpperCase()}</p>
+              </div>
+              <button onClick={() => setSelectedOrder(null)} className="w-12 h-12 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all">
+                <X size={20} />
               </button>
             </div>
 
-            <div className="bg-gray-50 rounded-2xl p-6 space-y-3 text-sm">
-              {[
-                ['Produit', selectedOrder.product_name],
-                ['Email', selectedOrder.buyer_email || '—'],
-                ['Montant', `$${selectedOrder.total_price?.toFixed(2)}`],
-                ['TX Binance', selectedOrder.binance_tx_id || 'Non fourni'],
-              ].map(([label, val]) => (
-                <div key={label} className="flex justify-between">
-                  <span className="text-gray-400 font-medium">{label}</span>
-                  <span className="font-bold text-gray-900">{val}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="bg-gray-50/50 border border-gray-100 rounded-3xl p-8 space-y-4">
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2 mb-4">Informations Client</h4>
+                  {[
+                    ['Produit', selectedOrder.product_name, Package],
+                    ['Email Client', selectedOrder.buyer_email || '—', Mail],
+                    ['Montant', `$${selectedOrder.total_price?.toFixed(2)}`, Wallet],
+                    ['TX Binance', selectedOrder.binance_tx_id || 'Non fourni', Hash],
+                    ['Date', new Date(selectedOrder.created_at).toLocaleString(), Clock],
+                  ].map(([label, val, Icon]) => (
+                    <div key={label} className="flex justify-between items-center group">
+                      <span className="text-gray-400 font-medium text-xs flex items-center gap-2">
+                        <Icon size={14} className="text-gray-300 group-hover:text-primary transition-colors" /> {label}
+                      </span>
+                      <span className="font-bold text-gray-900 text-sm">{val}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {(!selectedOrder.status || selectedOrder.status === 'pending') ? (<>
-              {selectedOrder.product_name !== "Recharge Binance" && (
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 flex items-start gap-3">
-                  <Package size={18} className="text-blue-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-bold text-blue-800">Livraison automatique</p>
-                    <p className="text-xs text-blue-600 mt-1">Le système va distribuer <span className="font-bold">{selectedOrder.quantity || 1} compte(s)</span> depuis votre stock pré-chargé pour ce produit.</p>
-                  </div>
-                </div>
-              )}
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Note admin <span className="font-normal normal-case text-gray-300">(optionnel)</span></label>
-                <input value={adminNote} onChange={e => setAdminNote(e.target.value)} placeholder="ex: Vérifié sur Binance TX #12345"
-                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm" />
-              </div>
-                {errorMessage && (
-                  <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2">
-                    <AlertTriangle size={14} /> {errorMessage}
+                {(!selectedOrder.status || selectedOrder.status === 'pending') && (
+                  <div className="space-y-6">
+                    {selectedOrder.product_name !== "Recharge Binance" && (
+                      <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 flex items-start gap-4">
+                        <Zap size={24} className="text-blue-500 mt-1" />
+                        <div>
+                          <p className="text-sm font-bold text-blue-800">Livraison automatique prête</p>
+                          <p className="text-xs text-blue-600 mt-1 leading-relaxed">Le système va distribuer <span className="font-black underline">{selectedOrder.quantity || 1} compte(s)</span> depuis le stock <span className="font-bold">{selectedOrder.product_name}</span>.</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-4">
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Note administrative</label>
+                      <textarea 
+                        value={adminNote} 
+                        onChange={e => setAdminNote(e.target.value)} 
+                        placeholder="Note interne (ex: Paiement reçu sur Binance)..."
+                        className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none text-sm min-h-[100px] resize-none" 
+                      />
+                    </div>
+                    {errorMessage && (
+                      <div className="bg-red-50 text-red-500 p-4 rounded-2xl text-xs font-bold border border-red-100 flex items-center gap-2">
+                        <AlertTriangle size={14} /> {errorMessage}
+                      </div>
+                    )}
+                    <button onClick={confirmOrder} disabled={actionLoading || actionSuccess}
+                      className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-xl ${actionSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary shadow-gray-900/10'}`}>
+                      {actionLoading ? <><RefreshCcw size={18} className="animate-spin" /> Traitement...</> : actionSuccess ? <><CheckCircle size={18} /> Confirmé !</> : (selectedOrder.product_name === "Recharge Binance" ? <><CheckCircle size={18} /> Valider Recharge</> : <><Zap size={18} /> Livrer Instantanément</>)}
+                    </button>
                   </div>
                 )}
-                <button onClick={confirmOrder} disabled={actionLoading || actionSuccess}
-                  className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${actionSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-                  {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Livraison en cours...</> : actionSuccess ? <><CheckCircle size={16} /> Livraison effectuée !</> : (selectedOrder.product_name === "Recharge Binance" ? <><CheckCircle size={16} /> Valider et Créditer le Solde</> : <><Zap size={16} /> Livrer automatiquement</>)}
-                </button>
-            </>) : (
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{selectedOrder.product_name === "Recharge Binance" ? "Statut" : "Credentials livrés"}</label>
-                <div className="bg-green-50 border border-green-100 rounded-2xl p-5 font-mono text-sm text-green-800 whitespace-pre-wrap flex items-center gap-2">
-                  <CheckCircle size={16} /> {selectedOrder.product_name === "Recharge Binance" ? "Solde crédité avec succès." : (selectedOrder.credentials || selectedOrder.data || '—')}
-                </div>
-                {selectedOrder.admin_note && <p className="text-gray-400 text-xs mt-2 flex items-center gap-2"><FileText size={12} /> {selectedOrder.admin_note}</p>}
               </div>
-            )}
+
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {selectedOrder.product_name === "Recharge Binance" ? "Confirmation" : "Contenu de la livraison"}
+                </label>
+                <div className="bg-white border border-gray-100 rounded-3xl p-1 shadow-inner h-full min-h-[300px]">
+                  <div 
+                    className="font-mono text-xs text-gray-600 p-6 leading-relaxed whitespace-pre-wrap break-all h-full max-h-[500px] overflow-y-auto custom-scrollbar"
+                    dangerouslySetInnerHTML={{
+                      __html: (selectedOrder.status === 'confirmed') ? (
+                        selectedOrder.product_name === "Recharge Binance" 
+                          ? '<div className="flex items-center gap-2 text-green-600 font-bold"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Recharge effectuée avec succès.</div>' 
+                          : (selectedOrder.credentials || selectedOrder.data || "Identifiants introuvables.").replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>')
+                      ) : '<div class="text-gray-300 italic flex items-center justify-center h-full">La commande doit être validée pour afficher les accès.</div>'
+                    }}
+                  />
+                </div>
+                {selectedOrder.admin_note && (
+                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Note de confirmation</p>
+                    <p className="text-xs text-gray-600 italic">"{selectedOrder.admin_note}"</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
           </div>
         </div>
       )}
