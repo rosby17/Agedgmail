@@ -485,7 +485,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   {profile?.first_name || profile?.last_name ? `${profile.first_name} ${profile.last_name}` : "Utilisateur"}
                 </div>
                 <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">
-                  @{profile?.display_name || "pseudo"} • #{profile?.id?.slice(0, 4)}
+                  @{profile?.display_name || "pseudo"}
                 </div>
               </div>
             </div>
