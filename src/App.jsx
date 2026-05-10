@@ -971,10 +971,11 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
 const AdminView = ({ 
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers, 
   actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm, 
-  setProductForm, handleSaveProduct, handleDeleteProduct, adminSearch, setAdminSearch, 
+  setProductForm, handleSaveProduct, handleDeleteProduct, handleExcelProductImport, adminSearch, setAdminSearch, 
   adminPage, setAdminPage 
 }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState("dashboard");
+
   const itemsPerPage = 10;
 
   const handleUpdateBalanceManual = async (userId, email, amount) => {
