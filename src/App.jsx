@@ -763,7 +763,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
 // ==========================================
 // STOCK MANAGER COMPONENT
 // ==========================================
-const StockManager = ({ product, onClose }) => {
+const StockManager = ({ product, onClose, fetchProducts }) => {
   const [bulkText, setBulkText] = useState('');
   const [stockInfo, setStockInfo] = useState({ total: 0, available: 0, delivered: 0 });
   const [loading, setLoading] = useState(false);
@@ -791,6 +791,7 @@ const StockManager = ({ product, onClose }) => {
     setImportSuccess(true);
     setBulkText('');
     setStockInfo(prev => ({ ...prev, total: prev.total + lines.length, available: prev.available + lines.length }));
+    if (fetchProducts) fetchProducts();
     setTimeout(() => setImportSuccess(false), 2000);
     setLoading(false);
   };
@@ -843,7 +844,7 @@ const StockManager = ({ product, onClose }) => {
 // ORDERS ADMIN — Composant gestion commandes
 // ==========================================
 
-const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
+const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
   const [filter, setFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [adminNote, setAdminNote] = useState('');
@@ -926,6 +927,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
       setSelectedOrder(null);
       setAdminNote('');
       fetchAllOrders();
+      if (fetchProducts) fetchProducts();
       setActionLoading(false);
       setActionSuccess(false);
     }, 1500);
@@ -1170,7 +1172,7 @@ const AdminView = ({
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      {managingStock && <StockManager product={managingStock} onClose={() => setManagingStock(null)} />}
+      {managingStock && <StockManager product={managingStock} fetchProducts={fetchProducts} onClose={() => { setManagingStock(null); fetchProducts(); }} />}
       <div className="flex items-center justify-between mb-12">
         <div>
           <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Console Administration</h1>
@@ -1314,9 +1316,7 @@ const AdminView = ({
             </div>
           )}
 
-          {activeTab === 'orders' && (
-            <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />
-          )}
+          {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} fetchProducts={fetchProducts} />}
 
           {activeTab === 'users' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">

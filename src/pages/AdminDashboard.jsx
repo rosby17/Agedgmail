@@ -30,18 +30,47 @@ export default function AdminDashboard() {
     };
 
     const confirmOrder = async (order) => {
-        if (!credentials.trim()) { alert('Entre les credentials !'); return; }
+        let finalCredentials = credentials.trim();
         setActionLoading(true);
+
+        // Si les credentials sont vides, on tente de les récupérer automatiquement du stock
+        if (!finalCredentials) {
+            const qty = order.quantity || 1;
+            const { data: stockRows, error: stockErr } = await supabase
+                .from('account_stock')
+                .select('id, credentials')
+                .eq('product_id', order.product_id)
+                .eq('is_delivered', false)
+                .limit(qty);
+
+            if (stockErr || !stockRows || stockRows.length < qty) {
+                alert(`⚠️ Stock insuffisant pour la livraison automatique (${stockRows?.length || 0} dispo). Veuillez entrer les credentials manuellement.`);
+                setActionLoading(false);
+                return;
+            }
+
+            finalCredentials = stockRows.map(r => r.credentials).join('\n');
+            const stockIds = stockRows.map(r => r.id);
+
+            // Marquer comme livré dans account_stock
+            await supabase.from('account_stock').update({
+                is_delivered: true,
+                order_id: String(order.id),
+                delivered_to: order.user_id,
+            }).in('id', stockIds);
+        }
+
         await supabase
             .from('orders')
             .update({
                 status: 'confirmed',
-                credentials: credentials.trim(),
+                credentials: finalCredentials,
                 admin_note: adminNote.trim() || null,
                 confirmed_at: new Date().toISOString(),
-                data: credentials.trim(), // aussi dans la colonne "data" existante
+                data: finalCredentials,
             })
             .eq('id', order.id);
+
         setSelectedOrder(null);
         setCredentials('');
         setAdminNote('');
