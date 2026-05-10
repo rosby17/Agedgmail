@@ -380,7 +380,11 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                     <div className="text-xl font-bold text-gray-900 mb-2">{orders[0]?.product_name || "Aucune commande"}</div>
                     <div className="text-sm text-gray-400 font-medium">Effectuée le {orders[0]?.created_at ? new Date(orders[0].created_at).toLocaleDateString() : "--/--/----"}</div>
                   </div>
-                  <button onClick={() => setViewOrder(orders[0])} disabled={!orders[0]} className="text-sm font-black text-primary hover:underline flex items-center gap-2 mt-6 disabled:text-gray-300">Voir les accès <ChevronRight size={16} /></button>
+                  {orders[0]?.product_name !== "Recharge Binance" && (
+                    <button onClick={() => setViewOrder(orders[0])} disabled={!orders[0]} className="text-sm font-black text-primary hover:underline flex items-center gap-2 mt-6 disabled:text-gray-300">
+                      Voir les accès <ChevronRight size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
               <section className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
@@ -398,9 +402,11 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                             <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleDateString()}</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
+                         <div className="flex items-center gap-4">
                           <div className="text-sm font-black text-gray-900">${order.total_price?.toFixed(2)}</div>
-                          <button onClick={() => setViewOrder(order)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-primary transition-all"><Eye size={18} /></button>
+                          {order.product_name !== "Recharge Binance" && (
+                            <button onClick={() => setViewOrder(order)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-primary transition-all"><Eye size={18} /></button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -429,13 +435,15 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                               order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
                                 'bg-yellow-100 text-yellow-700 border-yellow-200'
                               }`}>
-                              {order.status === 'confirmed' ? '✅ Confirmé' : order.status === 'cancelled' ? '❌ Annulé' : '⏳ En attente'}
+                              {order.status === 'confirmed' ? 'Confirmé' : order.status === 'cancelled' ? 'Annulé' : 'En attente'}
                             </span>
                           </td>
-                          <td className="py-6">
-                            <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
-                              <Eye size={14} /> Voir les accès
-                            </button>
+                           <td className="py-6">
+                            {order.product_name !== "Recharge Binance" && (
+                              <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
+                                <Eye size={14} /> Voir les accès
+                              </button>
+                            )}
                           </td>
                           <td className="py-6 text-right font-black text-gray-900">${order.total_price?.toFixed(2)}</td>
                         </tr>
