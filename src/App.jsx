@@ -1930,15 +1930,20 @@ function App() {
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
         
-        const itemsToInsert = data.map(row => ({
-          name: row.name || row.Name || row.Titre || "Produit Importé",
-          category: (row.category || row.Category || row.Categorie || "email").toLowerCase(),
-          price: parseFloat(row.price || row.Price || row.Prix || 0),
-          stock: parseInt(row.stock || row.Stock || row.Quantite || 0),
-          description: row.description || row.Description || ""
-        })).filter(item => item.name);
+        const itemsToInsert = data.map(row => {
+          const rawCategory = row['Catégorie'] || row.Catégorie || row.category || row.Category || "";
+          const categoryId = CATEGORIES.find(c => c.name.toLowerCase().trim() === rawCategory.toString().toLowerCase().trim())?.id || "email";
+          
+          return {
+            name: row['Titre du Produit'] || row.name || row.Name || row.Titre || "Produit Importé",
+            category: categoryId,
+            price: parseFloat(row['Prix ($)'] || row.price || row.Price || row.Prix || 0),
+            stock: parseInt(row['Quantité en Stock'] || row.stock || row.Stock || row.Quantite || 0),
+            description: row.Description || row.description || ""
+          };
+        }).filter(item => item.name && item.name !== "Produit Importé");
 
-        if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée dans l'Excel.");
+        if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée. Vérifiez les noms des colonnes (Titre du Produit, Catégorie, Prix ($), Quantité en Stock, Description).");
 
         const { error } = await supabase.from('products').insert(itemsToInsert);
         if (error) throw error;
