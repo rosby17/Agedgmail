@@ -727,15 +727,23 @@ const AdminView = ({ navigate }) => {
   }, []);
 
   const fetchInventory = async () => {
-    setInventory(PRODUCTS.map(p => ({
-      ...p,
-      stock: 0,
-      sold: 0
-    })));
+    const { data, error } = await supabase.from('product_stock').select('product_id, is_sold');
+    if (error) console.error("Erreur stock:", error);
+    
+    setInventory(PRODUCTS.map(p => {
+      const stockItems = data ? data.filter(item => item.product_id === p.id) : [];
+      return {
+        ...p,
+        stock: stockItems.filter(item => !item.is_sold).length,
+        sold: stockItems.filter(item => item.is_sold).length
+      };
+    }));
   };
 
   const fetchAllOrders = async () => {
-    setAllOrders([]);
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (data) setAllOrders(data);
+    if (error) console.error("Erreur lors de la récupération des commandes :", error);
   };
 
   const selectedProductStock = inventory.find(p => p.id === parseInt(selectedProductId))?.stock || 0;
