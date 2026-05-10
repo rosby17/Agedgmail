@@ -2223,25 +2223,19 @@ function App() {
     // 1. Fetch products
     const { data: productsData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     
-    // 2. Fetch all non-delivered stock to count them
-    // Increased limit to 10,000 to handle large inventories
-    const { data: stockData, error: sErr } = await supabase
-      .from('account_stock')
-      .select('product_id')
-      .eq('is_delivered', false)
-      .limit(10000);
-    
     if (!pErr && productsData) {
-      // Aggregate counts by product_id
-      const counts = (stockData || []).reduce((acc, curr) => {
-        const pid = String(curr.product_id);
-        acc[pid] = (acc[pid] || 0) + 1;
-        return acc;
-      }, {});
-      
-      const updatedProducts = productsData.map(p => ({
-        ...p,
-        stock: counts[String(p.id)] || 0
+      // Fetch counts for each product individually to bypass 1000-row limits
+      const updatedProducts = await Promise.all(productsData.map(async (p) => {
+        const { count } = await supabase
+          .from('account_stock')
+          .select('*', { count: 'exact', head: true })
+          .eq('product_id', p.id)
+          .eq('is_delivered', false);
+        
+        return {
+          ...p,
+          stock: count || 0
+        };
       }));
       
       setProducts(updatedProducts);
