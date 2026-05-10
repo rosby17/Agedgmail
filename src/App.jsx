@@ -587,13 +587,18 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   <div 
                     className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2 mt-6"
                     dangerouslySetInnerHTML={{
-                      __html: (viewOrder.credentials || viewOrder.data ? (
-                        `<div class="space-y-4">
+                      __html: (() => {
+                        if (!viewOrder.credentials && !viewOrder.data) return "En attente de livraison...";
+                        
+                        const creds = viewOrder.credentials || viewOrder.data;
+                        const highlighted = creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
+                        
+                        return `<div class="space-y-4">
                           <p>Merci beaucoup pour votre achat.</p>
                           <p>Voici vos produits :</p>
                           <p class="font-black text-lg text-gray-900 border-b border-gray-100 pb-2">${viewOrder.product_name}</p>
                           <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner">
-                            ${(viewOrder.credentials || viewOrder.data).replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>')}
+                            ${highlighted}
                           </div>
                           
                           <div class="h-px bg-gray-100 my-8"></div>
@@ -607,8 +612,8 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                           <div class="bg-red-50 p-6 rounded-3xl border border-red-100 mt-6">
                             <p class="text-red-500 font-bold text-xs">Période de garantie terminée après connexion réussie.</p>
                           </div>
-                        </div>`
-                      ) : "En attente de livraison...")
+                        </div>`;
+                      })()
                     }}
                   />
                 </div>
@@ -616,8 +621,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
               <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div className="flex flex-col lg:flex-row gap-12">
         <aside className="w-full lg:w-64 flex-shrink-0">
@@ -1108,11 +1112,16 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                   <div 
                     className="font-mono text-xs text-gray-600 p-6 leading-relaxed whitespace-pre-wrap break-all h-full max-h-[500px] overflow-y-auto custom-scrollbar"
                     dangerouslySetInnerHTML={{
-                      __html: (selectedOrder.status === 'confirmed') ? (
-                        selectedOrder.product_name === "Recharge Binance" 
-                          ? '<div className="flex items-center gap-2 text-green-600 font-bold"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Recharge effectuée avec succès.</div>' 
-                          : (selectedOrder.credentials || selectedOrder.data || "Identifiants introuvables.").replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>')
-                      ) : '<div class="text-gray-300 italic flex items-center justify-center h-full">La commande doit être validée pour afficher les accès.</div>'
+                      __html: (() => {
+                        if (selectedOrder.status !== 'confirmed') {
+                          return '<div class="text-gray-300 italic flex items-center justify-center h-full">La commande doit être validée pour afficher les accès.</div>';
+                        }
+                        if (selectedOrder.product_name === "Recharge Binance") {
+                          return '<div class="flex items-center gap-2 text-green-600 font-bold"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Recharge effectuée avec succès.</div>';
+                        }
+                        const creds = selectedOrder.credentials || selectedOrder.data || "Identifiants introuvables.";
+                        return creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
+                      })()
                     }}
                   />
                 </div>
@@ -1124,7 +1133,6 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                 )}
               </div>
             </div>
-          </div>
           </div>
         </div>
       )}
