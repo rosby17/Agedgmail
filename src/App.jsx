@@ -1031,7 +1031,15 @@ const AdminView = ({
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
                 <div className="flex justify-between items-center mb-10">
                   <h2 className="text-2xl font-bold">Catalogue Produits</h2>
-                  <button onClick={() => { setEditingProduct(null); setProductForm({ name: '', category: 'email', description: '', price: 0, stock: 0, image_url: '' }); }} className="bg-primary text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2"><Plus size={18} /> Ajouter un Produit</button>
+                  <div className="flex gap-4">
+                    <input type="file" id="excel-import" className="hidden" accept=".xlsx, .xls" onChange={handleExcelProductImport} />
+                    <label htmlFor="excel-import" className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer hover:bg-green-700 transition-all shadow-lg shadow-green-500/20">
+                      <Upload size={18} /> Importer Excel
+                    </label>
+                    <button onClick={() => { setEditingProduct(null); setProductForm({ name: '', category: 'email', description: '', price: 0, stock: 0 }); }} className="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all">
+                      <Plus size={18} /> Manuel
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 mb-12">
@@ -1536,74 +1544,114 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 // ==========================================
 // PRODUCT VIEW
 // ==========================================
-
 const ProductView = ({ product, addToCart, navigate }) => {
   const [quantity, setQuantity] = useState(1);
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
-        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative">
-          <div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden">
+
+
+        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative group">
+          <div className="absolute top-6 left-6 z-10 bg-red-500 text-white font-black px-4 py-2 rounded-xl shadow-xl rotate-[-10deg] animate-pulse">20% OFF</div>
+          <div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden group-hover:scale-[1.6] transition-transform duration-700">
             {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}
           </div>
           {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}
         </div>
+
         <div className="flex flex-col justify-center">
           <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">
             <button onClick={() => navigate('home')} className="hover:text-primary">ACCUEIL</button>
             <span>/</span>
             <span className="text-primary">{CATEGORIES.find(c => c.id === product.category)?.name}</span>
           </nav>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tighter leading-tight">{product.name}</h1>
-          <div className="flex items-center gap-6 mb-12">
-            <div className="text-4xl font-black text-primary">${product.price.toFixed(2)}</div>
-            <div className={`text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl ${product.stock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-              {product.stock > 0 ? `${product.stock} exemplaires disponibles` : 'Rupture de stock'}
+
+          <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tighter leading-tight">{product.name}</h1>
+          
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-xs font-bold border border-green-100">
+              <Package size={14} /> In stock ({product.stock})
+            </div>
+            <div className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-bold border border-gray-200">
+              {CATEGORIES.find(c => c.id === product.category)?.name}
             </div>
           </div>
-          <div className="flex items-center gap-6 mb-12">
-            <div className="flex items-center bg-gray-100 rounded-full p-2">
-              <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Minus size={20} /></button>
-              <div className="w-16 text-center font-black text-xl">{quantity}</div>
-              <button onClick={() => quantity < product.stock && setQuantity(quantity + 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Plus size={20} /></button>
+
+          <div className="text-5xl font-black text-gray-900 mb-10 tracking-tight flex items-baseline gap-2">
+            <span className="text-2xl text-gray-400 font-bold">$</span>{product.price.toFixed(1)}
+          </div>
+
+          <div className="mb-8">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <CheckCircle size={12} className="text-green-500" /> Select option:
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {['New Account', 'Aged 2015-2019', 'Aged 2010-2014', 'Premium Quality'].map((opt, i) => (
+                <button key={i} className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${i === 0 ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-gray-100 text-gray-400 hover:border-primary/30'}`}>
+                  {opt}
+                </button>
+              ))}
             </div>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</label>
+              <div className="flex items-center bg-gray-100 rounded-2xl p-1.5">
+                <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-200/50"><Minus size={16} /></button>
+                <div className="w-16 text-center font-black text-xl">{quantity}</div>
+                <button onClick={() => quantity < product.stock && setQuantity(quantity + 1)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-200/50"><Plus size={16} /></button>
+              </div>
+            </div>
+
             <button onClick={() => addToCart(product, quantity)} disabled={product.stock <= 0}
-              className={`flex-grow h-20 rounded-full font-bold text-xl transition-all shadow-2xl shadow-black/10 uppercase tracking-widest ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
-              {product.stock > 0 ? 'Ajouter au Panier' : 'Épuisé'}
+              className={`w-full max-w-md h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+              {product.stock > 0 ? 'Buy now' : 'Out of stock'}
             </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><Zap size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Livraison Instantanée</span></div>
-            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><ShieldCheck size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Garantie 3 Jours</span></div>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 border-t border-gray-100 pt-20">
-        <div className="lg:col-span-2 space-y-16">
-          <section>
-            <h3 className="flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8"><Info size={16} className="text-primary" /> Informations</h3>
-            <div className="bg-white border border-gray-100 p-10 rounded-[2.5rem] shadow-soft leading-relaxed text-gray-600 space-y-4 font-medium">
-              {product.details.info.split(' | ').map((line, i) => (
-                <div key={i} className="flex justify-between border-b border-gray-50 pb-3">
-                  <span>{line.split(' : ')[0]}</span><span className="text-gray-900 font-bold">{line.split(' : ')[1]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section>
-            <h3 className="flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8"><Clock size={16} className="text-primary" /> À Noter (Important)</h3>
-            <div className="bg-primary/5 border border-primary/10 p-10 rounded-[2.5rem] text-primaryDark leading-relaxed font-medium italic">{product.details.note}</div>
-          </section>
+
+      {/* Tabs / Details */}
+      <div className="border-t border-gray-100 pt-20">
+        <div className="flex gap-10 border-b border-gray-100 mb-12 overflow-x-auto pb-4">
+          {['Information', 'Warranty policy'].map((tab, i) => (
+            <button key={tab} className={`text-sm font-black uppercase tracking-[0.2em] pb-4 relative whitespace-nowrap transition-colors ${i === 0 ? 'text-primary' : 'text-gray-400 hover:text-gray-600'}`}>
+              {tab}
+              {i === 0 && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-full"></div>}
+            </button>
+          ))}
         </div>
-        <div className="space-y-12">
-          <section>
-            <h3 className="flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8"><ShieldAlert size={16} className="text-primary" /> Conditions</h3>
-            <div className="text-sm text-gray-500 leading-relaxed space-y-4">{product.details.terms.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}</div>
-          </section>
-          <section>
-            <h3 className="flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8"><RefreshCcw size={16} className="text-primary" /> Remboursement</h3>
-            <div className="text-sm text-gray-400 leading-relaxed p-6 bg-gray-50 rounded-3xl border border-gray-100">{product.details.refund}</div>
-          </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+          <div className="lg:col-span-2 space-y-12">
+            <div>
+              <h3 className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-6 underline">INFORMATION</h3>
+              <div className="space-y-4">
+                {product.details.info.split(' | ').map((line, i) => (
+                  <div key={i} className="flex items-center gap-4 text-gray-700 font-bold">
+                    <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
+                    <span className="text-gray-400 font-medium min-w-[120px]">{line.split(' : ')[0]} :</span>
+                    <span className="text-gray-900">{line.split(' : ')[1]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="bg-primary/5 border border-primary/10 p-8 rounded-[2.5rem]">
+               <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-4"><Info size={14} /> Description Additionnelle</h4>
+               <p className="text-gray-600 font-medium leading-relaxed italic">{product.description || product.details.note}</p>
+            </div>
+          </div>
+
+          <div className="space-y-12">
+            <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100">
+               <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><ShieldAlert size={14} className="text-primary" /> Conditions d'utilisation</h4>
+               <div className="text-xs text-gray-500 leading-relaxed space-y-4">
+                 {product.details.terms.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
+               </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1864,6 +1912,44 @@ function App() {
       if (error) alert(error.message);
       else fetchProducts();
     }
+  };
+
+  const handleExcelProductImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setActionStatus('loading');
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        const itemsToInsert = data.map(row => ({
+          name: row.name || row.Name || row.Titre || "Produit Importé",
+          category: (row.category || row.Category || row.Categorie || "email").toLowerCase(),
+          price: parseFloat(row.price || row.Price || row.Prix || 0),
+          stock: parseInt(row.stock || row.Stock || row.Quantite || 0),
+          description: row.description || row.Description || ""
+        })).filter(item => item.name);
+
+        if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée dans l'Excel.");
+
+        const { error } = await supabase.from('products').insert(itemsToInsert);
+        if (error) throw error;
+
+        fetchProducts();
+        setActionStatus('success');
+        setTimeout(() => setActionStatus(null), 3000);
+      } catch (err) {
+        alert("Erreur Import Excel : " + err.message);
+        setActionStatus('error');
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   const fetchProfile = async (userId) => {
