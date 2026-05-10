@@ -1893,11 +1893,17 @@ function App() {
   const [products, setProducts] = useState([]);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => {}, type: "danger" });
 
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [currentView, setCurrentView] = useState(() => localStorage.getItem('agedgmail_view') || 'home');
+  const [selectedProduct, setSelectedProduct] = useState(() => {
+    const saved = localStorage.getItem('agedgmail_product');
+    try { return saved ? JSON.parse(saved) : null; } catch { return null; }
+  });
   const [activeCategory, setActiveCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    const saved = localStorage.getItem('agedgmail_cart');
+    try { return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -1968,6 +1974,19 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('agedgmail_view', currentView);
+  }, [currentView]);
+
+  useEffect(() => {
+    if (selectedProduct) localStorage.setItem('agedgmail_product', JSON.stringify(selectedProduct));
+    else localStorage.removeItem('agedgmail_product');
+  }, [selectedProduct]);
+
+  useEffect(() => {
+    localStorage.setItem('agedgmail_cart', JSON.stringify(cart));
+  }, [cart]);
 
   const fetchProducts = async () => {
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
@@ -2133,7 +2152,10 @@ function App() {
   const updateCartQuantity = (id, q) => { if (q < 1) return; setCart(pc => pc.map(i => i.id === id ? { ...i, quantity: q } : i)); };
   const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
   const clearCart = () => setCart([]);
-  const navigate = (v) => { setCurrentView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const navigate = (v) => { 
+    setCurrentView(v); 
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
