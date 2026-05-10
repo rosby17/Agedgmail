@@ -201,14 +201,14 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 
   return (
     <div className="bg-white group">
-      <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
+      <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => navigate('product', product)}>
         <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden px-10 relative">
           {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={50} className="text-gray-300" />}
           {isUS && product.category === 'email' && <div className="absolute bottom-4 right-8 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-lg shadow-primary/20 tracking-tighter">US</div>}
         </div>
       </div>
       <div className="space-y-4 px-2">
-        <div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div><h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>{product.name}</h3></div>
+        <div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div><h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => navigate('product', product)}>{product.name}</h3></div>
         <div className="text-xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</div>
         <div className="flex items-center gap-3 pt-2">
           <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
@@ -588,15 +588,45 @@ const AdminView = ({ navigate }) => {
 // APP COMPONENT
 // ==========================================
 
+const parseHash = () => {
+  const raw = window.location.hash.replace(/^#\/?/, '') || 'home';
+  const [view, param] = raw.split('/');
+  return { view: view || 'home', param };
+};
+
 function App() {
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const initialHash = parseHash();
+  const initialProduct = initialHash.view === 'product' && initialHash.param
+    ? PRODUCTS.find(p => p.id === parseInt(initialHash.param)) || null
+    : null;
+
+  const [currentView, setCurrentView] = useState(initialProduct || initialHash.view !== 'product' ? initialHash.view : 'home');
+  const [selectedProduct, setSelectedProduct] = useState(initialProduct);
   const [activeCategory, setActiveCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cart') || '[]'); } catch { return []; }
+  });
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const { view, param } = parseHash();
+      if (view === 'product' && param) {
+        const p = PRODUCTS.find(prod => prod.id === parseInt(param));
+        if (p) { setSelectedProduct(p); setCurrentView('product'); return; }
+      }
+      setCurrentView(view);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -646,7 +676,16 @@ function App() {
   const updateCartQuantity = (id, q) => { if (q < 1) return; setCart(pc => pc.map(i => i.id === id ? { ...i, quantity: q } : i)); };
   const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
   const clearCart = () => setCart([]);
-  const navigate = (v) => { setCurrentView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const navigate = (v, product) => {
+    const target = product || (v === 'product' ? selectedProduct : null);
+    if (product) setSelectedProduct(product);
+    setCurrentView(v);
+    const hash = v === 'product' && target ? `product/${target.id}` : v;
+    if (window.location.hash.replace(/^#\/?/, '') !== hash) {
+      window.location.hash = hash;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
@@ -675,14 +714,14 @@ const ProductView = ({ product, addToCart, navigate }) => {
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
-        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative"><div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden">{product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}</div>{product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}</div>
+        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative p-16"><div className="w-full h-full flex items-center justify-center">{product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}</div>{product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}</div>
         <div className="flex flex-col justify-center">
           <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><button onClick={() => navigate('home')} className="hover:text-primary">ACCUEIL</button><span>/</span><span className="text-primary">{CATEGORIES.find(c => c.id === product.category)?.name}</span></nav>
           <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tighter leading-tight">{product.name}</h1>
           <div className="text-4xl font-black text-primary mb-12">${product.price.toFixed(2)}</div>
           <div className="flex items-center gap-6 mb-12">
             <div className="flex items-center bg-gray-100 rounded-full p-2"><button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Minus size={20} /></button><div className="w-16 text-center font-black text-xl">{quantity}</div><button onClick={() => setQuantity(quantity + 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Plus size={20} /></button></div>
-            <button onClick={() => addToCart(product, quantity)} className="flex-grow bg-gray-900 text-white h-20 rounded-full font-bold text-xl hover:bg-primary transition-all shadow-2xl shadow-black/10 uppercase tracking-widest">Ajouter au Panier</button>
+            <button onClick={() => { addToCart(product, quantity); navigate('cart'); }} className="flex-grow bg-gray-900 text-white h-20 rounded-full font-bold text-xl hover:bg-primary transition-all shadow-2xl shadow-black/10 uppercase tracking-widest">Passer au Paiement</button>
           </div>
           <div className="grid grid-cols-2 gap-4"><div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><Zap size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Livraison Instantanée</span></div><div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><ShieldCheck size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Garantie 3 Jours</span></div></div>
         </div>
