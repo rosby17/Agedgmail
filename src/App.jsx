@@ -1413,6 +1413,92 @@ const AdminView = ({ navigate }) => {
 // RECHARGE VIEW & BINANCE PAY
 // ==========================================
 
+const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetchStocks }) => {
+  const [txId, setTxId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleOrderSubmit = async () => {
+    if (!txId.trim()) { setError("Veuillez entrer l'ID de transaction."); return; }
+    setLoading(true);
+    setError("");
+
+    try {
+      // 1. Create a pending order for each item in the cart
+      for (const item of cart) {
+        const { error: orderErr } = await supabase.from('orders').insert({
+          user_id: session.user.id,
+          buyer_email: session.user.email,
+          product_id: item.id,
+          product_name: item.name,
+          quantity: item.quantity,
+          total_price: item.price * item.quantity,
+          status: 'pending', // Admin will confirm after verifying TX ID
+          binance_tx_id: txId.trim(),
+          created_at: new Date().toISOString()
+        });
+        if (orderErr) throw orderErr;
+      }
+
+      // 2. Alert Admin
+      await fetch("https://formsubmit.co/ajax/rooseveltmkr@gmail.com", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: "💰 Nouveau Paiement Direct Binance Pay (AgedGmailYT)",
+          email: session.user.email,
+          total: cartTotal + " USD",
+          tx_id: txId.trim(),
+          details: cart.map(i => `${i.name} (x${i.quantity})`).join(', ')
+        })
+      });
+
+      setSuccess(true);
+      setTimeout(() => {
+        clearCart();
+        navigate('dashboard');
+      }, 2000);
+    } catch (err) {
+      setError("Erreur : " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-yellow-50 border border-yellow-100 p-6 rounded-2xl flex items-start gap-4">
+        <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-white font-bold shrink-0">B</div>
+        <div>
+          <div className="font-bold text-yellow-900">Binance Pay ID</div>
+          <div className="text-2xl font-black text-yellow-800 font-mono my-1 select-all">123456789</div>
+          <p className="text-[10px] text-yellow-700 uppercase font-bold tracking-wider">Envoyez exactement ${cartTotal.toFixed(2)}</p>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">ID de Transaction Binance (TX ID)</label>
+        <input 
+          type="text" 
+          value={txId} 
+          onChange={e => setTxId(e.target.value)}
+          placeholder="Entrez l'ID reçu après l'envoi"
+          className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono"
+        />
+      </div>
+
+      {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">{error}</div>}
+
+      <button onClick={handleOrderSubmit} disabled={loading || success} className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl flex items-center justify-center gap-3 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary shadow-black/10'}`}>
+        {loading ? <RefreshCcw className="animate-spin" /> : success ? <CheckCircle /> : <ShieldCheck />}
+        {loading ? "Validation..." : success ? "Commande Envoyée !" : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
+      </button>
+      <p className="text-[10px] text-gray-400 text-center font-medium">Votre commande sera validée par un admin dès vérification de la transaction.</p>
+    </div>
+  );
+};
+
 const RechargeView = ({ profile, session, navigate }) => {
   const [amount, setAmount] = useState(10);
   const [txId, setTxId] = useState('');
@@ -1448,7 +1534,7 @@ const RechargeView = ({ profile, session, navigate }) => {
 
     // 2. Envoyer l'alerte email à l'admin via FormSubmit
     try {
-      await fetch("https://formsubmit.co/ajax/rooseveltmkr@gmail.com", {
+      const response = await fetch("https://formsubmit.co/ajax/rooseveltmkr@gmail.com", {
         method: "POST",
         headers: { 
           'Content-Type': 'application/json',
@@ -1462,6 +1548,8 @@ const RechargeView = ({ profile, session, navigate }) => {
           message: "Connectez-vous à l'admin pour valider cette recharge."
         })
       });
+      const resData = await response.json();
+      console.log("FormSubmit response:", resData);
     } catch (err) {
       console.error("Erreur envoi email :", err);
     }
@@ -1513,11 +1601,10 @@ const RechargeView = ({ profile, session, navigate }) => {
 // ==========================================
 
 const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchStocks }) => {
-  const [method, setMethod] = useState('balance');
+  const [method, setMethod] = useState('binance');
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const canPayWithBalance = (profile?.balance || 0) >= cartTotal;
 
   const handleBalancePayment = async () => {
     if (!session || !profile) return;
@@ -1606,12 +1693,6 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
             <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft">
               <h3 className="text-lg font-bold mb-8">1. Sélectionner une Méthode de Paiement</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button onClick={() => setMethod('balance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'balance' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
-                  {method === 'balance' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary"><Wallet size={20} /></div>
-                  <div className="font-bold text-gray-900 mb-1">Solde du Compte</div>
-                  <div className="text-xs text-primary font-bold uppercase tracking-wider">Disponible: ${profile?.balance?.toFixed(2) || "0.00"}</div>
-                </button>
                 <button onClick={() => setMethod('binance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'binance' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
                   {method === 'binance' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
                   <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center mb-4 text-white font-bold">B</div>
@@ -1635,25 +1716,11 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 
             <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft">
               <h3 className="text-lg font-bold mb-8">2. Validation du Paiement</h3>
-
-              {method === 'balance' && (
-                <div className="space-y-6">
-                  {canPayWithBalance
-                    ? <div className="bg-green-50 p-6 rounded-2xl flex items-center gap-4 text-green-700 font-medium"><CheckCircle /> Votre solde est suffisant.</div>
-                    : <div className="bg-red-50 p-6 rounded-2xl flex items-center gap-4 text-red-700 font-medium"><ShieldAlert /> Solde insuffisant. Rechargez via Binance Pay.</div>
-                  }
-                  {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
-                  <button disabled={!canPayWithBalance || purchaseSuccess || isProcessing}
-                    onClick={handleBalancePayment}
-                    className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl ${purchaseSuccess ? 'bg-green-500 text-white' : canPayWithBalance ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                    {isProcessing ? "Traitement..." : purchaseSuccess ? <><CheckCircle size={20} /> Achat Réussi !</> : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
-                  </button>
-                </div>
-              )}
-
+              
               {method === 'binance' && (
-                <BinancePaySection cartTotal={cartTotal} session={session} navigate={navigate} />
+                <BinancePaySection cartTotal={cartTotal} session={session} navigate={navigate} cart={cart} clearCart={clearCart} fetchStocks={fetchStocks} />
               )}
+            </div>
 
             </div>
           </div>
@@ -1664,7 +1731,6 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
             <h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Résumé</h3>
             <div className="space-y-6 mb-10 text-sm font-medium text-gray-400">
               <div className="flex justify-between"><span>Sous-total</span><span className="text-white">${cartTotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Solde Actuel</span><span className="text-primary">${profile?.balance?.toFixed(2) || "0.00"}</span></div>
             </div>
             <div className="flex justify-between text-3xl font-bold mb-4"><span>Total</span><span>${cartTotal.toFixed(2)}</span></div>
             <div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Sécurisé par Chiffrement SSL</div>
