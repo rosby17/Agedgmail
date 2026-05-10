@@ -1233,7 +1233,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
 const AdminView = ({ 
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers, 
   actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm, 
-  setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleExcelProductImport, handleExportExcel, adminSearch, setAdminSearch, 
+  setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleResetSystem, handleExcelProductImport, handleExportExcel, adminSearch, setAdminSearch, 
   adminPage, setAdminPage 
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
@@ -1291,6 +1291,19 @@ const AdminView = ({
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
                 <h3 className="text-lg font-bold mb-8">Statistiques de Vente</h3>
                 <p className="text-gray-400 text-sm italic">Les ventes sont gérées manuellement. Une fois le paiement reçu, livrez le client par email.</p>
+              </div>
+
+              <div className="bg-red-50/50 border border-red-100 rounded-[3rem] p-10">
+                <h3 className="text-lg font-bold text-red-900 mb-2 flex items-center gap-2"><Settings size={20} /> Zone de Maintenance</h3>
+                <p className="text-red-600 text-sm mb-8 font-medium">Nettoyez les données de test avant le lancement officiel. Ces actions sont irréversibles.</p>
+                <div className="flex flex-wrap gap-4">
+                  <button onClick={handleResetSystem} className="bg-red-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-red-700 transition-all shadow-xl shadow-red-500/20 flex items-center gap-2">
+                    <Trash2 size={18} /> Réinitialiser Commandes & Soldes
+                  </button>
+                  <button onClick={handleDeleteAllProducts} className="bg-white text-red-600 border border-red-200 px-8 py-4 rounded-2xl font-bold hover:bg-red-50 transition-all flex items-center gap-2">
+                    <PackageX size={18} /> Supprimer tous les Produits
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -2263,6 +2276,38 @@ function App() {
     });
   };
 
+  const handleResetSystem = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Réinitialisation Totale ?",
+      message: "Cette action va supprimer TOUTES les commandes, TOUT le stock d'emails et REMETTRE À ZÉRO tous les soldes clients. Les produits seront conservés. Voulez-vous continuer ?",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          setActionStatus('loading');
+          // 1. Delete all orders
+          const { error: err1 } = await supabase.from('orders').delete().neq('id', '0');
+          // 2. Delete all stock
+          const { error: err2 } = await supabase.from('account_stock').delete().neq('id', '0');
+          // 3. Reset all balances to 0
+          const { error: err3 } = await supabase.from('profiles').update({ balance: 0 }).neq('id', '0');
+          
+          if (err1 || err2 || err3) throw new Error("Erreur lors de la suppression ou du reset des soldes.");
+          
+          await fetchProducts();
+          await fetchAllOrders();
+          await fetchUsers();
+          alert("Base de données réinitialisée (Commandes + Stock + Soldes clients).");
+        } catch (err) {
+          alert("Erreur : " + err.message);
+        } finally {
+          setActionStatus(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchAllOrders();
@@ -2519,6 +2564,7 @@ function App() {
             handleSaveProduct={handleSaveProduct}
             handleDeleteProduct={handleDeleteProduct}
             handleDeleteAllProducts={handleDeleteAllProducts}
+            handleResetSystem={handleResetSystem}
             handleExcelProductImport={handleExcelProductImport}
             handleExportExcel={handleExportExcel}
             adminSearch={adminSearch}
