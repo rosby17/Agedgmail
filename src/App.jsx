@@ -1410,6 +1410,11 @@ const RechargeView = ({ profile, session, navigate }) => {
           
           <div className="space-y-4">
             <div className="flex justify-between items-center group">
+              <span className="text-xs font-bold text-gray-500">Devise :</span>
+              <span className="font-black text-gray-900">USDT (Binance Pay)</span>
+            </div>
+
+            <div className="flex justify-between items-center group">
               <span className="text-xs font-bold text-gray-500">ID Binance :</span>
               <div className="flex items-center gap-3">
                 <span className="font-mono font-black text-gray-900">160684871</span>
@@ -1419,16 +1424,16 @@ const RechargeView = ({ profile, session, navigate }) => {
 
             <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-primary">Note à ajouter :</span>
-                <button onClick={() => copyToClipboard(noteValue)} className="text-primary/40 hover:text-primary transition-colors"><Copy size={14} /></button>
+                <span className="text-xs font-bold text-primary">note à ajouter :</span>
+                <button onClick={() => copyToClipboard(noteValue.toLowerCase())} className="text-primary/40 hover:text-primary transition-colors"><Copy size={14} /></button>
               </div>
-              <div className="font-mono text-xl font-black text-primary uppercase text-center">{noteValue}</div>
+              <div className="font-mono text-xl font-black text-primary lowercase text-center">{noteValue.toLowerCase()}</div>
             </div>
           </div>
           
           <div className="p-4 bg-red-50 rounded-xl border border-red-100">
             <p className="text-[10px] text-red-500 font-bold leading-relaxed">
-              * AJOUTER LA NOTE : Sans cette note, le traitement de votre recharge prendra plus de temps.
+              * AJOUTER LA note : Sans cette note en minuscule, le traitement de votre recharge prendra plus de temps.
             </p>
           </div>
         </div>
