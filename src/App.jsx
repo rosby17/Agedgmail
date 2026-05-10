@@ -710,7 +710,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                             </span>
                           </td>
                            <td className="py-6">
-                            {order.product_name !== "Recharge Binance" && order.status === 'confirmed' && (
+                            {order.product_name !== "Recharge Binance" && (
                               <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
                                 <Eye size={14} /> Voir les accès
                               </button>
@@ -736,13 +736,91 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
 };
 
 // ==========================================
+// STOCK MANAGER COMPONENT
+// ==========================================
+const StockManager = ({ product, onClose }) => {
+  const [bulkText, setBulkText] = useState('');
+  const [stockInfo, setStockInfo] = useState({ total: 0, available: 0, delivered: 0 });
+  const [loading, setLoading] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchStock = async () => {
+      const { data } = await supabase.from('account_stock').select('id, is_delivered').eq('product_id', product.id);
+      if (data) {
+        const available = data.filter(r => !r.is_delivered).length;
+        setStockInfo({ total: data.length, available, delivered: data.length - available });
+      }
+    };
+    fetchStock();
+  }, [product.id]);
+
+  const handleImport = async () => {
+    const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) { setError('Collez au moins une ligne de credentials.'); return; }
+    setLoading(true); setError('');
+    const rows = lines.map(cred => ({ product_id: product.id, credentials: cred, is_delivered: false }));
+    const { error: insErr } = await supabase.from('account_stock').insert(rows);
+    if (insErr) { setError('Erreur : ' + insErr.message); setLoading(false); return; }
+    setImportSuccess(true);
+    setBulkText('');
+    setStockInfo(prev => ({ ...prev, total: prev.total + lines.length, available: prev.available + lines.length }));
+    setTimeout(() => setImportSuccess(false), 2000);
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Gérer le Stock</h3>
+            <p className="text-sm text-gray-400 mt-1 font-medium">{product.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 transition-all"><X size={16} /></button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          {[['Total', stockInfo.total, 'bg-gray-50 text-gray-700'], ['Disponibles', stockInfo.available, 'bg-green-50 text-green-700'], ['Livrés', stockInfo.delivered, 'bg-blue-50 text-blue-700']].map(([label, val, cls]) => (
+            <div key={label} className={`${cls} rounded-2xl p-4 text-center`}>
+              <div className="text-2xl font-black font-mono">{val}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest mt-1">{label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Ajouter des comptes <span className="font-normal normal-case text-gray-300">(1 compte par ligne)</span></label>
+          <textarea
+            value={bulkText}
+            onChange={e => setBulkText(e.target.value)}
+            rows={8}
+            placeholder={`email@gmail.com|Password123|recovery@mail.com\nemail2@gmail.com|Password456|recovery2@mail.com`}
+            className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
+          />
+          <p className="text-[10px] text-gray-400 mt-2">{bulkText.split('\n').filter(l => l.trim()).length} ligne(s) prête(s) à importer</p>
+        </div>
+
+        {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} />{error}</div>}
+
+        <button onClick={handleImport} disabled={loading || importSuccess}
+          className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${importSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
+          {loading ? <><RefreshCcw size={16} className="animate-spin" /> Import en cours...</> : importSuccess ? <><CheckCircle size={16} /> Importé avec succès !</> : <><Upload size={16} /> Importer les comptes</>}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
 // ORDERS ADMIN — Composant gestion commandes
 // ==========================================
 
-const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchUsers }) => {
+const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
   const [filter, setFilter] = useState('pending');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [credentials, setCredentials] = useState('');
   const [adminNote, setAdminNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState(false);
@@ -754,35 +832,23 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchUsers }) => {
 
   const confirmOrder = async () => {
     setActionLoading(true);
-    try {
-
 
     if (selectedOrder.product_name === "Recharge Binance") {
-      // 1. Fetch current profile to get balance
       let currentBalance = 0;
       const { data: userData, error: userError } = await supabase.from('profiles').select('balance').eq('id', selectedOrder.user_id).maybeSingle();
-      
-      if (userError) {
-        console.error("Erreur profile:", userError);
-      } else if (userData) {
-        currentBalance = userData.balance || 0;
-      }
+      if (!userError && userData) currentBalance = userData.balance || 0;
 
-      // 2. Upsert profile with new balance
       const newBalance = currentBalance + (selectedOrder.total_price || 0);
       const { error: balanceError } = await supabase.from('profiles').upsert({ 
-        id: selectedOrder.user_id, 
-        email: selectedOrder.buyer_email,
-        balance: newBalance 
+        id: selectedOrder.user_id, email: selectedOrder.buyer_email, balance: newBalance 
       });
       
       if (balanceError) {
-        setErrorMessage("Erreur lors de la mise à jour du solde : " + balanceError.message);
+        setErrorMessage("Erreur solde : " + balanceError.message);
         setActionLoading(false);
         return;
       }
 
-      // 3. Mark order as confirmed
       await supabase.from('orders').update({
         status: 'confirmed',
         admin_note: adminNote.trim() || null,
@@ -792,38 +858,52 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchUsers }) => {
       setActionSuccess(true);
 
     } else {
-      // Standard product delivery
-      if (!credentials.trim()) { 
-        setErrorMessage('Entre les credentials !'); 
+      // Auto-distribute from account_stock
+      const qty = selectedOrder.quantity || 1;
+      const { data: stockRows, error: stockErr } = await supabase
+        .from('account_stock')
+        .select('id, credentials')
+        .eq('product_id', selectedOrder.product_id)
+        .eq('is_delivered', false)
+        .limit(qty);
+
+      if (stockErr) {
+        setErrorMessage("Erreur stock : " + stockErr.message);
         setActionLoading(false);
-        return; 
+        return;
       }
-      
+
+      if (!stockRows || stockRows.length < qty) {
+        setErrorMessage(`⚠️ Stock insuffisant ! Disponible : ${stockRows?.length || 0} compte(s), requis : ${qty}. Ajoutez des comptes via "Gérer Stock".`);
+        setActionLoading(false);
+        return;
+      }
+
+      const deliveredCreds = stockRows.map(r => r.credentials).join('\n');
+      const stockIds = stockRows.map(r => r.id);
+
+      await supabase.from('account_stock').update({
+        is_delivered: true, order_id: String(selectedOrder.id), delivered_to: selectedOrder.user_id,
+      }).in('id', stockIds);
+
       await supabase.from('orders').update({
         status: 'confirmed',
-        credentials: credentials.trim(),
-        data: credentials.trim(),
+        credentials: deliveredCreds,
+        data: deliveredCreds,
         admin_note: adminNote.trim() || null,
         confirmed_at: new Date().toISOString(),
       }).eq('id', selectedOrder.id);
+
+      setActionSuccess(true);
     }
 
-      if (selectedOrder.product_name === "Recharge Binance" && fetchUsers) {
-        fetchUsers();
-      }
-      
-      setTimeout(() => {
-        setSelectedOrder(null);
-        setCredentials('');
-        setAdminNote('');
-        fetchAllOrders();
-        setActionLoading(false);
-        setActionSuccess(false);
-      }, 1500);
-    } catch (err) {
-      setErrorMessage(err.message);
+    setTimeout(() => {
+      setSelectedOrder(null);
+      setAdminNote('');
+      fetchAllOrders();
       setActionLoading(false);
-    }
+      setActionSuccess(false);
+    }, 1500);
   };
 
   const cancelOrder = async (id) => {
@@ -957,26 +1037,14 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchUsers }) => {
               ))}
             </div>
 
-            {selectedOrder.product_name === "Recharge Binance" && (selectedOrder.status === 'pending' || !selectedOrder.status) && (
-              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-start gap-3">
-                <div className="mt-1 text-blue-500"><AlertTriangle size={18} /></div>
-                <p className="text-xs text-blue-700 leading-relaxed">
-                  <span className="font-bold">Information de Recharge :</span> En validant cette demande, vous créditerez automatiquement <span className="font-bold text-lg text-blue-900">${selectedOrder.total_price?.toFixed(2)}</span> sur le compte de cet utilisateur. Assurez-vous d'avoir reçu le transfert sur Binance.
-                </p>
-              </div>
-            )}
-
             {(!selectedOrder.status || selectedOrder.status === 'pending') ? (<>
               {selectedOrder.product_name !== "Recharge Binance" && (
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Credentials à livrer *</label>
-                  <textarea
-                    value={credentials}
-                    onChange={e => setCredentials(e.target.value)}
-                    placeholder={"email@gmail.com\nPassword: MonPass123\nRecovery: backup@email.com\n2FA: JBSWY3DPEHPK3PXP"}
-                    rows={5}
-                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-sm resize-none"
-                  />
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 flex items-start gap-3">
+                  <Package size={18} className="text-blue-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-blue-800">Livraison automatique</p>
+                    <p className="text-xs text-blue-600 mt-1">Le système va distribuer <span className="font-bold">{selectedOrder.quantity || 1} compte(s)</span> depuis votre stock pré-chargé pour ce produit.</p>
+                  </div>
                 </div>
               )}
               <div>
@@ -991,7 +1059,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchUsers }) => {
                 )}
                 <button onClick={confirmOrder} disabled={actionLoading || actionSuccess}
                   className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${actionSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-                  {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : actionSuccess ? <><CheckCircle size={16} /> Action effectuée !</> : (selectedOrder.product_name === "Recharge Binance" ? <><CheckCircle size={16} /> Valider et Créditer le Solde</> : <><CheckCircle size={16} /> Confirmer et enregistrer</>)}
+                  {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Livraison en cours...</> : actionSuccess ? <><CheckCircle size={16} /> Livraison effectuée !</> : (selectedOrder.product_name === "Recharge Binance" ? <><CheckCircle size={16} /> Valider et Créditer le Solde</> : <><Zap size={16} /> Livrer automatiquement</>)}
                 </button>
             </>) : (
               <div>
@@ -1002,124 +1070,6 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchUsers }) => {
                 {selectedOrder.admin_note && <p className="text-gray-400 text-xs mt-2 flex items-center gap-2"><FileText size={12} /> {selectedOrder.admin_note}</p>}
               </div>
             )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const UsersAdmin = ({ allUsers, allOrders, fetchUsers, handleUpdateBalanceManual }) => {
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [updateAmount, setUpdateAmount] = useState("");
-  const [isAdding, setIsAdding] = useState(true);
-
-  const userOrders = selectedUser ? allOrders.filter(o => o.user_id === selectedUser.id) : [];
-  const totalSpent = userOrders.filter(o => o.status === 'confirmed' && o.product_name !== "Recharge Binance").reduce((acc, o) => acc + (o.total_price || 0), 0);
-  const totalRecharged = userOrders.filter(o => o.status === 'confirmed' && o.product_name === "Recharge Binance").reduce((acc, o) => acc + (o.total_price || 0), 0);
-
-  return (
-    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-      <div className="flex justify-between items-center mb-10">
-        <h2 className="text-2xl font-bold">Gestion Clients</h2>
-        <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} inscrits</div>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-              <th className="pb-6">Utilisateur</th>
-              <th className="pb-6">Solde</th>
-              <th className="pb-6 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {allUsers.map(user => (
-              <tr key={user.id} className="group hover:bg-gray-50/50 transition-all">
-                <td className="py-6">
-                  <div className="font-bold text-gray-900">{user.email}</div>
-                  <div className="text-xs text-gray-400">{user.display_name}</div>
-                </td>
-                <td className="py-6 font-mono font-black text-primary">${(user.balance || 0).toFixed(2)}</td>
-                <td className="py-6 text-right">
-                  <button onClick={() => setSelectedUser(user)} className="px-6 py-2 bg-gray-900 text-white rounded-xl font-bold text-xs hover:bg-primary transition-all shadow-lg shadow-black/5">Gérer</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {selectedUser && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setSelectedUser(null)} />
-          <div className="relative w-full max-w-2xl bg-white rounded-[3.5rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in duration-300">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">{selectedUser.email}</h3>
-                <p className="text-xs text-gray-400 font-mono">ID: {selectedUser.id}</p>
-              </div>
-              <button onClick={() => setSelectedUser(null)} className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"><X size={20} /></button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Solde Actuel</div>
-                <div className="text-2xl font-black text-primary font-mono">${(selectedUser.balance || 0).toFixed(2)}</div>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Rechargé</div>
-                <div className="text-2xl font-black text-green-600 font-mono">${totalRecharged.toFixed(2)}</div>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Dépensé</div>
-                <div className="text-2xl font-black text-gray-900 font-mono">${totalSpent.toFixed(2)}</div>
-              </div>
-            </div>
-
-            <div className="bg-gray-900 rounded-[2.5rem] p-8 mb-10 shadow-xl shadow-black/10">
-              <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Wallet size={14} className="text-primary" /> Mettre à jour le solde</h4>
-              <div className="flex flex-col sm:flex-row gap-4 items-center">
-                <div className="flex bg-white/10 p-1 rounded-2xl border border-white/5 w-full sm:w-auto">
-                  <button onClick={() => setIsAdding(true)} className={`flex-grow px-4 py-2 rounded-xl font-bold text-xs transition-all ${isAdding ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-gray-400'}`}>Ajouter</button>
-                  <button onClick={() => setIsAdding(false)} className={`flex-grow px-4 py-2 rounded-xl font-bold text-xs transition-all ${!isAdding ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-gray-400'}`}>Retirer</button>
-                </div>
-                <div className="relative flex-grow w-full">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold font-mono">$</span>
-                  <input type="number" value={updateAmount} onChange={e => setUpdateAmount(e.target.value)} placeholder="0.00" className="w-full pl-8 pr-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-white" />
-                </div>
-                <button onClick={() => {
-                  const val = parseFloat(updateAmount);
-                  if (val > 0) {
-                    handleUpdateBalanceManual(selectedUser.id, selectedUser.email, isAdding ? val : -val);
-                    setUpdateAmount("");
-                    setSelectedUser(null);
-                  }
-                }} className="w-full sm:w-auto px-8 py-4 bg-primary text-white rounded-2xl font-bold hover:bg-primary/90 transition-all shadow-xl shadow-primary/20">Valider</button>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><History size={14} /> Historique Récent</h4>
-              <div className="space-y-3">
-                {userOrders.length === 0 ? (
-                  <p className="text-center py-8 text-gray-300 italic text-sm">Aucun historique.</p>
-                ) : (
-                  userOrders.slice(0, 5).map(o => (
-                    <div key={o.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <div>
-                        <div className="font-bold text-gray-900 text-sm">{o.product_name}</div>
-                        <div className="text-[10px] text-gray-400 font-bold uppercase">{new Date(o.created_at).toLocaleDateString()} • #{o.id.slice(0,6)}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`font-black font-mono ${o.product_name === "Recharge Binance" ? 'text-green-600' : 'text-gray-900'}`}>{o.product_name === "Recharge Binance" ? '+' : '-'}${(o.total_price || 0).toFixed(2)}</div>
-                        <div className={`text-[10px] uppercase font-black tracking-widest ${o.status === 'confirmed' ? 'text-green-500' : 'text-yellow-500'}`}>{o.status}</div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -1138,6 +1088,7 @@ const AdminView = ({
   adminPage, setAdminPage 
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
+  const [managingStock, setManagingStock] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('agedgmail_admin_tab', activeTab);
@@ -1156,6 +1107,7 @@ const AdminView = ({
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
+      {managingStock && <StockManager product={managingStock} onClose={() => setManagingStock(null)} />}
       <div className="flex items-center justify-between mb-12">
         <div>
           <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Console Administration</h1>
@@ -1273,7 +1225,7 @@ const AdminView = ({
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {products.map(p => (
-                        <tr key={p.id} className="group hover:bg-gray-50/50 transition-colors">
+                      <tr key={p.id} className="group hover:bg-gray-50/50 transition-colors">
                           <td className="py-5">
                             <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center p-2 border border-gray-100">
@@ -1288,9 +1240,10 @@ const AdminView = ({
                           <td className="py-5 font-mono font-black text-primary">${p.price?.toFixed(2)}</td>
                           <td className="py-5 font-mono font-bold text-gray-500">{p.stock}</td>
                           <td className="py-5 text-right">
-                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => { setEditingProduct(p); setProductForm(p); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><Edit size={16} /></button>
-                              <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash size={16} /></button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button onClick={() => setManagingStock(p)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Gérer Stock"><Database size={16} /></button>
+                              <button onClick={() => { setEditingProduct(p); setProductForm(p); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Edit size={16} /></button>
+                              <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash size={16} /></button>
                             </div>
                           </td>
                         </tr>
@@ -1303,11 +1256,44 @@ const AdminView = ({
           )}
 
           {activeTab === 'orders' && (
-            <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} fetchUsers={fetchUsers} />
+            <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />
           )}
 
           {activeTab === 'users' && (
-            <UsersAdmin allUsers={allUsers} allOrders={allOrders} fetchUsers={fetchUsers} handleUpdateBalanceManual={handleUpdateBalanceManual} />
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <div className="flex justify-between items-center mb-10">
+                <h2 className="text-2xl font-bold">Gestion Clients</h2>
+                <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} inscrits</div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                      <th className="pb-6">Utilisateur</th>
+                      <th className="pb-6">Solde</th>
+                      <th className="pb-6">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {allUsers.map(user => (
+                      <tr key={user.id}>
+                        <td className="py-6">
+                          <div className="font-bold text-gray-900">{user.email}</div>
+                          <div className="text-xs text-gray-400">{user.display_name}</div>
+                        </td>
+                        <td className="py-6 font-mono font-black text-primary">${user.balance?.toFixed(2)}</td>
+                        <td className="py-6">
+                          <button onClick={() => {
+                            const amount = prompt("Montant à ajouter ($) :", "10");
+                            if (amount) handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
+                          }} className="p-2 bg-primary/10 text-primary rounded-lg font-bold text-xs">Créditer</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </main>
       </div>
@@ -1604,7 +1590,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
           product_name: item.name,
           quantity: item.quantity,
           total_price: item.price * item.quantity,
-          status: 'pending',
+          status: 'paid',
           created_at: new Date().toISOString()
         });
       }
