@@ -1053,12 +1053,6 @@ const AdminView = ({
                         </div>
                         <div>
                           <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Catégorie</label>
-                          <select value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold">
-                            <option value="email">Gmail / Email</option>
-                            <option value="youtube">YouTube</option>
-                            <option value="facebook">Facebook</option>
-                            <option value="other">Autre</option>
-                          </select>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
