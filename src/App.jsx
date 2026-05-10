@@ -1945,21 +1945,18 @@ function App() {
 
         if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée.");
 
-        const { data: existingProducts } = await supabase.from('products').select('id, name');
+        const { data: existingProducts } = await supabase.from('products').select('name');
         const existingNames = existingProducts?.map(p => p.name) || [];
         const duplicates = itemsToInsert.filter(item => existingNames.includes(item.name));
 
-        let finalItems = itemsToInsert;
         if (duplicates.length > 0) {
-          if (confirm(`${duplicates.length} produits existent déjà avec le même nom. Voulez-vous les METTRE À JOUR (écraser) ?\n(Annuler créera des doublons)`)) {
-            finalItems = itemsToInsert.map(item => {
-              const existing = existingProducts.find(p => p.name === item.name);
-              return existing ? { ...item, id: existing.id } : item;
-            });
+          if (confirm(`${duplicates.length} produits existent déjà avec le même nom. Voulez-vous les ÉCRASER (remplacer les anciens) ?\n(Annuler créera des doublons)`)) {
+            const namesToDelete = duplicates.map(d => d.name);
+            await supabase.from('products').delete().in('name', namesToDelete);
           }
         }
 
-        const { error } = await supabase.from('products').upsert(finalItems);
+        const { error } = await supabase.from('products').insert(itemsToInsert);
         if (error) throw error;
 
         fetchProducts();
