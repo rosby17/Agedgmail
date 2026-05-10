@@ -9,7 +9,7 @@ export default function AdminDashboard() {
     const [password, setPassword] = useState('');
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [filter, setFilter] = useState('pending');
+    const [filter, setFilter] = useState('all');
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [credentials, setCredentials] = useState('');
     const [adminNote, setAdminNote] = useState('');
@@ -211,7 +211,7 @@ export default function AdminDashboard() {
             {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
-                    <div className="relative w-full max-w-lg bg-[#0F1117] border border-white/10 rounded-3xl p-6 space-y-5">
+                    <div className="relative w-full max-w-5xl bg-[#0F1117] border border-white/10 rounded-[2.5rem] shadow-2xl p-10 space-y-8 animate-in fade-in zoom-in duration-300">
 
                         <div className="flex items-center justify-between">
                             <h3 className="text-white font-bold text-lg">
@@ -264,9 +264,11 @@ export default function AdminDashboard() {
                         </>) : (
                             <div>
                                 <label className="block text-white/70 text-sm mb-2">Credentials livrés</label>
-                                <div className="bg-black/40 border border-emerald-500/20 rounded-xl px-4 py-3 font-mono text-sm text-emerald-300 whitespace-pre-wrap">
-                                    {selectedOrder.credentials || selectedOrder.data || '—'}
-                                </div>
+                                <div className="bg-black/40 border border-emerald-500/20 rounded-xl px-4 py-3 font-mono text-sm text-emerald-300 whitespace-pre-wrap"
+                                    dangerouslySetInnerHTML={{
+                                        __html: (selectedOrder.credentials || selectedOrder.data || '—').replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-emerald-500/10 text-emerald-400 font-black px-1.5 py-0.5 rounded-md">$1</span>')
+                                    }}
+                                />
                                 {selectedOrder.admin_note && (
                                     <p className="text-white/40 text-xs mt-2">📝 {selectedOrder.admin_note}</p>
                                 )}
