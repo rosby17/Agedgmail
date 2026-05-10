@@ -1663,39 +1663,6 @@ const RechargeView = ({ profile, session, navigate }) => {
   );
 };
 
-  return (
-    <div className="max-w-3xl mx-auto px-6 py-20 font-sans">
-      <h2 className="text-4xl font-bold text-gray-900 mb-6 tracking-tight">Recharger mon Compte via Binance</h2>
-      <p className="text-gray-500 mb-10">Envoyez le montant désiré sur notre compte Binance Pay, puis soumettez l'ID de transaction ici. Une alerte email nous sera envoyée instantanément pour accélérer la validation.</p>
-      
-      <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft space-y-8">
-        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-6 flex items-start gap-4">
-          <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0">B</div>
-          <div>
-            <h4 className="font-bold text-yellow-900 mb-1">Notre Pay ID Binance</h4>
-            <div className="font-mono text-xl font-black text-yellow-800 mb-2 select-all">123456789</div>
-            <p className="text-xs text-yellow-700">Ouvrez votre application Binance, allez dans "Pay", choisissez "Envoyer" et sélectionnez "Pay ID".</p>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant envoyé (USD) *</label>
-            <input type="number" min="1" value={amount} onChange={e => setAmount(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-bold text-lg" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">ID de Transaction Binance (TX ID) *</label>
-            <input type="text" value={txId} onChange={e => setTxId(e.target.value)} placeholder="ex: 123456789012345" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-sm" />
-          </div>
-          {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">{error}</div>}
-          <button onClick={handleSubmit} disabled={loading || success} className={`w-full py-5 rounded-[2rem] font-bold text-lg transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3 disabled:opacity-50 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-            {loading ? 'Envoi en cours...' : success ? <><CheckCircle size={20} /> Demande Envoyée !</> : 'Soumettre ma Recharge'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ==========================================
 // PAYMENT VIEW
