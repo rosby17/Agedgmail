@@ -1584,21 +1584,107 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigat
 
 const AuthView = ({ navigate }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        alert("Vérifiez vos emails pour confirmer votre inscription !");
+      }
+      navigate('home');
+    } catch (err) {
+      setErrorMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ 
+      provider: 'google', 
+      options: { redirectTo: window.location.origin } 
+    });
+    if (error) console.error(error);
+  };
+
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-20 px-6 font-sans">
-      <div className="w-full max-w-md bg-white p-12 rounded-[3rem] shadow-soft border border-gray-100">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">{isLogin ? 'Bon Retour' : 'Bienvenue'}</h2>
-        <p className="text-gray-400 text-sm mb-10 leading-relaxed">Veuillez entrer vos accès pour continuer.</p>
-        <form className="space-y-6">
-          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label><input type="email" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="name@email.com" /></div>
-          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Password</label><input type="password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20" placeholder="••••••••" /></div>
-          <button className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-black/10">{isLogin ? 'Se Connecter' : 'S\'inscrire'}</button>
-          <button type="button" onClick={async () => { 
-            const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); 
-            if (error) console.error(error); 
-          }} className="w-full border border-gray-100 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all">Google</button>
-        </form>
-        <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="w-full mt-8 text-center text-sm font-bold text-gray-400 hover:text-primary transition-colors">{isLogin ? "Créer un compte" : "Déjà membre ?"}</button>
+    <div className="min-h-[85vh] flex items-center justify-center py-20 px-6 font-sans bg-[#FAFAFB]">
+      <div className="w-full max-w-lg bg-white p-12 rounded-[3.5rem] shadow-[0_32px_64px_-15px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden">
+        {/* Background Accent */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+        
+        <div className="relative z-10">
+          <div className="mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">
+              {isLogin ? 'Bon Retour' : 'Bienvenue'}
+            </h2>
+            <p className="text-gray-400 font-medium">
+              Accédez à la marketplace N°1 de comptes certifiés.
+            </p>
+          </div>
+
+          <button onClick={handleGoogleLogin} className="w-full bg-white border border-gray-100 py-4 rounded-2xl font-bold flex items-center justify-center gap-4 hover:bg-gray-50 transition-all shadow-sm mb-10 group">
+            <img src="https://www.google.com/favicon.ico" className="w-5 h-5 group-hover:scale-110 transition-transform" alt="Google" />
+            <span className="text-sm text-gray-700">Continuer avec Google</span>
+          </button>
+
+          <div className="relative flex items-center mb-10">
+            <div className="flex-grow border-t border-gray-100"></div>
+            <span className="flex-shrink mx-4 text-[10px] font-black text-gray-300 uppercase tracking-widest">Ou via email</span>
+            <div className="flex-grow border-t border-gray-100"></div>
+          </div>
+
+          <form className="space-y-6" onSubmit={handleAuth}>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="votre@email.com" />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mot de passe</label>
+              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="••••••••" />
+            </div>
+
+            {errorMessage && (
+              <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2">
+                <AlertTriangle size={14} /> {errorMessage}
+              </div>
+            )}
+
+            <div className="flex gap-4 pt-4">
+              <button type="submit" disabled={loading} className={`flex-grow py-5 rounded-2xl font-bold text-sm transition-all shadow-xl flex items-center justify-center gap-2 ${isLogin ? 'bg-gray-900 text-white hover:bg-black shadow-black/10' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 shadow-none'}`}>
+                {loading && <RefreshCcw size={16} className="animate-spin" />}
+                {isLogin ? 'Se Connecter' : "S'inscrire"}
+              </button>
+              
+              {!isLogin ? (
+                <button type="button" onClick={() => setIsLogin(true)} className="flex-grow py-5 rounded-2xl font-bold text-sm bg-gray-900 text-white hover:bg-black shadow-xl shadow-black/10 transition-all">
+                   Connexion
+                </button>
+              ) : (
+                <button type="button" onClick={() => setIsLogin(false)} className="flex-grow py-5 rounded-2xl font-bold text-sm bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all">
+                  S'inscrire
+                </button>
+              )}
+            </div>
+          </form>
+
+          <div className="mt-10 text-center">
+             <button onClick={() => { /* logic for reset pass */ }} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
+               Mot de passe oublié ?
+             </button>
+          </div>
+        </div>
       </div>
     </div>
   );
