@@ -764,20 +764,23 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
 // STOCK MANAGER COMPONENT
 // ==========================================
 const StockManager = ({ product, onClose, fetchProducts }) => {
-  const [bulkText, setBulkText] = useState('');
-  const [stockInfo, setStockInfo] = useState({ total: 0, available: 0, delivered: 0 });
-  const [loading, setLoading] = useState(false);
-  const [importSuccess, setImportSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [existingStock, setExistingStock] = useState('');
+  const [showExisting, setShowExisting] = useState(false);
+
+  const fetchStock = async () => {
+    const { data } = await supabase.from('account_stock')
+      .select('id, credentials, is_delivered')
+      .eq('product_id', product.id);
+    
+    if (data) {
+      const available = data.filter(r => !r.is_delivered);
+      const deliveredCount = data.length - available.length;
+      setStockInfo({ total: data.length, available: available.length, delivered: deliveredCount });
+      setExistingStock(available.map(r => r.credentials).join('\n'));
+    }
+  };
 
   useEffect(() => {
-    const fetchStock = async () => {
-      const { data } = await supabase.from('account_stock').select('id, is_delivered').eq('product_id', product.id);
-      if (data) {
-        const available = data.filter(r => !r.is_delivered).length;
-        setStockInfo({ total: data.length, available, delivered: data.length - available });
-      }
-    };
     fetchStock();
   }, [product.id]);
 
@@ -790,16 +793,50 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
     if (insErr) { setError('Erreur : ' + insErr.message); setLoading(false); return; }
     setImportSuccess(true);
     setBulkText('');
-    setStockInfo(prev => ({ ...prev, total: prev.total + lines.length, available: prev.available + lines.length }));
+    await fetchStock();
     if (fetchProducts) fetchProducts();
     setTimeout(() => setImportSuccess(false), 2000);
     setLoading(false);
   };
 
+  const handleUpdateStock = async () => {
+    setLoading(true); setError('');
+    try {
+      // 1. Delete all non-delivered stock for this product
+      const { error: delErr } = await supabase
+        .from('account_stock')
+        .delete()
+        .eq('product_id', product.id)
+        .eq('is_delivered', false);
+      
+      if (delErr) throw delErr;
+
+      // 2. Insert new lines
+      const lines = existingStock.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length > 0) {
+        const rows = lines.map(cred => ({ product_id: product.id, credentials: cred, is_delivered: false }));
+        const { error: insErr } = await supabase.from('account_stock').insert(rows);
+        if (insErr) throw insErr;
+      }
+
+      setImportSuccess(true);
+      await fetchStock();
+      if (fetchProducts) fetchProducts();
+      setTimeout(() => {
+        setImportSuccess(false);
+        setShowExisting(false);
+      }, 2000);
+    } catch (err) {
+      setError('Erreur lors de la mise à jour : ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-6">
+      <div className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-xl font-bold text-gray-900">Gérer le Stock</h3>
@@ -817,24 +854,66 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
           ))}
         </div>
 
-        <div>
-          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Ajouter des comptes <span className="font-normal normal-case text-gray-300">(1 compte par ligne)</span></label>
-          <textarea
-            value={bulkText}
-            onChange={e => setBulkText(e.target.value)}
-            rows={8}
-            placeholder={`email@gmail.com|Password123|recovery@mail.com\nemail2@gmail.com|Password456|recovery2@mail.com`}
-            className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
-          />
-          <p className="text-[10px] text-gray-400 mt-2">{bulkText.split('\n').filter(l => l.trim()).length} ligne(s) prête(s) à importer</p>
+        <div className="flex gap-2 p-1 bg-gray-50 rounded-2xl">
+          <button 
+            onClick={() => setShowExisting(false)}
+            className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${!showExisting ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            Ajouter du Stock
+          </button>
+          <button 
+            onClick={() => setShowExisting(true)}
+            className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${showExisting ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            Modifier l'existant ({stockInfo.available})
+          </button>
         </div>
 
-        {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} />{error}</div>}
+        {!showExisting ? (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Coller les nouveaux comptes <span className="font-normal normal-case text-gray-300">(1 par ligne)</span></label>
+              <textarea
+                value={bulkText}
+                onChange={e => setBulkText(e.target.value)}
+                rows={8}
+                placeholder={`email@gmail.com|Password123|recovery@mail.com\nemail2@gmail.com|Password456|recovery2@mail.com`}
+                className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
+              />
+              <p className="text-[10px] text-gray-400 mt-2">{bulkText.split('\n').filter(l => l.trim()).length} ligne(s) prête(s) à importer</p>
+            </div>
 
-        <button onClick={handleImport} disabled={loading || importSuccess}
-          className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${importSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-          {loading ? <><RefreshCcw size={16} className="animate-spin" /> Import en cours...</> : importSuccess ? <><CheckCircle size={16} /> Importé avec succès !</> : <><Upload size={16} /> Importer les comptes</>}
-        </button>
+            {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} />{error}</div>}
+
+            <button onClick={handleImport} disabled={loading || importSuccess}
+              className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${importSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
+              {loading ? <><RefreshCcw size={16} className="animate-spin" /> Import en cours...</> : importSuccess ? <><CheckCircle size={16} /> Importé !</> : <><Upload size={16} /> Importer les comptes</>}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Modifier/Supprimer les comptes en stock <span className="text-red-400 font-bold">(Attention : Les lignes supprimées disparaîtront)</span></label>
+              <textarea
+                value={existingStock}
+                onChange={e => setExistingStock(e.target.value)}
+                rows={12}
+                className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
+              />
+              <div className="flex justify-between items-center mt-2">
+                 <p className="text-[10px] text-gray-400">{existingStock.split('\n').filter(l => l.trim()).length} compte(s) restant(s)</p>
+                 <button onClick={() => setExistingStock('')} className="text-[10px] font-bold text-red-400 hover:underline">Vider tout le stock</button>
+              </div>
+            </div>
+
+            {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} />{error}</div>}
+
+            <button onClick={handleUpdateStock} disabled={loading || importSuccess}
+              className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${importSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
+              {loading ? <><RefreshCcw size={16} className="animate-spin" /> Mise à jour...</> : importSuccess ? <><CheckCircle size={16} /> Stock mis à jour !</> : <><Save size={16} /> Enregistrer les modifications</>}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
