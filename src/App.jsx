@@ -300,6 +300,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
   const [firstName, setFirstName] = useState(profile?.first_name || "");
   const [lastName, setLastName] = useState(profile?.last_name || "");
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [email, setEmail] = useState(profile?.email || "");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -321,6 +322,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
         first_name: firstName,
         last_name: lastName,
         display_name: displayName,
+        avatar_url: avatarUrl,
         two_factor_enabled: tfaEnabled,
         updated_at: new Date().toISOString(),
       });
@@ -378,6 +380,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
             <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nom</label><input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: Mogo Kamdem" /></div>
           </div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pseudo (Public) *</label><input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /><p className="text-[10px] text-gray-400 italic mt-2">C'est le nom qui apparaîtra sur votre tableau de bord et vos avis.</p></div>
+          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Lien de la photo de profil (URL)</label><input type="text" value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="https://votre-image.jpg" /></div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Adresse Email *</label><input type="email" value={email} readOnly className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div>
           {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">⚠️ {errorMessage}</div>}
           <button type="submit" disabled={loading} className={`px-12 py-5 rounded-full font-bold text-sm transition-all shadow-xl shadow-black/10 flex items-center gap-2 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-black'}`}>
@@ -470,10 +473,20 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
         <aside className="w-full lg:w-64 flex-shrink-0">
           <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-soft sticky top-32">
             <div className="flex items-center gap-4 mb-10 pb-6 border-b border-gray-50">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">{profile?.display_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase()}</div>
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold overflow-hidden border border-primary/20">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  profile?.display_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase()
+                )}
+              </div>
               <div className="overflow-hidden">
-                <div className="text-sm font-black text-gray-900 truncate">{profile?.display_name || profile?.first_name || "Utilisateur"}</div>
-                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">#{profile?.id?.slice(0, 4) || "1688"}</div>
+                <div className="text-sm font-black text-gray-900 truncate">
+                  {profile?.first_name || profile?.last_name ? `${profile.first_name} ${profile.last_name}` : "Utilisateur"}
+                </div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">
+                  @{profile?.display_name || "pseudo"} • #{profile?.id?.slice(0, 4)}
+                </div>
               </div>
             </div>
             <nav className="space-y-2">
