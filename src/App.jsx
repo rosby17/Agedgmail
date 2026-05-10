@@ -1935,7 +1935,7 @@ function App() {
           const categoryId = CATEGORIES.find(c => c.name.toLowerCase().trim() === rawCategory.toString().toLowerCase().trim())?.id || "email";
           
           return {
-            name: row['Titre du Produit'] || row.name || row.Name || row.Titre || "Produit Importé",
+            name: (row['Titre du Produit'] || row.name || row.Name || row.Titre || "Produit Importé").toString().trim(),
             category: categoryId,
             price: parseFloat(row['Prix ($)'] || row.price || row.Price || row.Prix || 0),
             stock: parseInt(row['Quantité en Stock'] || row.stock || row.Stock || row.Quantite || 0),
@@ -1945,14 +1945,16 @@ function App() {
 
         if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée.");
 
-        const { data: existingProducts } = await supabase.from('products').select('name');
-        const existingNames = existingProducts?.map(p => p.name) || [];
-        const duplicates = itemsToInsert.filter(item => existingNames.includes(item.name));
+        const { data: existingProducts } = await supabase.from('products').select('id, name');
+        const existingNamesMap = new Map(existingProducts?.map(p => [p.name.toLowerCase().trim(), p.id]) || []);
+        
+        const duplicateItems = itemsToInsert.filter(item => existingNamesMap.has(item.name.toLowerCase().trim()));
 
-        if (duplicates.length > 0) {
-          if (confirm(`${duplicates.length} produits existent déjà avec le même nom. Voulez-vous les ÉCRASER (remplacer les anciens) ?\n(Annuler créera des doublons)`)) {
-            const namesToDelete = duplicates.map(d => d.name);
-            await supabase.from('products').delete().in('name', namesToDelete);
+        if (duplicateItems.length > 0) {
+          if (confirm(`${duplicateItems.length} produits existent déjà (nom identique ou similaire). Voulez-vous les REMPLACER ?\n(Annuler créera des doublons)`)) {
+            const idsToDelete = duplicateItems.map(item => existingNamesMap.get(item.name.toLowerCase().trim()));
+            const { error: delError } = await supabase.from('products').delete().in('id', idsToDelete);
+            if (delError) throw delError;
           }
         }
 
