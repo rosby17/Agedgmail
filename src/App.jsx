@@ -528,8 +528,8 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                 <div className="text-sm font-black text-gray-900 truncate">
                   {profile?.first_name || profile?.last_name ? `${profile.first_name} ${profile.last_name}` : "Utilisateur"}
                 </div>
-                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">
-                  @{profile?.display_name || "pseudo"}
+                <div className="text-[10px] text-gray-400 font-bold tracking-wider truncate lowercase">
+                  @{profile?.display_name?.toLowerCase() || "pseudo"}
                 </div>
               </div>
             </div>
