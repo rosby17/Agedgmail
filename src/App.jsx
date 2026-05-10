@@ -211,7 +211,9 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 const Navbar = ({ cartTotal, navigate, session, profile }) => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-50 font-sans">
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-      <button onClick={() => navigate('home')} className="font-bold text-2xl tracking-tight">AgedGmail<span className="text-primary">YT</span></button>
+      <button onClick={() => navigate('home')} className="h-12 flex items-center group transition-all">
+        <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+      </button>
       <div className="flex items-center gap-6">
         {session && session.user.email === ADMIN_EMAIL && (
           <button onClick={() => navigate('admin')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
@@ -1626,6 +1628,9 @@ const AuthView = ({ navigate }) => {
         
         <div className="relative z-10">
           <div className="mb-12">
+            <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center p-4 shadow-inner mb-8">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+            </div>
             <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">
               {isLogin ? 'Bon Retour' : 'Bienvenue'}
             </h2>
@@ -1698,7 +1703,9 @@ const Footer = () => (
   <footer className="bg-gray-50 pt-32 pb-16 px-6 font-sans">
     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
       <div className="md:col-span-2">
-        <div className="font-bold text-2xl mb-6">AgedGmail<span className="text-primary">YT</span></div>
+        <div className="h-12 mb-6">
+          <img src="/logo.png" alt="Logo" className="h-full object-contain opacity-80 hover:opacity-100 transition-opacity cursor-pointer" />
+        </div>
         <p className="text-gray-400 text-sm max-w-sm leading-relaxed mb-8">Votre partenaire de confiance pour l'achat de comptes anciens et de services médias sociaux.</p>
       </div>
       <div><h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Navigation</h4><ul className="space-y-4 text-sm text-gray-500 font-medium"><li><button>Catalogue</button></li><li><button>Contact</button></li></ul></div>
