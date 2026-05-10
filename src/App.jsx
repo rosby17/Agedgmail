@@ -1030,6 +1030,56 @@ const AdminView = ({ navigate }) => {
     reader.readAsBinaryString(file);
   };
 
+  const handleMassImport = async (text) => {
+    if (!text.trim()) return setErrorMessage("Le texte est vide.");
+    setActionStatus('loading');
+    
+    try {
+      const lines = text.split('\n').filter(l => l.trim() && !l.startsWith('CATÉGORIE') && !l.startsWith('MIS À JOUR') && !l.includes(' Mis à jour le'));
+      const itemsToInsert = [];
+      
+      // Mapping names to IDs
+      const nameToId = {
+        "Ancien Gmail US": 1,
+        "Gmail Random": 2,
+        "Gmail + Chaîne Ancienne": 3,
+        "Gmail + Chaîne Monétisée": 4,
+        "Gmail + Chaîne Non-Monétisée": 5,
+        "Compte Facebook": 6
+      };
+
+      lines.forEach(line => {
+        const parts = line.split('\t');
+        if (parts.length >= 3) {
+          const typeName = parts[1]?.trim();
+          const email = parts[2]?.trim();
+          const status = parts[3]?.trim();
+          const note = parts[5]?.trim();
+          
+          if (email && nameToId[typeName]) {
+            itemsToInsert.push({
+              product_id: nameToId[typeName],
+              data: email + (note ? ` | ${note}` : ""),
+              is_sold: status?.toLowerCase().includes('vendu') || false
+            });
+          }
+        }
+      });
+
+      if (itemsToInsert.length === 0) throw new Error("Aucun compte valide détecté. Vérifiez le format (Tabulé).");
+
+      const { error } = await supabase.from('product_stock').insert(itemsToInsert);
+      if (error) throw error;
+
+      setActionStatus('success');
+      fetchInventory();
+      setTimeout(() => setActionStatus(null), 3000);
+    } catch (err) {
+      setErrorMessage("Erreur Import : " + err.message);
+      setActionStatus('error');
+    }
+  };
+
   const handleAddStock = async () => {
     setErrorMessage("");
     if (!stockInput.trim()) return setErrorMessage("Veuillez entrer des comptes.");
@@ -1210,15 +1260,25 @@ const AdminView = ({ navigate }) => {
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Données (1 compte par ligne)</label>
                   <textarea value={stockInput} onChange={(e) => setStockInput(e.target.value)} rows="8" placeholder="user@gmail.com|pass|recup|2fa" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
                 </div>
-                <div className="flex gap-4 pt-4">
-                  <button onClick={handleAddStock} className="flex-grow bg-gray-900 text-white py-5 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter au Stock</button>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+                  <button onClick={handleAddStock} className="bg-gray-900 text-white h-16 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter</button>
                   
-                  <div className="relative">
+                  <div className="relative h-16">
                     <input type="file" accept=".xlsx, .xls" onChange={handleExcelUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    <button className="bg-primary/10 text-primary px-8 py-5 rounded-2xl font-bold text-sm hover:bg-primary/20 transition-all flex items-center justify-center gap-2"><Upload size={18} /> Import Excel</button>
+                    <button className="w-full h-full bg-primary/10 text-primary rounded-2xl font-bold text-sm hover:bg-primary/20 transition-all flex items-center justify-center gap-2"><Upload size={18} /> Import Excel</button>
                   </div>
 
-                  <button onClick={handleClearStock} className="bg-red-50 text-red-500 px-8 py-5 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider le Stock</button>
+                  <button 
+                    onClick={() => {
+                      const text = prompt("Collez ici les lignes du tableau STOCK DÉTAILLÉ :");
+                      if (text) handleMassImport(text);
+                    }}
+                    className="h-16 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Copy size={18} /> Import Massif
+                  </button>
+
+                  <button onClick={handleClearStock} className="h-16 bg-red-50 text-red-500 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider</button>
                 </div>
               </div>
             </div>
