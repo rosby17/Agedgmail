@@ -587,7 +587,31 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                 
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-inner">
                   <pre className="font-mono text-xs text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                    {viewOrder.data || viewOrder.credentials || "En attente de livraison..."}
+                    {viewOrder.credentials || viewOrder.data ? (
+                      `Merci beaucoup pour votre achat.
+
+voici vos produits
+
+${viewOrder.product_name}
+
+${viewOrder.credentials || viewOrder.data}
+
+=======================================
+
+COMMENT SE CONNECTER AVEC L'AUTHENTIFICATION À DEUX FACTEURS (2FA)
+
+Pour les comptes avec l'authentification à deux facteurs (2FA) activée, après avoir saisi votre nom d'utilisateur et votre mot de passe, veuillez coller la chaîne 2FA (fournie par nos soins) sur https://2fa.live pour obtenir le code à 6 chiffres. Collez ensuite ce code pour vous connecter.
+
+Vous pouvez modifier le code 2FA à l'aide de l'application Google Authenticator.
+Tutoriel vidéo : https://www.youtube.com/watch?v=JbjION2rdPA
+
+=======================================
+
+Après une connexion réussie, la période de garantie ne sera plus valable.
+
+Suggestion :
+1. Après vous être connecté(e), conservez vos cookies et patientez au moins 7 jours avant de modifier quoi que ce soit (mot de passe, adresse e-mail de récupération, numéro de téléphone, etc.).`
+                    ) : "En attente de livraison..."}
                   </pre>
                 </div>
               </div>
