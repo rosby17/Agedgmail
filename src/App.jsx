@@ -11,8 +11,30 @@ const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 const SUPPORT_WHATSAPP = "237655306425";
 
 // ==========================================
-// COMPOSANTS LOGOS (IMG & SVG)
+// COMPOSANTS UI STYLÉS
 // ==========================================
+
+const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, type = 'danger' }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onCancel} />
+      <div className="bg-white rounded-[3rem] w-full max-w-md p-10 relative shadow-2xl border border-white/20">
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-8 mx-auto ${type === 'danger' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>
+          {type === 'danger' ? <Trash2 size={36} /> : <Info size={36} />}
+        </div>
+        <h3 className="text-2xl font-black text-center mb-3 tracking-tighter">{title}</h3>
+        <p className="text-gray-500 text-center mb-10 leading-relaxed font-medium">{message}</p>
+        <div className="flex gap-4">
+          <button onClick={onCancel} className="flex-1 h-14 rounded-2xl font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 transition-all border border-gray-100">Annuler</button>
+          <button onClick={onConfirm} className={`flex-1 h-14 rounded-2xl font-bold text-white transition-all shadow-xl ${type === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' : 'bg-gray-900 hover:bg-primary shadow-gray-900/20'}`}>
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const YouTubeLogo = ({ className = "" }) => (
   <img src="/youtube-logo.png" alt="YouTube" className={`w-full h-full object-contain scale-[1.5] ${className}`} />
@@ -187,6 +209,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
         >
           {product.name}
         </h3>
+
         
         <div className="flex items-center justify-between mb-6">
           <div className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
@@ -978,7 +1001,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
 const AdminView = ({ 
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers, 
   actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm, 
-  setProductForm, handleSaveProduct, handleDeleteProduct, handleExcelProductImport, adminSearch, setAdminSearch, 
+  setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleExcelProductImport, adminSearch, setAdminSearch, 
   adminPage, setAdminPage 
 }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -1039,7 +1062,13 @@ const AdminView = ({
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
                 <div className="flex justify-between items-center mb-10">
                   <h2 className="text-2xl font-bold">Catalogue Produits</h2>
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 items-center">
+                    <button 
+                      onClick={() => handleDeleteAllProducts()} 
+                      className="text-red-500 hover:bg-red-50 px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all"
+                    >
+                      <Trash2 size={18} /> Tout supprimer
+                    </button>
                     <input type="file" id="excel-import" className="hidden" accept=".xlsx, .xls" onChange={handleExcelProductImport} />
                     <label htmlFor="excel-import" className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer hover:bg-green-700 transition-all shadow-lg shadow-green-500/20">
                       <Upload size={18} /> Importer Excel
@@ -1862,6 +1891,8 @@ const Footer = () => (
 
 function App() {
   const [products, setProducts] = useState([]);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => {}, type: "danger" });
+
   const [currentView, setCurrentView] = useState('home');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -1878,19 +1909,62 @@ function App() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({ name: '', category: 'email', description: '', price: 0, stock: 0 });
 
+  const handleDeleteProduct = (id) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Supprimer ce produit ?",
+      message: "Cette action est irréversible. Le produit sera définitivement retiré du catalogue.",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from('products').delete().eq('id', id);
+          if (error) throw error;
+          fetchProducts();
+        } catch (err) {
+          alert("Erreur : " + err.message);
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
+  const handleDeleteAllProducts = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Tout supprimer ?",
+      message: "ATTENTION : Vous allez supprimer TOUS les produits du catalogue. Cette action ne peut pas être annulée.",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          if (error) throw error;
+          fetchProducts();
+        } catch (err) {
+          alert("Erreur : " + err.message);
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchAllOrders();
     fetchUsers();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
+
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      if (initialSession) fetchProfile(initialSession.user.id);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
+      if (currentSession) fetchProfile(currentSession.user.id);
       else { setProfile(null); setOrders([]); }
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -1924,13 +1998,6 @@ function App() {
     setActionStatus(null);
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (confirm("Supprimer ce produit ?")) {
-      const { error } = await supabase.from('products').delete().eq('id', id);
-      if (error) alert(error.message);
-      else fetchProducts();
-    }
-  };
 
   const handleExcelProductImport = async (e) => {
     const file = e.target.files[0];
@@ -2081,6 +2148,7 @@ function App() {
             setProductForm={setProductForm}
             handleSaveProduct={handleSaveProduct}
             handleDeleteProduct={handleDeleteProduct}
+            handleDeleteAllProducts={handleDeleteAllProducts}
             handleExcelProductImport={handleExcelProductImport}
             adminSearch={adminSearch}
             setAdminSearch={setAdminSearch}
@@ -2089,6 +2157,16 @@ function App() {
           />
         )}
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
+
       <SupportChat />
       <Footer />
     </div>
