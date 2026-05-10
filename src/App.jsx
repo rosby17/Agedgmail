@@ -16,11 +16,11 @@ const SUPPORT_TELEGRAM = "rooseveltmkr";
 // ==========================================
 
 const YouTubeLogo = ({ className = "" }) => (
-  <img src="/youtube-logo.png" alt="YouTube" className={`w-full h-full object-contain scale-125 ${className}`} />
+  <img src="/youtube-logo.png" alt="YouTube" className={`w-full h-full object-contain scale-[1.5] ${className}`} />
 );
 
 const GmailLogo = ({ className = "" }) => (
-  <img src="/gmail-logo.png" alt="Gmail" className={`w-full h-full object-contain scale-125 ${className}`} />
+  <img src="/gmail-logo.png" alt="Gmail" className={`w-full h-full object-contain scale-[1.5] ${className}`} />
 );
 
 const FacebookIcon = ({ className = "" }) => (
@@ -168,8 +168,8 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
         className="aspect-[1.4] bg-gray-50/50 rounded-[2.5rem] flex items-center justify-center mb-8 overflow-hidden cursor-pointer relative shrink-0 group-hover:bg-white transition-colors duration-500"
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
-        <div className="w-24 h-24 group-hover:scale-110 transition-transform duration-700 flex items-center justify-center relative">
-          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={40} className="text-gray-300" />}
+        <div className="w-40 h-40 group-hover:scale-110 transition-transform duration-700 flex items-center justify-center relative">
+          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={60} className="text-gray-300" />}
         </div>
         {isUS && product.category === 'email' && <div className="absolute top-8 right-8 bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded-lg backdrop-blur-sm border border-primary/20">US</div>}
       </div>
