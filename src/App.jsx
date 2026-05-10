@@ -6,7 +6,7 @@ import { supabase } from './supabaseClient';
 // CONFIGURATION ADMIN & SUPPORT
 // ==========================================
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
-const SUPPORT_WHATSAPP = "2376XXXXXXXX";
+const SUPPORT_WHATSAPP = "237655306425";
 const SUPPORT_TELEGRAM = "rooseveltmkr";
 
 // ==========================================
@@ -360,7 +360,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   <div className="relative z-10">
                     <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Solde Actuel</div>
                     <div className="text-5xl font-black mb-10 font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
-                    <button onClick={() => navigate('payment')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 inline-flex"><Plus size={18} /> Recharger le compte</button>
+                    <button onClick={() => navigate('recharge')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 inline-flex"><Plus size={18} /> Recharger le compte</button>
                   </div>
                   <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5 group-hover:scale-110 transition-transform duration-700" />
                 </div>
@@ -484,15 +484,53 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
     : allOrders.filter(o => (o.status || 'pending') === filter);
 
   const confirmOrder = async () => {
-    if (!credentials.trim()) { alert('Entre les credentials !'); return; }
     setActionLoading(true);
-    await supabase.from('orders').update({
-      status: 'confirmed',
-      credentials: credentials.trim(),
-      data: credentials.trim(),
-      admin_note: adminNote.trim() || null,
-      confirmed_at: new Date().toISOString(),
-    }).eq('id', selectedOrder.id);
+
+    if (selectedOrder.product_name === "Recharge Binance") {
+      // 1. Fetch current profile to get balance
+      const { data: userData, error: userError } = await supabase.from('profiles').select('balance').eq('id', selectedOrder.user_id).single();
+      if (userError) {
+        alert("Erreur lors de la récupération de l'utilisateur.");
+        setActionLoading(false);
+        return;
+      }
+
+      // 2. Add total_price to balance
+      const newBalance = (userData.balance || 0) + (selectedOrder.total_price || 0);
+      const { error: balanceError } = await supabase.from('profiles').update({ balance: newBalance }).eq('id', selectedOrder.user_id);
+      
+      if (balanceError) {
+        alert("Erreur lors de la mise à jour du solde : " + balanceError.message);
+        setActionLoading(false);
+        return;
+      }
+
+      // 3. Mark order as confirmed
+      await supabase.from('orders').update({
+        status: 'confirmed',
+        admin_note: adminNote.trim() || null,
+        confirmed_at: new Date().toISOString(),
+      }).eq('id', selectedOrder.id);
+
+      alert(`Recharge de $${selectedOrder.total_price} confirmée avec succès !`);
+
+    } else {
+      // Standard product delivery
+      if (!credentials.trim()) { 
+        alert('Entre les credentials !'); 
+        setActionLoading(false);
+        return; 
+      }
+      
+      await supabase.from('orders').update({
+        status: 'confirmed',
+        credentials: credentials.trim(),
+        data: credentials.trim(),
+        admin_note: adminNote.trim() || null,
+        confirmed_at: new Date().toISOString(),
+      }).eq('id', selectedOrder.id);
+    }
+
     setSelectedOrder(null);
     setCredentials('');
     setAdminNote('');
@@ -633,16 +671,18 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
             </div>
 
             {(!selectedOrder.status || selectedOrder.status === 'pending') ? (<>
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Credentials à livrer *</label>
-                <textarea
-                  value={credentials}
-                  onChange={e => setCredentials(e.target.value)}
-                  placeholder={"email@gmail.com\nPassword: MonPass123\nRecovery: backup@email.com\n2FA: JBSWY3DPEHPK3PXP"}
-                  rows={5}
-                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-sm resize-none"
-                />
-              </div>
+              {selectedOrder.product_name !== "Recharge Binance" && (
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Credentials à livrer *</label>
+                  <textarea
+                    value={credentials}
+                    onChange={e => setCredentials(e.target.value)}
+                    placeholder={"email@gmail.com\nPassword: MonPass123\nRecovery: backup@email.com\n2FA: JBSWY3DPEHPK3PXP"}
+                    rows={5}
+                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-sm resize-none"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Note admin <span className="font-normal normal-case text-gray-300">(optionnel)</span></label>
                 <input value={adminNote} onChange={e => setAdminNote(e.target.value)} placeholder="ex: Vérifié sur Binance TX #12345"
@@ -650,13 +690,13 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
               </div>
               <button onClick={confirmOrder} disabled={actionLoading}
                 className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : '✅ Confirmer et enregistrer'}
+                {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : (selectedOrder.product_name === "Recharge Binance" ? '✅ Valider et Créditer le Solde' : '✅ Confirmer et enregistrer')}
               </button>
             </>) : (
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Credentials livrés</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{selectedOrder.product_name === "Recharge Binance" ? "Statut" : "Credentials livrés"}</label>
                 <div className="bg-green-50 border border-green-100 rounded-2xl p-5 font-mono text-sm text-green-800 whitespace-pre-wrap">
-                  {selectedOrder.credentials || selectedOrder.data || '—'}
+                  {selectedOrder.product_name === "Recharge Binance" ? "✅ Solde crédité avec succès." : (selectedOrder.credentials || selectedOrder.data || '—')}
                 </div>
                 {selectedOrder.admin_note && <p className="text-gray-400 text-xs mt-2">📝 {selectedOrder.admin_note}</p>}
               </div>
@@ -1286,6 +1326,7 @@ function App() {
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
         {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} />}
+        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && <AdminView navigate={navigate} />}
       </div>
       <SupportChat />
