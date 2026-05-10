@@ -181,7 +181,14 @@ const PRODUCTS = PRODUCTS_RAW.map(p => ({ ...p, details: getProductDetails(p) })
 
 const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
   const [localQty, setLocalQty] = useState(1);
+  const [added, setAdded] = useState(false);
   const isUS = product.name.toUpperCase().includes('US') || product.name.toUpperCase().includes('USA');
+
+  const handleAdd = () => {
+    addToCart(product, localQty);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
   return (
     <div className="bg-white flex flex-col h-full font-sans">
@@ -213,6 +220,11 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
         
         <div className="flex items-center justify-between mb-6">
           <div className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
+          <div className="flex items-center bg-gray-50 rounded-xl px-2 py-1 border border-gray-100">
+            <button onClick={() => setLocalQty(Math.max(1, localQty - 1))} className="p-1.5 text-gray-400 hover:text-gray-900"><Minus size={14} /></button>
+            <span className="w-8 text-center font-bold text-sm text-gray-900">{localQty}</span>
+            <button onClick={() => setLocalQty(localQty + 1)} className="p-1.5 text-gray-400 hover:text-gray-900"><Plus size={14} /></button>
+          </div>
           {product.stock <= 0 && (
             <div className="bg-red-50 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-widest">
               Rupture
@@ -237,11 +249,11 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
           <button onClick={() => localQty < 9999 && setLocalQty(localQty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Plus size={14} /></button>
         </div>
         <button 
-          onClick={() => addToCart(product, localQty)} 
+          onClick={handleAdd} 
           disabled={product.stock <= 0}
-          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${product.stock <= 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : added ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'bg-gray-900 text-white hover:bg-primary shadow-lg shadow-black/5'}`}
         >
-          {product.stock > 0 ? 'Ajouter' : 'Épuisé'}
+          {product.stock <= 0 ? 'Épuisé' : added ? <><CheckCircle size={14} /> Ajouté !</> : <><ShoppingCart size={14} /> Ajouter</>}
         </button>
       </div>
     </div>
@@ -252,7 +264,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 // NAVBAR
 // ==========================================
 
-const Navbar = ({ cartTotal, navigate, session, profile }) => (
+const Navbar = ({ cartTotal, cartCount, navigate, session, profile }) => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-50 font-sans">
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <button onClick={() => navigate('home')} className="h-12 flex items-center group transition-all">
@@ -279,8 +291,10 @@ const Navbar = ({ cartTotal, navigate, session, profile }) => (
             <User size={18} /> Connexion
           </button>
         )}
-        <button onClick={() => navigate('cart')} className="bg-gray-900 text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black transition-all shadow-lg shadow-black/10">
-          <ShoppingCart size={18} /><span className="border-l border-white/20 pl-3">PANIER / ${cartTotal.toFixed(2)}</span>
+        <button onClick={() => navigate('cart')} className="bg-gray-900 text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black transition-all shadow-lg shadow-black/10 relative">
+          <ShoppingCart size={18} />
+          {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
+          <span className="border-l border-white/20 pl-3">PANIER / ${cartTotal.toFixed(2)}</span>
         </button>
       </div>
     </div>
@@ -2552,7 +2566,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} navigate={navigate} session={session} profile={profile} />
+      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} />
       <div className="flex-grow">
         {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
