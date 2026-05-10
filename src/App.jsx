@@ -739,7 +739,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
 // ORDERS ADMIN — Composant gestion commandes
 // ==========================================
 
-const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
+const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchUsers }) => {
   const [filter, setFilter] = useState('pending');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [credentials, setCredentials] = useState('');
@@ -754,6 +754,8 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
 
   const confirmOrder = async () => {
     setActionLoading(true);
+    try {
+
 
     if (selectedOrder.product_name === "Recharge Binance") {
       // 1. Fetch current profile to get balance
@@ -806,18 +808,22 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
       }).eq('id', selectedOrder.id);
     }
 
-    if (selectedOrder.product_name !== "Recharge Binance") {
-      setActionSuccess(true);
-    }
-
-    setTimeout(() => {
-      setSelectedOrder(null);
-      setCredentials('');
-      setAdminNote('');
-      fetchAllOrders();
+      if (selectedOrder.product_name === "Recharge Binance" && fetchUsers) {
+        fetchUsers();
+      }
+      
+      setTimeout(() => {
+        setSelectedOrder(null);
+        setCredentials('');
+        setAdminNote('');
+        fetchAllOrders();
+        setActionLoading(false);
+        setActionSuccess(false);
+      }, 1500);
+    } catch (err) {
+      setErrorMessage(err.message);
       setActionLoading(false);
-      setActionSuccess(false);
-    }, 1500);
+    }
   };
 
   const cancelOrder = async (id) => {
@@ -950,6 +956,15 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                 </div>
               ))}
             </div>
+
+            {selectedOrder.product_name === "Recharge Binance" && (selectedOrder.status === 'pending' || !selectedOrder.status) && (
+              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-start gap-3">
+                <div className="mt-1 text-blue-500"><AlertTriangle size={18} /></div>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  <span className="font-bold">Information de Recharge :</span> En validant cette demande, vous créditerez automatiquement <span className="font-bold text-lg text-blue-900">${selectedOrder.total_price?.toFixed(2)}</span> sur le compte de cet utilisateur. Assurez-vous d'avoir reçu le transfert sur Binance.
+                </p>
+              </div>
+            )}
 
             {(!selectedOrder.status || selectedOrder.status === 'pending') ? (<>
               {selectedOrder.product_name !== "Recharge Binance" && (
@@ -1170,7 +1185,7 @@ const AdminView = ({
           )}
 
           {activeTab === 'orders' && (
-            <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />
+            <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} fetchUsers={fetchUsers} />
           )}
 
           {activeTab === 'users' && (
