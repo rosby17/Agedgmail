@@ -302,6 +302,12 @@ const SettingsTab = ({ profile, onUpdate }) => {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [email, setEmail] = useState(profile?.email || "");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [tfaEnabled, setTfaEnabled] = useState(profile?.two_factor_enabled || false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [uploading, setUploading] = useState(false);
 
   const handleAvatarUpload = async (e) => {
