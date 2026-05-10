@@ -1596,22 +1596,6 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
     }
   };
 
-  const handleCryptomusPayment = async () => {
-    if (!session) { navigate('auth'); return; }
-    setIsProcessing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { amount: cartTotal, userId: session.user.id }
-      });
-      if (error) throw error;
-      if (data?.url) { window.location.href = data.url; }
-      else { console.error('Erreur : impossible de générer le lien. Vérifiez que la Edge Function est déployée.'); }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
@@ -1634,12 +1618,18 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                   <div className="font-bold text-gray-900 mb-1">Binance Pay</div>
                   <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Paiement Direct</div>
                 </button>
-                <button onClick={() => setMethod('cryptomus')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'cryptomus' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
-                  {method === 'cryptomus' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
-                  <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xs">₿</div>
-                  <div className="font-bold text-gray-900 mb-1">Crypto (Automatique)</div>
-                  <div className="text-xs text-primary font-bold uppercase tracking-wider">BTC • ETH • USDT • +50</div>
-                </button>
+                <a 
+                  href={`https://wa.me/${SUPPORT_WHATSAPP}?text=Bonjour, je souhaite payer ma commande de $${cartTotal.toFixed(2)} par Mobile Money.`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-6 rounded-[2rem] border-2 border-gray-100 hover:border-primary hover:bg-primary/5 transition-all text-left relative overflow-hidden group"
+                >
+                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-4 text-white shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform">
+                    <MessageCircle size={20} />
+                  </div>
+                  <div className="font-bold text-gray-900 mb-1">Mobile Money</div>
+                  <div className="text-[10px] text-primary font-black uppercase tracking-widest">Contact WhatsApp</div>
+                </a>
               </div>
             </div>
 
@@ -1665,19 +1655,6 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                 <BinancePaySection cartTotal={cartTotal} session={session} navigate={navigate} />
               )}
 
-              {method === 'cryptomus' && (
-                <div className="space-y-6">
-                  <div className="bg-purple-50 p-6 rounded-2xl flex items-center gap-4 text-purple-700 font-medium border border-purple-100">
-                    <ShieldCheck size={24} />
-                    <div><div className="font-bold">Paiement sécurisé via Cryptomus</div><div className="text-xs text-purple-500 mt-1">Accepte BTC, ETH, USDT, LTC et +50 cryptomonnaies.</div></div>
-                  </div>
-                  <button onClick={handleCryptomusPayment} disabled={isProcessing}
-                    className="w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl bg-purple-600 text-white hover:bg-purple-700 shadow-purple-600/30 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed">
-                    {isProcessing ? <><RefreshCcw size={20} className="animate-spin" /> Connexion à Cryptomus...</> : <><ExternalLink size={20} /> Payer ${cartTotal.toFixed(2)} en Crypto</>}
-                  </button>
-                  <p className="text-xs text-gray-400 text-center">Vous serez redirigé vers la page de paiement Cryptomus.</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
