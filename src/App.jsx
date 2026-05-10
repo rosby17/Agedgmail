@@ -478,6 +478,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
   const [credentials, setCredentials] = useState('');
   const [adminNote, setAdminNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionSuccess, setActionSuccess] = useState(false);
 
   const filtered = filter === 'all'
     ? allOrders
@@ -518,7 +519,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
         confirmed_at: new Date().toISOString(),
       }).eq('id', selectedOrder.id);
 
-      alert(`Recharge de $${selectedOrder.total_price} confirmée avec succès !`);
+      setActionSuccess(true);
 
     } else {
       // Standard product delivery
@@ -537,11 +538,18 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
       }).eq('id', selectedOrder.id);
     }
 
-    setSelectedOrder(null);
-    setCredentials('');
-    setAdminNote('');
-    fetchAllOrders();
-    setActionLoading(false);
+    if (selectedOrder.product_name !== "Recharge Binance") {
+      setActionSuccess(true);
+    }
+
+    setTimeout(() => {
+      setSelectedOrder(null);
+      setCredentials('');
+      setAdminNote('');
+      fetchAllOrders();
+      setActionLoading(false);
+      setActionSuccess(false);
+    }, 1500);
   };
 
   const cancelOrder = async (id) => {
@@ -694,9 +702,9 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                 <input value={adminNote} onChange={e => setAdminNote(e.target.value)} placeholder="ex: Vérifié sur Binance TX #12345"
                   className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm" />
               </div>
-              <button onClick={confirmOrder} disabled={actionLoading}
-                className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : (selectedOrder.product_name === "Recharge Binance" ? '✅ Valider et Créditer le Solde' : '✅ Confirmer et enregistrer')}
+              <button onClick={confirmOrder} disabled={actionLoading || actionSuccess}
+                className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${actionSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
+                {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : actionSuccess ? '✅ Action effectuée !' : (selectedOrder.product_name === "Recharge Binance" ? '✅ Valider et Créditer le Solde' : '✅ Confirmer et enregistrer')}
               </button>
             </>) : (
               <div>
@@ -724,6 +732,7 @@ const AdminView = ({ navigate }) => {
   const [stockInput, setStockInput] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [amountToAdd, setAmountToAdd] = useState(0);
+  const [actionStatus, setActionStatus] = useState(null); // null, 'loading', 'success'
   const [inventory, setInventory] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
 
@@ -773,11 +782,24 @@ const AdminView = ({ navigate }) => {
 
   const handleUpdateBalance = async () => {
     if (!userEmail || amountToAdd <= 0) return alert("Infos invalides.");
+    setActionStatus('loading');
     const { data: userData } = await supabase.from('profiles').select('id, balance').ilike('email', userEmail.trim()).single();
-    if (!userData) return alert("Utilisateur introuvable. Vérifiez l'email.");
+    if (!userData) {
+      setActionStatus(null);
+      return alert("Utilisateur introuvable. Vérifiez l'email.");
+    }
     const { error } = await supabase.from('profiles').update({ balance: userData.balance + amountToAdd }).eq('id', userData.id);
-    if (error) alert("Erreur : " + error.message);
-    else { alert(`Succès !`); setUserEmail(""); setAmountToAdd(0); }
+    if (error) {
+      alert("Erreur : " + error.message);
+      setActionStatus(null);
+    } else {
+      setActionStatus('success');
+      setTimeout(() => {
+        setUserEmail("");
+        setAmountToAdd(0);
+        setActionStatus(null);
+      }, 2000);
+    }
   };
 
   return (
@@ -875,8 +897,8 @@ const AdminView = ({ navigate }) => {
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant à Ajouter ($)</label>
                   <input type="number" value={amountToAdd} onChange={e => setAmountToAdd(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm font-bold" />
                 </div>
-                <button onClick={handleUpdateBalance} className="bg-gray-900 text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2">
-                  <DollarSign size={16} /> Créditer le Compte
+                <button onClick={handleUpdateBalance} disabled={actionStatus === 'loading' || actionStatus === 'success'} className={`px-8 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${actionStatus === 'success' ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
+                  {actionStatus === 'loading' ? <RefreshCcw size={16} className="animate-spin" /> : actionStatus === 'success' ? '✅ Crédité !' : <><DollarSign size={16} /> Créditer le Compte</>}
                 </button>
               </div>
             </div>
@@ -895,6 +917,7 @@ const RechargeView = ({ profile, session, navigate }) => {
   const [amount, setAmount] = useState(10);
   const [txId, setTxId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async () => {
     if (!session) { navigate('auth'); return; }
@@ -942,8 +965,11 @@ const RechargeView = ({ profile, session, navigate }) => {
     }
 
     setLoading(false);
-    alert("Demande envoyée ! L'administrateur a été notifié par email et validera votre recharge sous peu.");
-    navigate('dashboard');
+    setSuccess(true);
+    setTimeout(() => {
+      setSuccess(false);
+      navigate('dashboard');
+    }, 2000);
   };
 
   return (
@@ -970,8 +996,8 @@ const RechargeView = ({ profile, session, navigate }) => {
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">ID de Transaction Binance (TX ID) *</label>
             <input type="text" value={txId} onChange={e => setTxId(e.target.value)} placeholder="ex: 123456789012345" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-sm" />
           </div>
-          <button onClick={handleSubmit} disabled={loading} className="w-full bg-gray-900 text-white py-5 rounded-[2rem] font-bold text-lg hover:bg-primary transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3 disabled:opacity-50">
-            {loading ? 'Envoi en cours...' : 'Soumettre ma Recharge'}
+          <button onClick={handleSubmit} disabled={loading || success} className={`w-full py-5 rounded-[2rem] font-bold text-lg transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3 disabled:opacity-50 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
+            {loading ? 'Envoi en cours...' : success ? '✅ Demande Envoyée !' : 'Soumettre ma Recharge'}
           </button>
         </div>
       </div>
@@ -986,8 +1012,16 @@ const RechargeView = ({ profile, session, navigate }) => {
 const PaymentView = ({ cartTotal, navigate, clearCart, profile, session }) => {
   const [method, setMethod] = useState('balance');
   const [copied, setCopied] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const canPayWithBalance = (profile?.balance || 0) >= cartTotal;
+
+  const handleBalancePayment = async () => {
+    setPurchaseSuccess(true);
+    setTimeout(() => {
+      clearCart();
+      navigate('dashboard');
+    }, 1500);
+  };
 
   const handleCryptomusPayment = async () => {
     if (!session) { navigate('auth'); return; }
@@ -1045,10 +1079,10 @@ const PaymentView = ({ cartTotal, navigate, clearCart, profile, session }) => {
                     ? <div className="bg-green-50 p-6 rounded-2xl flex items-center gap-4 text-green-700 font-medium"><CheckCircle /> Votre solde est suffisant.</div>
                     : <div className="bg-red-50 p-6 rounded-2xl flex items-center gap-4 text-red-700 font-medium"><ShieldAlert /> Solde insuffisant. Rechargez via Binance Pay.</div>
                   }
-                  <button disabled={!canPayWithBalance}
-                    onClick={() => { clearCart(); navigate('dashboard'); alert("Achat réussi !"); }}
-                    className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl ${canPayWithBalance ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                    Confirmer le Paiement (${cartTotal.toFixed(2)})
+                  <button disabled={!canPayWithBalance || purchaseSuccess}
+                    onClick={handleBalancePayment}
+                    className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl ${purchaseSuccess ? 'bg-green-500 text-white' : canPayWithBalance ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                    {purchaseSuccess ? "✅ Achat Réussi !" : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
                   </button>
                 </div>
               )}
