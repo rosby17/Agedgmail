@@ -2449,6 +2449,11 @@ function App() {
   };
 
   useEffect(() => {
+    if (!supabase) {
+      fetchProducts(); // Will use local fallback
+      return;
+    }
+
     fetchProducts();
     fetchAllOrders();
     fetchUsers();
@@ -2469,7 +2474,7 @@ function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => subscription?.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -2494,6 +2499,11 @@ function App() {
   }, [priceRange]);
 
   const fetchProducts = async () => {
+    if (!supabase) {
+      // Fallback local pour la consultation sans .env
+      setProducts(PRODUCTS_RAW.map(p => ({ ...p, stock: 10 })));
+      return;
+    }
     // 1. Fetch products
     const { data: productsData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     
@@ -2517,11 +2527,13 @@ function App() {
   };
 
   const fetchAllOrders = async () => {
+    if (!supabase) return;
     const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
     if (data) setAllOrders(data);
   };
 
   const fetchUsers = async () => {
+    if (!supabase) return;
     const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     if (data) setAllUsers(data);
   };
@@ -2614,6 +2626,7 @@ function App() {
   };
 
   const fetchProfile = async (userId) => {
+    if (!supabase) return;
     const { data: profileData, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
     
     const { data: { session } } = await supabase.auth.getSession();
