@@ -759,8 +759,8 @@ const AdminView = ({ navigate }) => {
 
   const handleUpdateBalance = async () => {
     if (!userEmail || amountToAdd <= 0) return alert("Infos invalides.");
-    const { data: userData } = await supabase.from('profiles').select('id, balance').eq('email', userEmail).single();
-    if (!userData) return alert("Utilisateur introuvable.");
+    const { data: userData } = await supabase.from('profiles').select('id, balance').ilike('email', userEmail.trim()).single();
+    if (!userData) return alert("Utilisateur introuvable. Vérifiez l'email.");
     const { error } = await supabase.from('profiles').update({ balance: userData.balance + amountToAdd }).eq('id', userData.id);
     if (error) alert("Erreur : " + error.message);
     else { alert(`Succès !`); setUserEmail(""); setAmountToAdd(0); }
@@ -839,6 +839,31 @@ const AdminView = ({ navigate }) => {
                   <button onClick={handleAddStock} className="flex-grow bg-gray-900 text-white py-5 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter au Stock</button>
                   <button onClick={handleClearStock} className="bg-red-50 text-red-500 px-8 py-5 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider le Stock</button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'orders' && (
+            <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />
+          )}
+
+          {activeTab === 'users' && (
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+              <h2 className="text-2xl font-bold mb-8">Clients & Crédits</h2>
+              <p className="text-gray-400 mb-8">Rechercher un utilisateur et ajuster son solde manuellement.</p>
+              
+              <div className="space-y-6 max-w-md">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Client</label>
+                  <input type="email" value={userEmail} onChange={e => setUserEmail(e.target.value)} placeholder="client@email.com" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm font-bold" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant à Ajouter ($)</label>
+                  <input type="number" value={amountToAdd} onChange={e => setAmountToAdd(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm font-bold" />
+                </div>
+                <button onClick={handleUpdateBalance} className="bg-gray-900 text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2">
+                  <DollarSign size={16} /> Créditer le Compte
+                </button>
               </div>
             </div>
           )}
