@@ -1009,6 +1009,124 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchUsers }) => {
   );
 };
 
+const UsersAdmin = ({ allUsers, allOrders, fetchUsers, handleUpdateBalanceManual }) => {
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [updateAmount, setUpdateAmount] = useState("");
+  const [isAdding, setIsAdding] = useState(true);
+
+  const userOrders = selectedUser ? allOrders.filter(o => o.user_id === selectedUser.id) : [];
+  const totalSpent = userOrders.filter(o => o.status === 'confirmed' && o.product_name !== "Recharge Binance").reduce((acc, o) => acc + (o.total_price || 0), 0);
+  const totalRecharged = userOrders.filter(o => o.status === 'confirmed' && o.product_name === "Recharge Binance").reduce((acc, o) => acc + (o.total_price || 0), 0);
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+      <div className="flex justify-between items-center mb-10">
+        <h2 className="text-2xl font-bold">Gestion Clients</h2>
+        <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} inscrits</div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+              <th className="pb-6">Utilisateur</th>
+              <th className="pb-6">Solde</th>
+              <th className="pb-6 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {allUsers.map(user => (
+              <tr key={user.id} className="group hover:bg-gray-50/50 transition-all">
+                <td className="py-6">
+                  <div className="font-bold text-gray-900">{user.email}</div>
+                  <div className="text-xs text-gray-400">{user.display_name}</div>
+                </td>
+                <td className="py-6 font-mono font-black text-primary">${(user.balance || 0).toFixed(2)}</td>
+                <td className="py-6 text-right">
+                  <button onClick={() => setSelectedUser(user)} className="px-6 py-2 bg-gray-900 text-white rounded-xl font-bold text-xs hover:bg-primary transition-all shadow-lg shadow-black/5">Gérer</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedUser && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setSelectedUser(null)} />
+          <div className="relative w-full max-w-2xl bg-white rounded-[3.5rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in duration-300">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">{selectedUser.email}</h3>
+                <p className="text-xs text-gray-400 font-mono">ID: {selectedUser.id}</p>
+              </div>
+              <button onClick={() => setSelectedUser(null)} className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"><X size={20} /></button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Solde Actuel</div>
+                <div className="text-2xl font-black text-primary font-mono">${(selectedUser.balance || 0).toFixed(2)}</div>
+              </div>
+              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Rechargé</div>
+                <div className="text-2xl font-black text-green-600 font-mono">${totalRecharged.toFixed(2)}</div>
+              </div>
+              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Dépensé</div>
+                <div className="text-2xl font-black text-gray-900 font-mono">${totalSpent.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="bg-gray-900 rounded-[2.5rem] p-8 mb-10 shadow-xl shadow-black/10">
+              <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Wallet size={14} className="text-primary" /> Mettre à jour le solde</h4>
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex bg-white/10 p-1 rounded-2xl border border-white/5 w-full sm:w-auto">
+                  <button onClick={() => setIsAdding(true)} className={`flex-grow px-4 py-2 rounded-xl font-bold text-xs transition-all ${isAdding ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-gray-400'}`}>Ajouter</button>
+                  <button onClick={() => setIsAdding(false)} className={`flex-grow px-4 py-2 rounded-xl font-bold text-xs transition-all ${!isAdding ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-gray-400'}`}>Retirer</button>
+                </div>
+                <div className="relative flex-grow w-full">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold font-mono">$</span>
+                  <input type="number" value={updateAmount} onChange={e => setUpdateAmount(e.target.value)} placeholder="0.00" className="w-full pl-8 pr-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-white" />
+                </div>
+                <button onClick={() => {
+                  const val = parseFloat(updateAmount);
+                  if (val > 0) {
+                    handleUpdateBalanceManual(selectedUser.id, selectedUser.email, isAdding ? val : -val);
+                    setUpdateAmount("");
+                    setSelectedUser(null);
+                  }
+                }} className="w-full sm:w-auto px-8 py-4 bg-primary text-white rounded-2xl font-bold hover:bg-primary/90 transition-all shadow-xl shadow-primary/20">Valider</button>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><History size={14} /> Historique Récent</h4>
+              <div className="space-y-3">
+                {userOrders.length === 0 ? (
+                  <p className="text-center py-8 text-gray-300 italic text-sm">Aucun historique.</p>
+                ) : (
+                  userOrders.slice(0, 5).map(o => (
+                    <div key={o.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div>
+                        <div className="font-bold text-gray-900 text-sm">{o.product_name}</div>
+                        <div className="text-[10px] text-gray-400 font-bold uppercase">{new Date(o.created_at).toLocaleDateString()} • #{o.id.slice(0,6)}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-black font-mono ${o.product_name === "Recharge Binance" ? 'text-green-600' : 'text-gray-900'}`}>{o.product_name === "Recharge Binance" ? '+' : '-'}${(o.total_price || 0).toFixed(2)}</div>
+                        <div className={`text-[10px] uppercase font-black tracking-widest ${o.status === 'confirmed' ? 'text-green-500' : 'text-yellow-500'}`}>{o.status}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ==========================================
 // ADMIN VIEW
 // ==========================================
@@ -1188,48 +1306,20 @@ const AdminView = ({
             <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} fetchUsers={fetchUsers} />
           )}
 
+
           {activeTab === 'users' && (
-            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <div className="flex justify-between items-center mb-10">
-                <h2 className="text-2xl font-bold">Gestion Clients</h2>
-                <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} inscrits</div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                      <th className="pb-6">Utilisateur</th>
-                      <th className="pb-6">Solde</th>
-                      <th className="pb-6">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {allUsers.map(user => (
-                      <tr key={user.id}>
-                        <td className="py-6">
-                          <div className="font-bold text-gray-900">{user.email}</div>
-                          <div className="text-xs text-gray-400">{user.display_name}</div>
-                        </td>
-                        <td className="py-6 font-mono font-black text-primary">${user.balance?.toFixed(2)}</td>
-                        <td className="py-6">
-                          <button onClick={() => {
-                            const amount = prompt("Montant à ajouter ($) :", "10");
-                            if (amount) handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
-                          }} className="p-2 bg-primary/10 text-primary rounded-lg font-bold text-xs">Créditer</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <UsersAdmin 
+              allUsers={allUsers} 
+              allOrders={allOrders} 
+              fetchUsers={fetchUsers} 
+              handleUpdateBalanceManual={handleUpdateBalanceManual} 
+            />
           )}
         </main>
       </div>
     </div>
   );
 };
-
 // ==========================================
 // RECHARGE VIEW & BINANCE PAY
 // ==========================================
