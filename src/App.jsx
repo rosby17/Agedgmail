@@ -2109,6 +2109,9 @@ const AuthView = ({ navigate }) => {
   const [showForm, setShowForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -2121,7 +2124,17 @@ const AuthView = ({ navigate }) => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+              display_name: username
+            }
+          }
+        });
         if (error) throw error;
         alert("Vérifiez vos emails pour confirmer votre inscription !");
       }
@@ -2196,6 +2209,24 @@ const AuthView = ({ navigate }) => {
           </div>
         ) : (
           <form className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" onSubmit={handleAuth}>
+            {!isLogin && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nom</label>
+                  <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Nom" />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prénom</label>
+                  <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Prénom" />
+                </div>
+              </div>
+            )}
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Username</label>
+                <input type="text" required value={username} onChange={e => setUsername(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Nom d'utilisateur" />
+              </div>
+            )}
             <div className="space-y-2">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="votre@email.com" />
@@ -2546,9 +2577,9 @@ function App() {
       const newProfile = {
         id: userId,
         email: session.user.email,
-        display_name: metadata?.full_name?.split(' ')[0]?.toLowerCase() || session.user.email?.split('@')[0],
-        first_name: metadata?.given_name || metadata?.full_name?.split(' ')[0] || "",
-        last_name: metadata?.family_name || metadata?.full_name?.split(' ').slice(1).join(' ') || "",
+        display_name: metadata?.display_name || metadata?.full_name?.split(' ')[0]?.toLowerCase() || session.user.email?.split('@')[0],
+        first_name: metadata?.first_name || metadata?.given_name || metadata?.full_name?.split(' ')[0] || "",
+        last_name: metadata?.last_name || metadata?.family_name || metadata?.full_name?.split(' ').slice(1).join(' ') || "",
         avatar_url: metadata?.avatar_url || "",
         balance: 0.00,
         two_factor_enabled: false,
