@@ -585,32 +585,29 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   </button>
                 </div>
                   <div 
-                    className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2"
+                    className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2 mt-6"
                     dangerouslySetInnerHTML={{
                       __html: (viewOrder.credentials || viewOrder.data ? (
-                        `Merci beaucoup pour votre achat.
+                        `<div class="space-y-4">
+                          <p>Merci beaucoup pour votre achat.</p>
+                          <p>Voici vos produits :</p>
+                          <p class="font-black text-lg text-gray-900 border-b border-gray-100 pb-2">${viewOrder.product_name}</p>
+                          <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner">
+                            ${(viewOrder.credentials || viewOrder.data).replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>')}
+                          </div>
+                          
+                          <div class="h-px bg-gray-100 my-8"></div>
+                          
+                          <div class="bg-primary/5 p-6 rounded-3xl border border-primary/10">
+                            <h4 class="text-gray-900 font-black mb-4 uppercase">Comment se connecter (2FA)</h4>
+                            <p class="text-xs leading-relaxed text-gray-600 mb-4">Collez la chaîne 2FA sur <a href="https://2fa.live" target="_blank" class="text-primary underline font-bold">2fa.live</a> pour obtenir le code à 6 chiffres.</p>
+                            <p class="text-xs font-bold">Tutoriel : <a href="https://www.youtube.com/watch?v=JbjION2rdPA" target="_blank" class="text-primary underline">YouTube</a></p>
+                          </div>
 
-voici vos produits
-
-<strong>${viewOrder.product_name}</strong>
-
-${(viewOrder.credentials || viewOrder.data).replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>')}
-
-=======================================
-
-<span class="text-gray-900 font-black">COMMENT SE CONNECTER AVEC L'AUTHENTIFICATION À DEUX FACTEURS (2FA)</span>
-
-Pour les comptes avec l'authentification à deux facteurs (2FA) activée, après avoir saisi votre nom d'utilisateur et votre mot de passe, veuillez coller la chaîne 2FA (fournie par nos soins) sur <a href="https://2fa.live" target="_blank" class="text-primary underline font-bold">https://2fa.live</a> pour obtenir le code à 6 chiffres. Collez ensuite ce code pour vous connecter.
-
-Vous pouvez modifier le code 2FA à l'aide de l'application Google Authenticator.
-Tutoriel vidéo : <a href="https://www.youtube.com/watch?v=JbjION2rdPA" target="_blank" class="text-primary underline">https://www.youtube.com/watch?v=JbjION2rdPA</a>
-
-=======================================
-
-<span class="text-red-500 font-bold">Après une connexion réussie, la période de garantie ne sera plus valable.</span>
-
-<strong>Suggestion :</strong>
-1. Après vous être connecté(e), conservez vos cookies et patientez au moins 7 jours avant de modifier quoi que ce soit (mot de passe, adresse e-mail de récupération, numéro de téléphone, etc.).`
+                          <div class="bg-red-50 p-6 rounded-3xl border border-red-100 mt-6">
+                            <p class="text-red-500 font-bold text-xs">Période de garantie terminée après connexion réussie.</p>
+                          </div>
+                        </div>`
                       ) : "En attente de livraison...")
                     }}
                   />
