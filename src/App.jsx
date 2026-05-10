@@ -164,13 +164,6 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 
   return (
     <div className="bg-white rounded-[3rem] p-5 hover:shadow-2xl hover:shadow-black/5 transition-all duration-500 group flex flex-col border border-gray-100/50 h-full relative">
-      {/* Badge Stock Flottant */}
-      <div className="absolute top-8 left-8 z-20">
-        <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${product.stock > 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-          {product.stock > 0 ? 'Disponible' : 'Rupture'}
-        </div>
-      </div>
-
       <div 
         className="aspect-[1.4] bg-gray-50/50 rounded-[2.5rem] flex items-center justify-center mb-8 overflow-hidden cursor-pointer relative shrink-0 group-hover:bg-white transition-colors duration-500"
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
@@ -541,13 +534,27 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
               <button onClick={() => setViewOrder(null)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
             </div>
             <div className="p-10 space-y-8">
-              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Format : Email | Password | Recovery | 2FA Code</div>
-                <div className="font-mono text-sm bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center group">
-                  <span className="truncate mr-4 text-gray-700">{viewOrder.data || viewOrder.credentials || "En attente de livraison..."}</span>
-                  <button onClick={() => { navigator.clipboard.writeText(viewOrder.data || viewOrder.credentials || ''); }} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all" title="Copier">
-                    <Copy size={16} />
-                  </button>
+              <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <Info size={12} className="text-primary" /> Format : Email | Password | Recovery | 2FA
+                </div>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {(viewOrder.data || viewOrder.credentials || "En attente de livraison...")
+                    .split('\n')
+                    .filter(line => line.trim())
+                    .map((line, idx) => (
+                      <div key={idx} className="font-mono text-xs bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center group hover:border-primary/30 transition-all">
+                        <span className="truncate mr-4 text-gray-700">{line.trim()}</span>
+                        <button 
+                          onClick={() => { navigator.clipboard.writeText(line.trim()); }} 
+                          className="p-2 text-gray-300 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" 
+                          title="Copier"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                    ))
+                  }
                 </div>
               </div>
               <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
