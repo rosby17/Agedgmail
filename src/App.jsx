@@ -1081,7 +1081,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
         // 3. Mark as sold
         const { error: updateErr } = await supabase
           .from('product_stock')
-          .update({ is_sold: true, sold_at: new Date().toISOString() })
+          .update({ is_sold: true })
           .in('id', stockIds);
 
         if (updateErr) throw updateErr;
