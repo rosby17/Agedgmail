@@ -9,7 +9,6 @@ import * as XLSX from 'xlsx';
 // ==========================================
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 const SUPPORT_WHATSAPP = "237655306425";
-const SUPPORT_TELEGRAM = "rooseveltmkr";
 
 // ==========================================
 // COMPOSANTS LOGOS (IMG & SVG)
