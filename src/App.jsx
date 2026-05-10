@@ -849,137 +849,92 @@ const AdminView = ({ navigate }) => {
 };
 
 // ==========================================
-// BINANCE PAY SECTION — Nouveau composant
+// RECHARGE VIEW & BINANCE PAY
 // ==========================================
 
-const parseHash = () => {
-  const raw = window.location.hash.replace(/^#\/?/, '') || 'home';
-  const [view, param] = raw.split('/');
-  return { view: view || 'home', param };
-};
+const RechargeView = ({ profile, session, navigate }) => {
+  const [amount, setAmount] = useState(10);
+  const [txId, setTxId] = useState('');
+  const [loading, setLoading] = useState(false);
 
-function App() {
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [priceRange, setPriceRange] = useState('all');
-  const [cart, setCart] = useState([]);
-  const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [orders, setOrders] = useState([]);
+  const handleSubmit = async () => {
+    if (!session) { navigate('auth'); return; }
+    if (!txId.trim()) { alert('Veuillez entrer un ID de transaction valide.'); return; }
+    if (amount <= 0) { alert('Veuillez entrer un montant valide.'); return; }
+    
+    setLoading(true);
+    
+    // 1. Créer la commande dans Supabase
+    const { error } = await supabase.from('orders').insert([{
+      user_id: session.user.id,
+      buyer_email: session.user.email,
+      product_name: "Recharge Binance",
+      quantity: 1,
+      total_price: amount,
+      status: 'pending',
+      binance_tx_id: txId.trim()
+    }]);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else { setProfile(null); setOrders([]); }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfile = async (userId) => {
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (data) {
-      setProfile(data);
-      const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-      if (orderData) setOrders(orderData);
-    } else {
-      setProfile({ id: userId, email: session?.user?.email, display_name: session?.user?.email?.split('@')[0], balance: 0.00 });
-      setOrders([]);
+    if (error) {
+      alert("Erreur lors de la soumission : " + error.message);
+      setLoading(false);
+      return;
     }
+
+    // 2. Envoyer l'alerte email à l'admin via FormSubmit
+    try {
+      await fetch("https://formsubmit.co/ajax/rooseveltmkr@gmail.com", {
+        method: "POST",
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          subject: "🚨 Demande de Recharge Binance (AgedGmailYT)",
+          email_client: session.user.email,
+          montant: amount + " USD",
+          tx_id: txId.trim(),
+          message: "Connectez-vous à l'admin pour valider cette recharge."
+        })
+      });
+    } catch (err) {
+      console.error("Erreur envoi email :", err);
+    }
+
+    setLoading(false);
+    alert("Demande envoyée ! L'administrateur a été notifié par email et validera votre recharge sous peu.");
+    navigate('dashboard');
   };
 
-  const filteredProducts = PRODUCTS
-    .filter(p => activeCategory === 'all' || p.category === activeCategory)
-    .filter(p => {
-      if (priceRange === 'all') return true;
-      if (priceRange === 'under5') return p.price < 5;
-      if (priceRange === '5-10') return p.price >= 5 && p.price <= 10;
-      if (priceRange === '10-50') return p.price > 10 && p.price <= 50;
-      if (priceRange === 'over50') return p.price > 50;
-      return true;
-    })
-    .sort((a, b) => a.price - b.price);
-
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const addToCart = (product, quantity = 1) => {
-    setCart(prevCart => {
-      const idx = prevCart.findIndex(item => item.id === product.id);
-      if (idx >= 0) { const nc = [...prevCart]; nc[idx].quantity += quantity; return nc; }
-      return [...prevCart, { ...product, quantity }];
-    });
-  };
-  const updateCartQuantity = (id, q) => { if (q < 1) return; setCart(pc => pc.map(i => i.id === id ? { ...i, quantity: q } : i)); };
-  const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
-  const clearCart = () => setCart([]);
-  const navigate = (v) => { setCurrentView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-
   return (
-    <div className="min-h-screen bg-white font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} navigate={navigate} session={session} profile={profile} />
-      <div className="flex-grow">
-        {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />}
-        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
-        {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
-        {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
-        {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} />}
-        {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && <AdminView navigate={navigate} />}
-      </div>
-      <h3 className="text-2xl font-bold text-gray-900">Commande reçue !</h3>
-      <p className="text-gray-500 text-sm leading-relaxed">
-        On vérifie ton paiement Binance et on crédite ton solde rapidement.<br />
-        Confirmation à <strong>{email}</strong>
-      </p>
-      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 inline-block">
-        <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Référence</p>
-        <p className="font-mono font-bold text-gray-900 text-lg">#{orderId}</p>
-      </div>
-      <button onClick={() => navigate('dashboard')}
-        className="block w-full bg-primary text-white py-4 rounded-2xl font-bold hover:bg-primaryDark transition-all mt-2">
-        Voir mon dashboard
-      </button>
-    </div>
-  );
-
-  return (
-    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
-        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative"><div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden">{product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}</div>{product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}</div>
-        <div className="flex flex-col justify-center">
-          <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><button onClick={() => navigate('home')} className="hover:text-primary">ACCUEIL</button><span>/</span><span className="text-primary">{CATEGORIES.find(c => c.id === product.category)?.name}</span></nav>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tighter leading-tight">{product.name}</h1>
-          <div className="text-4xl font-black text-primary mb-12">${product.price.toFixed(2)}</div>
-          <div className="flex items-center gap-6 mb-12">
-            <div className="flex items-center bg-gray-100 rounded-full p-2"><button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Minus size={20} /></button><div className="w-16 text-center font-black text-xl">{quantity}</div><button onClick={() => setQuantity(quantity + 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Plus size={20} /></button></div>
-            <button onClick={() => addToCart(product, quantity)} className="flex-grow bg-gray-900 text-white h-20 rounded-full font-bold text-xl hover:bg-primary transition-all shadow-2xl shadow-black/10 uppercase tracking-widest">Ajouter au Panier</button>
+    <div className="max-w-3xl mx-auto px-6 py-20 font-sans">
+      <h2 className="text-4xl font-bold text-gray-900 mb-6 tracking-tight">Recharger mon Compte via Binance</h2>
+      <p className="text-gray-500 mb-10">Envoyez le montant désiré sur notre compte Binance Pay, puis soumettez l'ID de transaction ici. Une alerte email nous sera envoyée instantanément pour accélérer la validation.</p>
+      
+      <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft space-y-8">
+        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0">B</div>
+          <div>
+            <h4 className="font-bold text-yellow-900 mb-1">Notre Pay ID Binance</h4>
+            <div className="font-mono text-xl font-black text-yellow-800 mb-2 select-all">123456789</div>
+            <p className="text-xs text-yellow-700">Ouvrez votre application Binance, allez dans "Pay", choisissez "Envoyer" et sélectionnez "Pay ID".</p>
           </div>
-          <div className="grid grid-cols-2 gap-4"><div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><Zap size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Livraison Instantanée</span></div><div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><ShieldCheck size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Garantie 3 Jours</span></div></div>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant envoyé (USD) *</label>
+            <input type="number" min="1" value={amount} onChange={e => setAmount(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-bold text-lg" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">ID de Transaction Binance (TX ID) *</label>
+            <input type="text" value={txId} onChange={e => setTxId(e.target.value)} placeholder="ex: 123456789012345" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-sm" />
+          </div>
+          <button onClick={handleSubmit} disabled={loading} className="w-full bg-gray-900 text-white py-5 rounded-[2rem] font-bold text-lg hover:bg-primary transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3 disabled:opacity-50">
+            {loading ? 'Envoi en cours...' : 'Soumettre ma Recharge'}
+          </button>
         </div>
       </div>
-
-      {/* TX ID */}
-      <div>
-        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-          ID de transaction Binance <span className="text-gray-300 normal-case font-normal">(optionnel mais recommandé)</span>
-        </label>
-        <input type="text" value={txId} onChange={e => setTxId(e.target.value)} placeholder="ex: 123456789012345"
-          className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-sm" />
-        <p className="text-[10px] text-gray-400 mt-1">Accélère la vérification manuelle.</p>
-      </div>
-
-      <button onClick={handleSubmit} disabled={loading}
-        className="w-full bg-gray-900 text-white py-6 rounded-[2rem] font-bold text-lg hover:bg-primary transition-all shadow-2xl shadow-black/10 flex items-center justify-center gap-3 disabled:opacity-50">
-        {loading
-          ? <><RefreshCcw size={20} className="animate-spin" /> Envoi en cours...</>
-          : "✅ J'ai payé, soumettre ma commande"
-        }
-      </button>
-      <p className="text-xs text-gray-400 text-center">Délai de validation : 5–30 min après vérification.</p>
     </div>
   );
 };
