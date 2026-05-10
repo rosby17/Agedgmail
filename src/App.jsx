@@ -842,7 +842,7 @@ const StockManager = ({ product, onClose }) => {
 // ==========================================
 
 const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
-  const [filter, setFilter] = useState('pending');
+  const [filter, setFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [adminNote, setAdminNote] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
