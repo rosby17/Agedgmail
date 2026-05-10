@@ -1001,7 +1001,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
 const AdminView = ({ 
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers, 
   actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm, 
-  setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleExcelProductImport, adminSearch, setAdminSearch, 
+  setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleExcelProductImport, handleExportExcel, adminSearch, setAdminSearch, 
   adminPage, setAdminPage 
 }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -1073,8 +1073,8 @@ const AdminView = ({
                     <label htmlFor="excel-import" className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer hover:bg-green-700 transition-all shadow-lg shadow-green-500/20">
                       <Upload size={18} /> Importer Excel
                     </label>
-                    <button onClick={() => { setEditingProduct(null); setProductForm({ name: '', category: 'email', description: '', price: 0, stock: 0 }); }} className="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all">
-                      <Plus size={18} /> Manuel
+                    <button onClick={handleExportExcel} className="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all shadow-lg shadow-gray-900/10">
+                      <Download size={18} /> Exporter Excel
                     </button>
                   </div>
                 </div>
@@ -2056,6 +2056,20 @@ function App() {
     e.target.value = '';
   };
 
+  const handleExportExcel = () => {
+    const dataToExport = products.map(p => ({
+      'Titre du Produit': p.name,
+      'Catégorie': CATEGORIES.find(c => c.id === p.category)?.name || p.category,
+      'Prix ($)': p.price,
+      'Quantité en Stock': p.stock,
+      'Description': p.description
+    }));
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Produits");
+    XLSX.writeFile(wb, `AgedGmail_Produits_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   const fetchProfile = async (userId) => {
     const { data: profileData, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
     
@@ -2150,6 +2164,7 @@ function App() {
             handleDeleteProduct={handleDeleteProduct}
             handleDeleteAllProducts={handleDeleteAllProducts}
             handleExcelProductImport={handleExcelProductImport}
+            handleExportExcel={handleExportExcel}
             adminSearch={adminSearch}
             setAdminSearch={setAdminSearch}
             adminPage={adminPage}
