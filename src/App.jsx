@@ -813,8 +813,8 @@ const AdminView = ({ navigate }) => {
                   </div>
                 </div>
               </div>
-            )
-          }
+            );
+          })()}
           {activeTab === 'stock' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
               <div className="flex justify-between items-center mb-8">
