@@ -2055,11 +2055,18 @@ const ProductView = ({ product, addToCart, navigate }) => {
 // CART VIEW
 // ==========================================
 
-const CartView = ({ cart, updateCartQuantity, removeFromCart, cartTotal, navigate }) => (
+const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, navigate }) => (
   <div className="max-w-4xl mx-auto py-20 px-6 font-sans">
     <div className="flex items-center justify-between mb-16">
       <h2 className="text-5xl font-bold text-gray-900 tracking-tighter">Votre Panier</h2>
-      <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline uppercase tracking-widest">Continuer les achats</button>
+      <div className="flex items-center gap-6">
+        {cart.length > 0 && (
+          <button onClick={clearCart} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition-colors flex items-center gap-2 border border-gray-100 px-4 py-2 rounded-xl">
+            <Trash2 size={14} /> Vider le panier
+          </button>
+        )}
+        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline uppercase tracking-widest">Continuer les achats</button>
+      </div>
     </div>
     {cart.length === 0 ? (
       <div className="text-center py-20 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Votre panier est vide.</p></div>
@@ -2572,7 +2579,7 @@ function App() {
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
-        {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
+        {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} />}
         {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
