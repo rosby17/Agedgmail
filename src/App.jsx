@@ -1022,6 +1022,12 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
     fetchAllOrders();
   };
 
+  const deleteOrder = async (id) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer définitivement cette commande ?")) return;
+    await supabase.from('orders').delete().eq('id', id);
+    fetchAllOrders();
+  };
+
   const statusBadge = (status) => {
     const s = status || 'pending';
     const map = {
@@ -1096,22 +1102,28 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
                   </td>
                   <td className="py-5">
                     <div className="flex gap-2">
-                      {(!order.status || order.status === 'pending') && <>
-                        <button onClick={() => { setSelectedOrder(order); setCredentials(''); setAdminNote(''); }}
-                          className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-all" title="Confirmer">
-                          <CheckCircle size={14} />
-                        </button>
-                        <button onClick={() => cancelOrder(order.id)}
-                          className="p-2 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 transition-all" title="Annuler">
-                          <X size={14} />
-                        </button>
-                      </>}
+                      {(!order.status || order.status === 'pending') && (
+                        <>
+                          <button onClick={() => { setSelectedOrder(order); setCredentials(''); setAdminNote(''); }}
+                            className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-all" title="Confirmer">
+                            <CheckCircle size={14} />
+                          </button>
+                          <button onClick={() => cancelOrder(order.id)}
+                            className="p-2 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 transition-all" title="Annuler">
+                            <X size={14} />
+                          </button>
+                        </>
+                      )}
                       {order.status === 'confirmed' && (
                         <button onClick={() => setSelectedOrder(order)}
                           className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all" title="Voir credentials">
                           <Eye size={14} />
                         </button>
                       )}
+                      <button onClick={() => deleteOrder(order.id)}
+                        className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-all" title="Supprimer définitivement">
+                        <Trash size={14} />
+                      </button>
                     </div>
                   </td>
                 </tr>
