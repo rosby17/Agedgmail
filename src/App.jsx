@@ -1937,7 +1937,8 @@ function App() {
       type: "danger",
       onConfirm: async () => {
         try {
-          const { error } = await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          const { error } = await supabase.from("products").delete().neq("id", 0);
+
           if (error) throw error;
           fetchProducts();
         } catch (err) {
