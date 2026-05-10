@@ -710,7 +710,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                             </span>
                           </td>
                            <td className="py-6">
-                            {order.product_name !== "Recharge Binance" && (
+                            {order.product_name !== "Recharge Binance" && order.status === 'confirmed' && (
                               <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
                                 <Eye size={14} /> Voir les accès
                               </button>
@@ -1519,7 +1519,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
           product_name: item.name,
           quantity: item.quantity,
           total_price: item.price * item.quantity,
-          status: 'paid',
+          status: 'pending',
           created_at: new Date().toISOString()
         });
       }
