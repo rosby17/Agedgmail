@@ -868,6 +868,7 @@ const RechargeView = ({ profile, session, navigate }) => {
     const { error } = await supabase.from('orders').insert([{
       user_id: session.user.id,
       buyer_email: session.user.email,
+      product_id: 999, // ID fictif pour la recharge
       product_name: "Recharge Binance",
       quantity: 1,
       total_price: amount,
