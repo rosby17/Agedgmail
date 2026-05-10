@@ -264,12 +264,22 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 // NAVBAR
 // ==========================================
 
-const Navbar = ({ cartTotal, cartCount, navigate, session, profile }) => (
+const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView }) => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-50 font-sans">
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-      <button onClick={() => navigate('home')} className="h-12 flex items-center group transition-all">
-        <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
-      </button>
+      <div className="flex items-center gap-4">
+        {currentView !== 'home' && (
+          <button 
+            onClick={() => window.history.back()} 
+            className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all border border-gray-100 shadow-sm"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
+        <button onClick={() => navigate('home')} className="h-12 flex items-center group transition-all">
+          <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+        </button>
+      </div>
       <div className="flex items-center gap-6">
         {session && session.user.email === ADMIN_EMAIL && (
           <button onClick={() => navigate('admin')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
@@ -2689,13 +2699,35 @@ function App() {
   const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
   const clearCart = () => setCart([]);
   const navigate = (v) => { 
-    setCurrentView(v); 
+    window.location.hash = v;
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        setCurrentView(hash);
+      } else {
+        setCurrentView('home');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Initial sync
+    if (window.location.hash) {
+      handleHashChange();
+    } else {
+      window.location.hash = currentView;
+    }
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} />
+      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} />
       <div className="flex-grow">
         {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
