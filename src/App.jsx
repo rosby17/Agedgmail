@@ -2038,6 +2038,7 @@ function App() {
             setProductForm={setProductForm}
             handleSaveProduct={handleSaveProduct}
             handleDeleteProduct={handleDeleteProduct}
+            handleExcelProductImport={handleExcelProductImport}
             adminSearch={adminSearch}
             setAdminSearch={setAdminSearch}
             adminPage={adminPage}
