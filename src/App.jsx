@@ -968,92 +968,6 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
 // ADMIN VIEW
 // ==========================================
 
-const AdminView = ({ navigate }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedProductId, setSelectedProductId] = useState(PRODUCTS[0].id);
-  const [stockInput, setStockInput] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [amountToAdd, setAmountToAdd] = useState(0);
-  const [actionStatus, setActionStatus] = useState(null); // null, 'loading', 'success', 'error'
-  const [errorMessage, setErrorMessage] = useState("");
-  const [inventory, setInventory] = useState([]);
-  const [allOrders, setAllOrders] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
-  const [adminSearch, setAdminSearch] = useState("");
-  const [adminPage, setAdminPage] = useState(1);
-  const itemsPerPage = 10;
-
-  useEffect(() => {
-    fetchInventory();
-    fetchAllOrders();
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (data) setAllUsers(data);
-    if (error) console.error("Erreur users:", error);
-  };
-
-  const fetchInventory = async () => {
-    const { data, error } = await supabase.from('product_stock').select('product_id, is_sold');
-    if (error) console.error("Erreur stock:", error);
-    
-    setInventory(PRODUCTS.map(p => {
-      const stockItems = data ? data.filter(item => item.product_id === p.id) : [];
-      return {
-        ...p,
-        stock: stockItems.filter(item => !item.is_sold).length,
-        sold: stockItems.filter(item => item.is_sold).length
-      };
-    }));
-  };
-
-  const fetchAllOrders = async () => {
-    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    if (data) setAllOrders(data);
-    if (error) console.error("Erreur lors de la récupération des commandes :", error);
-  };
-
-  const selectedProductStock = inventory.find(p => p.id === parseInt(selectedProductId))?.stock || 0;
-
-  const handleExcelUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    setActionStatus('loading');
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const bstr = evt.target.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
-        
-        // Expected columns: product_id, data
-        const itemsToInsert = data.map(row => ({
-          product_id: parseInt(row.product_id || row.ID),
-          data: row.data || row.Credentials || row.Account,
-          is_sold: false
-        })).filter(item => !isNaN(item.product_id) && item.data);
-
-        if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée dans l'Excel.");
-
-        const { error } = await supabase.from('product_stock').insert(itemsToInsert);
-        if (error) throw error;
-
-        setActionStatus('success');
-        fetchInventory();
-        setTimeout(() => setActionStatus(null), 3000);
-      } catch (err) {
-        setErrorMessage("Erreur Import Excel : " + err.message);
-        setActionStatus('error');
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
-
 const AdminView = ({ 
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers, 
   actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm, 
@@ -1258,7 +1172,7 @@ const AdminView = ({
 // RECHARGE VIEW & BINANCE PAY
 // ==========================================
 
-const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetchStocks, profile }) => {
+const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetchProducts, profile }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -1513,7 +1427,7 @@ const RechargeView = ({ profile, session, navigate }) => {
 // PAYMENT VIEW
 // ==========================================
 
-const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchStocks }) => {
+const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchProducts }) => {
   const [method, setMethod] = useState('binance');
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
@@ -1601,13 +1515,12 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
               <h3 className="text-lg font-bold mb-8">2. Validation du Paiement</h3>
               
               {method === 'binance' && (
-                <BinancePaySection cartTotal={cartTotal} session={session} navigate={navigate} cart={cart} clearCart={clearCart} fetchStocks={fetchStocks} />
+                <BinancePaySection cartTotal={cartTotal} session={session} navigate={navigate} cart={cart} clearCart={clearCart} fetchProducts={fetchProducts} profile={profile} />
               )}
             </div>
 
             </div>
           </div>
-        </div>
 
         <div className="h-fit sticky top-32">
           <div className="bg-gray-900 text-white p-10 rounded-[3rem] shadow-2xl">
