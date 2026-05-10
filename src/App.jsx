@@ -288,7 +288,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile }) => (
           </div>
         ) : (
           <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]">
-            <User size={18} /> Connexion
+            <User size={18} /> LOGIN/SIGNUP
           </button>
         )}
         <button onClick={() => navigate('cart')} className="bg-gray-900 text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black transition-all shadow-lg shadow-black/10 relative">
@@ -2055,7 +2055,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
 // CART VIEW
 // ==========================================
 
-const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, navigate }) => (
+const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, navigate, session }) => (
   <div className="max-w-4xl mx-auto py-20 px-6 font-sans">
     <div className="flex items-center justify-between mb-16">
       <h2 className="text-5xl font-bold text-gray-900 tracking-tighter">Votre Panier</h2>
@@ -2093,7 +2093,12 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTot
         ))}
         <div className="pt-10 flex flex-col items-end">
           <div className="text-4xl font-bold text-gray-900 mb-8 tracking-tighter">Total: ${cartTotal.toFixed(2)}</div>
-          <button onClick={() => navigate('payment')} className="bg-primary text-white px-16 py-6 rounded-full font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/20">Passer au Paiement</button>
+          <button 
+            onClick={() => session ? navigate('payment') : navigate('auth')} 
+            className="bg-primary text-white px-16 py-6 rounded-full font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/20"
+          >
+            {session ? 'Passer au Paiement' : 'Se connecter pour payer'}
+          </button>
         </div>
       </div>
     )}
@@ -2683,7 +2688,7 @@ function App() {
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
-        {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} />}
+        {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />}
         {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
