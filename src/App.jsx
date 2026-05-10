@@ -155,42 +155,46 @@ const getProductDetails = (product) => {
 const PRODUCTS = PRODUCTS_RAW.map(p => ({ ...p, details: getProductDetails(p) }));
 
 // ==========================================
-// PRODUCT LIST ITEM
+// PRODUCT CARD
 // ==========================================
 
-const ProductListItem = ({ product, addToCart, navigate, setSelectedProduct }) => {
+const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
   const [localQty, setLocalQty] = useState(1);
   const isUS = product.name.toUpperCase().includes('US') || product.name.toUpperCase().includes('USA');
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[2rem] p-4 hover:border-primary/30 transition-all duration-300 group flex flex-col md:flex-row items-center gap-6">
+    <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 hover:border-primary/30 transition-all duration-500 group flex flex-col shadow-soft h-full">
       <div 
-        className="w-full md:w-32 h-24 bg-gray-50/50 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden cursor-pointer relative"
+        className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden cursor-pointer relative shrink-0"
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
-        <div className="w-16 h-16 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
-          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : <Share2 size={24} className="text-gray-300" />}
+        <div className="w-24 h-24 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
+          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={40} className="text-gray-300" />}
         </div>
-        {isUS && product.category === 'email' && <div className="absolute top-2 right-2 bg-primary text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm">US</div>}
+        {isUS && product.category === 'email' && <div className="absolute top-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded shadow-sm">US</div>}
+        <div className="absolute top-4 left-4">
+          <div className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest ${product.stock > 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+            {product.stock > 0 ? 'En Stock' : 'Rupture'}
+          </div>
+        </div>
       </div>
       
-      <div className="flex-grow min-w-0 text-center md:text-left">
-        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
+      <div className="flex-grow flex flex-col">
+        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
         <h3 
-          className="text-base font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer truncate"
+          className="text-lg font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer mb-4"
           onClick={() => { setSelectedProduct(product); navigate('product'); }}
         >
           {product.name}
         </h3>
-        <div className="mt-2 flex items-center justify-center md:justify-start gap-4">
-          <div className="text-lg font-black text-primary font-mono">${product.price.toFixed(2)}</div>
-          <div className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${product.stock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-            {product.stock > 0 ? `${product.stock} en stock` : 'Rupture'}
-          </div>
+        
+        <div className="mt-auto pt-6 border-t border-gray-50 flex items-center justify-between">
+          <div className="text-2xl font-black text-primary font-mono">${product.price.toFixed(2)}</div>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{product.stock} disponibles</div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 w-full md:w-auto">
+      <div className="mt-6 flex items-center gap-3">
         <div className="flex items-center bg-gray-50 rounded-xl p-1 shrink-0 border border-gray-100">
           <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg transition-all"><Minus size={14} /></button>
           <div className="w-8 text-center text-xs font-bold">{localQty}</div>
@@ -199,7 +203,7 @@ const ProductListItem = ({ product, addToCart, navigate, setSelectedProduct }) =
         <button 
           onClick={() => addToCart(product, localQty)} 
           disabled={product.stock <= 0}
-          className={`flex-grow md:flex-none px-8 h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-black/5 flex items-center justify-center gap-2 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-black/5 flex items-center justify-center gap-2 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
         >
           <ShoppingCart size={16} /> {product.stock > 0 ? 'Ajouter' : 'Épuisé'}
         </button>
@@ -306,10 +310,10 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
             />
           </div>
         </div>
-        <div className="flex flex-col gap-4">
-          {filteredProducts.map(product => (<ProductListItem key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />))}
           {filteredProducts.length === 0 && (
-            <div className="py-20 text-center bg-gray-50 rounded-[3rem] border border-dashed border-gray-200">
+            <div className="col-span-full py-20 text-center bg-gray-50 rounded-[3rem] border border-dashed border-gray-200">
               <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Aucun produit trouvé</h3>
               <p className="text-gray-400 text-sm">Essayez de modifier votre recherche ou de changer de catégorie.</p>
