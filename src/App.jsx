@@ -764,6 +764,11 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
 // STOCK MANAGER COMPONENT
 // ==========================================
 const StockManager = ({ product, onClose, fetchProducts }) => {
+  const [bulkText, setBulkText] = useState('');
+  const [stockInfo, setStockInfo] = useState({ total: 0, available: 0, delivered: 0 });
+  const [loading, setLoading] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [error, setError] = useState('');
   const [existingStock, setExistingStock] = useState('');
   const [showExisting, setShowExisting] = useState(false);
 
