@@ -2224,18 +2224,24 @@ function App() {
     const { data: productsData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     
     // 2. Fetch all non-delivered stock to count them
-    const { data: stockData, error: sErr } = await supabase.from('account_stock').select('product_id').eq('is_delivered', false);
+    // Increased limit to 10,000 to handle large inventories
+    const { data: stockData, error: sErr } = await supabase
+      .from('account_stock')
+      .select('product_id')
+      .eq('is_delivered', false)
+      .limit(10000);
     
     if (!pErr && productsData) {
       // Aggregate counts by product_id
       const counts = (stockData || []).reduce((acc, curr) => {
-        acc[curr.product_id] = (acc[curr.product_id] || 0) + 1;
+        const pid = String(curr.product_id);
+        acc[pid] = (acc[pid] || 0) + 1;
         return acc;
       }, {});
       
       const updatedProducts = productsData.map(p => ({
         ...p,
-        stock: counts[p.id] || 0
+        stock: counts[String(p.id)] || 0
       }));
       
       setProducts(updatedProducts);
