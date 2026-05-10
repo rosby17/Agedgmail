@@ -155,40 +155,54 @@ const getProductDetails = (product) => {
 const PRODUCTS = PRODUCTS_RAW.map(p => ({ ...p, details: getProductDetails(p) }));
 
 // ==========================================
-// PRODUCT CARD
+// PRODUCT LIST ITEM
 // ==========================================
 
-const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
+const ProductListItem = ({ product, addToCart, navigate, setSelectedProduct }) => {
   const [localQty, setLocalQty] = useState(1);
-  const isUS = product.name.includes('US');
+  const isUS = product.name.toUpperCase().includes('US') || product.name.toUpperCase().includes('USA');
 
   return (
-    <div className="bg-white group">
-      <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
-        <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden px-10 relative">
-          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={50} className="text-gray-300" />}
-          {isUS && product.category === 'email' && <div className="absolute bottom-4 right-8 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-lg shadow-primary/20 tracking-tighter">US</div>}
+    <div className="bg-white border border-gray-100 rounded-[2rem] p-4 hover:border-primary/30 transition-all duration-300 group flex flex-col md:flex-row items-center gap-6">
+      <div 
+        className="w-full md:w-32 h-24 bg-gray-50/50 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden cursor-pointer relative"
+        onClick={() => { setSelectedProduct(product); navigate('product'); }}
+      >
+        <div className="w-16 h-16 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
+          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : <Share2 size={24} className="text-gray-300" />}
         </div>
+        {isUS && product.category === 'email' && <div className="absolute top-2 right-2 bg-primary text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm">US</div>}
       </div>
-      <div className="space-y-4 px-2">
-        <div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div><h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>{product.name}</h3></div>
-        <div className="flex items-center justify-between">
-          <div className="text-xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</div>
-          <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${product.stock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+      
+      <div className="flex-grow min-w-0 text-center md:text-left">
+        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
+        <h3 
+          className="text-base font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer truncate"
+          onClick={() => { setSelectedProduct(product); navigate('product'); }}
+        >
+          {product.name}
+        </h3>
+        <div className="mt-2 flex items-center justify-center md:justify-start gap-4">
+          <div className="text-lg font-black text-primary font-mono">${product.price.toFixed(2)}</div>
+          <div className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${product.stock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
             {product.stock > 0 ? `${product.stock} en stock` : 'Rupture'}
           </div>
         </div>
-        <div className="flex items-center gap-3 pt-2">
-          <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
-            <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Minus size={14} /></button>
-            <div className="w-8 text-center text-xs font-bold">{localQty}</div>
-            <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Plus size={14} /></button>
-          </div>
-          <button onClick={() => addToCart(product, localQty)} disabled={product.stock <= 0}
-            className={`flex-grow h-10 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-black/5 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
-            {product.stock > 0 ? 'Ajouter' : 'Épuisé'}
-          </button>
+      </div>
+
+      <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="flex items-center bg-gray-50 rounded-xl p-1 shrink-0 border border-gray-100">
+          <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg transition-all"><Minus size={14} /></button>
+          <div className="w-8 text-center text-xs font-bold">{localQty}</div>
+          <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg transition-all"><Plus size={14} /></button>
         </div>
+        <button 
+          onClick={() => addToCart(product, localQty)} 
+          disabled={product.stock <= 0}
+          className={`flex-grow md:flex-none px-8 h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-black/5 flex items-center justify-center gap-2 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+        >
+          <ShoppingCart size={16} /> {product.stock > 0 ? 'Ajouter' : 'Épuisé'}
+        </button>
       </div>
     </div>
   );
@@ -277,11 +291,30 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
         </div>
       </div>
       <div className="flex-grow">
-        <div className="flex justify-between items-center mb-10 border-b border-gray-100 pb-6">
-          <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles • Trié par prix croissant</div>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 border-b border-gray-100 pb-10">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">Catalogue Officiel</h2>
+            <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles</div>
+          </div>
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Rechercher un compte..." 
+              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-100 text-sm focus:ring-2 focus:ring-primary/20 outline-none shadow-sm transition-all"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />))}
+        <div className="flex flex-col gap-4">
+          {filteredProducts.map(product => (<ProductListItem key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />))}
+          {filteredProducts.length === 0 && (
+            <div className="py-20 text-center bg-gray-50 rounded-[3rem] border border-dashed border-gray-200">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Aucun produit trouvé</h3>
+              <p className="text-gray-400 text-sm">Essayez de modifier votre recherche ou de changer de catégorie.</p>
+            </div>
+          )}
         </div>
       </div>
     </main>
@@ -922,6 +955,9 @@ const AdminView = ({ navigate }) => {
   const [inventory, setInventory] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminPage, setAdminPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchInventory();
@@ -1075,12 +1111,53 @@ const AdminView = ({ navigate }) => {
                   <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Faible</div><div className={`text-3xl font-black ${lowStockCount > 0 ? 'text-yellow-500' : 'text-gray-400'}`}>{lowStockCount}</div></div>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                  <h3 className="text-lg font-bold mb-8 flex items-center gap-3"><Activity size={20} className="text-primary" /> État de l'Inventaire</h3>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <h3 className="text-lg font-bold flex items-center gap-3"><Activity size={20} className="text-primary" /> État de l'Inventaire</h3>
+                    <div className="relative w-full md:w-64">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                      <input 
+                        type="text" 
+                        placeholder="Rechercher un produit..." 
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-100 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        value={adminSearch}
+                        onChange={(e) => { setAdminSearch(e.target.value); setAdminPage(1); }}
+                      />
+                    </div>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Produit</th><th className="pb-6">Vendus</th><th className="pb-6 text-right">En Stock</th></tr></thead>
-                      <tbody className="divide-y divide-gray-50">{inventory.map(p => (<tr key={p.id}><td className="py-5 font-bold text-gray-900 text-sm">{p.name}</td><td className="py-5 text-gray-400 text-sm font-bold">{p.sold}</td><td className={`py-5 text-right font-mono font-black ${p.stock === 0 ? 'text-red-500' : 'text-primary'}`}>{p.stock}</td></tr>))}</tbody>
+                      <tbody className="divide-y divide-gray-50">
+                        {inventory
+                          .filter(p => p.name.toLowerCase().includes(adminSearch.toLowerCase()))
+                          .slice((adminPage - 1) * itemsPerPage, adminPage * itemsPerPage)
+                          .map(p => (
+                            <tr key={p.id}>
+                              <td className="py-5 font-bold text-gray-900 text-sm">{p.name}</td>
+                              <td className="py-5 text-gray-400 text-sm font-bold">{p.sold}</td>
+                              <td className={`py-5 text-right font-mono font-black ${p.stock === 0 ? 'text-red-500' : 'text-primary'}`}>{p.stock}</td>
+                            </tr>
+                          ))
+                        }
+                      </tbody>
                     </table>
+                  </div>
+                  <div className="flex items-center justify-between mt-8 pt-8 border-t border-gray-50">
+                    <button 
+                      onClick={() => setAdminPage(p => Math.max(1, p - 1))}
+                      disabled={adminPage === 1}
+                      className="px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-primary disabled:opacity-30 transition-all"
+                    >
+                      Précédent
+                    </button>
+                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Page {adminPage}</span>
+                    <button 
+                      onClick={() => setAdminPage(p => p + 1)}
+                      disabled={adminPage * itemsPerPage >= inventory.filter(p => p.name.toLowerCase().includes(adminSearch.toLowerCase())).length}
+                      className="px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-primary disabled:opacity-30 transition-all"
+                    >
+                      Suivant
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1097,10 +1174,37 @@ const AdminView = ({ navigate }) => {
               </div>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Produit</label>
-                  <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm">
-                    {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Sélectionner un Produit</label>
+                  <div className="relative mb-4">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input 
+                      type="text" 
+                      placeholder="Filtrer les produits par nom..." 
+                      className="w-full pl-11 pr-4 py-4 rounded-2xl border border-gray-100 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      value={adminSearch}
+                      onChange={(e) => setAdminSearch(e.target.value)}
+                    />
+                  </div>
+                  <div className="max-h-60 overflow-y-auto border border-gray-100 rounded-2xl divide-y divide-gray-50 mb-8 bg-gray-50/30">
+                    {inventory
+                      .filter(p => p.name.toLowerCase().includes(adminSearch.toLowerCase()))
+                      .map(p => (
+                        <button 
+                          key={p.id}
+                          onClick={() => setSelectedProductId(p.id.toString())}
+                          className={`w-full text-left px-6 py-4 flex items-center justify-between hover:bg-white transition-all group ${selectedProductId === p.id.toString() ? 'bg-white ring-2 ring-primary ring-inset' : ''}`}
+                        >
+                          <div>
+                            <div className="text-sm font-bold text-gray-900">{p.name}</div>
+                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest mt-1">{p.category}</div>
+                          </div>
+                          <div className={`px-3 py-1 rounded-lg text-[10px] font-black font-mono ${p.stock === 0 ? 'bg-red-50 text-red-500' : 'bg-primary/10 text-primary'}`}>
+                            {p.stock} STK
+                          </div>
+                        </button>
+                      ))
+                    }
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Données (1 compte par ligne)</label>
