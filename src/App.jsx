@@ -2272,21 +2272,67 @@ const AuthView = ({ navigate }) => {
 // FOOTER
 // ==========================================
 
-const Footer = () => (
-  <footer className="bg-gray-50 pt-32 pb-16 px-6 font-sans">
-    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
-      <div className="md:col-span-2">
-        <div className="h-12 mb-6">
-          <img src="/logo.png" alt="Logo" className="h-full object-contain opacity-80 hover:opacity-100 transition-opacity cursor-pointer" />
+const Footer = ({ navigate }) => (
+  <footer className="bg-white border-t border-gray-100 pt-32 pb-16 px-6 font-sans mt-auto">
+    <div className="max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
+        {/* Brand Section */}
+        <div className="md:col-span-2">
+          <div className="h-14 mb-8">
+            <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('home')} />
+          </div>
+          <p className="text-gray-400 text-lg max-w-md leading-relaxed mb-10 font-medium">
+            La marketplace N°1 pour l'acquisition de comptes certifiés et de services digitaux premium. Sécurité, rapidité et fiabilité garanties.
+          </p>
+          <div className="flex gap-4">
+            <div className="flex flex-wrap gap-3">
+              {['BTC', 'ETH', 'USDT', 'LTC'].map(coin => (
+                <span key={coin} className="px-4 py-2 bg-gray-50 rounded-xl text-[10px] font-black text-gray-400 border border-gray-100 uppercase tracking-widest">{coin}</span>
+              ))}
+            </div>
+          </div>
         </div>
-        <p className="text-gray-400 text-sm max-w-sm leading-relaxed mb-8">Votre partenaire de confiance pour l'achat de comptes anciens et de services médias sociaux.</p>
+
+        {/* Links Sections */}
+        <div>
+          <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Plateforme</h4>
+          <ul className="space-y-4">
+            <li><button onClick={() => navigate('dashboard')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Account</button></li>
+            <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Service</button></li>
+            <li><button className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Resources</button></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Support</h4>
+          <ul className="space-y-4">
+            <li><button className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Privacy Policy</button></li>
+            <li><button className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Contact Us</button></li>
+            <li><button onClick={() => window.open('https://t.me/your_telegram', '_blank')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-lg border border-primary/10">
+              <MessageSquare size={12} /> Support Telegram
+            </button></li>
+          </ul>
+        </div>
       </div>
-      <div><h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Navigation</h4><ul className="space-y-4 text-sm text-gray-500 font-medium"><li><button>Catalogue</button></li><li><button>Contact</button></li></ul></div>
-      <div><h4 className="font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Paiement</h4><div className="flex flex-wrap gap-2">{['BTC', 'ETH', 'LTC', 'USDT'].map(c => <span key={c} className="px-3 py-1 bg-white rounded-lg border border-gray-200 text-[10px] font-black">{c}</span>)}</div></div>
-    </div>
-    <div className="max-w-7xl mx-auto pt-10 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
-      <div className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">© 2026 AGEDGMAILYT • ALL RIGHTS RESERVED</div>
-      <div className="flex gap-4 items-center"><div className="w-2 h-2 bg-primary rounded-full animate-pulse" /><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Système Opérationnel</span></div>
+
+      {/* Bottom Footer */}
+      <div className="pt-10 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">Copyright 2026 © AgedGmailYT</span>
+          <span className="text-gray-200 hidden md:block">•</span>
+          <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">Tous droits réservés</span>
+        </div>
+        
+        <div className="flex gap-8 items-center">
+          <div className="flex gap-4 items-center">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Système Opérationnel</span>
+          </div>
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100">
+            <ChevronUp size={18} />
+          </button>
+        </div>
+      </div>
     </div>
   </footer>
 );
@@ -2679,7 +2725,7 @@ function App() {
       />
 
       <SupportChat />
-      <Footer />
+      <Footer navigate={navigate} />
     </div>
   );
 }
