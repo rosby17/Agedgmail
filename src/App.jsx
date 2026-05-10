@@ -1033,12 +1033,18 @@ const AdminView = ({ navigate }) => {
   const handleMassImport = async (text) => {
     if (!text.trim()) return setErrorMessage("Le texte est vide.");
     setActionStatus('loading');
+    setErrorMessage("");
     
     try {
-      const lines = text.split('\n').filter(l => l.trim() && !l.startsWith('CATÉGORIE') && !l.startsWith('MIS À JOUR') && !l.includes(' Mis à jour le'));
+      // Split lines and filter out headers or empty lines
+      const lines = text.split('\n').filter(l => {
+        const t = l.trim().toLowerCase();
+        return t && !t.startsWith('catégorie') && !t.startsWith('type') && !t.startsWith('#') && !t.includes('mis à jour le');
+      });
+      
       const itemsToInsert = [];
       
-      // Mapping names to IDs
+      // Mapping names to new official IDs (1-6)
       const nameToId = {
         "Ancien Gmail US": 1,
         "Gmail Random": 2,
@@ -1048,33 +1054,43 @@ const AdminView = ({ navigate }) => {
         "Compte Facebook": 6
       };
 
-      lines.forEach(line => {
-        const parts = line.split('\t');
+      lines.forEach((line, index) => {
+        // Try splitting by Tab first, then by multiple spaces if Tab fails
+        let parts = line.split('\t');
+        if (parts.length < 3) parts = line.split(/\s{2,}/); // Split by 2 or more spaces
+        
         if (parts.length >= 3) {
           const typeName = parts[1]?.trim();
           const email = parts[2]?.trim();
           const status = parts[3]?.trim();
-          const note = parts[5]?.trim();
+          const note = parts[parts.length - 1]?.trim(); // Usually the last column
           
-          if (email && nameToId[typeName]) {
+          const productId = nameToId[typeName];
+          
+          if (email && productId) {
             itemsToInsert.push({
-              product_id: nameToId[typeName],
-              data: email + (note ? ` | ${note}` : ""),
+              product_id: productId,
+              data: email + (note && note !== status ? ` | ${note}` : ""),
               is_sold: status?.toLowerCase().includes('vendu') || false
             });
           }
         }
       });
 
-      if (itemsToInsert.length === 0) throw new Error("Aucun compte valide détecté. Vérifiez le format (Tabulé).");
+      if (itemsToInsert.length === 0) {
+        throw new Error("Aucun compte valide détecté. Assurez-vous de copier tout le tableau, y compris la colonne 'TYPE / CATÉGORIE'.");
+      }
 
       const { error } = await supabase.from('product_stock').insert(itemsToInsert);
       if (error) throw error;
 
+      alert(`Succès ! ${itemsToInsert.length} comptes ont été importés.`);
       setActionStatus('success');
       fetchInventory();
+      if (typeof fetchStocks === 'function') fetchStocks(); // Update global stocks for HomeView
       setTimeout(() => setActionStatus(null), 3000);
     } catch (err) {
+      console.error("Import error:", err);
       setErrorMessage("Erreur Import : " + err.message);
       setActionStatus('error');
     }
