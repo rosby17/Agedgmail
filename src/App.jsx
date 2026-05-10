@@ -139,7 +139,7 @@ const getProductDetails = (product) => {
         ? "Âge : Ancien (2012-2020) | Amis : 50+ | Statut : Vérifié | Qualité : Verte"
         : product.category === 'youtube_not_monetized'
           ? `Abonnés : ${product.name.split(' – ')[1] || '1k+'} | Éligibilité : Immédiate | Contenu : Aucun`
-          : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${product.category === 'youtube_monetized' ? '✅ Monétisée' : '❌ Non-Monétisée'} | Contenu : Propre`,
+          : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${product.category === 'youtube_monetized' ? 'Monétisée' : 'Non-Monétisée'} | Contenu : Propre`,
     note: product.category === 'facebook'
       ? "Idéal pour le Meta Ads. Compte stable avec historique."
       : product.category.includes('youtube')
@@ -250,7 +250,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
     <section className="bg-[#FCFCFD] pt-20 pb-24 overflow-hidden relative border-b border-gray-100 font-sans">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
         <div className="max-w-xl">
-          <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6">🔥 N°1 des Comptes Anciens</div>
+          <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6"><TrendingUp size={14} /> N°1 des Comptes Anciens</div>
           <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span></h1>
           <p className="text-gray-500 text-lg mb-8 leading-relaxed">Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence.</p>
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
@@ -258,8 +258,8 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
             <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
               <span>Paiement 100% Crypto</span>
               <div className="flex gap-1">
-                <div className="w-6 h-6 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">₿</div>
-                <div className="w-6 h-6 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">Ξ</div>
+                <div className="w-6 h-6 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">B</div>
+                <div className="w-6 h-6 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">E</div>
               </div>
             </div>
           </div>
@@ -432,9 +432,9 @@ const SettingsTab = ({ profile, onUpdate }) => {
             </div>
           </div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Adresse Email *</label><input type="email" value={email} readOnly className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div>
-          {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">⚠️ {errorMessage}</div>}
+          {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
           <button type="submit" disabled={loading} className={`px-12 py-5 rounded-full font-bold text-sm transition-all shadow-xl shadow-black/10 flex items-center gap-2 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-black'}`}>
-            {loading ? <RefreshCcw size={16} className="animate-spin" /> : success ? '✅ Modifié avec succès' : 'Enregistrer les modifications'}
+            {loading ? <RefreshCcw size={16} className="animate-spin" /> : success ? <><CheckCircle size={16} /> Modifié avec succès</> : 'Enregistrer les modifications'}
           </button>
         </form>
       </div>
@@ -749,12 +749,12 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
   const statusBadge = (status) => {
     const s = status || 'pending';
     const map = {
-      pending: { label: '⏳ En attente', cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-      confirmed: { label: '✅ Confirmé', cls: 'bg-green-100 text-green-700 border-green-200' },
-      cancelled: { label: '❌ Annulé', cls: 'bg-red-100 text-red-700 border-red-200' },
+      pending: { label: 'En attente', icon: Clock, cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+      confirmed: { label: 'Confirmé', icon: CheckCircle, cls: 'bg-green-100 text-green-700 border-green-200' },
+      cancelled: { label: 'Annulé', icon: X, cls: 'bg-red-100 text-red-700 border-red-200' },
     };
-    const { label, cls } = map[s] || map.pending;
-    return <span className={`text-xs font-bold px-3 py-1 rounded-full border ${cls}`}>{label}</span>;
+    const { label, icon: Icon, cls } = map[s] || map.pending;
+    return <span className={`text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1 w-fit ${cls}`}><Icon size={12} /> {label}</span>;
   };
 
   return (
@@ -768,15 +768,15 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
 
       <div className="flex gap-2 flex-wrap">
         {[
-          { key: 'pending', label: '⏳ En attente' },
-          { key: 'confirmed', label: '✅ Confirmés' },
-          { key: 'cancelled', label: '❌ Annulés' },
-          { key: 'all', label: '📋 Tous' },
+          { key: 'pending', label: 'En attente', icon: Clock },
+          { key: 'confirmed', label: 'Confirmés', icon: CheckCircle },
+          { key: 'cancelled', label: 'Annulés', icon: X },
+          { key: 'all', label: 'Tous', icon: FileText },
         ].map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filter === f.key ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-100'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${filter === f.key ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-100'
               }`}>
-            {f.label}
+            <f.icon size={14} /> {f.label}
           </button>
         ))}
       </div>
@@ -891,21 +891,21 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                   className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm" />
               </div>
                 {errorMessage && (
-                  <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 animate-pulse">
-                    ⚠️ {errorMessage}
+                  <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2">
+                    <AlertTriangle size={14} /> {errorMessage}
                   </div>
                 )}
                 <button onClick={confirmOrder} disabled={actionLoading || actionSuccess}
                   className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${actionSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-                  {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : actionSuccess ? '✅ Action effectuée !' : (selectedOrder.product_name === "Recharge Binance" ? '✅ Valider et Créditer le Solde' : '✅ Confirmer et enregistrer')}
+                  {actionLoading ? <><RefreshCcw size={16} className="animate-spin" /> Confirmation...</> : actionSuccess ? <><CheckCircle size={16} /> Action effectuée !</> : (selectedOrder.product_name === "Recharge Binance" ? <><CheckCircle size={16} /> Valider et Créditer le Solde</> : <><CheckCircle size={16} /> Confirmer et enregistrer</>)}
                 </button>
             </>) : (
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{selectedOrder.product_name === "Recharge Binance" ? "Statut" : "Credentials livrés"}</label>
-                <div className="bg-green-50 border border-green-100 rounded-2xl p-5 font-mono text-sm text-green-800 whitespace-pre-wrap">
-                  {selectedOrder.product_name === "Recharge Binance" ? "✅ Solde crédité avec succès." : (selectedOrder.credentials || selectedOrder.data || '—')}
+                <div className="bg-green-50 border border-green-100 rounded-2xl p-5 font-mono text-sm text-green-800 whitespace-pre-wrap flex items-center gap-2">
+                  <CheckCircle size={16} /> {selectedOrder.product_name === "Recharge Binance" ? "Solde crédité avec succès." : (selectedOrder.credentials || selectedOrder.data || '—')}
                 </div>
-                {selectedOrder.admin_note && <p className="text-gray-400 text-xs mt-2">📝 {selectedOrder.admin_note}</p>}
+                {selectedOrder.admin_note && <p className="text-gray-400 text-xs mt-2 flex items-center gap-2"><FileText size={12} /> {selectedOrder.admin_note}</p>}
               </div>
             )}
           </div>
@@ -1105,9 +1105,9 @@ const AdminView = ({ navigate }) => {
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant à Ajouter ($)</label>
                   <input type="number" value={amountToAdd} onChange={e => setAmountToAdd(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm font-bold" />
                 </div>
-                {errorMessage && <p className="text-red-500 text-xs font-bold animate-pulse">⚠️ {errorMessage}</p>}
+                {errorMessage && <p className="text-red-500 text-xs font-bold flex items-center gap-2"><AlertTriangle size={14} /> {errorMessage}</p>}
                 <button onClick={handleUpdateBalance} disabled={actionStatus === 'loading' || actionStatus === 'success'} className={`px-8 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${actionStatus === 'success' ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-                  {actionStatus === 'loading' ? <RefreshCcw size={16} className="animate-spin" /> : actionStatus === 'success' ? '✅ Crédité !' : <><DollarSign size={16} /> Créditer le Compte</>}
+                  {actionStatus === 'loading' ? <RefreshCcw size={16} className="animate-spin" /> : actionStatus === 'success' ? <><CheckCircle size={16} /> Crédité !</> : <><DollarSign size={16} /> Créditer le Compte</>}
                 </button>
               </div>
             </div>
@@ -1209,7 +1209,7 @@ const RechargeView = ({ profile, session, navigate }) => {
           </div>
           {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">{error}</div>}
           <button onClick={handleSubmit} disabled={loading || success} className={`w-full py-5 rounded-[2rem] font-bold text-lg transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3 disabled:opacity-50 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-            {loading ? 'Envoi en cours...' : success ? '✅ Demande Envoyée !' : 'Soumettre ma Recharge'}
+            {loading ? 'Envoi en cours...' : success ? <><CheckCircle size={20} /> Demande Envoyée !</> : 'Soumettre ma Recharge'}
           </button>
         </div>
       </div>
@@ -1361,11 +1361,11 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                     ? <div className="bg-green-50 p-6 rounded-2xl flex items-center gap-4 text-green-700 font-medium"><CheckCircle /> Votre solde est suffisant.</div>
                     : <div className="bg-red-50 p-6 rounded-2xl flex items-center gap-4 text-red-700 font-medium"><ShieldAlert /> Solde insuffisant. Rechargez via Binance Pay.</div>
                   }
-                  {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">⚠️ {errorMessage}</div>}
+                  {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
                   <button disabled={!canPayWithBalance || purchaseSuccess || isProcessing}
                     onClick={handleBalancePayment}
                     className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl ${purchaseSuccess ? 'bg-green-500 text-white' : canPayWithBalance ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                    {isProcessing ? "Traitement..." : purchaseSuccess ? "✅ Achat Réussi !" : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
+                    {isProcessing ? "Traitement..." : purchaseSuccess ? <><CheckCircle size={20} /> Achat Réussi !</> : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
                   </button>
                 </div>
               )}
