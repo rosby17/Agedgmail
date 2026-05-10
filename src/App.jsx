@@ -201,14 +201,14 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 
   return (
     <div className="bg-white group">
-      <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>
+      <div className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden border border-gray-100 group-hover:border-primary/30 transition-all duration-500 relative cursor-pointer" onClick={() => navigate('product', product)}>
         <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700 overflow-hidden px-10 relative">
           {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={50} className="text-gray-300" />}
           {isUS && product.category === 'email' && <div className="absolute bottom-4 right-8 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-lg shadow-primary/20 tracking-tighter">US</div>}
         </div>
       </div>
       <div className="space-y-4 px-2">
-        <div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div><h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>{product.name}</h3></div>
+        <div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div><h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => navigate('product', product)}>{product.name}</h3></div>
         <div className="text-xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</div>
         <div className="flex items-center gap-3 pt-2">
           <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
@@ -588,15 +588,45 @@ const AdminView = ({ navigate }) => {
 // APP COMPONENT
 // ==========================================
 
+const parseHash = () => {
+  const raw = window.location.hash.replace(/^#\/?/, '') || 'home';
+  const [view, param] = raw.split('/');
+  return { view: view || 'home', param };
+};
+
 function App() {
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const initialHash = parseHash();
+  const initialProduct = initialHash.view === 'product' && initialHash.param
+    ? PRODUCTS.find(p => p.id === parseInt(initialHash.param)) || null
+    : null;
+
+  const [currentView, setCurrentView] = useState(initialProduct || initialHash.view !== 'product' ? initialHash.view : 'home');
+  const [selectedProduct, setSelectedProduct] = useState(initialProduct);
   const [activeCategory, setActiveCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cart') || '[]'); } catch { return []; }
+  });
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const { view, param } = parseHash();
+      if (view === 'product' && param) {
+        const p = PRODUCTS.find(prod => prod.id === parseInt(param));
+        if (p) { setSelectedProduct(p); setCurrentView('product'); return; }
+      }
+      setCurrentView(view);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -646,7 +676,16 @@ function App() {
   const updateCartQuantity = (id, q) => { if (q < 1) return; setCart(pc => pc.map(i => i.id === id ? { ...i, quantity: q } : i)); };
   const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
   const clearCart = () => setCart([]);
-  const navigate = (v) => { setCurrentView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const navigate = (v, product) => {
+    const target = product || (v === 'product' ? selectedProduct : null);
+    if (product) setSelectedProduct(product);
+    setCurrentView(v);
+    const hash = v === 'product' && target ? `product/${target.id}` : v;
+    if (window.location.hash.replace(/^#\/?/, '') !== hash) {
+      window.location.hash = hash;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
