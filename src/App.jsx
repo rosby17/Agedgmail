@@ -163,49 +163,57 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
   const isUS = product.name.toUpperCase().includes('US') || product.name.toUpperCase().includes('USA');
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 hover:border-primary/30 transition-all duration-500 group flex flex-col shadow-soft h-full">
-      <div 
-        className="aspect-[16/10] bg-gray-50/50 rounded-[2rem] flex items-center justify-center mb-6 overflow-hidden cursor-pointer relative shrink-0"
-        onClick={() => { setSelectedProduct(product); navigate('product'); }}
-      >
-        <div className="w-24 h-24 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
-          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={40} className="text-gray-300" />}
-        </div>
-        {isUS && product.category === 'email' && <div className="absolute top-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded shadow-sm">US</div>}
-        <div className="absolute top-4 left-4">
-          <div className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest ${product.stock > 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-            {product.stock > 0 ? 'En Stock' : 'Rupture'}
-          </div>
+    <div className="bg-white rounded-[3rem] p-5 hover:shadow-2xl hover:shadow-black/5 transition-all duration-500 group flex flex-col border border-gray-100/50 h-full relative">
+      {/* Badge Stock Flottant */}
+      <div className="absolute top-8 left-8 z-20">
+        <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${product.stock > 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+          {product.stock > 0 ? 'Disponible' : 'Rupture'}
         </div>
       </div>
+
+      <div 
+        className="aspect-[1.4] bg-gray-50/50 rounded-[2.5rem] flex items-center justify-center mb-8 overflow-hidden cursor-pointer relative shrink-0 group-hover:bg-white transition-colors duration-500"
+        onClick={() => { setSelectedProduct(product); navigate('product'); }}
+      >
+        <div className="w-24 h-24 group-hover:scale-110 transition-transform duration-700 flex items-center justify-center relative">
+          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={40} className="text-gray-300" />}
+        </div>
+        {isUS && product.category === 'email' && <div className="absolute top-8 right-8 bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded-lg backdrop-blur-sm border border-primary/20">US</div>}
+      </div>
       
-      <div className="flex-grow flex flex-col">
-        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
+      <div className="flex-grow flex flex-col px-2">
+        <div className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.2em] mb-2">{CATEGORIES.find(c => c.id === product.category)?.name}</div>
         <h3 
-          className="text-lg font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer mb-4"
+          className="text-xl font-black text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer mb-6 line-clamp-2"
           onClick={() => { setSelectedProduct(product); navigate('product'); }}
         >
           {product.name}
         </h3>
         
-        <div className="mt-auto pt-6 border-t border-gray-50 flex items-center justify-between">
-          <div className="text-2xl font-black text-primary font-mono">${product.price.toFixed(2)}</div>
-          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{product.stock} disponibles</div>
+        <div className="mt-auto flex items-end justify-between mb-8">
+          <div>
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Prix Unitaire</div>
+            <div className="text-3xl font-black text-primary font-mono tracking-tighter">${product.price.toFixed(2)}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">En Stock</div>
+            <div className="text-xs font-mono font-bold text-gray-900">{product.stock} pcs</div>
+          </div>
         </div>
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
-        <div className="flex items-center bg-gray-50 rounded-xl p-1 shrink-0 border border-gray-100">
-          <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg transition-all"><Minus size={14} /></button>
-          <div className="w-8 text-center text-xs font-bold">{localQty}</div>
-          <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg transition-all"><Plus size={14} /></button>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center bg-gray-50 rounded-2xl p-1 shrink-0 border border-gray-100">
+          <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-gray-900"><Minus size={14} /></button>
+          <div className="w-8 text-center text-xs font-black font-mono">{localQty}</div>
+          <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-gray-900"><Plus size={14} /></button>
         </div>
         <button 
           onClick={() => addToCart(product, localQty)} 
           disabled={product.stock <= 0}
-          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-black/5 flex items-center justify-center gap-2 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+          className={`flex-grow h-12 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary shadow-black/10 hover:shadow-primary/30' : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'}`}
         >
-          <ShoppingCart size={16} /> {product.stock > 0 ? 'Ajouter' : 'Épuisé'}
+          <ShoppingCart size={16} /> {product.stock > 0 ? 'Ajouter' : 'Rupture'}
         </button>
       </div>
     </div>
