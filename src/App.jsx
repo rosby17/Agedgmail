@@ -182,14 +182,22 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
       </div>
       <div className="space-y-4 px-2">
         <div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{CATEGORIES.find(c => c.id === product.category)?.name}</div><h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors cursor-pointer" onClick={() => { setSelectedProduct(product); navigate('product'); }}>{product.name}</h3></div>
-        <div className="text-xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</div>
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</div>
+          <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${product.stock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            {product.stock > 0 ? `${product.stock} en stock` : 'Rupture'}
+          </div>
+        </div>
         <div className="flex items-center gap-3 pt-2">
           <div className="flex items-center bg-gray-100 rounded-xl p-1 shrink-0">
             <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Minus size={14} /></button>
             <div className="w-8 text-center text-xs font-bold">{localQty}</div>
             <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all"><Plus size={14} /></button>
           </div>
-          <button onClick={() => addToCart(product, localQty)} className="flex-grow bg-gray-900 text-white h-10 rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-primary transition-all shadow-lg shadow-black/5">Ajouter</button>
+          <button onClick={() => addToCart(product, localQty)} disabled={product.stock <= 0}
+            className={`flex-grow h-10 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-black/5 ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+            {product.stock > 0 ? 'Ajouter' : 'Épuisé'}
+          </button>
         </div>
       </div>
     </div>
@@ -1035,18 +1043,88 @@ const RechargeView = ({ profile, session, navigate }) => {
 // PAYMENT VIEW
 // ==========================================
 
-const PaymentView = ({ cartTotal, navigate, clearCart, profile, session }) => {
+const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchStocks }) => {
   const [method, setMethod] = useState('balance');
-  const [copied, setCopied] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const canPayWithBalance = (profile?.balance || 0) >= cartTotal;
 
   const handleBalancePayment = async () => {
-    setPurchaseSuccess(true);
-    setTimeout(() => {
-      clearCart();
-      navigate('dashboard');
-    }, 1500);
+    if (!session || !profile) return;
+    setIsProcessing(true);
+    setErrorMessage("");
+
+    try {
+      // 1. Double check balance
+      if (profile.balance < cartTotal) {
+        throw new Error("Solde insuffisant.");
+      }
+
+      // 2. Loop through cart items to process one by one (or batch)
+      for (const item of cart) {
+        // Fetch available stock for this product
+        const { data: availableStock, error: stockErr } = await supabase
+          .from('product_stock')
+          .select('id, data')
+          .eq('product_id', item.id)
+          .eq('is_sold', false)
+          .limit(item.quantity);
+
+        if (stockErr || !availableStock || availableStock.length < item.quantity) {
+          throw new Error(`Stock insuffisant pour ${item.name}.`);
+        }
+
+        const stockIds = availableStock.map(s => s.id);
+        const deliveryData = availableStock.map(s => s.data).join('\n');
+
+        // 3. Mark as sold
+        const { error: updateErr } = await supabase
+          .from('product_stock')
+          .update({ is_sold: true, sold_at: new Date().toISOString() })
+          .in('id', stockIds);
+
+        if (updateErr) throw updateErr;
+
+        // 4. Create Order
+        const { error: orderErr } = await supabase.from('orders').insert({
+          user_id: session.user.id,
+          buyer_email: session.user.email,
+          product_id: item.id,
+          product_name: item.name,
+          quantity: item.quantity,
+          total_price: item.price * item.quantity,
+          status: 'confirmed',
+          credentials: deliveryData,
+          data: deliveryData,
+          confirmed_at: new Date().toISOString()
+        });
+
+        if (orderErr) throw orderErr;
+      }
+
+      // 5. Update user balance
+      const { error: balanceErr } = await supabase
+        .from('profiles')
+        .update({ balance: profile.balance - cartTotal })
+        .eq('id', session.user.id);
+
+      if (balanceErr) throw balanceErr;
+
+      // 6. Success!
+      setPurchaseSuccess(true);
+      fetchProfile(session.user.id);
+      fetchStocks();
+      
+      setTimeout(() => {
+        clearCart();
+        navigate('dashboard');
+      }, 2000);
+
+    } catch (err) {
+      setErrorMessage(err.message);
+      setIsProcessing(false);
+    }
   };
 
   const handleCryptomusPayment = async () => {
@@ -1105,10 +1183,11 @@ const PaymentView = ({ cartTotal, navigate, clearCart, profile, session }) => {
                     ? <div className="bg-green-50 p-6 rounded-2xl flex items-center gap-4 text-green-700 font-medium"><CheckCircle /> Votre solde est suffisant.</div>
                     : <div className="bg-red-50 p-6 rounded-2xl flex items-center gap-4 text-red-700 font-medium"><ShieldAlert /> Solde insuffisant. Rechargez via Binance Pay.</div>
                   }
-                  <button disabled={!canPayWithBalance || purchaseSuccess}
+                  {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">⚠️ {errorMessage}</div>}
+                  <button disabled={!canPayWithBalance || purchaseSuccess || isProcessing}
                     onClick={handleBalancePayment}
                     className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl ${purchaseSuccess ? 'bg-green-500 text-white' : canPayWithBalance ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                    {purchaseSuccess ? "✅ Achat Réussi !" : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
+                    {isProcessing ? "Traitement..." : purchaseSuccess ? "✅ Achat Réussi !" : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
                   </button>
                 </div>
               )}
@@ -1172,14 +1251,22 @@ const ProductView = ({ product, addToCart, navigate }) => {
             <span className="text-primary">{CATEGORIES.find(c => c.id === product.category)?.name}</span>
           </nav>
           <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tighter leading-tight">{product.name}</h1>
-          <div className="text-4xl font-black text-primary mb-12">${product.price.toFixed(2)}</div>
+          <div className="flex items-center gap-6 mb-12">
+            <div className="text-4xl font-black text-primary">${product.price.toFixed(2)}</div>
+            <div className={`text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl ${product.stock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+              {product.stock > 0 ? `${product.stock} exemplaires disponibles` : 'Rupture de stock'}
+            </div>
+          </div>
           <div className="flex items-center gap-6 mb-12">
             <div className="flex items-center bg-gray-100 rounded-full p-2">
               <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Minus size={20} /></button>
               <div className="w-16 text-center font-black text-xl">{quantity}</div>
-              <button onClick={() => setQuantity(quantity + 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Plus size={20} /></button>
+              <button onClick={() => quantity < product.stock && setQuantity(quantity + 1)} className="w-14 h-14 flex items-center justify-center hover:bg-white rounded-full transition-all shadow-sm"><Plus size={20} /></button>
             </div>
-            <button onClick={() => addToCart(product, quantity)} className="flex-grow bg-gray-900 text-white h-20 rounded-full font-bold text-xl hover:bg-primary transition-all shadow-2xl shadow-black/10 uppercase tracking-widest">Ajouter au Panier</button>
+            <button onClick={() => addToCart(product, quantity)} disabled={product.stock <= 0}
+              className={`flex-grow h-20 rounded-full font-bold text-xl transition-all shadow-2xl shadow-black/10 uppercase tracking-widest ${product.stock > 0 ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+              {product.stock > 0 ? 'Ajouter au Panier' : 'Épuisé'}
+            </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-3"><Zap size={18} className="text-primary" /><span className="text-xs font-bold text-gray-600">Livraison Instantanée</span></div>
@@ -1321,8 +1408,10 @@ function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [stocks, setStocks] = useState({}); // { productId: count }
 
   useEffect(() => {
+    fetchStocks();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchProfile(session.user.id);
@@ -1334,6 +1423,17 @@ function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchStocks = async () => {
+    const { data, error } = await supabase.from('product_stock').select('product_id').eq('is_sold', false);
+    if (data) {
+      const counts = data.reduce((acc, item) => {
+        acc[item.product_id] = (acc[item.product_id] || 0) + 1;
+        return acc;
+      }, {});
+      setStocks(counts);
+    }
+  };
 
   const fetchProfile = async (userId) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
@@ -1348,6 +1448,7 @@ function App() {
   };
 
   const filteredProducts = PRODUCTS
+    .map(p => ({ ...p, stock: stocks[p.id] || 0 }))
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .filter(p => {
       if (priceRange === 'all') return true;
@@ -1383,7 +1484,7 @@ function App() {
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
-        {currentView === 'payment' && <PaymentView cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} />}
+        {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchStocks={fetchStocks} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && <AdminView navigate={navigate} />}
       </div>
