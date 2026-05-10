@@ -1474,8 +1474,8 @@ const RechargeView = ({ profile, session, navigate }) => {
 // PAYMENT VIEW
 // ==========================================
 
+
 const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchProducts }) => {
-  const [method, setMethod] = useState('binance');
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -1489,14 +1489,9 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
       if (profile.balance < cartTotal) throw new Error("Solde insuffisant.");
 
       for (const item of cart) {
-        // Check stock in products table
         const { data: p, error: pErr } = await supabase.from('products').select('stock').eq('id', item.id).single();
         if (pErr || !p || p.stock < item.quantity) throw new Error(`Stock insuffisant pour ${item.name}.`);
-
-        // Decrement stock
         await supabase.from('products').update({ stock: p.stock - item.quantity }).eq('id', item.id);
-
-        // Create Order
         await supabase.from('orders').insert({
           user_id: session.user.id,
           buyer_email: session.user.email,
@@ -1504,14 +1499,12 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
           product_name: item.name,
           quantity: item.quantity,
           total_price: item.price * item.quantity,
-          status: 'paid', // Paid via balance
+          status: 'paid',
           created_at: new Date().toISOString()
         });
       }
 
-      // Update user balance
       await supabase.from('profiles').update({ balance: profile.balance - cartTotal }).eq('id', session.user.id);
-
       setPurchaseSuccess(true);
       fetchProfile(session.user.id);
       fetchProducts();
@@ -1527,53 +1520,88 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
     }
   };
 
+  const hasEnoughBalance = (profile?.balance || 0) >= cartTotal;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         <div className="lg:col-span-2">
           <h2 className="text-4xl font-bold text-gray-900 mb-12 tracking-tight">Finaliser la Commande</h2>
+          
           <div className="space-y-8">
-            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft">
-              <h3 className="text-lg font-bold mb-8">1. Sélectionner une Méthode de Paiement</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button onClick={() => setMethod('binance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${method === 'binance' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
-                  {method === 'binance' && <div className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full"><CheckCircle size={14} /></div>}
-                  <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center mb-4 text-white font-bold">B</div>
-                  <div className="font-bold text-gray-900 mb-1">Binance Pay</div>
-                  <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Paiement Direct</div>
-                </button>
-                <a 
-                  href={`https://wa.me/${SUPPORT_WHATSAPP}?text=Bonjour, je souhaite payer ma commande de $${cartTotal.toFixed(2)} par Mobile Money.`} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="p-6 rounded-[2rem] border-2 border-gray-100 hover:border-primary hover:bg-primary/5 transition-all text-left relative overflow-hidden group"
-                >
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-4 text-white shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform">
-                    <MessageCircle size={20} />
+            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-10">
+                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
+                    <Wallet size={24} />
                   </div>
-                  <div className="font-bold text-gray-900 mb-1">Mobile Money</div>
-                  <div className="text-[10px] text-primary font-black uppercase tracking-widest">Contact WhatsApp</div>
-                </a>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Paiement par Solde</h3>
+                    <p className="text-sm text-gray-400">Utilisez les crédits disponibles sur votre compte.</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-3xl p-8 mb-10 border border-gray-100/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Votre Solde Actuel</span>
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${hasEnoughBalance ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>
+                      {hasEnoughBalance ? 'Solde Suffisant' : 'Solde Insuffisant'}
+                    </span>
+                  </div>
+                  <div className="text-4xl font-black text-gray-900 font-mono">${(profile?.balance || 0).toFixed(2)}</div>
+                </div>
+
+                {!hasEnoughBalance ? (
+                  <div className="space-y-6">
+                    <div className="p-6 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-4">
+                      <div className="mt-1 text-red-500"><AlertTriangle size={20} /></div>
+                      <p className="text-sm text-red-600 leading-relaxed font-medium">
+                        Désolé, votre solde est de <span className="font-bold">${(profile?.balance || 0).toFixed(2)}</span>. 
+                        Vous avez besoin de <span className="font-bold">${cartTotal.toFixed(2)}</span> pour cette commande.
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => navigate('recharge')}
+                      className="w-full py-5 rounded-[2rem] bg-gray-900 text-white font-bold hover:bg-primary transition-all shadow-xl shadow-gray-900/10 flex items-center justify-center gap-3"
+                    >
+                      <Plus size={20} /> Recharger mon compte
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={handleBalancePayment}
+                    disabled={isProcessing || purchaseSuccess}
+                    className={`w-full py-6 rounded-[2rem] font-black text-lg transition-all shadow-2xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20'}`}
+                  >
+                    {isProcessing ? <RefreshCcw size={24} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={24} /> : <Zap size={24} />}
+                    {isProcessing ? "Traitement..." : purchaseSuccess ? "Paiement Réussi !" : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
+                  </button>
+                )}
+
+                {errorMessage && (
+                  <div className="mt-6 p-4 bg-red-50 text-red-500 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2">
+                    <AlertTriangle size={14} /> {errorMessage}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft">
-              <h3 className="text-lg font-bold mb-8">2. Validation du Paiement</h3>
-              
-              {method === 'binance' && (
-                <BinancePaySection cartTotal={cartTotal} session={session} navigate={navigate} cart={cart} clearCart={clearCart} fetchProducts={fetchProducts} profile={profile} />
-              )}
-            </div>
-
+            <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-dashed border-gray-200">
+              <p className="text-center text-xs text-gray-400 font-medium">
+                En validant cette commande, vous acceptez nos <button onClick={() => navigate('faq')} className="text-primary hover:underline">conditions d'utilisation</button> et la politique de livraison instantanée.
+              </p>
             </div>
           </div>
+        </div>
 
         <div className="h-fit sticky top-32">
           <div className="bg-gray-900 text-white p-10 rounded-[3rem] shadow-2xl">
             <h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Résumé</h3>
             <div className="space-y-6 mb-10 text-sm font-medium text-gray-400">
-              <div className="flex justify-between"><span>Sous-total</span><span className="text-white">${cartTotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Articles (${cart.length})</span><span className="text-white">${cartTotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Frais de service</span><span className="text-green-400">Gratuit</span></div>
             </div>
             <div className="flex justify-between text-3xl font-bold mb-4"><span>Total</span><span>${cartTotal.toFixed(2)}</span></div>
             <div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Sécurisé par Chiffrement SSL</div>
@@ -1583,7 +1611,6 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
     </div>
   );
 };
-
 // ==========================================
 // PRODUCT VIEW
 // ==========================================
