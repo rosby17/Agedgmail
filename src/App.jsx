@@ -1943,9 +1943,23 @@ function App() {
           };
         }).filter(item => item.name && item.name !== "Produit Importé");
 
-        if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée. Vérifiez les noms des colonnes (Titre du Produit, Catégorie, Prix ($), Quantité en Stock, Description).");
+        if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée.");
 
-        const { error } = await supabase.from('products').insert(itemsToInsert);
+        const { data: existingProducts } = await supabase.from('products').select('id, name');
+        const existingNames = existingProducts?.map(p => p.name) || [];
+        const duplicates = itemsToInsert.filter(item => existingNames.includes(item.name));
+
+        let finalItems = itemsToInsert;
+        if (duplicates.length > 0) {
+          if (confirm(`${duplicates.length} produits existent déjà avec le même nom. Voulez-vous les METTRE À JOUR (écraser) ?\n(Annuler créera des doublons)`)) {
+            finalItems = itemsToInsert.map(item => {
+              const existing = existingProducts.find(p => p.name === item.name);
+              return existing ? { ...item, id: existing.id } : item;
+            });
+          }
+        }
+
+        const { error } = await supabase.from('products').upsert(finalItems);
         if (error) throw error;
 
         fetchProducts();
@@ -1957,6 +1971,7 @@ function App() {
       }
     };
     reader.readAsBinaryString(file);
+    e.target.value = '';
   };
 
   const fetchProfile = async (userId) => {
