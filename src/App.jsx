@@ -488,16 +488,22 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
 
     if (selectedOrder.product_name === "Recharge Binance") {
       // 1. Fetch current profile to get balance
-      const { data: userData, error: userError } = await supabase.from('profiles').select('balance').eq('id', selectedOrder.user_id).single();
+      let currentBalance = 0;
+      const { data: userData, error: userError } = await supabase.from('profiles').select('balance').eq('id', selectedOrder.user_id).maybeSingle();
+      
       if (userError) {
-        alert("Erreur lors de la récupération de l'utilisateur.");
-        setActionLoading(false);
-        return;
+        console.error("Erreur profile:", userError);
+      } else if (userData) {
+        currentBalance = userData.balance || 0;
       }
 
-      // 2. Add total_price to balance
-      const newBalance = (userData.balance || 0) + (selectedOrder.total_price || 0);
-      const { error: balanceError } = await supabase.from('profiles').update({ balance: newBalance }).eq('id', selectedOrder.user_id);
+      // 2. Upsert profile with new balance
+      const newBalance = currentBalance + (selectedOrder.total_price || 0);
+      const { error: balanceError } = await supabase.from('profiles').upsert({ 
+        id: selectedOrder.user_id, 
+        email: selectedOrder.buyer_email,
+        balance: newBalance 
+      });
       
       if (balanceError) {
         alert("Erreur lors de la mise à jour du solde : " + balanceError.message);
