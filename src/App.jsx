@@ -1561,7 +1561,7 @@ const RechargeView = ({ profile, session, navigate }) => {
 // ==========================================
 
 
-const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchProducts }) => {
+const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchProducts, fetchAllOrders }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -2351,7 +2351,7 @@ function App() {
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} navigate={navigate} />}
-        {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} />}
+        {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
           <AdminView 
