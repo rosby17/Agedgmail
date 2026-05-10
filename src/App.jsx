@@ -2285,14 +2285,17 @@ function App() {
       onConfirm: async () => {
         try {
           setActionStatus('loading');
-          // 1. Delete all orders
-          const { error: err1 } = await supabase.from('orders').delete().neq('id', '0');
-          // 2. Delete all stock
-          const { error: err2 } = await supabase.from('account_stock').delete().neq('id', '0');
+          // 1. Delete all stock first (resolves foreign key constraints if any)
+          const { error: err2 } = await supabase.from('account_stock').delete().not('id', 'is', null);
+          // 2. Delete all orders
+          const { error: err1 } = await supabase.from('orders').delete().not('id', 'is', null);
           // 3. Reset all balances to 0
-          const { error: err3 } = await supabase.from('profiles').update({ balance: 0 }).neq('id', '0');
+          const { error: err3 } = await supabase.from('profiles').update({ balance: 0 }).not('id', 'is', null);
           
-          if (err1 || err2 || err3) throw new Error("Erreur lors de la suppression ou du reset des soldes.");
+          if (err1 || err2 || err3) {
+            console.error({ err1, err2, err3 });
+            throw new Error(`DB Error: ${err1?.message || err2?.message || err3?.message}`);
+          }
           
           await fetchProducts();
           await fetchAllOrders();
