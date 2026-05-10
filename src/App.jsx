@@ -1576,11 +1576,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 
       // Process each item in cart
       for (const item of cart) {
-        // 1. Verify product exists and has stock count
-        const { data: p, error: pErr } = await supabase.from('products').select('stock').eq('id', item.id).single();
-        if (pErr || !p || p.stock < item.quantity) throw new Error(`Stock insuffisant pour ${item.name}.`);
-
-        // 2. Fetch required credentials from account_stock
+        // 1. Fetch available credentials from account_stock
         const { data: stockRows, error: stockErr } = await supabase
           .from('account_stock')
           .select('id, credentials')
@@ -1590,13 +1586,14 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 
         if (stockErr) throw new Error("Erreur lors de la récupération du stock.");
         if (!stockRows || stockRows.length < item.quantity) {
-          throw new Error(`Plus de comptes disponibles en stock pour ${item.name} (${stockRows?.length || 0} restants).`);
+          throw new Error(`Plus de comptes disponibles en stock pour ${item.name}.`);
         }
 
         const deliveredCreds = stockRows.map(r => r.credentials).join('\n');
         const stockIds = stockRows.map(r => r.id);
 
-        // 3. Create the CONFIRMED order with credentials
+        // 2. Create the CONFIRMED order
+        // Note: Using .select() to get the ID for linking with account_stock
         const { data: orderData, error: orderInsertErr } = await supabase.from('orders').insert({
           user_id: session.user.id,
           buyer_email: session.user.email,
@@ -1608,24 +1605,22 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
           credentials: deliveredCreds,
           data: deliveredCreds,
           created_at: new Date().toISOString()
-        }).select().single();
+        }).select('id').single();
 
         if (orderInsertErr) throw orderInsertErr;
+        if (!orderData) throw new Error("La commande a été créée mais l'ID n'a pas pu être récupéré.");
 
-        // 4. Mark credentials as delivered in stock
+        // 3. Mark credentials as delivered and link to order
         const { error: stockUpdateErr } = await supabase.from('account_stock').update({
           is_delivered: true,
           order_id: String(orderData.id),
           delivered_to: session.user.id,
         }).in('id', stockIds);
 
-        if (stockUpdateErr) console.error("Stock update error:", stockUpdateErr);
-
-        // 5. Update product stock display count
-        await supabase.from('products').update({ stock: p.stock - item.quantity }).eq('id', item.id);
+        if (stockUpdateErr) console.error("Erreur mise à jour stock_account:", stockUpdateErr);
       }
 
-      // 6. Deduct balance from profile
+      // 4. Deduct balance from profile
       const { error: balanceErr } = await supabase
         .from('profiles')
         .update({ balance: profile.balance - cartTotal })
@@ -1633,9 +1628,13 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
       
       if (balanceErr) throw balanceErr;
 
+      // 5. Finalize UI state
       setPurchaseSuccess(true);
-      fetchProfile(session.user.id);
-      fetchProducts();
+      
+      // Refresh all relevant data
+      await fetchProfile(session.user.id);
+      await fetchProducts();
+      await fetchAllOrders(); // Update admin view if necessary
       
       setTimeout(() => {
         clearCart();
@@ -1643,6 +1642,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
       }, 2000);
 
     } catch (err) {
+      console.error("Payment Error:", err);
       setErrorMessage(err.message);
       setIsProcessing(false);
     }
