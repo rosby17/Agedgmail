@@ -1752,21 +1752,39 @@ function App() {
   };
 
   const fetchProfile = async (userId) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (data) {
-      setProfile(data);
+    const { data: profileData, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    const metadata = session?.user?.user_metadata;
+
+    if (profileData) {
+      setProfile(profileData);
       const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
       if (orderData) setOrders(orderData);
-    } else {
-      setProfile({ 
-        id: userId, 
-        email: session?.user?.email, 
-        display_name: session?.user?.email?.split('@')[0], 
-        first_name: "", 
-        last_name: "",
-        balance: 0.00 
-      });
-      setOrders([]);
+    } else if (session) {
+      // Create new profile with Google metadata if it's the first login
+      const newProfile = {
+        id: userId,
+        email: session.user.email,
+        display_name: metadata?.full_name?.split(' ')[0]?.toLowerCase() || session.user.email?.split('@')[0],
+        first_name: metadata?.given_name || metadata?.full_name?.split(' ')[0] || "",
+        last_name: metadata?.family_name || metadata?.full_name?.split(' ').slice(1).join(' ') || "",
+        avatar_url: metadata?.avatar_url || "",
+        balance: 0.00,
+        two_factor_enabled: false,
+        is_suspended: false,
+        created_at: new Date().toISOString()
+      };
+
+      // Persistence in DB
+      const { error: insertError } = await supabase.from('profiles').insert([newProfile]);
+      if (!insertError) {
+        setProfile(newProfile);
+        setOrders([]);
+      } else {
+        // Fallback if insert fails (RLS or other)
+        setProfile(newProfile);
+      }
     }
   };
 
