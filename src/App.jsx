@@ -570,26 +570,25 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
             </div>
             <div className="p-10 space-y-8">
               <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                  <Info size={12} className="text-primary" /> Format : Email | Password | Recovery | 2FA
+                <div className="flex justify-between items-center mb-6">
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <Info size={12} className="text-primary" /> Format : Email | Password | Recovery | 2FA
+                  </div>
+                  <button 
+                    onClick={() => { 
+                      const text = (viewOrder.data || viewOrder.credentials || "");
+                      navigator.clipboard.writeText(text);
+                    }} 
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                  >
+                    <Copy size={12} /> Copier Tout
+                  </button>
                 </div>
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                  {(viewOrder.data || viewOrder.credentials || "En attente de livraison...")
-                    .split('\n')
-                    .filter(line => line.trim())
-                    .map((line, idx) => (
-                      <div key={idx} className="font-mono text-xs bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center group hover:border-primary/30 transition-all">
-                        <span className="truncate mr-4 text-gray-700">{line.trim()}</span>
-                        <button 
-                          onClick={() => { navigator.clipboard.writeText(line.trim()); }} 
-                          className="p-2 text-gray-300 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" 
-                          title="Copier"
-                        >
-                          <Copy size={14} />
-                        </button>
-                      </div>
-                    ))
-                  }
+                
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-inner">
+                  <pre className="font-mono text-xs text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                    {viewOrder.data || viewOrder.credentials || "En attente de livraison..."}
+                  </pre>
                 </div>
               </div>
               <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
@@ -1188,14 +1187,10 @@ const AdminView = ({
 
 
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                           <div>
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Prix ($)</label>
                             <input type="number" value={productForm.price} onChange={e => setProductForm({...productForm, price: parseFloat(e.target.value)})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono" />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Quantité en Stock</label>
-                            <input type="number" value={productForm.stock} onChange={e => setProductForm({...productForm, stock: parseInt(e.target.value)})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono" />
                           </div>
                         </div>
                       </div>
@@ -1579,23 +1574,65 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
     try {
       if (profile.balance < cartTotal) throw new Error("Solde insuffisant.");
 
+      // Process each item in cart
       for (const item of cart) {
+        // 1. Verify product exists and has stock count
         const { data: p, error: pErr } = await supabase.from('products').select('stock').eq('id', item.id).single();
         if (pErr || !p || p.stock < item.quantity) throw new Error(`Stock insuffisant pour ${item.name}.`);
-        await supabase.from('products').update({ stock: p.stock - item.quantity }).eq('id', item.id);
-        await supabase.from('orders').insert({
+
+        // 2. Fetch required credentials from account_stock
+        const { data: stockRows, error: stockErr } = await supabase
+          .from('account_stock')
+          .select('id, credentials')
+          .eq('product_id', item.id)
+          .eq('is_delivered', false)
+          .limit(item.quantity);
+
+        if (stockErr) throw new Error("Erreur lors de la récupération du stock.");
+        if (!stockRows || stockRows.length < item.quantity) {
+          throw new Error(`Plus de comptes disponibles en stock pour ${item.name} (${stockRows?.length || 0} restants).`);
+        }
+
+        const deliveredCreds = stockRows.map(r => r.credentials).join('\n');
+        const stockIds = stockRows.map(r => r.id);
+
+        // 3. Create the CONFIRMED order with credentials
+        const { data: orderData, error: orderInsertErr } = await supabase.from('orders').insert({
           user_id: session.user.id,
           buyer_email: session.user.email,
           product_id: item.id,
           product_name: item.name,
           quantity: item.quantity,
           total_price: item.price * item.quantity,
-          status: 'paid',
+          status: 'confirmed',
+          credentials: deliveredCreds,
+          data: deliveredCreds,
           created_at: new Date().toISOString()
-        });
+        }).select().single();
+
+        if (orderInsertErr) throw orderInsertErr;
+
+        // 4. Mark credentials as delivered in stock
+        const { error: stockUpdateErr } = await supabase.from('account_stock').update({
+          is_delivered: true,
+          order_id: String(orderData.id),
+          delivered_to: session.user.id,
+        }).in('id', stockIds);
+
+        if (stockUpdateErr) console.error("Stock update error:", stockUpdateErr);
+
+        // 5. Update product stock display count
+        await supabase.from('products').update({ stock: p.stock - item.quantity }).eq('id', item.id);
       }
 
-      await supabase.from('profiles').update({ balance: profile.balance - cartTotal }).eq('id', session.user.id);
+      // 6. Deduct balance from profile
+      const { error: balanceErr } = await supabase
+        .from('profiles')
+        .update({ balance: profile.balance - cartTotal })
+        .eq('id', session.user.id);
+      
+      if (balanceErr) throw balanceErr;
+
       setPurchaseSuccess(true);
       fetchProfile(session.user.id);
       fetchProducts();
@@ -2119,8 +2156,26 @@ function App() {
   }, [priceRange]);
 
   const fetchProducts = async () => {
-    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (!error && data) setProducts(data);
+    // 1. Fetch products
+    const { data: productsData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    
+    // 2. Fetch all non-delivered stock to count them
+    const { data: stockData, error: sErr } = await supabase.from('account_stock').select('product_id').eq('is_delivered', false);
+    
+    if (!pErr && productsData) {
+      // Aggregate counts by product_id
+      const counts = (stockData || []).reduce((acc, curr) => {
+        acc[curr.product_id] = (acc[curr.product_id] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const updatedProducts = productsData.map(p => ({
+        ...p,
+        stock: counts[p.id] || 0
+      }));
+      
+      setProducts(updatedProducts);
+    }
   };
 
   const fetchAllOrders = async () => {
@@ -2135,14 +2190,15 @@ function App() {
 
   const handleSaveProduct = async () => {
     setActionStatus('loading');
+    const { stock, ...payload } = productForm; // Exclude stock from DB save
     const { error } = editingProduct 
-      ? await supabase.from('products').update(productForm).eq('id', editingProduct.id)
-      : await supabase.from('products').insert([productForm]);
+      ? await supabase.from('products').update(payload).eq('id', editingProduct.id)
+      : await supabase.from('products').insert([payload]);
     
     if (error) alert("Erreur : " + error.message);
     else {
       setEditingProduct(null);
-      setProductForm({ name: '', category: 'email', description: '', price: 0, stock: 0 });
+      setProductForm({ name: '', category: 'email', description: '', price: 0 });
       fetchProducts();
     }
     setActionStatus(null);
@@ -2171,7 +2227,6 @@ function App() {
             name: (row['Titre du Produit'] || row.name || row.Name || row.Titre || "Produit Importé").toString().trim(),
             category: categoryId,
             price: parseFloat(row['Prix ($)'] || row.price || row.Price || row.Prix || 0),
-            stock: parseInt(row['Quantité en Stock'] || row.stock || row.Stock || row.Quantite || 0),
             description: row.Description || row.description || ""
           };
         }).filter(item => item.name && item.name !== "Produit Importé");
