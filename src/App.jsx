@@ -929,11 +929,19 @@ const AdminView = ({ navigate }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [inventory, setInventory] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
 
   useEffect(() => {
     fetchInventory();
     fetchAllOrders();
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (data) setAllUsers(data);
+    if (error) console.error("Erreur users:", error);
+  };
 
   const fetchInventory = async () => {
     const { data, error } = await supabase.from('product_stock').select('product_id, is_sold');
@@ -987,26 +995,16 @@ const AdminView = ({ navigate }) => {
     }
   };
 
-  const handleUpdateBalance = async () => {
-    setErrorMessage("");
-    if (!userEmail || amountToAdd <= 0) return setErrorMessage("Infos invalides.");
+  const handleUpdateBalanceManual = async (userId, email, amount) => {
     setActionStatus('loading');
-    const { data: userData } = await supabase.from('profiles').select('id, balance').ilike('email', userEmail.trim()).single();
-    if (!userData) {
-      setActionStatus(null);
-      return setErrorMessage("Utilisateur introuvable. Vérifiez l'email.");
-    }
-    const { error } = await supabase.from('profiles').update({ balance: userData.balance + amountToAdd }).eq('id', userData.id);
+    const { data: userData } = await supabase.from('profiles').select('balance').eq('id', userId).single();
+    const { error } = await supabase.from('profiles').update({ balance: (userData?.balance || 0) + amount }).eq('id', userId);
     if (error) {
-      setErrorMessage("Erreur : " + error.message);
+      alert("Erreur : " + error.message);
       setActionStatus(null);
     } else {
-      setActionStatus('success');
-      setTimeout(() => {
-        setUserEmail("");
-        setAmountToAdd(0);
-        setActionStatus(null);
-      }, 2000);
+      fetchUsers();
+      setActionStatus(null);
     }
   };
 
@@ -1026,7 +1024,7 @@ const AdminView = ({ navigate }) => {
             { id: 'dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
             { id: 'stock', label: 'Gérer le Stock', icon: Database },
             { id: 'orders', label: 'Commandes', icon: FileText },
-            { id: 'users', label: 'Clients & Crédits', icon: Users },
+            { id: 'users', label: 'Gestion Clients', icon: Users },
           ].map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-gray-900 text-white shadow-xl' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}>
@@ -1093,22 +1091,76 @@ const AdminView = ({ navigate }) => {
 
           {activeTab === 'users' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <h2 className="text-2xl font-bold mb-8">Clients & Crédits</h2>
-              <p className="text-gray-400 mb-8">Rechercher un utilisateur et ajuster son solde manuellement.</p>
+              <div className="flex justify-between items-center mb-10">
+                <h2 className="text-2xl font-bold">Gestion Clients</h2>
+                <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} utilisateurs inscrits</div>
+              </div>
               
-              <div className="space-y-6 max-w-md">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Client</label>
-                  <input type="email" value={userEmail} onChange={e => setUserEmail(e.target.value)} placeholder="client@email.com" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm font-bold" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant à Ajouter ($)</label>
-                  <input type="number" value={amountToAdd} onChange={e => setAmountToAdd(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none text-sm font-bold" />
-                </div>
-                {errorMessage && <p className="text-red-500 text-xs font-bold flex items-center gap-2"><AlertTriangle size={14} /> {errorMessage}</p>}
-                <button onClick={handleUpdateBalance} disabled={actionStatus === 'loading' || actionStatus === 'success'} className={`px-8 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${actionStatus === 'success' ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-                  {actionStatus === 'loading' ? <RefreshCcw size={16} className="animate-spin" /> : actionStatus === 'success' ? <><CheckCircle size={16} /> Crédité !</> : <><DollarSign size={16} /> Créditer le Compte</>}
-                </button>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                      <th className="pb-6">Utilisateur</th>
+                      <th className="pb-6">Solde</th>
+                      <th className="pb-6">Statut</th>
+                      <th className="pb-6">Actions Rapides</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {allUsers.map(user => (
+                      <tr key={user.id} className="group">
+                        <td className="py-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-gray-100 rounded-full overflow-hidden flex items-center justify-center text-gray-400 font-bold">
+                              {user.avatar_url ? <img src={user.avatar_url} className="w-full h-full object-cover" /> : user.display_name?.[0] || user.email?.[0]}
+                            </div>
+                            <div>
+                              <div className="font-bold text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name}` : user.display_name}</div>
+                              <div className="text-xs text-gray-400">{user.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-6">
+                          <div className="font-black text-primary font-mono">${user.balance?.toFixed(2) || "0.00"}</div>
+                        </td>
+                        <td className="py-6">
+                          <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${user.is_suspended ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
+                            {user.is_suspended ? 'Suspendu' : 'Actif'}
+                          </span>
+                        </td>
+                        <td className="py-6">
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => {
+                              const amount = prompt(`Créditer le compte de ${user.email} ($) :`, "10");
+                              if (amount && !isNaN(amount)) {
+                                handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
+                              }
+                            }} className="p-2 bg-gray-50 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-all" title="Créditer">
+                              <DollarSign size={16} />
+                            </button>
+                            <button onClick={async () => {
+                              const { error } = await supabase.from('profiles').update({ is_suspended: !user.is_suspended }).eq('id', user.id);
+                              if (!error) fetchUsers();
+                            }} className={`p-2 rounded-xl transition-all ${user.is_suspended ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'}`} title={user.is_suspended ? "Activer" : "Suspendre"}>
+                              <ShieldAlert size={16} />
+                            </button>
+                            <a href={`mailto:${user.email}`} className="p-2 bg-gray-50 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all" title="Email">
+                              <Mail size={16} />
+                            </a>
+                            <button onClick={async () => {
+                              if (confirm("Supprimer ce profil ? L'utilisateur ne pourra plus se connecter.")) {
+                                await supabase.from('profiles').delete().eq('id', user.id);
+                                fetchUsers();
+                              }
+                            }} className="p-2 bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Supprimer">
+                              <Trash size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
