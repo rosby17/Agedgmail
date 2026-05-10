@@ -563,7 +563,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       {viewOrder && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+          <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
               <div><h3 className="text-xl font-bold">{viewOrder.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Vos identifiants de connexion</p></div>
               <button onClick={() => setViewOrder(null)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
@@ -576,7 +576,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   </div>
                   <button 
                     onClick={() => { 
-                      const text = (viewOrder.data || viewOrder.credentials || "");
+                      const text = (viewOrder.credentials || viewOrder.data || "");
                       navigator.clipboard.writeText(text);
                     }} 
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
@@ -584,35 +584,36 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                     <Copy size={12} /> Copier Tout
                   </button>
                 </div>
-                
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-inner">
-                  <pre className="font-mono text-xs text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                    {viewOrder.credentials || viewOrder.data ? (
-                      `Merci beaucoup pour votre achat.
+                  <div 
+                    className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2"
+                    dangerouslySetInnerHTML={{
+                      __html: (viewOrder.credentials || viewOrder.data ? (
+                        `Merci beaucoup pour votre achat.
 
 voici vos produits
 
-${viewOrder.product_name}
+<strong>${viewOrder.product_name}</strong>
 
-${viewOrder.credentials || viewOrder.data}
+${(viewOrder.credentials || viewOrder.data).replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>')}
 
 =======================================
 
-COMMENT SE CONNECTER AVEC L'AUTHENTIFICATION À DEUX FACTEURS (2FA)
+<span class="text-gray-900 font-black">COMMENT SE CONNECTER AVEC L'AUTHENTIFICATION À DEUX FACTEURS (2FA)</span>
 
-Pour les comptes avec l'authentification à deux facteurs (2FA) activée, après avoir saisi votre nom d'utilisateur et votre mot de passe, veuillez coller la chaîne 2FA (fournie par nos soins) sur https://2fa.live pour obtenir le code à 6 chiffres. Collez ensuite ce code pour vous connecter.
+Pour les comptes avec l'authentification à deux facteurs (2FA) activée, après avoir saisi votre nom d'utilisateur et votre mot de passe, veuillez coller la chaîne 2FA (fournie par nos soins) sur <a href="https://2fa.live" target="_blank" class="text-primary underline font-bold">https://2fa.live</a> pour obtenir le code à 6 chiffres. Collez ensuite ce code pour vous connecter.
 
 Vous pouvez modifier le code 2FA à l'aide de l'application Google Authenticator.
-Tutoriel vidéo : https://www.youtube.com/watch?v=JbjION2rdPA
+Tutoriel vidéo : <a href="https://www.youtube.com/watch?v=JbjION2rdPA" target="_blank" class="text-primary underline">https://www.youtube.com/watch?v=JbjION2rdPA</a>
 
 =======================================
 
-Après une connexion réussie, la période de garantie ne sera plus valable.
+<span class="text-red-500 font-bold">Après une connexion réussie, la période de garantie ne sera plus valable.</span>
 
-Suggestion :
+<strong>Suggestion :</strong>
 1. Après vous être connecté(e), conservez vos cookies et patientez au moins 7 jours avant de modifier quoi que ce soit (mot de passe, adresse e-mail de récupération, numéro de téléphone, etc.).`
-                    ) : "En attente de livraison..."}
-                  </pre>
+                      ) : "En attente de livraison...")
+                    }}
+                  />
                 </div>
               </div>
               <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
