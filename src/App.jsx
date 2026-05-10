@@ -303,25 +303,67 @@ const SettingsTab = ({ profile, onUpdate }) => {
   const [email, setEmail] = useState(profile?.email || "");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [tfaEnabled, setTfaEnabled] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [tfaEnabled, setTfaEnabled] = useState(profile?.two_factor_enabled || false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
     setSuccess(false);
+    setErrorMessage("");
 
-    const { error } = await supabase.from('profiles').upsert({
-      id: profile.id,
-      email,
-      first_name: firstName,
-      last_name: lastName,
-      display_name: displayName,
-      updated_at: new Date().toISOString(),
-    });
+    try {
+      const { error } = await supabase.from('profiles').upsert({
+        id: profile.id,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        display_name: displayName,
+        two_factor_enabled: tfaEnabled,
+        updated_at: new Date().toISOString(),
+      });
 
-    if (!error) {
+      if (error) throw error;
+      
       setSuccess(true);
-      setTimeout(() => { setSuccess(false); onUpdate(); }, 2000);
+      onUpdate(); 
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setErrorMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword !== confirmPassword) {
+      setErrorMessage("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) setErrorMessage(error.message);
+    else {
+      setSuccess(true);
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setSuccess(false), 3000);
+    }
+    setLoading(false);
+  };
+
+  const handleDissociateGoogle = async () => {
+    // To dissociate Google, user must have an email/password. 
+    // We send a password reset email to force them to set a password.
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/dashboard?tab=settings',
+    });
+    if (error) setErrorMessage(error.message);
+    else {
+      alert("Un email de configuration de mot de passe vous a été envoyé. Une fois configuré, vous pourrez vous connecter via email/pass.");
     }
     setLoading(false);
   };
@@ -337,6 +379,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
           </div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pseudo (Public) *</label><input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /><p className="text-[10px] text-gray-400 italic mt-2">C'est le nom qui apparaîtra sur votre tableau de bord et vos avis.</p></div>
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Adresse Email *</label><input type="email" value={email} readOnly className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div>
+          {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">⚠️ {errorMessage}</div>}
           <button type="submit" disabled={loading} className={`px-12 py-5 rounded-full font-bold text-sm transition-all shadow-xl shadow-black/10 flex items-center gap-2 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-black'}`}>
             {loading ? <RefreshCcw size={16} className="animate-spin" /> : success ? '✅ Modifié avec succès' : 'Enregistrer les modifications'}
           </button>
@@ -351,7 +394,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
               <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm"><img src="https://www.google.com/favicon.ico" className="w-6 h-6" alt="Google" /></div>
               <div><h4 className="font-bold text-gray-900">Compte Google</h4><p className="text-xs text-gray-400 font-medium">Connecté via Google Auth</p></div>
             </div>
-            <button className="px-6 py-3 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all">Dissocier</button>
+            <button onClick={handleDissociateGoogle} disabled={loading} className="px-6 py-3 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all">Dissocier</button>
           </div>
 
           <div className="flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
@@ -359,7 +402,11 @@ const SettingsTab = ({ profile, onUpdate }) => {
               <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary"><CreditCard size={24} /></div>
               <div><h4 className="font-bold text-gray-900">Authentification à deux facteurs (2FA)</h4><p className="text-xs text-gray-400 font-medium">Ajoutez une couche de sécurité supplémentaire à votre compte.</p></div>
             </div>
-            <button onClick={() => setTfaEnabled(!tfaEnabled)} className={`w-14 h-7 rounded-full relative transition-all duration-300 ${tfaEnabled ? 'bg-primary' : 'bg-gray-200'}`}>
+            <button onClick={async () => {
+              const newVal = !tfaEnabled;
+              setTfaEnabled(newVal);
+              await supabase.from('profiles').update({ two_factor_enabled: newVal }).eq('id', profile.id);
+            }} className={`w-14 h-7 rounded-full relative transition-all duration-300 ${tfaEnabled ? 'bg-primary' : 'bg-gray-200'}`}>
               <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 ${tfaEnabled ? 'left-8' : 'left-1'}`} />
             </button>
           </div>
@@ -367,10 +414,12 @@ const SettingsTab = ({ profile, onUpdate }) => {
           <div className="pt-6 border-t border-gray-100">
             <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Changement de mot de passe</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <input type="password" placeholder="Nouveau mot de passe" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
-              <input type="password" placeholder="Confirmer le mot de passe" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmer le mot de passe" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
             </div>
-            <button className="text-sm font-black text-primary hover:underline uppercase tracking-wider">Mettre à jour le mot de passe</button>
+            <button onClick={handleUpdatePassword} disabled={loading} className="text-sm font-black text-primary hover:underline uppercase tracking-wider disabled:opacity-50">
+              {loading ? "Mise à jour..." : "Mettre à jour le mot de passe"}
+            </button>
           </div>
         </div>
       </div>
