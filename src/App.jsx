@@ -1413,19 +1413,18 @@ const AdminView = ({ navigate }) => {
 // RECHARGE VIEW & BINANCE PAY
 // ==========================================
 
-const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetchStocks }) => {
-  const [txId, setTxId] = useState('');
+const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetchStocks, profile }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const noteValue = profile?.display_name?.toLowerCase() || session?.user?.email?.split('@')[0];
 
   const handleOrderSubmit = async () => {
-    if (!txId.trim()) { setError("Veuillez entrer l'ID de transaction."); return; }
     setLoading(true);
     setError("");
 
     try {
-      // 1. Create a pending order for each item in the cart
+      // 1. Create pending orders with the username as reference
       for (const item of cart) {
         const { error: orderErr } = await supabase.from('orders').insert({
           user_id: session.user.id,
@@ -1434,8 +1433,8 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
           product_name: item.name,
           quantity: item.quantity,
           total_price: item.price * item.quantity,
-          status: 'pending', // Admin will confirm after verifying TX ID
-          binance_tx_id: txId.trim(),
+          status: 'pending',
+          binance_tx_id: `NOTE:${noteValue}`, // Use Note as reference
           created_at: new Date().toISOString()
         });
         if (orderErr) throw orderErr;
@@ -1447,9 +1446,9 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject: "💰 Nouveau Paiement Direct Binance Pay (AgedGmailYT)",
-          email: session.user.email,
+          username: noteValue,
           total: cartTotal + " USD",
-          tx_id: txId.trim(),
+          note_utilisee: noteValue,
           details: cart.map(i => `${i.name} (x${i.quantity})`).join(', ')
         })
       });
@@ -1458,7 +1457,7 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
       setTimeout(() => {
         clearCart();
         navigate('dashboard');
-      }, 2000);
+      }, 3000);
     } catch (err) {
       setError("Erreur : " + err.message);
     } finally {
@@ -1466,101 +1465,203 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
     }
   };
 
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    // Simple feedback could be added here
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="bg-yellow-50 border border-yellow-100 p-6 rounded-2xl flex items-start gap-4">
-        <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-white font-bold shrink-0">B</div>
-        <div>
-          <div className="font-bold text-yellow-900">Binance Pay ID</div>
-          <div className="text-2xl font-black text-yellow-800 font-mono my-1 select-all">123456789</div>
-          <p className="text-[10px] text-yellow-700 uppercase font-bold tracking-wider">Envoyez exactement ${cartTotal.toFixed(2)}</p>
+    <div className="space-y-8">
+      <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-sm space-y-6">
+        <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">Informations de Transfert</h4>
+        
+        <div className="space-y-4">
+          <div className="flex justify-between items-center group">
+            <span className="text-sm font-bold text-gray-500">Devise :</span>
+            <div className="flex items-center gap-3">
+              <span className="font-mono font-black text-gray-900">USDT (Binance Pay)</span>
+              <button onClick={() => copyToClipboard('USDT')} className="text-gray-300 hover:text-primary transition-colors"><Copy size={16} /></button>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center group">
+            <span className="text-sm font-bold text-gray-500">Binance User ID :</span>
+            <div className="flex items-center gap-3">
+              <span className="font-mono font-black text-gray-900">160684871</span>
+              <button onClick={() => copyToClipboard('160684871')} className="text-gray-300 hover:text-primary transition-colors"><Copy size={16} /></button>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center group bg-primary/5 p-4 rounded-xl border border-primary/10">
+            <span className="text-sm font-bold text-primary">Note (IMPORTANT) :</span>
+            <div className="flex items-center gap-3">
+              <span className="font-mono font-black text-primary uppercase">{noteValue}</span>
+              <button onClick={() => copyToClipboard(noteValue)} className="text-primary/40 hover:text-primary transition-colors"><Copy size={16} /></button>
+            </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => copyToClipboard(`ID: 160684871 | Note: ${noteValue}`)}
+          className="w-full py-4 bg-gray-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all flex items-center justify-center gap-2"
+        >
+          <Copy size={14} /> Copier toutes les infos
+        </button>
+
+        <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+          <p className="text-[10px] text-red-500 font-bold leading-relaxed italic">
+            * IMPORTANT : Assurez-vous d'ajouter la note ci-dessus lors du transfert sur Binance pour une confirmation automatique.
+          </p>
         </div>
       </div>
-      
-      <div className="space-y-4">
-        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">ID de Transaction Binance (TX ID)</label>
-        <input 
-          type="text" 
-          value={txId} 
-          onChange={e => setTxId(e.target.value)}
-          placeholder="Entrez l'ID reçu après l'envoi"
-          className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono"
-        />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+          <div className="flex items-center gap-3 text-gray-900 font-bold mb-2">
+            <Clock size={18} className="text-primary" /> Confirmation
+          </div>
+          <p className="text-[10px] text-gray-500 font-medium">Les transactions sont généralement confirmées en 5-15 minutes.</p>
+        </div>
+        <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+          <div className="flex items-center gap-3 text-gray-900 font-bold mb-2">
+            <MessageSquare size={18} className="text-primary" /> Support
+          </div>
+          <p className="text-[10px] text-gray-500 font-medium">Besoin d'aide ? Contactez-nous sur WhatsApp ou Telegram.</p>
+        </div>
       </div>
 
       {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">{error}</div>}
 
       <button onClick={handleOrderSubmit} disabled={loading || success} className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl flex items-center justify-center gap-3 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary shadow-black/10'}`}>
         {loading ? <RefreshCcw className="animate-spin" /> : success ? <CheckCircle /> : <ShieldCheck />}
-        {loading ? "Validation..." : success ? "Commande Envoyée !" : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
+        {loading ? "Vérification..." : success ? "Commande Envoyée !" : "J'ai effectué le transfert"}
       </button>
-      <p className="text-[10px] text-gray-400 text-center font-medium">Votre commande sera validée par un admin dès vérification de la transaction.</p>
     </div>
   );
 };
 
 const RechargeView = ({ profile, session, navigate }) => {
   const [amount, setAmount] = useState(10);
-  const [txId, setTxId] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const noteValue = profile?.display_name?.toLowerCase() || session?.user?.email?.split('@')[0];
 
   const handleSubmit = async () => {
-    setError("");
     if (!session) { navigate('auth'); return; }
-    if (!txId.trim()) { setError('Veuillez entrer un ID de transaction valide.'); return; }
     if (amount <= 0) { setError('Veuillez entrer un montant valide.'); return; }
     
     setLoading(true);
+    setError("");
     
-    // 1. Créer la commande dans Supabase
-    const { error } = await supabase.from('orders').insert([{
-      user_id: session.user.id,
-      buyer_email: session.user.email,
-      product_id: 999, // ID fictif pour la recharge
-      product_name: "Recharge Binance",
-      quantity: 1,
-      total_price: amount,
-      status: 'pending',
-      binance_tx_id: txId.trim()
-    }]);
-
-    if (error) {
-      setError("Erreur lors de la soumission : " + error.message);
-      setLoading(false);
-      return;
-    }
-
-    // 2. Envoyer l'alerte email à l'admin via FormSubmit
     try {
-      const response = await fetch("https://formsubmit.co/ajax/rooseveltmkr@gmail.com", {
+      // 1. Créer la commande de recharge
+      const { error: orderErr } = await supabase.from('orders').insert([{
+        user_id: session.user.id,
+        buyer_email: session.user.email,
+        product_id: 999,
+        product_name: "Recharge Binance",
+        quantity: 1,
+        total_price: amount,
+        status: 'pending',
+        binance_tx_id: `RECHARGE:${noteValue}`
+      }]);
+
+      if (orderErr) throw orderErr;
+
+      // 2. Alerte Admin
+      await fetch("https://formsubmit.co/ajax/rooseveltmkr@gmail.com", {
         method: "POST",
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject: "🚨 Demande de Recharge Binance (AgedGmailYT)",
-          email_client: session.user.email,
+          username: noteValue,
           montant: amount + " USD",
-          tx_id: txId.trim(),
-          message: "Connectez-vous à l'admin pour valider cette recharge."
+          note: noteValue,
+          message: "Vérifiez le transfert Binance avec la note indiquée."
         })
       });
-      const resData = await response.json();
-      console.log("FormSubmit response:", resData);
-    } catch (err) {
-      console.error("Erreur envoi email :", err);
-    }
 
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => {
-      setSuccess(false);
-      navigate('dashboard');
-    }, 2000);
+      setSuccess(true);
+      setTimeout(() => navigate('dashboard'), 3000);
+    } catch (err) {
+      setError("Erreur : " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const copyToClipboard = (text) => navigator.clipboard.writeText(text);
+
+  return (
+    <div className="max-w-3xl mx-auto px-6 py-20 font-sans">
+      <h2 className="text-4xl font-bold text-gray-900 mb-6 tracking-tight">Recharger via Binance Pay</h2>
+      <p className="text-gray-500 mb-10 leading-relaxed">Suivez les étapes ci-dessous pour créditer votre compte. L'utilisation de la **Note** est indispensable pour l'attribution automatique des fonds.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft space-y-6">
+          <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">1. Infos de Transfert</h3>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center group">
+              <span className="text-xs font-bold text-gray-500">ID Binance :</span>
+              <div className="flex items-center gap-3">
+                <span className="font-mono font-black text-gray-900">160684871</span>
+                <button onClick={() => copyToClipboard('160684871')} className="text-gray-300 hover:text-primary transition-colors"><Copy size={14} /></button>
+              </div>
+            </div>
+
+            <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-primary">Note à ajouter :</span>
+                <button onClick={() => copyToClipboard(noteValue)} className="text-primary/40 hover:text-primary transition-colors"><Copy size={14} /></button>
+              </div>
+              <div className="font-mono text-xl font-black text-primary uppercase text-center">{noteValue}</div>
+            </div>
+          </div>
+          
+          <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+            <p className="text-[10px] text-red-500 font-bold leading-relaxed">
+              * AJOUTER LA NOTE : Sans cette note, le traitement de votre recharge prendra plus de temps.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft flex flex-col">
+          <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4 mb-6">2. Montant & Validation</h3>
+          
+          <div className="space-y-6 flex-grow">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant envoyé (USD)</label>
+              <input type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary" />
+            </div>
+
+            {error && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-[10px] font-bold border border-red-100">{error}</div>}
+
+            <button onClick={handleSubmit} disabled={loading || success} className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${success ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-gray-900 text-white hover:bg-primary shadow-black/10'}`}>
+              {loading ? <RefreshCcw className="animate-spin" /> : success ? <CheckCircle /> : <Send />}
+              {loading ? "Envoi..." : success ? "Demande Envoyée" : "Valider ma Recharge"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100">
+        <h4 className="flex items-center gap-3 font-bold text-gray-900 mb-6"><Info size={20} className="text-primary" /> Processus de Confirmation</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-[11px] leading-relaxed text-gray-500">
+          <div className="space-y-2">
+            <div className="font-bold text-gray-900 uppercase tracking-wider">Temps de traitement</div>
+            <p>Les transactions sont généralement validées sous 5 à 15 minutes après réception des fonds.</p>
+          </div>
+          <div className="space-y-2">
+            <div className="font-bold text-gray-900 uppercase tracking-wider">Besoin d'aide ?</div>
+            <p>Si vous avez des questions, contactez-nous sur notre canal Telegram ou WhatsApp.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-20 font-sans">
