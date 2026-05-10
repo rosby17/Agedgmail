@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { PRODUCTS as PRODUCTS_RAW } from './productsData';
+import * as XLSX from 'xlsx';
 
 // ==========================================
 // CONFIGURATION ADMIN & SUPPORT
@@ -150,19 +152,7 @@ const getProductDetails = (product) => {
   };
 };
 
-const PRODUCTS = [
-  { id: 201, name: 'Chaîne YouTube – 1k Abonnés – Prête pour Monétisation', category: 'youtube_not_monetized', price: 10.00, sales: 150 },
-  { id: 202, name: 'Chaîne YouTube – 10k Abonnés – Trafic Organique', category: 'youtube_not_monetized', price: 50.00, sales: 90 },
-  { id: 203, name: 'Chaîne YouTube – 50k Abonnés – Spécial Business', category: 'youtube_not_monetized', price: 150.00, sales: 40 },
-  { id: 204, name: 'Chaîne YouTube – 100k Abonnés – Pack Autorité', category: 'youtube_not_monetized', price: 300.00, sales: 20 },
-  { id: 101, name: 'Chaîne YouTube Monétisée – 1.2k Subs – 4000h – 2018', category: 'youtube_monetized', price: 185.00, sales: 12 },
-  { id: 19, name: 'Gmail US Ancien 2010 – 2025', category: 'email', price: 5.43, sales: 150 },
-  { id: 20, name: 'Gmail Pays Aléatoire Ancien 2020 – 2025', category: 'email', price: 3.24, sales: 200 },
-  { id: 27, name: 'Gmail US 2015 – 2020 – Haute Qualité', category: 'email', price: 9.50, sales: 85 },
-  { id: 1, name: 'Chaîne Youtube 2014 – 2019 sans vidéo', category: 'youtube_aged', price: 6.19, sales: 90 },
-  { id: 8, name: 'Chaîne Spéciale 2011-202x avec 10k à 50k vues ORGANIQUES', category: 'youtube_cpa', price: 19.80, sales: 40 },
-  { id: 24, name: 'Compte Facebook US Ancien (50+ Amis) - Spécial Ads', category: 'facebook', price: 35.00, sales: 20 },
-].map(p => ({ ...p, details: getProductDetails(p) }));
+const PRODUCTS = PRODUCTS_RAW.map(p => ({ ...p, details: getProductDetails(p) }));
 
 // ==========================================
 // PRODUCT CARD
@@ -967,6 +957,43 @@ const AdminView = ({ navigate }) => {
 
   const selectedProductStock = inventory.find(p => p.id === parseInt(selectedProductId))?.stock || 0;
 
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setActionStatus('loading');
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        // Expected columns: product_id, data
+        const itemsToInsert = data.map(row => ({
+          product_id: parseInt(row.product_id || row.ID),
+          data: row.data || row.Credentials || row.Account,
+          is_sold: false
+        })).filter(item => !isNaN(item.product_id) && item.data);
+
+        if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée dans l'Excel.");
+
+        const { error } = await supabase.from('product_stock').insert(itemsToInsert);
+        if (error) throw error;
+
+        setActionStatus('success');
+        fetchInventory();
+        setTimeout(() => setActionStatus(null), 3000);
+      } catch (err) {
+        setErrorMessage("Erreur Import Excel : " + err.message);
+        setActionStatus('error');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   const handleAddStock = async () => {
     setErrorMessage("");
     if (!stockInput.trim()) return setErrorMessage("Veuillez entrer des comptes.");
@@ -1081,6 +1108,12 @@ const AdminView = ({ navigate }) => {
                 </div>
                 <div className="flex gap-4 pt-4">
                   <button onClick={handleAddStock} className="flex-grow bg-gray-900 text-white py-5 rounded-2xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2"><Plus size={18} /> Ajouter au Stock</button>
+                  
+                  <div className="relative">
+                    <input type="file" accept=".xlsx, .xls" onChange={handleExcelUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    <button className="bg-primary/10 text-primary px-8 py-5 rounded-2xl font-bold text-sm hover:bg-primary/20 transition-all flex items-center justify-center gap-2"><Upload size={18} /> Import Excel</button>
+                  </div>
+
                   <button onClick={handleClearStock} className="bg-red-50 text-red-500 px-8 py-5 rounded-2xl font-bold text-sm hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><Trash size={18} /> Vider le Stock</button>
                 </div>
               </div>
