@@ -1306,20 +1306,15 @@ const AdminView = ({
             <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} fetchUsers={fetchUsers} />
           )}
 
-
           {activeTab === 'users' && (
-            <UsersAdmin 
-              allUsers={allUsers} 
-              allOrders={allOrders} 
-              fetchUsers={fetchUsers} 
-              handleUpdateBalanceManual={handleUpdateBalanceManual} 
-            />
+            <UsersAdmin allUsers={allUsers} allOrders={allOrders} fetchUsers={fetchUsers} handleUpdateBalanceManual={handleUpdateBalanceManual} />
           )}
         </main>
       </div>
     </div>
   );
 };
+
 // ==========================================
 // RECHARGE VIEW & BINANCE PAY
 // ==========================================
