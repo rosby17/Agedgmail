@@ -200,10 +200,18 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center bg-gray-50 rounded-xl p-1 shrink-0">
+        <div className="flex items-center bg-gray-50 rounded-xl p-1 shrink-0 border border-gray-100">
           <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Minus size={14} /></button>
-          <div className="w-8 text-center text-xs font-bold text-gray-900">{localQty}</div>
-          <button onClick={() => localQty < 999 && setLocalQty(localQty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Plus size={14} /></button>
+          <input 
+            type="number" 
+            value={localQty} 
+            onChange={(e) => {
+              const val = parseInt(e.target.value);
+              if (!isNaN(val) && val >= 1) setLocalQty(Math.min(val, 9999));
+            }}
+            className="w-12 bg-transparent text-center text-xs font-bold text-gray-900 outline-none border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <button onClick={() => localQty < 9999 && setLocalQty(localQty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Plus size={14} /></button>
         </div>
         <button 
           onClick={() => addToCart(product, localQty)} 
@@ -1599,9 +1607,17 @@ const ProductView = ({ product, addToCart, navigate }) => {
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-4">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</label>
-              <div className="flex items-center bg-gray-100 rounded-2xl p-1.5">
+              <div className="flex items-center bg-gray-100 rounded-2xl p-1.5 border border-gray-200/50">
                 <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-200/50"><Minus size={16} /></button>
-                <div className="w-16 text-center font-black text-xl">{quantity}</div>
+                <input 
+                  type="number" 
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val) && val >= 1) setQuantity(Math.min(val, product.stock));
+                  }}
+                  className="w-20 bg-transparent text-center font-black text-xl outline-none border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
                 <button onClick={() => quantity < product.stock && setQuantity(quantity + 1)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-200/50"><Plus size={16} /></button>
               </div>
             </div>
