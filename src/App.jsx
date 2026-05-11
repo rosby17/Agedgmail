@@ -1968,7 +1968,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
             <div>
               <h3 className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-6 underline">INFORMATION</h3>
               <div className="space-y-4">
-                {product.details.info.split(' | ').map((line, i) => (
+                {product.details?.info?.split(' | ').map((line, i) => (
                   <div key={i} className="flex items-center gap-4 text-gray-700 font-bold">
                     <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
                     <span className="text-gray-400 font-medium min-w-[120px]">{line.split(' : ')[0]} :</span>
@@ -1980,7 +1980,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
             
             <div className="bg-primary/5 border border-primary/10 p-8 rounded-[2.5rem]">
                <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-4"><Info size={14} /> Description Additionnelle</h4>
-               <p className="text-gray-600 font-medium leading-relaxed italic">{product.description || product.details.note}</p>
+               <p className="text-gray-600 font-medium leading-relaxed italic">{product.description || product.details?.note}</p>
             </div>
           </div>
 
@@ -1988,7 +1988,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
             <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100">
                <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><ShieldAlert size={14} className="text-primary" /> Conditions d'utilisation</h4>
                <div className="text-xs text-gray-500 leading-relaxed space-y-4">
-                 {product.details.terms.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
+                 {product.details?.terms?.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
                </div>
             </div>
           </div>
@@ -2445,7 +2445,7 @@ function App() {
   const fetchProducts = async () => {
     if (!supabase) {
       // Fallback local pour la consultation sans .env
-      setProducts(PRODUCTS_RAW.map(p => ({ ...p, stock: 10 })));
+      setProducts(PRODUCTS_RAW.map(p => ({ ...p, stock: 10, details: getProductDetails(p) })));
       return;
     }
     // 1. Fetch products
@@ -2462,7 +2462,8 @@ function App() {
         
         return {
           ...p,
-          stock: count || 0
+          stock: count || 0,
+          details: getProductDetails(p)
         };
       }));
       
