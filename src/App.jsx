@@ -2436,6 +2436,57 @@ function App() {
     };
   }, [session]);
 
+  // Real-time Orders — Admin sees all new orders instantly
+  useEffect(() => {
+    if (!supabase) return;
+
+    const ordersChannel = supabase
+      .channel('all-orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          fetchAllOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+    };
+  }, []);
+
+  // Real-time Orders — Client sees their own orders update instantly (e.g. recharge confirmed)
+  useEffect(() => {
+    if (!session || !supabase) return;
+
+    const myOrdersChannel = supabase
+      .channel(`my-orders-${session.user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        async () => {
+          // Refresh personal orders
+          const { data: orderData } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false });
+          if (orderData) setOrders(orderData);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(myOrdersChannel);
+    };
+  }, [session]);
+
   useEffect(() => {
     localStorage.setItem('agedgmail_view', currentView);
   }, [currentView]);
