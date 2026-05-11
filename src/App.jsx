@@ -1367,7 +1367,7 @@ const AdminView = ({
                           <td className="py-5 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button onClick={() => setManagingStock(p)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Gérer Stock"><Database size={16} /></button>
-                              <button onClick={() => { setEditingProduct(p); setProductForm(p); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Edit size={16} /></button>
+                              <button onClick={() => { setEditingProduct(p); setProductForm({ name: p.name, category: p.category, description: p.description, price: p.price }); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Edit size={16} /></button>
                               <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash size={16} /></button>
                             </div>
                           </td>
@@ -2551,7 +2551,7 @@ function App() {
 
   const handleSaveProduct = async () => {
     setActionStatus('loading');
-    const { stock, ...payload } = productForm; // Exclude stock from DB save
+    const { stock, details, ...payload } = productForm; // Exclude computed fields from DB save
     const { error } = editingProduct 
       ? await supabase.from('products').update(payload).eq('id', editingProduct.id)
       : await supabase.from('products').insert([payload]);
