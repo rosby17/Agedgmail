@@ -230,7 +230,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView 
               <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </div>
             <button onClick={() => navigate('dashboard')} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100">
-              <LayoutDashboard size={18} />
+              <User size={18} />
             </button>
           </div>
         ) : (
