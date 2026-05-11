@@ -148,20 +148,14 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
           {CATEGORIES.find(c => c.id === product.category)?.name}
         </div>
         <h3 
-          className="text-[15px] font-bold text-primary leading-snug cursor-pointer mb-4"
+          className="text-[15px] font-bold text-primary leading-snug cursor-pointer mb-4 hover:text-red-600 transition-colors"
           onClick={() => { setSelectedProduct(product); navigate('product'); }}
         >
           {product.name}
         </h3>
 
-        
         <div className="flex items-center justify-between mb-6">
           <div className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
-          <div className="flex items-center bg-gray-50 rounded-xl px-2 py-1 border border-gray-100">
-            <button onClick={() => setLocalQty(Math.max(1, localQty - 1))} className="p-1.5 text-gray-400 hover:text-gray-900"><Minus size={14} /></button>
-            <span className="w-8 text-center font-bold text-sm text-gray-900">{localQty}</span>
-            <button onClick={() => setLocalQty(localQty + 1)} className="p-1.5 text-gray-400 hover:text-gray-900"><Plus size={14} /></button>
-          </div>
           {product.stock <= 0 && (
             <div className="bg-red-50 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-widest">
               Rupture
@@ -2400,11 +2394,14 @@ function App() {
       if (initialSession) fetchProfile(initialSession.user.id);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       setSession(currentSession);
       if (currentSession) {
         fetchProfile(currentSession.user.id);
-        setCurrentView('home');
+        // Only redirect to home if we are currently on the auth view and just signed in
+        if (event === 'SIGNED_IN' && window.location.hash === '#auth') {
+          navigate('home');
+        }
       } else { 
         setProfile(null); 
         setOrders([]); 
