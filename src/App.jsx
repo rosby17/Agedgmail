@@ -2251,18 +2251,15 @@ const Footer = ({ navigate }) => (
           <ul className="space-y-4">
             <li><button onClick={() => navigate('dashboard')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Account</button></li>
             <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Service</button></li>
-            <li><button className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Resources</button></li>
+            <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Resources</button></li>
           </ul>
         </div>
 
         <div>
           <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Support</h4>
           <ul className="space-y-4">
-            <li><button className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Privacy Policy</button></li>
-            <li><button className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Contact Us</button></li>
-            <li><button onClick={() => window.open('https://t.me/your_telegram', '_blank')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-lg border border-primary/10">
-              <MessageSquare size={12} /> Support Telegram
-            </button></li>
+            <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Privacy Policy</button></li>
+            <li><button onClick={() => window.open(`https://wa.me/${SUPPORT_WHATSAPP}`, '_blank')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Contact Us</button></li>
           </ul>
         </div>
       </div>
