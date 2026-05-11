@@ -1809,7 +1809,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                   <div className="text-4xl font-black text-gray-900 font-mono">${(profile?.balance || 0).toFixed(2)}</div>
                 </div>
 
-                {!hasEnoughBalance ? (
+                {(!hasEnoughBalance && !purchaseSuccess) ? (
                   <div className="space-y-6">
                     <div className="p-6 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-4">
                       <div className="mt-1 text-red-500"><AlertTriangle size={20} /></div>
