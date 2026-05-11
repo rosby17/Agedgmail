@@ -1913,19 +1913,6 @@ const ProductView = ({ product, addToCart, navigate }) => {
             <span className="text-2xl text-gray-400 font-bold">$</span>{product.price.toFixed(1)}
           </div>
 
-          <div className="mb-8">
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <CheckCircle size={12} className="text-green-500" /> Select option:
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {['New Account', 'Aged 2015-2019', 'Aged 2010-2014', 'Premium Quality'].map((opt, i) => (
-                <button key={i} className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${i === 0 ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-gray-100 text-gray-400 hover:border-primary/30'}`}>
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-4">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</label>
@@ -1944,8 +1931,14 @@ const ProductView = ({ product, addToCart, navigate }) => {
               </div>
             </div>
 
-            <button onClick={() => addToCart(product, quantity)} disabled={product.stock <= 0}
-              className={`w-full max-w-md h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+            <button 
+              onClick={() => {
+                addToCart(product, quantity);
+                navigate('cart');
+              }} 
+              disabled={product.stock <= 0}
+              className={`w-full max-w-md h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+            >
               {product.stock > 0 ? 'Buy now' : 'Out of stock'}
             </button>
           </div>
