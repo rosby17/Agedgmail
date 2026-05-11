@@ -2411,6 +2411,31 @@ function App() {
     return () => subscription?.unsubscribe();
   }, []);
 
+  // Real-time Profile Updates (Balance, etc.)
+  useEffect(() => {
+    if (!session || !supabase) return;
+
+    const profileChannel = supabase
+      .channel(`profile-updates-${session.user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${session.user.id}`,
+        },
+        (payload) => {
+          setProfile(payload.new);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileChannel);
+    };
+  }, [session]);
+
   useEffect(() => {
     localStorage.setItem('agedgmail_view', currentView);
   }, [currentView]);
