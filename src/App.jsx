@@ -53,83 +53,20 @@ const FacebookIcon = ({ className = "" }) => (
 // ==========================================
 // COMPOSANT SUPPORT CHAT
 // ==========================================
-
-const SupportChat = () => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="fixed bottom-8 right-8 z-[1000] font-sans">
-      {isOpen && (
-        <div className="absolute bottom-20 right-0 w-[350px] bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-gray-900 p-8 text-white relative">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white relative">
-                <Headphones size={24} />
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-gray-900 rounded-full"></div>
-              </div>
-              <div>
-                <h4 className="font-bold text-lg">Support AgedGmail</h4>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">En ligne • Réponse rapide</p>
-              </div>
-            </div>
-            <button onClick={() => setIsOpen(false)} className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors">
-              <X size={20} />
-            </button>
-          </div>
-          <div className="p-8 space-y-4">
-            <p className="text-sm text-gray-500 leading-relaxed mb-6 font-medium">
-              Bonjour ! Comment pouvons-nous vous aider aujourd'hui ? Choisissez votre canal préféré :
-            </p>
-            <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-between p-5 bg-green-50 rounded-2xl border border-green-100 group hover:bg-green-100 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-green-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
-                  <MessageCircle size={20} />
-                </div>
-                <div>
-                  <div className="text-sm font-black text-green-900 uppercase tracking-tighter">WhatsApp</div>
-                  <div className="text-[10px] text-green-600 font-bold">Réponse en moins de 5 min</div>
-                </div>
-              </div>
-              <ChevronRight size={18} className="text-green-400 group-hover:translate-x-1 transition-transform" />
-            </a>
-            <a href={`https://t.me/${SUPPORT_TELEGRAM}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-between p-5 bg-blue-50 rounded-2xl border border-blue-100 group hover:bg-blue-100 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <Send size={20} />
-                </div>
-                <div>
-                  <div className="text-sm font-black text-blue-900 uppercase tracking-tighter">Telegram</div>
-                  <div className="text-[10px] text-blue-600 font-bold">Support direct & sécurisé</div>
-                </div>
-              </div>
-              <ChevronRight size={18} className="text-blue-400 group-hover:translate-x-1 transition-transform" />
-            </a>
-            <button className="w-full flex items-center justify-center gap-3 p-5 bg-gray-50 text-gray-400 rounded-2xl border border-gray-100 text-xs font-bold hover:bg-gray-100 transition-all">
-              <Mail size={16} /> Envoyer un Ticket Email
-            </button>
-          </div>
-          <div className="bg-gray-50 p-4 text-center">
-            <span className="text-[8px] font-black text-gray-300 uppercase tracking-[0.2em]">Sécurisé par AgedGmail HelpDesk</span>
-          </div>
-        </div>
-      )}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 group relative ${isOpen ? 'bg-gray-900 rotate-90' : 'bg-primary hover:scale-110 active:scale-95'}`}>
-        {isOpen ? (
-          <X className="text-white" size={28} />
-        ) : (
-          <>
-            <MessageSquare className="text-white group-hover:scale-110 transition-transform" size={28} />
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white animate-bounce">1</div>
-          </>
-        )}
-      </button>
-    </div>
-  );
-};
+const SupportChat = () => (
+  <a 
+    href={`https://wa.me/${SUPPORT_WHATSAPP}`} 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="fixed bottom-8 right-8 z-[1000] w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 hover:rotate-6 transition-all duration-300 group"
+    title="Contactez-nous sur WhatsApp"
+  >
+    <MessageCircle size={32} className="group-hover:scale-110 transition-transform" />
+    <span className="absolute -top-12 right-0 bg-white text-gray-900 text-[10px] font-black px-4 py-2 rounded-xl shadow-xl border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none uppercase tracking-widest">
+      Besoin d'aide ?
+    </span>
+  </a>
+);
 
 // ==========================================
 // CATALOGUE PRODUITS
