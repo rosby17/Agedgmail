@@ -3,7 +3,6 @@ import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert,
 import { supabase } from './supabaseClient';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
 import * as XLSX from 'xlsx';
-import MerciView from './pages/MerciView';
 
 // ==========================================
 // CONFIGURATION ADMIN & SUPPORT
@@ -1556,133 +1555,192 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
   );
 };
 
+const MONEYFUSION_API_URL = 'https://pay.moneyfusion.net/Agedgmailyt/de325ce326e2de1f/pay/'; // ← remplace par ton URL dashboard MoneyFusion
+const USD_TO_FCFA = 600;
+
 const RechargeView = ({ profile, session, navigate }) => {
-  const [amount, setAmount] = useState(10);
+  const [amountUsd, setAmountUsd] = useState(10);
+  const [name, setName] = useState(profile?.display_name || '');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const noteValue = profile?.display_name?.toLowerCase() || session?.user?.email?.split('@')[0];
+  const [step, setStep] = useState('form'); // 'form' | 'redirecting' | 'success'
+  const [error, setError] = useState('');
+  const [payUrl, setPayUrl] = useState('');
+
+  const amountFcfa = Math.round(amountUsd * USD_TO_FCFA);
+
+  if (!session) { navigate('auth'); return null; }
 
   const handleSubmit = async () => {
-    if (!session) { navigate('auth'); return; }
-    if (amount <= 0) { setError('Veuillez entrer un montant valide.'); return; }
+    if (!name.trim()) { setError('Ton nom est requis.'); return; }
+    if (!phone.trim() || phone.trim().length < 8) { setError('Numéro Mobile Money invalide.'); return; }
+    if (amountUsd <= 0) { setError('Montant invalide.'); return; }
 
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
-      // 1. Créer la commande de recharge
       const { error: orderErr } = await supabase.from('orders').insert([{
         user_id: session.user.id,
         buyer_email: session.user.email,
         product_id: 999,
-        product_name: "Recharge Binance",
+        product_name: 'Recharge Mobile Money',
         quantity: 1,
-        total_price: amount,
+        total_price: amountUsd,
         status: 'pending',
-        binance_tx_id: `RECHARGE:${noteValue}`
       }]);
-
       if (orderErr) throw orderErr;
 
-      // 2. Alerte Admin
-      await fetch("https://formsubmit.co/ajax/rooseveltmkr@gmail.com", {
-        method: "POST",
+      const res = await fetch(MONEYFUSION_API_URL, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subject: "🚨 Demande de Recharge Binance (AgedGmailYT)",
-          username: noteValue,
-          montant: amount + " USD",
-          note: noteValue,
-          message: "Vérifiez le transfert Binance avec la note indiquée."
-        })
+          totalPrice: amountFcfa,
+          article: [{ 'Recharge AgedGmailYT': amountFcfa }],
+          personal_Info: [{ userId: session.user.id }],
+          numeroSend: phone.trim(),
+          nomclient: name.trim(),
+          return_url: 'https://agedgmail.tools-cl.com/#merci',
+          webhook_url: 'https://agedgmail.tools-cl.com/api/payment-webhook',
+        }),
       });
 
-      setSuccess(true);
-      setTimeout(() => navigate('dashboard'), 3000);
+      if (!res.ok) throw new Error(`Erreur réseau : ${res.status}`);
+      const mfData = await res.json();
+      if (!mfData.statut || !mfData.url) throw new Error(mfData.message || 'Réponse MoneyFusion invalide.');
+
+      setPayUrl(mfData.url);
+      setStep('redirecting');
+
     } catch (err) {
-      setError("Erreur : " + err.message);
+      setError(err.message || 'Une erreur est survenue.');
     } finally {
       setLoading(false);
     }
   };
 
-  const copyToClipboard = (text) => navigator.clipboard.writeText(text);
+  const openPayment = () => {
+    window.open(payUrl, '_blank', 'noopener,noreferrer');
+    setStep('success');
+  };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-20 font-sans">
-      <h2 className="text-4xl font-bold text-gray-900 mb-6 tracking-tight">Recharger via Binance Pay</h2>
-      <p className="text-gray-500 mb-10 leading-relaxed">Suivez les étapes ci-dessous pour créditer votre compte. L'utilisation de la **Note** est indispensable pour l'attribution automatique des fonds.</p>
+    <div className="max-w-2xl mx-auto px-6 py-20 font-sans">
+      <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">Recharger mon compte</h2>
+      <p className="text-gray-500 mb-10 leading-relaxed">
+        Paiement sécurisé par Mobile Money — Orange Money, MTN MoMo, Wave, Moov, Airtel.
+      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+      {step === 'form' && (
         <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft space-y-6">
-          <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">1. Infos de Transfert</h3>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center group">
-              <span className="text-xs font-bold text-gray-500">Devise :</span>
-              <span className="font-black text-gray-900">USDT (Binance Pay)</span>
-            </div>
-
-            <div className="flex justify-between items-center group">
-              <span className="text-xs font-bold text-gray-500">ID Binance :</span>
-              <div className="flex items-center gap-3">
-                <span className="font-mono font-black text-gray-900">160684871</span>
-                <button onClick={() => copyToClipboard('160684871')} className="text-gray-300 hover:text-primary transition-colors"><Copy size={14} /></button>
-              </div>
-            </div>
-
-            <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-primary">note à ajouter :</span>
-                <button onClick={() => copyToClipboard(noteValue.toLowerCase())} className="text-primary/40 hover:text-primary transition-colors"><Copy size={14} /></button>
-              </div>
-              <div className="font-mono text-xl font-black text-primary lowercase text-center">{noteValue.toLowerCase()}</div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-            <p className="text-[10px] text-red-500 font-bold leading-relaxed">
-              * AJOUTER LA note : Sans cette note en minuscule, le traitement de votre recharge prendra plus de temps.
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+              Montant à recharger (USD)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={amountUsd}
+              onChange={e => setAmountUsd(Number(e.target.value))}
+              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary"
+            />
+            <p className="text-xs text-gray-400 mt-2 font-medium">
+              ≈ <span className="text-gray-700 font-black">{amountFcfa.toLocaleString('fr-FR')} FCFA</span> débités de ton Mobile Money
             </p>
           </div>
-        </div>
 
-        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft flex flex-col">
-          <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4 mb-6">2. Montant & Validation</h3>
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Ton nom</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Jean Dupont"
+              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-gray-900"
+            />
+          </div>
 
-          <div className="space-y-6 flex-grow">
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant envoyé (USD)</label>
-              <input type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary" />
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+              Numéro Mobile Money
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="ex: 6XXXXXXXX"
+              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-mono font-bold text-gray-900"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">Orange Money · MTN MoMo · Wave · Moov · Airtel</p>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-500 p-4 rounded-xl text-sm font-bold border border-red-100">
+              {error}
             </div>
+          )}
 
-            {error && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-[10px] font-bold border border-red-100">{error}</div>}
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-gray-900 text-white hover:bg-primary shadow-black/10 disabled:opacity-40"
+          >
+            {loading
+              ? <><RefreshCcw size={20} className="animate-spin" /> Préparation...</>
+              : <><Send size={20} /> Payer {amountFcfa.toLocaleString('fr-FR')} FCFA</>}
+          </button>
+        </div>
+      )}
 
-            <button onClick={handleSubmit} disabled={loading || success} className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${success ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-gray-900 text-white hover:bg-primary shadow-black/10'}`}>
-              {loading ? <RefreshCcw className="animate-spin" /> : success ? <CheckCircle /> : <Send />}
-              {loading ? "Envoi..." : success ? "Demande Envoyée" : "Valider ma Recharge"}
+      {step === 'redirecting' && (
+        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft text-center space-y-6">
+          <div className="w-20 h-20 rounded-full bg-violet-100 flex items-center justify-center mx-auto">
+            <ExternalLink size={36} className="text-violet-600" />
+          </div>
+          <h3 className="text-2xl font-black text-gray-900">Commande créée !</h3>
+          <p className="text-gray-500">Clique pour finaliser le paiement sur la page sécurisée MoneyFusion.</p>
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à payer</p>
+            <p className="text-2xl font-black text-primary font-mono">{amountFcfa.toLocaleString('fr-FR')} FCFA</p>
+          </div>
+          <button
+            onClick={openPayment}
+            className="w-full py-5 rounded-2xl font-bold text-lg bg-gray-900 text-white hover:bg-primary transition-all shadow-xl flex items-center justify-center gap-3"
+          >
+            <ExternalLink size={20} /> Ouvrir la page de paiement
+          </button>
+          <p className="text-xs text-gray-400">La page s'ouvre dans un nouvel onglet.</p>
+        </div>
+      )}
+
+      {step === 'success' && (
+        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft text-center space-y-6">
+          <CheckCircle size={72} className="text-green-500 mx-auto" />
+          <h3 className="text-2xl font-black text-gray-900">Paiement initié !</h3>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            Complète le paiement dans l'onglet MoneyFusion. Ton solde sera crédité après confirmation automatique.
+          </p>
+          <div className="flex gap-4">
+            <button
+              onClick={() => window.open(payUrl, '_blank')}
+              className="flex-1 border border-gray-200 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+            >
+              <ExternalLink size={16} /> Rouvrir
+            </button>
+            <button
+              onClick={() => navigate('dashboard')}
+              className="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-primary transition-all"
+            >
+              Mon compte
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100">
-        <h4 className="flex items-center gap-3 font-bold text-gray-900 mb-6"><Info size={20} className="text-primary" /> Processus de Confirmation</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-[11px] leading-relaxed text-gray-500">
-          <div className="space-y-2">
-            <div className="font-bold text-gray-900 uppercase tracking-wider">Temps de traitement</div>
-            <p>Les transactions sont généralement validées sous 5 à 15 minutes après réception des fonds.</p>
-          </div>
-          <div className="space-y-2">
-            <div className="font-bold text-gray-900 uppercase tracking-wider">Besoin d'aide ?</div>
-            <p>Si vous avez des questions, contactez-nous sur notre canal Telegram ou WhatsApp.</p>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
+
 
 
 // ==========================================
@@ -2765,7 +2823,6 @@ function App() {
             setAdminPage={setAdminPage}
           />
         )}
-        {currentView === 'merci' && <MerciView navigate={navigate} />}
       </div>
 
       <ConfirmModal
