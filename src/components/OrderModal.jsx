@@ -6,7 +6,7 @@ import { supabase } from '../supabaseClient';
 // Remplace par ton URL API générée dans ton dashboard MoneyFusion
 const MONEYFUSION_API_URL = 'https://pay.moneyfusion.net/Agedgmailyt/de325ce326e2de1f/pay/';
 // URL de ton site vers laquelle MF redirige après paiement
-const RETURN_URL = 'https://agedgmail.tools-cl.com/merci';
+const RETURN_URL = 'https://agedgmail.tools-cl.com/#merci';
 // URL webhook (backend ou Supabase Edge Function) qui reçoit la confirmation
 const WEBHOOK_URL = 'https://agedgmail.tools-cl.com/api/payment-webhook';
 // ─────────────────────────────────────────────────────────────────────────────

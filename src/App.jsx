@@ -3,6 +3,7 @@ import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert,
 import { supabase } from './supabaseClient';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
 import * as XLSX from 'xlsx';
+import MerciView from './pages/MerciView';
 
 // ==========================================
 // CONFIGURATION ADMIN & SUPPORT
@@ -54,9 +55,9 @@ const FacebookIcon = ({ className = "" }) => (
 // COMPOSANT SUPPORT CHAT
 // ==========================================
 const SupportChat = () => (
-  <a 
-    href={`https://wa.me/${SUPPORT_WHATSAPP}`} 
-    target="_blank" 
+  <a
+    href={`https://wa.me/${SUPPORT_WHATSAPP}`}
+    target="_blank"
     rel="noopener noreferrer"
     className="fixed bottom-8 right-8 z-[1000] w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 hover:rotate-6 transition-all duration-300 group"
     title="Contactez-nous sur WhatsApp"
@@ -130,7 +131,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
   return (
     <div className="bg-white flex flex-col h-full font-sans">
       {/* Logo Area */}
-      <div 
+      <div
         className="aspect-[1.5] bg-white border border-gray-100 rounded-[2.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0"
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
@@ -141,13 +142,13 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
           <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
         )}
       </div>
-      
+
       {/* Content */}
       <div className="flex-grow flex flex-col">
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
           {CATEGORIES.find(c => c.id === product.category)?.name}
         </div>
-        <h3 
+        <h3
           className="text-[15px] font-bold text-primary leading-snug cursor-pointer mb-4 hover:text-red-600 transition-colors"
           onClick={() => { setSelectedProduct(product); navigate('product'); }}
         >
@@ -168,9 +169,9 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
       <div className="flex items-center gap-3">
         <div className="flex items-center bg-gray-50 rounded-xl p-1 shrink-0 border border-gray-100">
           <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Minus size={14} /></button>
-          <input 
-            type="number" 
-            value={localQty} 
+          <input
+            type="number"
+            value={localQty}
             onChange={(e) => {
               const val = parseInt(e.target.value);
               if (!isNaN(val) && val >= 1) setLocalQty(Math.min(val, 9999));
@@ -179,8 +180,8 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
           />
           <button onClick={() => localQty < 9999 && setLocalQty(localQty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Plus size={14} /></button>
         </div>
-        <button 
-          onClick={handleAdd} 
+        <button
+          onClick={handleAdd}
           disabled={product.stock <= 0}
           className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${product.stock <= 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : added ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'bg-gray-900 text-white hover:bg-primary shadow-lg shadow-black/5'}`}
         >
@@ -200,8 +201,8 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView 
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
         {currentView !== 'home' && (
-          <button 
-            onClick={() => window.history.back()} 
+          <button
+            onClick={() => window.history.back()}
             className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all border border-gray-100 shadow-sm"
           >
             <ArrowLeft size={20} />
@@ -293,9 +294,9 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
           </div>
           <div className="relative w-full md:w-80">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Rechercher un compte..." 
+            <input
+              type="text"
+              placeholder="Rechercher un compte..."
               className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-100 text-sm focus:ring-2 focus:ring-primary/20 outline-none shadow-sm transition-all"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -353,7 +354,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
         .getPublicUrl(filePath);
 
       setAvatarUrl(publicUrl);
-      
+
       // Auto-save to profile
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
       onUpdate();
@@ -383,9 +384,9 @@ const SettingsTab = ({ profile, onUpdate }) => {
       });
 
       if (error) throw error;
-      
+
       setSuccess(true);
-      onUpdate(); 
+      onUpdate();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       setErrorMessage(err.message);
@@ -529,26 +530,26 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                     <Info size={12} className="text-primary" /> Format : Email | Password | Recovery | 2FA
                   </div>
-                  <button 
-                    onClick={() => { 
+                  <button
+                    onClick={() => {
                       const text = (viewOrder.credentials || viewOrder.data || "");
                       navigator.clipboard.writeText(text);
-                    }} 
+                    }}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
                   >
                     <Copy size={12} /> Copier Tout
                   </button>
                 </div>
-                  <div 
-                    className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2 mt-6"
-                    dangerouslySetInnerHTML={{
-                      __html: (() => {
-                        if (!viewOrder.credentials && !viewOrder.data) return "En attente de livraison...";
-                        
-                        const creds = viewOrder.credentials || viewOrder.data;
-                        const highlighted = creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
-                        
-                        return `<div class="space-y-4">
+                <div
+                  className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2 mt-6"
+                  dangerouslySetInnerHTML={{
+                    __html: (() => {
+                      if (!viewOrder.credentials && !viewOrder.data) return "En attente de livraison...";
+
+                      const creds = viewOrder.credentials || viewOrder.data;
+                      const highlighted = creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
+
+                      return `<div class="space-y-4">
                           <p>Merci beaucoup pour votre achat.</p>
                           <p>Voici vos produits :</p>
                           <p class="font-black text-lg text-gray-900 border-b border-gray-100 pb-2">${viewOrder.product_name}</p>
@@ -568,15 +569,15 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                             <p class="text-red-500 font-bold text-xs">Période de garantie terminée après connexion réussie.</p>
                           </div>
                         </div>`;
-                      })()
-                    }}
-                  />
-                </div>
+                    })()
+                  }}
+                />
               </div>
-              <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
             </div>
+            <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
           </div>
-        )}
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-12">
         <aside className="w-full lg:w-64 flex-shrink-0">
@@ -653,7 +654,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                             <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleDateString()}</div>
                           </div>
                         </div>
-                         <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4">
                           <div className="text-sm font-black text-gray-900">${order.total_price?.toFixed(2)}</div>
                           {order.product_name !== "Recharge Binance" && (
                             <button onClick={() => setViewOrder(order)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-primary transition-all"><Eye size={18} /></button>
@@ -689,7 +690,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                               {order.status === 'confirmed' ? 'Confirmé' : order.status === 'cancelled' ? 'Annulé' : 'En attente'}
                             </span>
                           </td>
-                           <td className="py-6">
+                          <td className="py-6">
                             {order.product_name !== "Recharge Binance" && (
                               <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
                                 <Eye size={14} /> Voir les accès
@@ -731,7 +732,7 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
     const { data } = await supabase.from('account_stock')
       .select('id, credentials, is_delivered')
       .eq('product_id', product.id);
-    
+
     if (data) {
       const available = data.filter(r => !r.is_delivered);
       const deliveredCount = data.length - available.length;
@@ -768,7 +769,7 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
         .delete()
         .eq('product_id', product.id)
         .eq('is_delivered', false);
-      
+
       if (delErr) throw delErr;
 
       // 2. Insert new lines
@@ -815,13 +816,13 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
         </div>
 
         <div className="flex gap-2 p-1 bg-gray-50 rounded-2xl">
-          <button 
+          <button
             onClick={() => setShowExisting(false)}
             className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${!showExisting ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
           >
             Ajouter du Stock
           </button>
-          <button 
+          <button
             onClick={() => setShowExisting(true)}
             className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${showExisting ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
           >
@@ -861,8 +862,8 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
                 className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
               />
               <div className="flex justify-between items-center mt-2">
-                 <p className="text-[10px] text-gray-400">{existingStock.split('\n').filter(l => l.trim()).length} compte(s) restant(s)</p>
-                 <button onClick={() => setExistingStock('')} className="text-[10px] font-bold text-red-400 hover:underline">Vider tout le stock</button>
+                <p className="text-[10px] text-gray-400">{existingStock.split('\n').filter(l => l.trim()).length} compte(s) restant(s)</p>
+                <button onClick={() => setExistingStock('')} className="text-[10px] font-bold text-red-400 hover:underline">Vider tout le stock</button>
               </div>
             </div>
 
@@ -904,10 +905,10 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
       if (!userError && userData) currentBalance = userData.balance || 0;
 
       const newBalance = currentBalance + (selectedOrder.total_price || 0);
-      const { error: balanceError } = await supabase.from('profiles').upsert({ 
-        id: selectedOrder.user_id, email: selectedOrder.buyer_email, balance: newBalance 
+      const { error: balanceError } = await supabase.from('profiles').upsert({
+        id: selectedOrder.user_id, email: selectedOrder.buyer_email, balance: newBalance
       });
-      
+
       if (balanceError) {
         setErrorMessage("Erreur solde : " + balanceError.message);
         setActionLoading(false);
@@ -1137,11 +1138,11 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
                     )}
                     <div className="space-y-4">
                       <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Note administrative</label>
-                      <textarea 
-                        value={adminNote} 
-                        onChange={e => setAdminNote(e.target.value)} 
+                      <textarea
+                        value={adminNote}
+                        onChange={e => setAdminNote(e.target.value)}
                         placeholder="Note interne (ex: Paiement reçu sur Binance)..."
-                        className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none text-sm min-h-[100px] resize-none" 
+                        className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none text-sm min-h-[100px] resize-none"
                       />
                     </div>
                     {errorMessage && (
@@ -1162,7 +1163,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
                   {selectedOrder.product_name === "Recharge Binance" ? "Confirmation" : "Contenu de la livraison"}
                 </label>
                 <div className="bg-white border border-gray-100 rounded-3xl p-1 shadow-inner h-full min-h-[300px]">
-                  <div 
+                  <div
                     className="font-mono text-xs text-gray-600 p-6 leading-relaxed whitespace-pre-wrap break-all h-full max-h-[500px] overflow-y-auto custom-scrollbar"
                     dangerouslySetInnerHTML={{
                       __html: (() => {
@@ -1197,11 +1198,11 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
 // ADMIN VIEW
 // ==========================================
 
-const AdminView = ({ 
-  navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers, 
-  actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm, 
-  setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleResetSystem, handleExcelProductImport, handleExportExcel, adminSearch, setAdminSearch, 
-  adminPage, setAdminPage 
+const AdminView = ({
+  navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
+  actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm,
+  setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleResetSystem, handleExcelProductImport, handleExportExcel, adminSearch, setAdminSearch,
+  adminPage, setAdminPage
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
   const [managingStock, setManagingStock] = useState(null);
@@ -1251,9 +1252,9 @@ const AdminView = ({
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">${allOrders.reduce((s,o) => s + (o.total_price || 0), 0).toFixed(2)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">${allOrders.reduce((s, o) => s + (o.total_price || 0), 0).toFixed(2)}</div></div>
                 <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Produits en Ligne</div><div className="text-3xl font-black text-gray-900">{products.length}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Total</div><div className="text-3xl font-black text-gray-900">{products.reduce((s,p) => s + (p.stock || 0), 0)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Total</div><div className="text-3xl font-black text-gray-900">{products.reduce((s, p) => s + (p.stock || 0), 0)}</div></div>
               </div>
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
                 <h3 className="text-lg font-bold mb-8">Statistiques de Vente</h3>
@@ -1281,8 +1282,8 @@ const AdminView = ({
                 <div className="flex justify-between items-center mb-10">
                   <h2 className="text-2xl font-bold">Catalogue Produits</h2>
                   <div className="flex gap-4 items-center">
-                    <button 
-                      onClick={() => handleDeleteAllProducts()} 
+                    <button
+                      onClick={() => handleDeleteAllProducts()}
                       className="text-red-500 hover:bg-red-50 px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all"
                     >
                       <Trash2 size={18} /> Tout supprimer
@@ -1304,11 +1305,11 @@ const AdminView = ({
                       <div className="space-y-4">
                         <div>
                           <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Titre du Produit</label>
-                          <input type="text" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20" placeholder="ex: Gmail Aged 2018" />
+                          <input type="text" value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20" placeholder="ex: Gmail Aged 2018" />
                         </div>
                         <div>
                           <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Catégorie</label>
-                          <select value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold">
+                          <select value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold">
                             {CATEGORIES.filter(c => c.id !== "all").map(cat => (
                               <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
@@ -1320,14 +1321,14 @@ const AdminView = ({
                         <div className="grid grid-cols-1 gap-4">
                           <div>
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Prix ($)</label>
-                            <input type="number" value={productForm.price} onChange={e => setProductForm({...productForm, price: parseFloat(e.target.value)})} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono" />
+                            <input type="number" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: parseFloat(e.target.value) })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono" />
                           </div>
                         </div>
                       </div>
                       <div className="space-y-4">
                         <div>
                           <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
-                          <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows="6" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Détails du produit..." />
+                          <textarea value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} rows="6" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Détails du produit..." />
                         </div>
                         <button onClick={handleSaveProduct} disabled={actionStatus === 'loading'} className="w-full h-14 bg-gray-900 text-white rounded-xl font-bold hover:bg-primary transition-all flex items-center justify-center gap-2">
                           {actionStatus === 'loading' ? <RefreshCcw className="animate-spin" /> : <Save size={18} />}
@@ -1350,7 +1351,7 @@ const AdminView = ({
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {products.map(p => (
-                      <tr key={p.id} className="group hover:bg-gray-50/50 transition-colors">
+                        <tr key={p.id} className="group hover:bg-gray-50/50 transition-colors">
                           <td className="py-5">
                             <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center p-2 border border-gray-100">
@@ -1489,7 +1490,7 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
     <div className="space-y-8">
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-sm space-y-6">
         <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">Informations de Transfert</h4>
-        
+
         <div className="space-y-4">
           <div className="flex justify-between items-center group">
             <span className="text-sm font-bold text-gray-500">Devise :</span>
@@ -1516,7 +1517,7 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
           </div>
         </div>
 
-        <button 
+        <button
           onClick={() => copyToClipboard(`ID: 160684871 | Note: ${noteValue}`)}
           className="w-full py-4 bg-gray-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all flex items-center justify-center gap-2"
         >
@@ -1565,10 +1566,10 @@ const RechargeView = ({ profile, session, navigate }) => {
   const handleSubmit = async () => {
     if (!session) { navigate('auth'); return; }
     if (amount <= 0) { setError('Veuillez entrer un montant valide.'); return; }
-    
+
     setLoading(true);
     setError("");
-    
+
     try {
       // 1. Créer la commande de recharge
       const { error: orderErr } = await supabase.from('orders').insert([{
@@ -1612,11 +1613,11 @@ const RechargeView = ({ profile, session, navigate }) => {
     <div className="max-w-3xl mx-auto px-6 py-20 font-sans">
       <h2 className="text-4xl font-bold text-gray-900 mb-6 tracking-tight">Recharger via Binance Pay</h2>
       <p className="text-gray-500 mb-10 leading-relaxed">Suivez les étapes ci-dessous pour créditer votre compte. L'utilisation de la **Note** est indispensable pour l'attribution automatique des fonds.</p>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft space-y-6">
           <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">1. Infos de Transfert</h3>
-          
+
           <div className="space-y-4">
             <div className="flex justify-between items-center group">
               <span className="text-xs font-bold text-gray-500">Devise :</span>
@@ -1639,7 +1640,7 @@ const RechargeView = ({ profile, session, navigate }) => {
               <div className="font-mono text-xl font-black text-primary lowercase text-center">{noteValue.toLowerCase()}</div>
             </div>
           </div>
-          
+
           <div className="p-4 bg-red-50 rounded-xl border border-red-100">
             <p className="text-[10px] text-red-500 font-bold leading-relaxed">
               * AJOUTER LA note : Sans cette note en minuscule, le traitement de votre recharge prendra plus de temps.
@@ -1649,7 +1650,7 @@ const RechargeView = ({ profile, session, navigate }) => {
 
         <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft flex flex-col">
           <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4 mb-6">2. Montant & Validation</h3>
-          
+
           <div className="space-y-6 flex-grow">
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant envoyé (USD)</label>
@@ -1753,17 +1754,17 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
         .from('profiles')
         .update({ balance: profile.balance - cartTotal })
         .eq('id', session.user.id);
-      
+
       if (balanceErr) throw balanceErr;
 
       // 5. Finalize UI state
       setPurchaseSuccess(true);
-      
+
       // Refresh all relevant data
       await fetchProfile(session.user.id);
       await fetchProducts();
       await fetchAllOrders(); // Update admin view if necessary
-      
+
       setTimeout(() => {
         clearCart();
         navigate('dashboard');
@@ -1783,11 +1784,11 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         <div className="lg:col-span-2">
           <h2 className="text-4xl font-bold text-gray-900 mb-12 tracking-tight">Finaliser la Commande</h2>
-          
+
           <div className="space-y-8">
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft overflow-hidden relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-              
+
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-10">
                   <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
@@ -1814,11 +1815,11 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                     <div className="p-6 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-4">
                       <div className="mt-1 text-red-500"><AlertTriangle size={20} /></div>
                       <p className="text-sm text-red-600 leading-relaxed font-medium">
-                        Désolé, votre solde est de <span className="font-bold">${(profile?.balance || 0).toFixed(2)}</span>. 
+                        Désolé, votre solde est de <span className="font-bold">${(profile?.balance || 0).toFixed(2)}</span>.
                         Vous avez besoin de <span className="font-bold">${cartTotal.toFixed(2)}</span> pour cette commande.
                       </p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => navigate('recharge')}
                       className="w-full py-5 rounded-[2rem] bg-gray-900 text-white font-bold hover:bg-primary transition-all shadow-xl shadow-gray-900/10 flex items-center justify-center gap-3"
                     >
@@ -1826,7 +1827,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                     </button>
                   </div>
                 ) : (
-                  <button 
+                  <button
                     onClick={handleBalancePayment}
                     disabled={isProcessing || purchaseSuccess}
                     className={`w-full py-6 rounded-[2rem] font-black text-lg transition-all shadow-2xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20'}`}
@@ -1893,7 +1894,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
           </nav>
 
           <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tighter leading-tight">{product.name}</h1>
-          
+
           <div className="flex items-center gap-4 mb-6">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-xs font-bold border border-green-100">
               <Package size={14} /> In stock ({product.stock})
@@ -1912,8 +1913,8 @@ const ProductView = ({ product, addToCart, navigate }) => {
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</label>
               <div className="flex items-center bg-gray-100 rounded-2xl p-1.5 border border-gray-200/50">
                 <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-200/50"><Minus size={16} /></button>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={quantity}
                   onChange={(e) => {
                     const val = parseInt(e.target.value);
@@ -1925,11 +1926,11 @@ const ProductView = ({ product, addToCart, navigate }) => {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => {
                 addToCart(product, quantity);
                 navigate('cart');
-              }} 
+              }}
               disabled={product.stock <= 0}
               className={`w-full max-w-md h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
             >
@@ -1964,19 +1965,19 @@ const ProductView = ({ product, addToCart, navigate }) => {
                 ))}
               </div>
             </div>
-            
+
             <div className="bg-primary/5 border border-primary/10 p-8 rounded-[2.5rem]">
-               <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-4"><Info size={14} /> Description Additionnelle</h4>
-               <p className="text-gray-600 font-medium leading-relaxed italic">{product.description || product.details?.note}</p>
+              <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-4"><Info size={14} /> Description Additionnelle</h4>
+              <p className="text-gray-600 font-medium leading-relaxed italic">{product.description || product.details?.note}</p>
             </div>
           </div>
 
           <div className="space-y-12">
             <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100">
-               <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><ShieldAlert size={14} className="text-primary" /> Conditions d'utilisation</h4>
-               <div className="text-xs text-gray-500 leading-relaxed space-y-4">
-                 {product.details?.terms?.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
-               </div>
+              <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><ShieldAlert size={14} className="text-primary" /> Conditions d'utilisation</h4>
+              <div className="text-xs text-gray-500 leading-relaxed space-y-4">
+                {product.details?.terms?.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
+              </div>
             </div>
           </div>
         </div>
@@ -2027,8 +2028,8 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTot
         ))}
         <div className="pt-10 flex flex-col items-end">
           <div className="text-4xl font-bold text-gray-900 mb-8 tracking-tighter">Total: ${cartTotal.toFixed(2)}</div>
-          <button 
-            onClick={() => session ? navigate('payment') : navigate('auth')} 
+          <button
+            onClick={() => session ? navigate('payment') : navigate('auth')}
             className="bg-primary text-white px-16 py-6 rounded-full font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/20"
           >
             {session ? 'Passer au Paiement' : 'Se connecter pour payer'}
@@ -2063,8 +2064,8 @@ const AuthView = ({ navigate }) => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({ 
-          email, 
+        const { error } = await supabase.auth.signUp({
+          email,
           password,
           options: {
             data: {
@@ -2106,9 +2107,9 @@ const AuthView = ({ navigate }) => {
   };
 
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({ 
-      provider: 'google', 
-      options: { redirectTo: window.location.origin } 
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
     });
     if (error) console.error(error);
   };
@@ -2116,7 +2117,7 @@ const AuthView = ({ navigate }) => {
   return (
     <div className="min-h-[90vh] flex items-center justify-center py-20 px-6 font-sans bg-[#F9FAFB]">
       <div className="w-full max-w-[550px] bg-white p-12 md:p-20 rounded-[4rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.06)] border border-gray-50 flex flex-col items-center">
-        
+
         {/* Logo */}
         <div className="w-16 h-16 mb-12 flex items-center justify-center">
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
@@ -2130,15 +2131,15 @@ const AuthView = ({ navigate }) => {
 
         {!showForm ? (
           <div className="w-full space-y-4">
-            <button 
-              onClick={handleGoogleLogin} 
+            <button
+              onClick={handleGoogleLogin}
               className="w-full h-20 bg-white border border-gray-100 rounded-[2rem] flex items-center justify-center gap-4 hover:bg-gray-50 transition-all group shadow-sm"
             >
               <img src="https://www.google.com/favicon.ico" className="w-6 h-6 group-hover:scale-110 transition-transform" alt="Google" />
               <span className="text-gray-700 font-bold text-lg">Continuer avec Google</span>
             </button>
 
-            <button 
+            <button
               onClick={() => setShowForm(true)}
               className="w-full h-20 bg-[#10B981] text-white rounded-[2rem] flex items-center justify-center gap-4 hover:bg-[#059669] transition-all shadow-xl shadow-green-500/10"
             >
@@ -2190,21 +2191,21 @@ const AuthView = ({ navigate }) => {
                 {isLogin ? "S'inscrire" : "Connexion"}
               </button>
             </div>
-            
+
             <button type="button" onClick={() => setShowForm(false)} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-4">
               ← Retour aux options
             </button>
           </form>
         )}
 
-          <div className="mt-10 text-center">
-            <button onClick={handleResetPassword} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
-              Mot de passe oublié ?
-            </button>
-          </div>
+        <div className="mt-10 text-center">
+          <button onClick={handleResetPassword} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
+            Mot de passe oublié ?
+          </button>
         </div>
       </div>
-    );
+    </div>
+  );
 };
 
 // ==========================================
@@ -2258,7 +2259,7 @@ const Footer = ({ navigate }) => (
           <span className="text-gray-200 hidden md:block">•</span>
           <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">Tous droits réservés</span>
         </div>
-        
+
         <div className="flex gap-8 items-center">
           <div className="flex gap-4 items-center">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -2279,7 +2280,7 @@ const Footer = ({ navigate }) => (
 
 function App() {
   const [products, setProducts] = useState([]);
-  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => {}, type: "danger" });
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: "danger" });
 
   const [currentView, setCurrentView] = useState(() => localStorage.getItem('agedgmail_view') || 'home');
   const [selectedProduct, setSelectedProduct] = useState(() => {
@@ -2359,12 +2360,12 @@ function App() {
           const { error: err1 } = await supabase.from('orders').delete().not('id', 'is', null);
           // 3. Reset all balances to 0
           const { error: err3 } = await supabase.from('profiles').update({ balance: 0 }).not('id', 'is', null);
-          
+
           if (err1 || err2 || err3) {
             console.error({ err1, err2, err3 });
             throw new Error(`DB Error: ${err1?.message || err2?.message || err3?.message}`);
           }
-          
+
           await fetchProducts();
           await fetchAllOrders();
           await fetchUsers();
@@ -2402,9 +2403,9 @@ function App() {
         if (event === 'SIGNED_IN' && window.location.hash === '#auth') {
           navigate('home');
         }
-      } else { 
-        setProfile(null); 
-        setOrders([]); 
+      } else {
+        setProfile(null);
+        setOrders([]);
       }
     });
 
@@ -2516,7 +2517,7 @@ function App() {
     }
     // 1. Fetch products
     const { data: productsData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    
+
     if (!pErr && productsData) {
       // Fetch counts for each product individually to bypass 1000-row limits
       const updatedProducts = await Promise.all(productsData.map(async (p) => {
@@ -2525,14 +2526,14 @@ function App() {
           .select('*', { count: 'exact', head: true })
           .eq('product_id', p.id)
           .eq('is_delivered', false);
-        
+
         return {
           ...p,
           stock: count || 0,
           details: getProductDetails(p)
         };
       }));
-      
+
       setProducts(updatedProducts);
     }
   };
@@ -2552,10 +2553,10 @@ function App() {
   const handleSaveProduct = async () => {
     setActionStatus('loading');
     const { stock, details, ...payload } = productForm; // Exclude computed fields from DB save
-    const { error } = editingProduct 
+    const { error } = editingProduct
       ? await supabase.from('products').update(payload).eq('id', editingProduct.id)
       : await supabase.from('products').insert([payload]);
-    
+
     if (error) alert("Erreur : " + error.message);
     else {
       setEditingProduct(null);
@@ -2569,7 +2570,7 @@ function App() {
   const handleExcelProductImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     setActionStatus('loading');
     const reader = new FileReader();
     reader.onload = async (evt) => {
@@ -2579,11 +2580,11 @@ function App() {
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
-        
+
         const itemsToInsert = data.map(row => {
           const rawCategory = row['Catégorie'] || row.Catégorie || row.category || row.Category || "";
           const categoryId = CATEGORIES.find(c => c.name.toLowerCase().trim() === rawCategory.toString().toLowerCase().trim())?.id || "email";
-          
+
           return {
             name: (row['Titre du Produit'] || row.name || row.Name || row.Titre || "Produit Importé").toString().trim(),
             category: categoryId,
@@ -2596,7 +2597,7 @@ function App() {
 
         const { data: existingProducts } = await supabase.from('products').select('id, name');
         const existingNamesMap = new Map(existingProducts?.map(p => [p.name.toLowerCase().trim(), p.id]) || []);
-        
+
         const duplicateItems = itemsToInsert.filter(item => existingNamesMap.has(item.name.toLowerCase().trim()));
 
         if (duplicateItems.length > 0) {
@@ -2639,7 +2640,7 @@ function App() {
   const fetchProfile = async (userId) => {
     if (!supabase) return;
     const { data: profileData, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
-    
+
     const { data: { session } } = await supabase.auth.getSession();
     const metadata = session?.user?.user_metadata;
 
@@ -2699,9 +2700,9 @@ function App() {
   const updateCartQuantity = (id, q) => { if (q < 1) return; setCart(pc => pc.map(i => i.id === id ? { ...i, quantity: q } : i)); };
   const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
   const clearCart = () => setCart([]);
-  const navigate = (v) => { 
+  const navigate = (v) => {
     window.location.hash = v;
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -2715,7 +2716,7 @@ function App() {
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    
+
     // Initial sync
     if (window.location.hash) {
       handleHashChange();
@@ -2738,8 +2739,8 @@ function App() {
         {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
-          <AdminView 
-            navigate={navigate} 
+          <AdminView
+            navigate={navigate}
             products={products}
             fetchProducts={fetchProducts}
             allOrders={allOrders}
@@ -2764,9 +2765,10 @@ function App() {
             setAdminPage={setAdminPage}
           />
         )}
+        {currentView === 'merci' && <MerciView navigate={navigate} />}
       </div>
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
         message={confirmModal.message}
