@@ -1194,6 +1194,248 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
 };
 
 // ==========================================
+// ==========================================
+// SUPPLIER ADMIN — Reseller YTSeller (mapping, solde, commandes, logs)
+// ==========================================
+const SupplierAdmin = ({ products, fetchProducts }) => {
+  const [settings, setSettings] = useState(null);
+  const [mappings, setMappings] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [syncing, setSyncing] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [editing, setEditing] = useState(null); // mapping.id en cours d'édition
+  const [editForm, setEditForm] = useState({ ytseller_product_id: '', margin_percent: 30, active: true });
+  const [newMap, setNewMap] = useState({ product_id: '', ytseller_product_id: '', margin_percent: 30 });
+
+  const productName = (id) => products.find(p => p.id === id)?.name || `#${id}`;
+
+  const fetchAll = async () => {
+    if (!supabase) return;
+    const [s, m, o, l] = await Promise.all([
+      supabase.from('supplier_settings').select('*').eq('supplier', 'ytseller').maybeSingle(),
+      supabase.from('product_supplier_mapping').select('*').order('created_at', { ascending: false }),
+      supabase.from('orders').select('id, product_name, quantity, total_price, supplier_order_id, supplier_status, supplier_last_checked_at, created_at')
+        .eq('status', 'processing').eq('supplier', 'ytseller').order('created_at', { ascending: false }),
+      supabase.from('supplier_logs').select('*').order('created_at', { ascending: false }).limit(25),
+    ]);
+    setSettings(s.data || null);
+    setMappings(m.data || []);
+    setPending(o.data || []);
+    setLogs(l.data || []);
+  };
+
+  useEffect(() => { fetchAll(); }, []);
+
+  const handleSync = async () => {
+    setSyncing(true); setMsg('');
+    try {
+      const { data, error } = await supabase.functions.invoke('ytseller-sync-catalog', { body: {} });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setMsg(`Sync OK — ${data.updated} produit(s), solde ${data.balance} ${data.currency}.`);
+      await fetchAll();
+      if (fetchProducts) await fetchProducts();
+    } catch (e) {
+      setMsg('Erreur sync : ' + e.message);
+    }
+    setSyncing(false);
+  };
+
+  const startEdit = (m) => {
+    setEditing(m.id);
+    setEditForm({ ytseller_product_id: m.ytseller_product_id, margin_percent: m.margin_percent, active: m.active });
+  };
+
+  const saveEdit = async (id) => {
+    const { error } = await supabase.from('product_supplier_mapping').update({
+      ytseller_product_id: String(editForm.ytseller_product_id).trim(),
+      margin_percent: Number(editForm.margin_percent) || 0,
+      active: !!editForm.active,
+    }).eq('id', id);
+    if (error) { setMsg('Erreur : ' + error.message); return; }
+    setEditing(null);
+    await fetchAll();
+  };
+
+  const handleAdd = async () => {
+    if (!newMap.product_id || !String(newMap.ytseller_product_id).trim()) {
+      setMsg('Choisis un produit et renseigne l’ID YTSeller.'); return;
+    }
+    const { error } = await supabase.from('product_supplier_mapping').insert({
+      product_id: Number(newMap.product_id),
+      supplier: 'ytseller',
+      ytseller_product_id: String(newMap.ytseller_product_id).trim(),
+      margin_percent: Number(newMap.margin_percent) || 0,
+      active: true,
+    });
+    if (error) { setMsg('Erreur : ' + error.message); return; }
+    setNewMap({ product_id: '', ytseller_product_id: '', margin_percent: 30 });
+    await handleSync(); // renseigne rate/stock/prix immédiatement
+  };
+
+  const handleDelete = async (m) => {
+    if (!confirm(`Retirer le mapping de "${productName(m.product_id)}" ? Le produit repassera en stock local.`)) return;
+    await supabase.from('product_supplier_mapping').delete().eq('id', m.id);
+    await supabase.from('products').update({ is_dropship: false, supplier_stock: 0 }).eq('id', m.product_id);
+    await fetchAll();
+    if (fetchProducts) await fetchProducts();
+  };
+
+  const sellPrice = (m) => Math.round((Number(m.ytseller_rate) || 0) * (1 + (Number(m.margin_percent) || 0) / 100) * 100) / 100;
+  const unmappedProducts = products.filter(p => !mappings.some(m => m.product_id === p.id));
+
+  return (
+    <div className="space-y-8">
+      {/* Solde + synchro */}
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <div className="flex items-center justify-between flex-wrap gap-6">
+          <div>
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Solde YTSeller</div>
+            <div className="text-4xl font-black font-mono text-gray-900">
+              {settings ? `${Number(settings.balance).toFixed(2)} ${settings.currency}` : '—'}
+            </div>
+            <div className="text-xs text-gray-400 mt-2">
+              {settings?.last_catalog_sync ? `Dernière synchro : ${new Date(settings.last_catalog_sync).toLocaleString()}` : 'Jamais synchronisé'}
+            </div>
+          </div>
+          <button onClick={handleSync} disabled={syncing}
+            className="h-12 px-6 rounded-2xl bg-gray-900 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
+            <RefreshCcw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Synchronisation…' : 'Synchroniser maintenant'}
+          </button>
+        </div>
+        {msg && <div className="mt-6 text-sm font-bold text-gray-600 bg-gray-50 rounded-2xl px-5 py-3">{msg}</div>}
+        {settings && Number(settings.balance) <= 0 && (
+          <div className="mt-6 text-sm font-bold text-red-600 bg-red-50 rounded-2xl px-5 py-3 flex items-center gap-2">
+            <AlertTriangle size={16} /> Solde fournisseur à 0 — aucune commande dropship ne pourra être livrée. Rechargez votre compte YTSeller.
+          </div>
+        )}
+      </div>
+
+      {/* Mapping produits */}
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold mb-8">Mapping produits</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                <th className="pb-4">Mon produit</th><th className="pb-4">ID YTSeller</th><th className="pb-4">Coût</th>
+                <th className="pb-4">Marge %</th><th className="pb-4">Prix vente</th><th className="pb-4">Dispo</th>
+                <th className="pb-4">Actif</th><th className="pb-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {mappings.map(m => (
+                <tr key={m.id} className="text-gray-700">
+                  <td className="py-4 font-bold">{productName(m.product_id)}</td>
+                  {editing === m.id ? (
+                    <>
+                      <td className="py-4"><input value={editForm.ytseller_product_id} onChange={e => setEditForm({ ...editForm, ytseller_product_id: e.target.value })} className="w-24 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
+                      <td className="py-4 font-mono">${Number(m.ytseller_rate).toFixed(2)}</td>
+                      <td className="py-4"><input type="number" value={editForm.margin_percent} onChange={e => setEditForm({ ...editForm, margin_percent: e.target.value })} className="w-20 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
+                      <td className="py-4 font-mono text-gray-400">—</td>
+                      <td className="py-4">{m.supplier_available}</td>
+                      <td className="py-4"><input type="checkbox" checked={editForm.active} onChange={e => setEditForm({ ...editForm, active: e.target.checked })} /></td>
+                      <td className="py-4 flex gap-2">
+                        <button onClick={() => saveEdit(m.id)} className="p-2 rounded-lg bg-green-500 text-white"><Save size={14} /></button>
+                        <button onClick={() => setEditing(null)} className="p-2 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="py-4 font-mono">{m.ytseller_product_id}</td>
+                      <td className="py-4 font-mono">${Number(m.ytseller_rate).toFixed(2)}</td>
+                      <td className="py-4 font-mono">{Number(m.margin_percent).toFixed(0)}%</td>
+                      <td className="py-4 font-mono font-bold text-gray-900">${sellPrice(m).toFixed(2)}</td>
+                      <td className="py-4">
+                        <span className={m.supplier_available > 0 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{m.supplier_available}</span>
+                        <span className="text-[10px] text-gray-400 ml-1">{m.supplier_status || ''}</span>
+                      </td>
+                      <td className="py-4">{m.active ? <span className="text-green-600 font-bold">Oui</span> : <span className="text-gray-400">Non</span>}</td>
+                      <td className="py-4 flex gap-2">
+                        <button onClick={() => startEdit(m)} className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"><Edit size={14} /></button>
+                        <button onClick={() => handleDelete(m)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><Trash size={14} /></button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+              {mappings.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">Aucun produit mappé.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Ajout mapping */}
+        <div className="mt-8 pt-8 border-t border-gray-100 flex flex-wrap items-end gap-4">
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Produit</label>
+            <select value={newMap.product_id} onChange={e => setNewMap({ ...newMap, product_id: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-bold min-w-[220px]">
+              <option value="">— Choisir —</option>
+              {unmappedProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">ID YTSeller</label>
+            <input value={newMap.ytseller_product_id} onChange={e => setNewMap({ ...newMap, ytseller_product_id: e.target.value })} placeholder="ex: 11" className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-28" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Marge %</label>
+            <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-24" />
+          </div>
+          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2"><Plus size={16} /> Mapper</button>
+        </div>
+      </div>
+
+      {/* Commandes en attente fournisseur */}
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold mb-8">Commandes en attente fournisseur ({pending.length})</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                <th className="pb-4">Commande</th><th className="pb-4">Produit</th><th className="pb-4">Qté</th>
+                <th className="pb-4">YTSeller #</th><th className="pb-4">Statut</th><th className="pb-4">Dernier check</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {pending.map(o => (
+                <tr key={o.id} className="text-gray-700">
+                  <td className="py-4 font-mono">#{o.id}</td>
+                  <td className="py-4 font-bold">{o.product_name}</td>
+                  <td className="py-4">{o.quantity}</td>
+                  <td className="py-4 font-mono">{o.supplier_order_id || '—'}</td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-yellow-50 text-yellow-700 font-bold text-xs">{o.supplier_status || 'Pending'}</span></td>
+                  <td className="py-4 text-xs text-gray-400">{o.supplier_last_checked_at ? new Date(o.supplier_last_checked_at).toLocaleString() : '—'}</td>
+                </tr>
+              ))}
+              {pending.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Aucune commande en attente.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Logs */}
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold">Journal fournisseur</h2>
+          <button onClick={fetchAll} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><RefreshCcw size={14} /> Rafraîchir</button>
+        </div>
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {logs.map(l => (
+            <div key={l.id} className={`text-xs rounded-xl px-4 py-3 flex items-start gap-3 ${l.level === 'error' ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'}`}>
+              <span className="font-mono text-gray-400 shrink-0">{new Date(l.created_at).toLocaleTimeString()}</span>
+              <span className="font-bold shrink-0 uppercase tracking-wide">{l.action}</span>
+              <span>{l.message}{l.order_id ? ` (cmd #${l.order_id})` : ''}</span>
+            </div>
+          ))}
+          {logs.length === 0 && <div className="py-8 text-center text-gray-400 text-sm">Aucun log.</div>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
 // ADMIN VIEW
 // ==========================================
 
@@ -1239,6 +1481,7 @@ const AdminView = ({
             { id: 'stock', label: 'Catalogue Produits', icon: Package },
             { id: 'orders', label: 'Commandes', icon: FileText },
             { id: 'users', label: 'Gestion Clients', icon: Users },
+            { id: 'supplier', label: 'Fournisseur', icon: Database },
           ].map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-gray-900 text-white shadow-xl' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}>
@@ -1418,6 +1661,8 @@ const AdminView = ({
               </div>
             </div>
           )}
+
+          {activeTab === 'supplier' && <SupplierAdmin products={products} fetchProducts={fetchProducts} />}
         </main>
       </div>
     </div>
@@ -1725,6 +1970,35 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 
       // Process each item in cart
       for (const item of cart) {
+        // --- Produit reseller (YTSeller) : livraison différée ---
+        if (item.is_dropship) {
+          // Commande créée en 'processing' (credentials remplis plus tard par
+          // le job ytseller-poll-orders). L'UI "Mes commandes" affiche déjà
+          // "En attente de livraison…" tant que credentials est vide.
+          const { data: dsOrder, error: dsErr } = await supabase.from('orders').insert({
+            user_id: session.user.id,
+            buyer_email: session.user.email,
+            product_id: item.id,
+            product_name: item.name,
+            quantity: item.quantity,
+            total_price: item.price * item.quantity,
+            status: 'processing',
+            supplier: 'ytseller',
+            created_at: new Date().toISOString()
+          }).select('id').single();
+
+          if (dsErr) throw dsErr;
+          if (!dsOrder) throw new Error("La commande n'a pas pu être créée.");
+
+          // Déclenche la passation fournisseur en arrière-plan (ne bloque pas
+          // l'UI). En cas d'échec, la fonction rembourse automatiquement.
+          supabase.functions.invoke('ytseller-place-order', { body: { orderId: dsOrder.id } })
+            .catch(e => console.error('ytseller-place-order invoke:', e));
+
+          continue;
+        }
+
+        // --- Produit à stock local (comportement existant inchangé) ---
         // 1. Fetch available credentials from account_stock
         const { data: stockRows, error: stockErr } = await supabase
           .from('account_stock')
@@ -2546,15 +2820,23 @@ function App() {
     if (!pErr && productsData) {
       // Fetch counts for each product individually to bypass 1000-row limits
       const updatedProducts = await Promise.all(productsData.map(async (p) => {
-        const { count } = await supabase
-          .from('account_stock')
-          .select('*', { count: 'exact', head: true })
-          .eq('product_id', p.id)
-          .eq('is_delivered', false);
+        let stock;
+        if (p.is_dropship) {
+          // Produit reseller : la dispo vient du fournisseur (synchro périodique)
+          stock = p.supplier_stock || 0;
+        } else {
+          // Produit à stock local : comptage account_stock (comportement existant)
+          const { count } = await supabase
+            .from('account_stock')
+            .select('*', { count: 'exact', head: true })
+            .eq('product_id', p.id)
+            .eq('is_delivered', false);
+          stock = count || 0;
+        }
 
         return {
           ...p,
-          stock: count || 0,
+          stock,
           details: getProductDetails(p)
         };
       }));
