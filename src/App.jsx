@@ -1555,7 +1555,6 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
   );
 };
 
-const MONEYFUSION_API_URL = 'https://pay.moneyfusion.net/Agedgmailyt/de325ce326e2de1f/pay/'; // ← remplace par ton URL dashboard MoneyFusion
 const USD_TO_FCFA = 600;
 
 const RechargeView = ({ profile, session, navigate }) => {
@@ -1580,36 +1579,20 @@ const RechargeView = ({ profile, session, navigate }) => {
     setError('');
 
     try {
-      const { error: orderErr } = await supabase.from('orders').insert([{
-        user_id: session.user.id,
-        buyer_email: session.user.email,
-        product_id: 999,
-        product_name: 'Recharge Mobile Money',
-        quantity: 1,
-        total_price: amountUsd,
-        status: 'pending',
-      }]);
-      if (orderErr) throw orderErr;
-
-      const res = await fetch(MONEYFUSION_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          totalPrice: amountFcfa,
-          article: [{ 'Recharge AgedGmailYT': amountFcfa }],
-          personal_Info: [{ userId: session.user.id }],
-          numeroSend: phone.trim(),
-          nomclient: name.trim(),
-          return_url: 'https://agedgmail.tools-cl.com/#merci',
-          webhook_url: 'https://agedgmail.tools-cl.com/api/payment-webhook',
-        }),
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('moneroo-initialize', {
+        body: {
+          userId: session.user.id,
+          email: session.user.email,
+          name: name.trim(),
+          phone: phone.trim(),
+          amountUsd,
+        },
       });
 
-      if (!res.ok) throw new Error(`Erreur réseau : ${res.status}`);
-      const mfData = await res.json();
-      if (!mfData.statut || !mfData.url) throw new Error(mfData.message || 'Réponse MoneyFusion invalide.');
+      if (fnError) throw new Error(fnError.message);
+      if (!fnData?.url) throw new Error(fnData?.error || 'Réponse Moneroo invalide.');
 
-      setPayUrl(mfData.url);
+      setPayUrl(fnData.url);
       setStep('redirecting');
 
     } catch (err) {
@@ -1699,7 +1682,7 @@ const RechargeView = ({ profile, session, navigate }) => {
             <ExternalLink size={36} className="text-violet-600" />
           </div>
           <h3 className="text-2xl font-black text-gray-900">Commande créée !</h3>
-          <p className="text-gray-500">Clique pour finaliser le paiement sur la page sécurisée MoneyFusion.</p>
+          <p className="text-gray-500">Clique pour finaliser le paiement sur la page sécurisée Moneroo.</p>
           <div className="bg-gray-50 rounded-2xl p-4">
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à payer</p>
             <p className="text-2xl font-black text-primary font-mono">{amountFcfa.toLocaleString('fr-FR')} FCFA</p>
@@ -1719,7 +1702,7 @@ const RechargeView = ({ profile, session, navigate }) => {
           <CheckCircle size={72} className="text-green-500 mx-auto" />
           <h3 className="text-2xl font-black text-gray-900">Paiement initié !</h3>
           <p className="text-gray-500 text-sm leading-relaxed">
-            Complète le paiement dans l'onglet MoneyFusion. Ton solde sera crédité après confirmation automatique.
+            Complète le paiement dans l'onglet Moneroo. Ton solde sera crédité après confirmation automatique.
           </p>
           <div className="flex gap-4">
             <button
