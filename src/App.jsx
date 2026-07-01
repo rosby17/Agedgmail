@@ -2742,8 +2742,15 @@ function App() {
 
     window.addEventListener('hashchange', handleHashChange);
 
-    // Initial sync
-    if (window.location.hash) {
+    // Moneroo strips the URL fragment from return_url and only appends
+    // ?paymentId=...&paymentStatus=..., so a payment redirect always lands
+    // with an empty hash. Detect that explicitly and send the user to the
+    // dashboard instead of falling back to the last saved view.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('paymentStatus')) {
+      setCurrentView('dashboard');
+      window.history.replaceState(null, '', `${window.location.pathname}#dashboard`);
+    } else if (window.location.hash) {
       handleHashChange();
     } else {
       window.location.hash = currentView;
