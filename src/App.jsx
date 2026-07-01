@@ -50,6 +50,51 @@ const FacebookIcon = ({ className = "" }) => (
   </svg>
 );
 
+// Logos de marque (SVG inline) pour les catégories importées sans logo dédié.
+const brandBox = "w-full h-full object-contain p-3";
+const DiscordLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" fill="#5865F2" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M20.317 4.369a19.79 19.79 0 00-4.885-1.515.074.074 0 00-.079.037c-.211.375-.444.865-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.1 13.1 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.3 12.3 0 01-1.873.893.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.84 19.84 0 006.002-3.03.077.077 0 00.032-.056c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.42 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.086-2.157-2.42 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" />
+  </svg>
+);
+const InstagramLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="ig" cx="30%" cy="107%" r="150%"><stop offset="0%" stopColor="#fdf497"/><stop offset="5%" stopColor="#fdf497"/><stop offset="45%" stopColor="#fd5949"/><stop offset="60%" stopColor="#d6249f"/><stop offset="90%" stopColor="#285AEB"/></radialGradient></defs>
+    <rect width="24" height="24" rx="6" fill="url(#ig)"/>
+    <path fill="none" stroke="#fff" strokeWidth="1.6" d="M8 3.5h8A4.5 4.5 0 0120.5 8v8a4.5 4.5 0 01-4.5 4.5H8A4.5 4.5 0 013.5 16V8A4.5 4.5 0 018 3.5z"/>
+    <circle cx="12" cy="12" r="3.6" fill="none" stroke="#fff" strokeWidth="1.6"/>
+    <circle cx="16.6" cy="7.4" r="1.1" fill="#fff"/>
+  </svg>
+);
+const TwitterLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" fill="#000" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+const TikTokLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path fill="#25F4EE" d="M9.4 8.9v-1a4.6 4.6 0 00-1-.1A4.7 4.7 0 004.3 15a4.7 4.7 0 01-.9-2.8 4.7 4.7 0 016-4.5z"/>
+    <path fill="#000" d="M16.6 3h-2.9v11.6a2 2 0 11-1.4-1.9V9.7a4.9 4.9 0 00-.6 0A4.9 4.9 0 1016.2 15V8.9a6.3 6.3 0 003.7 1.2V7.2a3.5 3.5 0 01-3.3-3.5z"/>
+    <path fill="#FE2C55" d="M17.6 6.2A3.5 3.5 0 0116.6 3h-.9a3.5 3.5 0 002.9 3.5zM12.9 11.9a2 2 0 00-1.4 3.7 2 2 0 01-.6-3.6 2 2 0 012 0z"/>
+  </svg>
+);
+const AppleLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" fill="#000" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+  </svg>
+);
+const TelegramLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="12" fill="#229ED9"/>
+    <path fill="#fff" d="M5.5 11.8l11-4.24c.51-.19.96.12.79.9l-1.87 8.82c-.13.61-.5.76-1.01.47l-2.8-2.06-1.35 1.3c-.15.15-.28.28-.56.28l.2-2.85 5.19-4.69c.23-.2-.05-.31-.35-.11l-6.41 4.04-2.76-.86c-.6-.19-.61-.6.13-.89z"/>
+  </svg>
+);
+const SmsLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" fill="#22c55e" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zM7 9h10v2H7zm0-3h10v2H7z"/>
+  </svg>
+);
+
 // ==========================================
 // COMPOSANT SUPPORT CHAT
 // ==========================================
@@ -93,7 +138,35 @@ const categoryVisual = (cat = '') => {
   if (c.includes('youtube')) return 'youtube';
   if (c.includes('gmail') || c === 'email' || c.includes('mail')) return 'gmail';
   if (c.includes('facebook')) return 'facebook';
+  if (c.includes('instagram')) return 'instagram';
+  if (c.includes('tiktok') || c.includes('tik tok')) return 'tiktok';
+  if (c.includes('twitter') || c.includes('/x') || c === 'x') return 'twitter';
+  if (c.includes('discord')) return 'discord';
+  if (c.includes('icloud') || c.includes('apple')) return 'apple';
+  if (c.includes('telegram')) return 'telegram';
+  if (c.includes('sms')) return 'sms';
   return 'other';
+};
+
+// Visuel d'un produit : image personnalisée (image_url) prioritaire, sinon
+// logo de marque déduit de la catégorie, sinon icône générique.
+const ProductVisual = ({ product = {}, iconSize = 48 }) => {
+  if (product.image_url) {
+    return <img src={product.image_url} alt={product.name || ''} className="w-full h-full object-contain" loading="lazy" />;
+  }
+  switch (categoryVisual(product.category)) {
+    case 'youtube':   return <YouTubeLogo />;
+    case 'gmail':     return <GmailLogo />;
+    case 'facebook':  return <FacebookIcon className="w-full h-full object-contain p-3 text-blue-600" />;
+    case 'instagram': return <InstagramLogo />;
+    case 'tiktok':    return <TikTokLogo />;
+    case 'twitter':   return <TwitterLogo />;
+    case 'discord':   return <DiscordLogo />;
+    case 'apple':     return <AppleLogo />;
+    case 'telegram':  return <TelegramLogo />;
+    case 'sms':       return <SmsLogo />;
+    default:          return <Share2 size={iconSize} className="text-gray-300" />;
+  }
 };
 
 const PRICE_RANGES = [
@@ -149,7 +222,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
         <div className="w-full h-full p-8 flex items-center justify-center">
-          {categoryVisual(product.category) === 'youtube' ? <YouTubeLogo /> : categoryVisual(product.category) === 'gmail' ? <GmailLogo /> : categoryVisual(product.category) === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={48} className="text-gray-300" />}
+          <ProductVisual product={product} iconSize={48} />
         </div>
         {isUS && product.category === 'email' && (
           <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
@@ -1627,6 +1700,15 @@ const AdminView = ({
                           <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
                           <textarea value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} rows="6" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Détails du produit..." />
                         </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Image du produit (URL)</label>
+                          <input type="text" value={productForm.image_url || ''} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-mono" placeholder="https://…/image.png (laisser vide = logo auto)" />
+                          {productForm.image_url ? (
+                            <div className="mt-3 w-24 h-24 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden">
+                              <img src={productForm.image_url} alt="aperçu" className="w-full h-full object-contain" />
+                            </div>
+                          ) : null}
+                        </div>
                         <button onClick={handleSaveProduct} disabled={actionStatus === 'loading'} className="w-full h-14 bg-gray-900 text-white rounded-xl font-bold hover:bg-primary transition-all flex items-center justify-center gap-2">
                           {actionStatus === 'loading' ? <RefreshCcw className="animate-spin" /> : <Save size={18} />}
                           {editingProduct ? 'Mettre à jour' : 'Valider le Produit'}
@@ -1652,7 +1734,7 @@ const AdminView = ({
                           <td className="py-5">
                             <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center p-2 border border-gray-100">
-                                {categoryVisual(p.category) === 'youtube' ? <YouTubeLogo /> : categoryVisual(p.category) === 'gmail' ? <GmailLogo /> : categoryVisual(p.category) === 'facebook' ? <FacebookIcon className="text-blue-600" /> : <Share2 className="text-gray-300" />}
+                                <ProductVisual product={p} iconSize={24} />
                               </div>
                               <div>
                                 <div className="font-bold text-gray-900">{p.name}</div>
@@ -1665,7 +1747,7 @@ const AdminView = ({
                           <td className="py-5 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button onClick={() => setManagingStock(p)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Gérer Stock"><Database size={16} /></button>
-                              <button onClick={() => { setEditingProduct(p); setProductForm({ name: p.name, category: p.category, description: p.description, price: p.price }); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Edit size={16} /></button>
+                              <button onClick={() => { setEditingProduct(p); setProductForm({ name: p.name, category: p.category, description: p.description, price: p.price, image_url: p.image_url || '' }); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Edit size={16} /></button>
                               <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash size={16} /></button>
                             </div>
                           </td>
@@ -2234,7 +2316,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
         <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative group">
           <div className="absolute top-6 left-6 z-10 bg-red-500 text-white font-black px-4 py-2 rounded-xl shadow-xl rotate-[-10deg] animate-pulse">20% OFF</div>
           <div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden group-hover:scale-[1.6] transition-transform duration-700">
-            {categoryVisual(product.category) === 'youtube' ? <YouTubeLogo /> : categoryVisual(product.category) === 'gmail' ? <GmailLogo /> : categoryVisual(product.category) === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}
+            <ProductVisual product={product} iconSize={80} />
           </div>
           {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}
         </div>
@@ -2364,7 +2446,7 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTot
           <div key={item.id} className="bg-white border border-gray-100 p-8 rounded-[2.5rem] flex items-center justify-between group shadow-soft">
             <div className="flex items-center gap-8">
               <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform relative">
-                {categoryVisual(item.category) === 'youtube' ? <YouTubeLogo /> : categoryVisual(item.category) === 'gmail' ? <GmailLogo /> : categoryVisual(item.category) === 'facebook' ? <FacebookIcon className="w-10 h-10 text-blue-600" /> : <Share2 size={32} />}
+                <ProductVisual product={item} iconSize={32} />
                 {item.name.includes('US') && item.category === 'email' && <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[8px] font-black px-1 rounded">US</div>}
               </div>
               <div><h4 className="font-bold text-gray-900 mb-1">{item.name}</h4><p className="text-primary font-bold">${item.price.toFixed(2)}</p></div>
