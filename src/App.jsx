@@ -215,10 +215,10 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
   };
 
   return (
-    <div className="bg-white flex flex-col h-full font-sans">
+    <div className="bg-white dark:bg-transparent flex flex-col h-full font-sans">
       {/* Logo Area */}
       <div
-        className="aspect-[1.5] bg-white border border-gray-100 rounded-[2.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0"
+        className="aspect-[1.5] bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0"
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
         <div className="w-full h-full p-8 flex items-center justify-center">
@@ -242,7 +242,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
         </h3>
 
         <div className="flex items-center justify-between mb-6">
-          <div className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
+          <div className="text-xl font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</div>
           {product.stock <= 0 && (
             <div className="bg-red-50 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-widest">
               Rupture
@@ -282,44 +282,60 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 // NAVBAR
 // ==========================================
 
-const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView }) => (
-  <header className="bg-white border-b border-gray-200 sticky top-0 z-50 font-sans">
-    <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView, setActiveCategory }) => {
+  const go = (view, cat) => { if (cat !== undefined && setActiveCategory) setActiveCategory(cat); navigate(view); };
+  const linkCls = (active) => `text-sm font-bold transition-colors ${active ? 'text-primary' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}`;
+  return (
+  <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 font-sans">
+    <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
       <div className="flex items-center gap-4">
         {currentView !== 'home' && (
           <button
             onClick={() => window.history.back()}
-            className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all border border-gray-100 shadow-sm"
+            className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all border border-gray-100 dark:border-gray-700 shadow-sm"
           >
             <ArrowLeft size={20} />
           </button>
         )}
-        <button onClick={() => navigate('home')} className="h-12 flex items-center group transition-all">
+        <button onClick={() => go('home', 'all')} className="h-12 flex items-center group transition-all">
           <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
         </button>
       </div>
-      <div className="flex items-center gap-6">
+
+      {/* Menu central */}
+      <nav className="hidden lg:flex items-center gap-8">
+        <button onClick={() => go('home', 'all')} className={linkCls(currentView === 'home')}>Produits</button>
+        <button onClick={() => go('home', 'SMS')} className={linkCls(false)}>SMS</button>
+        <button onClick={() => session ? navigate('dashboard') : navigate('auth')} className={linkCls(currentView === 'dashboard')}>Mes commandes</button>
+        <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>API</button>
+      </nav>
+
+      <div className="flex items-center gap-4">
         {session && session.user.email === ADMIN_EMAIL && (
           <button onClick={() => navigate('admin')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
             <Shield size={14} /> Admin
           </button>
         )}
+        <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noopener noreferrer" title="Assistance / Chat"
+          className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
+          <MessageCircle size={18} />
+        </a>
         {session ? (
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex flex-col items-end border-r border-gray-100 pr-4">
+            <div className="hidden md:flex flex-col items-end border-r border-gray-100 dark:border-gray-700 pr-4">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mon Solde</span>
               <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </div>
-            <button onClick={() => navigate('dashboard')} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-600 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100">
+            <button onClick={() => navigate('dashboard')} className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
               <User size={18} />
             </button>
           </div>
         ) : (
-          <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]">
+          <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]">
             <User size={18} /> LOGIN/SIGNUP
           </button>
         )}
-        <button onClick={() => navigate('cart')} className="bg-gray-900 text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black transition-all shadow-lg shadow-black/10 relative">
+        <button onClick={() => navigate('cart')} className="bg-gray-900 dark:bg-primary text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
           <ShoppingCart size={18} />
           {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
           <span className="border-l border-white/20 pl-3">PANIER / ${cartTotal.toFixed(2)}</span>
@@ -327,7 +343,8 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView 
       </div>
     </div>
   </header>
-);
+  );
+};
 
 // ==========================================
 // HOME VIEW
@@ -335,47 +352,23 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView 
 
 const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange, filteredProducts, addToCart, navigate, setSelectedProduct, categories = CATEGORIES }) => (
   <>
-    <section className="bg-[#FCFCFD] pt-20 pb-24 overflow-hidden relative border-b border-gray-100 font-sans">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
-        <div className="max-w-xl">
-          <div className="inline-flex items-center gap-2 bg-[#E6F8F0] text-primaryDark px-3 py-1.5 rounded-full text-sm font-bold mb-6"><TrendingUp size={14} /> N°1 des Comptes Anciens</div>
-          <h1 className="text-5xl md:text-6xl font-bold text-[#1A202C] leading-[1.1] tracking-tight mb-6">Donnez un coup d'accélérateur à votre <span className="text-primary">Business YT automation</span></h1>
-          <p className="text-gray-500 text-lg mb-8 leading-relaxed">Nous fournissons les meilleurs comptes Gmail vieillis et d'anciennes chaînes YouTube pour booster votre présence.</p>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <button onClick={() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' })} className="bg-primary text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-primaryDark transition-all shadow-xl shadow-primary/20">Voir le catalogue</button>
-            <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
-              <span>Paiement 100% Crypto</span>
-              <div className="flex gap-1">
-                <div className="w-6 h-6 bg-[#F7931A] rounded-full flex items-center justify-center text-white text-[10px] font-bold">B</div>
-                <div className="w-6 h-6 bg-[#627EEA] rounded-full flex items-center justify-center text-white text-[10px] font-bold">E</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="relative h-[500px] hidden lg:block">
-          <div className="absolute top-[10%] right-[10%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-slow z-30 border border-gray-50 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><YouTubeLogo /></div><div><div className="text-sm font-black text-gray-900">YouTube 2014</div><div className="text-primary font-bold">$6.19</div></div></div>
-          <div className="absolute top-[45%] left-[5%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-medium z-20 border border-gray-100 overflow-hidden"><div className="w-14 h-14 bg-gray-50 rounded-2xl overflow-hidden"><GmailLogo /></div><div><div className="text-sm font-black text-gray-900">Gmail US 2010</div><div className="text-primary font-bold">$5.43</div></div></div>
-          <div className="absolute bottom-[10%] right-[20%] bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 animate-float-fast z-10 border border-gray-100"><div className="w-14 h-14 flex items-center justify-center bg-gray-50 rounded-2xl"><Zap size={24} className="text-yellow-400" /></div><div><div className="text-sm font-black text-gray-900">Instantané</div><div className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Livraison</div></div></div>
-        </div>
-      </div>
-    </section>
-    <main id="catalog" className="max-w-7xl mx-auto px-6 py-20 flex flex-col lg:flex-row gap-12 font-sans">
+    <main id="catalog" className="max-w-7xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-12 font-sans">
       <div className="w-full lg:w-72 flex-shrink-0">
         <div className="sticky top-32 space-y-12">
           <div>
             <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Catégories</h3>
-            <ul className="space-y-2">{categories.map(cat => (<li key={cat.id}><button onClick={() => setActiveCategory(cat.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-900 text-white shadow-xl' : 'hover:bg-gray-100 text-gray-600'}`}>{cat.name}</button></li>))}</ul>
+            <ul className="space-y-2">{categories.map(cat => (<li key={cat.id}><button onClick={() => setActiveCategory(cat.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-900 text-white shadow-xl' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>{cat.name}</button></li>))}</ul>
           </div>
           <div>
             <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Filtrer par Prix</h3>
-            <ul className="space-y-2">{PRICE_RANGES.map(range => (<li key={range.id}><button onClick={() => setPriceRange(range.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${priceRange === range.id ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'hover:bg-gray-100 text-gray-600'}`}>{range.name}</button></li>))}</ul>
+            <ul className="space-y-2">{PRICE_RANGES.map(range => (<li key={range.id}><button onClick={() => setPriceRange(range.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${priceRange === range.id ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>{range.name}</button></li>))}</ul>
           </div>
         </div>
       </div>
       <div className="flex-grow">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 border-b border-gray-100 pb-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 border-b border-gray-100 dark:border-gray-800 pb-10">
           <div>
-            <h2 className="text-2xl font-black text-gray-900 mb-2">Catalogue Officiel</h2>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Catalogue Officiel</h2>
             <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles</div>
           </div>
           <div className="relative w-full md:w-80">
@@ -383,7 +376,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
             <input
               type="text"
               placeholder="Rechercher un compte..."
-              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-100 text-sm focus:ring-2 focus:ring-primary/20 outline-none shadow-sm transition-all"
+              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500 text-sm focus:ring-2 focus:ring-primary/20 outline-none shadow-sm transition-all"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
@@ -402,6 +395,87 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
     </main>
   </>
 );
+
+// ==========================================
+// API VIEW — Vitrine "Revendez via API"
+// ==========================================
+const ApiView = ({ navigate }) => {
+  const endpoints = [
+    ['products', 'Liste des produits, prix de gros et stock en temps réel'],
+    ['add_order', 'Passer une commande (produit + quantité)'],
+    ['order_status', 'Suivre le statut d\'une commande'],
+    ['result', 'Récupérer les comptes livrés'],
+    ['balance', 'Consulter votre solde revendeur'],
+  ];
+  const steps = [
+    ['1', 'Créez votre compte', 'Inscrivez-vous et rechargez votre solde revendeur.'],
+    ['2', 'Obtenez votre clé API', 'Contactez-nous pour activer l\'accès API sur votre compte.'],
+    ['3', 'Intégrez et vendez', 'Automatisez vos achats et revendez à vos propres clients.'],
+  ];
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-16 font-sans">
+      {/* En-tête */}
+      <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark dark:text-primary px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
+          <Zap size={14} /> API Revendeur
+        </div>
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
+          Revendez à votre tour, <span className="text-primary">automatiquement via notre API</span>
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed">
+          Intégrez notre catalogue directement dans votre boutique. Achetez au prix de gros,
+          passez vos commandes par API et livrez vos clients sans effort — 24h/24.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
+          <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noopener noreferrer"
+            className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2">
+            <MessageCircle size={18} /> Obtenir ma clé API
+          </a>
+          <button onClick={() => navigate('home')} className="px-8 py-4 rounded-full font-bold text-sm border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-primary hover:text-primary transition-all">
+            Voir le catalogue
+          </button>
+        </div>
+      </div>
+
+      {/* Étapes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        {steps.map(([n, title, desc]) => (
+          <div key={n} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-8 shadow-soft">
+            <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-black mb-5">{n}</div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Endpoints */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] p-10 shadow-soft mb-16">
+        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-8">Ce que permet l'API</h2>
+        <div className="space-y-3">
+          {endpoints.map(([name, desc]) => (
+            <div key={name} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60">
+              <code className="text-primary font-mono font-bold text-sm shrink-0 w-40">{name}</code>
+              <span className="text-gray-600 dark:text-gray-300 text-sm">{desc}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-gray-400 dark:text-gray-500 text-xs mt-6">
+          Réponses JSON • authentification par clé • prix de gros négociés selon votre volume.
+        </p>
+      </div>
+
+      {/* CTA final */}
+      <div className="text-center bg-gray-900 dark:bg-gray-800 rounded-[2.5rem] p-12">
+        <h2 className="text-3xl font-black text-white mb-4">Prêt à devenir revendeur ?</h2>
+        <p className="text-gray-300 mb-8 max-w-xl mx-auto">Contactez-nous pour activer votre accès API et démarrer en quelques minutes.</p>
+        <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">
+          <MessageCircle size={18} /> Parler à un conseiller
+        </a>
+      </div>
+    </div>
+  );
+};
 
 const SettingsTab = ({ profile, onUpdate }) => {
   const [firstName, setFirstName] = useState(profile?.first_name || "");
@@ -3190,11 +3264,12 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} />
+    <div className="min-h-screen bg-white dark:bg-gray-950 font-sans flex flex-col">
+      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} />
       <div className="flex-grow">
         {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} categories={productCategories} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
+        {currentView === 'api' && <ApiView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />}
