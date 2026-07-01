@@ -1559,8 +1559,6 @@ const USD_TO_FCFA = 600;
 
 const RechargeView = ({ profile, session, navigate }) => {
   const [amountUsd, setAmountUsd] = useState(10);
-  const [name, setName] = useState(profile?.display_name || '');
-  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('form'); // 'form' | 'redirecting' | 'success'
   const [error, setError] = useState('');
@@ -1571,8 +1569,6 @@ const RechargeView = ({ profile, session, navigate }) => {
   if (!session) { navigate('auth'); return null; }
 
   const handleSubmit = async () => {
-    if (!name.trim()) { setError('Ton nom est requis.'); return; }
-    if (!phone.trim() || phone.trim().length < 8) { setError('Numéro Mobile Money invalide.'); return; }
     if (amountUsd <= 0) { setError('Montant invalide.'); return; }
 
     setLoading(true);
@@ -1583,8 +1579,7 @@ const RechargeView = ({ profile, session, navigate }) => {
         body: {
           userId: session.user.id,
           email: session.user.email,
-          name: name.trim(),
-          phone: phone.trim(),
+          name: profile?.display_name || '',
           amountUsd,
         },
       });
@@ -1631,31 +1626,6 @@ const RechargeView = ({ profile, session, navigate }) => {
             <p className="text-xs text-gray-400 mt-2 font-medium">
               ≈ <span className="text-gray-700 font-black">{amountFcfa.toLocaleString('fr-FR')} FCFA</span> débités de ton Mobile Money
             </p>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Ton nom</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Jean Dupont"
-              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-              Numéro Mobile Money
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="ex: 6XXXXXXXX"
-              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-mono font-bold text-gray-900"
-            />
-            <p className="text-[10px] text-gray-400 mt-1">Orange Money · MTN MoMo · Wave · Moov · Airtel</p>
           </div>
 
           {error && (
