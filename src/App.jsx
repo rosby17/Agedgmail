@@ -1557,12 +1557,14 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
 
 const USD_TO_FCFA = 600;
 
-const RechargeView = ({ profile, session, navigate }) => {
-  const [amountUsd, setAmountUsd] = useState(10);
+const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount }) => {
+  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 10);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('form'); // 'form' | 'redirecting' | 'success'
   const [error, setError] = useState('');
   const [payUrl, setPayUrl] = useState('');
+
+  useEffect(() => () => setSuggestedAmount(null), []);
 
   const amountFcfa = Math.round(amountUsd * USD_TO_FCFA);
 
@@ -1612,13 +1614,20 @@ const RechargeView = ({ profile, session, navigate }) => {
       {step === 'form' && (
         <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft space-y-6">
 
+          {suggestedAmount && (
+            <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-gray-600">
+              Il te manque <span className="font-black text-primary">${suggestedAmount.toFixed(2)}</span> pour finaliser ta commande. Tu peux ajuster le montant si tu veux recharger plus.
+            </div>
+          )}
+
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
               Montant à recharger (USD)
             </label>
             <input
               type="number"
-              min="1"
+              min="0.01"
+              step="0.01"
               value={amountUsd}
               onChange={e => setAmountUsd(Number(e.target.value))}
               className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary"
@@ -1701,7 +1710,7 @@ const RechargeView = ({ profile, session, navigate }) => {
 // ==========================================
 
 
-const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchProducts, fetchAllOrders }) => {
+const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchProducts, fetchAllOrders, setRechargeSuggestedAmount }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -1831,7 +1840,11 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                       </p>
                     </div>
                     <button
-                      onClick={() => navigate('recharge')}
+                      onClick={() => {
+                        const missing = Math.round((cartTotal - (profile?.balance || 0)) * 100) / 100;
+                        setRechargeSuggestedAmount(missing > 0 ? missing : null);
+                        navigate('recharge');
+                      }}
                       className="w-full py-5 rounded-[2rem] bg-gray-900 text-white font-bold hover:bg-primary transition-all shadow-xl shadow-gray-900/10 flex items-center justify-center gap-3"
                     >
                       <Plus size={20} /> Recharger mon compte
@@ -2307,6 +2320,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [rechargeSuggestedAmount, setRechargeSuggestedAmount] = useState(null);
   const [allOrders, setAllOrders] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [actionStatus, setActionStatus] = useState(null);
@@ -2747,8 +2761,8 @@ function App() {
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />}
-        {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} />}
-        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} />}
+        {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} setRechargeSuggestedAmount={setRechargeSuggestedAmount} />}
+        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
           <AdminView
             navigate={navigate}
