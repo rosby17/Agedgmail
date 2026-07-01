@@ -1847,7 +1847,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                       }}
                       className="w-full py-5 rounded-[2rem] bg-gray-900 text-white font-bold hover:bg-primary transition-all shadow-xl shadow-gray-900/10 flex items-center justify-center gap-3"
                     >
-                      <Plus size={20} /> Recharger mon compte
+                      <Plus size={20} /> Recharger ${Math.max(0, Math.round((cartTotal - (profile?.balance || 0)) * 100) / 100).toFixed(2)}
                     </button>
                   </div>
                 ) : (
