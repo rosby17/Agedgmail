@@ -91,7 +91,7 @@ serve(async (req) => {
 
     if (!monerooRes.ok || !monerooData?.data?.checkout_url) {
       console.error('Moneroo init error:', JSON.stringify(monerooData))
-      await supabaseAdmin.from('orders').update({ status: 'failed' }).eq('id', order.id)
+      await supabaseAdmin.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
       return new Response(JSON.stringify({ error: 'Impossible d\'initialiser le paiement Moneroo', details: monerooData }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

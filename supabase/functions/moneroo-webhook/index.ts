@@ -67,7 +67,7 @@ serve(async (req) => {
     if (orderFetchErr || !order) throw new Error('Commande introuvable: ' + orderId)
 
     // Idempotence : ne jamais créditer deux fois la même commande
-    if (order.status === 'confirmed' || order.status === 'failed') {
+    if (order.status === 'confirmed' || order.status === 'cancelled') {
       return new Response(JSON.stringify({ status: 'already_processed' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -109,7 +109,7 @@ serve(async (req) => {
       console.log(`Recharge confirmée : +$${amountUsd} pour user ${userId} (commande ${orderId})`)
 
     } else if (event === 'payment.failed' || event === 'payment.cancelled') {
-      await supabaseAdmin.from('orders').update({ status: 'failed' }).eq('id', orderId)
+      await supabaseAdmin.from('orders').update({ status: 'cancelled' }).eq('id', orderId)
     }
 
     return new Response(JSON.stringify({ status: 'success' }), {
