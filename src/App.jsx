@@ -82,6 +82,20 @@ const CATEGORIES = [
   { id: 'facebook', name: 'Page Facebook' },
 ];
 
+// Nom affichable d'une catégorie : libellé connu, sinon la catégorie brute
+// (les catégories importées de YTSeller sont utilisées telles quelles).
+const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat || 'Autres';
+
+// Choix du visuel/logo à partir d'une catégorie (insensible à la casse,
+// fonctionne aussi pour les catégories importées).
+const categoryVisual = (cat = '') => {
+  const c = String(cat).toLowerCase();
+  if (c.includes('youtube')) return 'youtube';
+  if (c.includes('gmail') || c === 'email' || c.includes('mail')) return 'gmail';
+  if (c.includes('facebook')) return 'facebook';
+  return 'other';
+};
+
 const PRICE_RANGES = [
   { id: 'all', name: 'Tous les prix' },
   { id: 'under5', name: 'Moins de 5$' },
@@ -135,7 +149,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
         <div className="w-full h-full p-8 flex items-center justify-center">
-          {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : <FacebookIcon className="w-16 h-16 text-blue-600" />}
+          {categoryVisual(product.category) === 'youtube' ? <YouTubeLogo /> : categoryVisual(product.category) === 'gmail' ? <GmailLogo /> : categoryVisual(product.category) === 'facebook' ? <FacebookIcon className="w-16 h-16 text-blue-600" /> : <Share2 size={48} className="text-gray-300" />}
         </div>
         {isUS && product.category === 'email' && (
           <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
@@ -145,7 +159,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
       {/* Content */}
       <div className="flex-grow flex flex-col">
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-          {CATEGORIES.find(c => c.id === product.category)?.name}
+          {categoryName(product.category)}
         </div>
         <h3
           className="text-[15px] font-bold text-primary leading-snug cursor-pointer mb-4 hover:text-red-600 transition-colors"
@@ -246,7 +260,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView 
 // HOME VIEW
 // ==========================================
 
-const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange, filteredProducts, addToCart, navigate, setSelectedProduct }) => (
+const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange, filteredProducts, addToCart, navigate, setSelectedProduct, categories = CATEGORIES }) => (
   <>
     <section className="bg-[#FCFCFD] pt-20 pb-24 overflow-hidden relative border-b border-gray-100 font-sans">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
@@ -277,7 +291,7 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
         <div className="sticky top-32 space-y-12">
           <div>
             <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Catégories</h3>
-            <ul className="space-y-2">{CATEGORIES.map(cat => (<li key={cat.id}><button onClick={() => setActiveCategory(cat.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-900 text-white shadow-xl' : 'hover:bg-gray-100 text-gray-600'}`}>{cat.name}</button></li>))}</ul>
+            <ul className="space-y-2">{categories.map(cat => (<li key={cat.id}><button onClick={() => setActiveCategory(cat.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-900 text-white shadow-xl' : 'hover:bg-gray-100 text-gray-600'}`}>{cat.name}</button></li>))}</ul>
           </div>
           <div>
             <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Filtrer par Prix</h3>
@@ -1207,6 +1221,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   const [editing, setEditing] = useState(null); // mapping.id en cours d'édition
   const [editForm, setEditForm] = useState({ ytseller_product_id: '', margin_percent: 30, active: true });
   const [newMap, setNewMap] = useState({ product_id: '', ytseller_product_id: '', margin_percent: 30 });
+  const [marginInput, setMarginInput] = useState('');
 
   const productName = (id) => products.find(p => p.id === id)?.name || `#${id}`;
 
@@ -1220,6 +1235,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
       supabase.from('supplier_logs').select('*').order('created_at', { ascending: false }).limit(25),
     ]);
     setSettings(s.data || null);
+    setMarginInput(s.data?.default_margin_percent ?? '');
     setMappings(m.data || []);
     setPending(o.data || []);
     setLogs(l.data || []);
@@ -1240,6 +1256,31 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
       setMsg('Erreur sync : ' + e.message);
     }
     setSyncing(false);
+  };
+
+  const handleFullImport = async () => {
+    if (!confirm('IMPORT COMPLET : cela va importer TOUT le catalogue YTSeller, supprimer tes produits à stock local et vider account_stock. Continuer ?')) return;
+    setSyncing(true); setMsg('');
+    try {
+      const { data, error } = await supabase.functions.invoke('ytseller-sync-catalog', { body: { full: true } });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setMsg(`Import complet OK — ${data.created} créé(s), ${data.updated} maj, ${data.wiped} legacy supprimé(s). Solde ${data.balance} ${data.currency}.`);
+      await fetchAll();
+      if (fetchProducts) await fetchProducts();
+    } catch (e) {
+      setMsg('Erreur import : ' + e.message);
+    }
+    setSyncing(false);
+  };
+
+  const handleSaveMargin = async () => {
+    const v = Number(marginInput);
+    if (isNaN(v) || v < 0) { setMsg('Marge invalide.'); return; }
+    const { error } = await supabase.from('supplier_settings').update({ default_margin_percent: v }).eq('supplier', 'ytseller');
+    if (error) { setMsg('Erreur : ' + error.message); return; }
+    setMsg('Marge globale enregistrée. Lance une synchro pour recalculer les prix.');
+    await fetchAll();
   };
 
   const startEdit = (m) => {
@@ -1299,10 +1340,23 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
               {settings?.last_catalog_sync ? `Dernière synchro : ${new Date(settings.last_catalog_sync).toLocaleString()}` : 'Jamais synchronisé'}
             </div>
           </div>
-          <button onClick={handleSync} disabled={syncing}
-            className="h-12 px-6 rounded-2xl bg-gray-900 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
-            <RefreshCcw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Synchronisation…' : 'Synchroniser maintenant'}
-          </button>
+          <div className="flex items-end gap-3 flex-wrap">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Marge globale %</label>
+              <div className="flex gap-2">
+                <input type="number" value={marginInput} onChange={e => setMarginInput(e.target.value)} className="w-24 h-12 px-4 rounded-xl border border-gray-200 font-mono" />
+                <button onClick={handleSaveMargin} className="h-12 px-4 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200"><Save size={16} /></button>
+              </div>
+            </div>
+            <button onClick={handleSync} disabled={syncing}
+              className="h-12 px-6 rounded-2xl bg-gray-900 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
+              <RefreshCcw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Synchro…' : 'Synchroniser'}
+            </button>
+            <button onClick={handleFullImport} disabled={syncing}
+              className="h-12 px-6 rounded-2xl bg-primary text-white font-bold text-sm flex items-center gap-2 hover:bg-primaryDark transition-all disabled:opacity-50">
+              <Download size={16} /> Import complet (reset)
+            </button>
+          </div>
         </div>
         {msg && <div className="mt-6 text-sm font-bold text-gray-600 bg-gray-50 rounded-2xl px-5 py-3">{msg}</div>}
         {settings && Number(settings.balance) <= 0 && (
@@ -1597,7 +1651,7 @@ const AdminView = ({
                           <td className="py-5">
                             <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center p-2 border border-gray-100">
-                                {p.category.includes('youtube') ? <YouTubeLogo /> : p.category === 'email' ? <GmailLogo /> : <FacebookIcon className="text-blue-600" />}
+                                {categoryVisual(p.category) === 'youtube' ? <YouTubeLogo /> : categoryVisual(p.category) === 'gmail' ? <GmailLogo /> : categoryVisual(p.category) === 'facebook' ? <FacebookIcon className="text-blue-600" /> : <Share2 className="text-gray-300" />}
                               </div>
                               <div>
                                 <div className="font-bold text-gray-900">{p.name}</div>
@@ -2179,7 +2233,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
         <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative group">
           <div className="absolute top-6 left-6 z-10 bg-red-500 text-white font-black px-4 py-2 rounded-xl shadow-xl rotate-[-10deg] animate-pulse">20% OFF</div>
           <div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden group-hover:scale-[1.6] transition-transform duration-700">
-            {product.category.includes('youtube') ? <YouTubeLogo /> : product.category === 'email' ? <GmailLogo /> : product.category === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}
+            {categoryVisual(product.category) === 'youtube' ? <YouTubeLogo /> : categoryVisual(product.category) === 'gmail' ? <GmailLogo /> : categoryVisual(product.category) === 'facebook' ? <FacebookIcon className="w-24 h-24 text-blue-600" /> : <Share2 size={80} />}
           </div>
           {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}
         </div>
@@ -2188,7 +2242,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
           <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">
             <button onClick={() => navigate('home')} className="hover:text-primary">ACCUEIL</button>
             <span>/</span>
-            <span className="text-primary">{CATEGORIES.find(c => c.id === product.category)?.name}</span>
+            <span className="text-primary">{categoryName(product.category)}</span>
           </nav>
 
           <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tighter leading-tight">{product.name}</h1>
@@ -2198,7 +2252,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
               <Package size={14} /> In stock ({product.stock})
             </div>
             <div className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-bold border border-gray-200">
-              {CATEGORIES.find(c => c.id === product.category)?.name}
+              {categoryName(product.category)}
             </div>
           </div>
 
@@ -2309,7 +2363,7 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTot
           <div key={item.id} className="bg-white border border-gray-100 p-8 rounded-[2.5rem] flex items-center justify-between group shadow-soft">
             <div className="flex items-center gap-8">
               <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform relative">
-                {item.category.includes('youtube') ? <YouTubeLogo /> : item.category === 'email' ? <GmailLogo /> : item.category === 'facebook' ? <FacebookIcon className="w-10 h-10 text-blue-600" /> : <Share2 size={32} />}
+                {categoryVisual(item.category) === 'youtube' ? <YouTubeLogo /> : categoryVisual(item.category) === 'gmail' ? <GmailLogo /> : categoryVisual(item.category) === 'facebook' ? <FacebookIcon className="w-10 h-10 text-blue-600" /> : <Share2 size={32} />}
                 {item.name.includes('US') && item.category === 'email' && <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[8px] font-black px-1 rounded">US</div>}
               </div>
               <div><h4 className="font-bold text-gray-900 mb-1">{item.name}</h4><p className="text-primary font-bold">${item.price.toFixed(2)}</p></div>
@@ -2982,6 +3036,17 @@ function App() {
     }
   };
 
+  // Catégories affichées dans la boutique : dérivées des produits réellement
+  // en catalogue (miroir YTSeller) + "Tous". Ordonnées par nombre de produits.
+  const productCategories = (() => {
+    const counts = new Map();
+    products.forEach(p => { if (p.category) counts.set(p.category, (counts.get(p.category) || 0) + 1); });
+    const dynamic = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => ({ id, name: categoryName(id) }));
+    return [{ id: 'all', name: 'Tous les produits' }, ...dynamic];
+  })();
+
   const filteredProducts = products
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .filter(p => {
@@ -3045,7 +3110,7 @@ function App() {
     <div className="min-h-screen bg-white font-sans flex flex-col">
       <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} />
       <div className="flex-grow">
-        {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />}
+        {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} categories={productCategories} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
