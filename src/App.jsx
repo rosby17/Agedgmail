@@ -1235,7 +1235,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
       supabase.from('supplier_logs').select('*').order('created_at', { ascending: false }).limit(25),
     ]);
     setSettings(s.data || null);
-    setMarginInput(s.data?.default_margin_percent ?? '');
+    setMarginInput(m.data?.[0]?.margin_percent ?? 50);
     setMappings(m.data || []);
     setPending(o.data || []);
     setLogs(l.data || []);
@@ -1277,10 +1277,11 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   const handleSaveMargin = async () => {
     const v = Number(marginInput);
     if (isNaN(v) || v < 0) { setMsg('Marge invalide.'); return; }
-    const { error } = await supabase.from('supplier_settings').update({ default_margin_percent: v }).eq('supplier', 'ytseller');
+    // Applique la marge à tous les produits mappés puis recalcule les prix.
+    const { error } = await supabase.from('product_supplier_mapping').update({ margin_percent: v }).eq('supplier', 'ytseller');
     if (error) { setMsg('Erreur : ' + error.message); return; }
-    setMsg('Marge globale enregistrée. Lance une synchro pour recalculer les prix.');
-    await fetchAll();
+    setMsg('Marge appliquée à tous les produits. Synchro en cours…');
+    await handleSync();
   };
 
   const startEdit = (m) => {

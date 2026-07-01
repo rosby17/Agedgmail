@@ -45,9 +45,10 @@ serve(async (req) => {
     }
 
     // 2. Marge globale
-    const { data: settings } = await admin
-      .from('supplier_settings').select('default_margin_percent').eq('supplier', 'ytseller').maybeSingle()
-    const globalMargin = Number(settings?.default_margin_percent) || 0
+    // Marge globale par défaut (utilisée quand un mapping n'a pas de marge propre).
+    // Portée par la colonne existante product_supplier_mapping.margin_percent :
+    // aucune nouvelle migration requise.
+    const DEFAULT_MARGIN = 50
 
     // 3. Mappings existants indexés par id YTSeller
     const { data: existing } = await admin
@@ -68,14 +69,14 @@ serve(async (req) => {
       const description = sanitize(yt.description)
 
       const map = byYt.get(ytId)
-      const margin = map?.margin_percent != null ? Number(map.margin_percent) : globalMargin
+      const margin = map?.margin_percent != null ? Number(map.margin_percent) : DEFAULT_MARGIN
       const price = Math.round(rate * (1 + margin / 100) * 100) / 100
 
       if (map) {
         // Produit déjà lié : mise à jour vitrine + mapping
         await admin.from('products').update({
           name, category, description, price,
-          is_dropship: true, supplier_stock: inventory, status: 'approved',
+          is_dropship: true, supplier_stock: inventory,
         }).eq('id', map.product_id)
 
         await admin.from('product_supplier_mapping').update({
@@ -88,7 +89,7 @@ serve(async (req) => {
         // Nouveau produit importé
         const { data: prod, error: insErr } = await admin.from('products').insert({
           name, category, description, price,
-          is_dropship: true, supplier_stock: inventory, status: 'approved',
+          is_dropship: true, supplier_stock: inventory,
           created_at: new Date().toISOString(),
         }).select('id').single()
         if (insErr || !prod) {
@@ -97,7 +98,7 @@ serve(async (req) => {
         }
         await admin.from('product_supplier_mapping').insert({
           product_id: prod.id, supplier: 'ytseller', ytseller_product_id: ytId,
-          margin_percent: null, ytseller_rate: rate, supplier_available: inventory,
+          margin_percent: DEFAULT_MARGIN, ytseller_rate: rate, supplier_available: inventory,
           supplier_status: yt.status ?? null, supplier_currency: currency,
           active: true, last_synced_at: new Date().toISOString(),
         })
