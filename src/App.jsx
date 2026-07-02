@@ -2229,6 +2229,15 @@ const CRYPTO_CURRENCIES = [
   { id: 'ltc', label: 'Litecoin', ticker: 'LTC', symbol: 'Ł', color: 'bg-slate-100 text-slate-600' },
 ];
 
+// Passerelles de paiement. Seule NOWPayments est branchée aujourd'hui ;
+// les autres apparaissent en aperçu ("Bientôt") tant qu'elles ne sont pas
+// réellement intégrées, pour ne jamais laisser croire qu'un moyen de
+// paiement fonctionne alors qu'il ne le fait pas.
+const PAYMENT_GATEWAYS = [
+  { id: 'nowpayments', name: 'NOWPayments', sub: 'BTC, ETH, USDT, LTC…', enabled: true, symbol: '⛓' },
+  { id: 'cryptomus', name: 'Cryptomus', sub: 'Crypto', enabled: false, symbol: '◆' },
+];
+
 const BONUS_TIERS = [
   { amount: 100, pct: 1 },
   { amount: 500, pct: 2 },
@@ -2239,6 +2248,7 @@ const bonusPercentFor = (amountUsd) => [...BONUS_TIERS].reverse().find(t => amou
 
 const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile }) => {
   const [amountUsd, setAmountUsd] = useState(suggestedAmount || 50);
+  const [gateway, setGateway] = useState(null); // null tant que le client n'a pas choisi de passerelle
   const [payCurrency, setPayCurrency] = useState('usdttrc20');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('form'); // 'form' | 'awaiting' | 'success'
@@ -2264,6 +2274,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const belowMin = typeof selectedMin === 'number' && amountUsd < selectedMin;
 
   const handleSubmit = async () => {
+    if (gateway !== 'nowpayments') { setError('Choisis une passerelle de paiement.'); return; }
     if (amountUsd <= 0) { setError('Montant invalide.'); return; }
     if (belowMin) { setError(`Montant minimum pour ${payCurrency.toUpperCase()} : $${selectedMin.toFixed(2)}`); return; }
 
@@ -2382,33 +2393,59 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Passerelle</label>
               <div className="grid grid-cols-2 gap-3">
-                {CRYPTO_CURRENCIES.map(c => {
-                  const min = minAmounts[c.id];
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => setPayCurrency(c.id)}
-                      className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${payCurrency === c.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
-                    >
-                      <span className="absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full">Auto</span>
-                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${c.color}`}>{c.symbol}</span>
-                      <span>
-                        <span className="block text-sm font-bold text-gray-900">{c.label}</span>
-                        <span className="block text-[10px] text-gray-400 font-medium">{min ? `Min. $${min.toFixed(2)}` : '…'}</span>
-                      </span>
-                    </button>
-                  );
-                })}
+                {PAYMENT_GATEWAYS.map(g => (
+                  <button
+                    key={g.id}
+                    onClick={() => g.enabled && setGateway(g.id)}
+                    disabled={!g.enabled}
+                    className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${!g.enabled ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed' : gateway === g.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
+                  >
+                    <span className="absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-primary bg-primary/10">
+                      {g.enabled ? 'Auto' : 'Bientôt'}
+                    </span>
+                    <span className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 bg-gray-100 text-gray-600">{g.symbol}</span>
+                    <span>
+                      <span className="block text-sm font-bold text-gray-900">{g.name}</span>
+                      <span className="block text-[10px] text-gray-400 font-medium">{g.sub}</span>
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
-              Dépôt en cryptomonnaie via NOWPayments. Choisis le montant → la passerelle → Crée ton dépôt.
-              {typeof selectedMin === 'number' && (
-                <> <span className="font-bold text-gray-700">Montant minimum pour {payCurrency.toUpperCase()} : ${selectedMin.toFixed(2)}.</span></>
-              )}
-              {' '}D'éventuels frais de réseau sont à ta charge.
-            </div>
+            {gateway === 'nowpayments' && (
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Cryptomonnaie</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {CRYPTO_CURRENCIES.map(c => {
+                    const min = minAmounts[c.id];
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => setPayCurrency(c.id)}
+                        className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${payCurrency === c.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
+                      >
+                        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${c.color}`}>{c.symbol}</span>
+                        <span>
+                          <span className="block text-sm font-bold text-gray-900">{c.label}</span>
+                          <span className="block text-[10px] text-gray-400 font-medium">{min ? `Min. $${min.toFixed(2)}` : '…'}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {gateway === 'nowpayments' && (
+              <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
+                Dépôt en cryptomonnaie via NOWPayments.
+                {typeof selectedMin === 'number' && (
+                  <> <span className="font-bold text-gray-700">Montant minimum pour {payCurrency.toUpperCase()} : ${selectedMin.toFixed(2)}.</span></>
+                )}
+                {' '}D'éventuels frais de réseau sont à ta charge.
+              </div>
+            )}
 
             {error && (
               <div className="bg-red-50 text-red-500 p-4 rounded-xl text-sm font-bold border border-red-100">
@@ -2416,15 +2453,17 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             )}
 
-            <button
-              onClick={handleSubmit}
-              disabled={loading || belowMin}
-              className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
-            >
-              {loading
-                ? <><RefreshCcw size={20} className="animate-spin" /> Préparation...</>
-                : <><Send size={20} /> Créer un dépôt</>}
-            </button>
+            {gateway === 'nowpayments' && (
+              <button
+                onClick={handleSubmit}
+                disabled={loading || belowMin}
+                className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
+              >
+                {loading
+                  ? <><RefreshCcw size={20} className="animate-spin" /> Préparation...</>
+                  : <><Send size={20} /> Créer un dépôt</>}
+              </button>
+            )}
           </div>
         )}
 
