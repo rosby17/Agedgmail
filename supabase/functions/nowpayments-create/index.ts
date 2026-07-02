@@ -6,11 +6,22 @@
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { createPayment } from '../_shared/nowpayments.ts'
+import { createPayment, getMinAmount } from '../_shared/nowpayments.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Bonus de recharge par palier — crédité en plus du montant payé.
+const BONUS_TIERS = [
+  { min: 10000, pct: 4 },
+  { min: 1000, pct: 3 },
+  { min: 500, pct: 2 },
+  { min: 100, pct: 1 },
+]
+function bonusPercentFor(amountUsd: number): number {
+  return BONUS_TIERS.find((t) => amountUsd >= t.min)?.pct ?? 0
 }
 
 serve(async (req) => {
@@ -40,16 +51,35 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
+    // 0. Vérifier le minimum de dépôt AVANT de créer quoi que ce soit, pour un
+    // message d'erreur clair (sans ce contrôle, NOWPayments refuserait plus
+    // loin avec un message générique une fois la commande déjà créée).
+    try {
+      const { minAmountUsd } = await getMinAmount(payCurrency)
+      if (minAmountUsd && amountUsd < minAmountUsd) {
+        return new Response(JSON.stringify({
+          error: `Montant minimum pour ${String(payCurrency).toUpperCase()} : $${minAmountUsd.toFixed(2)}`,
+          minAmountUsd,
+        }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+    } catch (err) {
+      console.error('Vérification du minimum échouée (on continue sans bloquer):', (err as Error).message)
+    }
+
     // 1. Créer la commande de recharge en attente (même convention que Moneroo)
+    const bonusPct = bonusPercentFor(amountUsd)
+    const creditAmount = Math.round(amountUsd * (1 + bonusPct / 100) * 100) / 100
+
     const { data: order, error: orderErr } = await admin
       .from('orders')
       .insert({
         user_id: userId,
         buyer_email: email,
         product_id: 999,
-        product_name: 'Recharge Crypto (NOWPayments)',
+        product_name: `Recharge Crypto (NOWPayments)${bonusPct ? ` — bonus +${bonusPct}%` : ''}`,
         quantity: 1,
         total_price: amountUsd,
+        credit_amount: creditAmount,
         status: 'pending',
       })
       .select('id')
@@ -100,6 +130,8 @@ serve(async (req) => {
       priceAmount: payment.price_amount,
       priceCurrency: payment.price_currency,
       status: payment.payment_status,
+      bonusPct,
+      creditAmount,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

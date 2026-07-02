@@ -49,6 +49,20 @@ export async function getPaymentStatus(paymentId: string): Promise<NowPayment> {
   return data as NowPayment
 }
 
+/** Montant minimum de dépôt pour une crypto donnée, converti en USD quand disponible. */
+export async function getMinAmount(payCurrency: string): Promise<{ minAmountUsd: number | null; minAmountCrypto: number | null }> {
+  if (!API_KEY) throw new Error('NOWPAYMENTS_API_KEY non configurée')
+  const url = `${API_URL}/min-amount?currency_from=usd&currency_to=${encodeURIComponent(payCurrency)}&fiat_equivalent=usd`
+  const res = await fetch(url, { headers: { 'x-api-key': API_KEY } })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data?.message || `Échec de lecture du minimum (HTTP ${res.status})`)
+  // currency_from=usd -> min_amount et fiat_equivalent sont tous deux en USD.
+  return {
+    minAmountUsd: typeof data.fiat_equivalent === 'number' ? data.fiat_equivalent : (typeof data.min_amount === 'number' ? data.min_amount : null),
+    minAmountCrypto: typeof data.min_amount === 'number' ? data.min_amount : null,
+  }
+}
+
 /** Trie récursivement les clés d'un objet — requis par l'algorithme de signature IPN NOWPayments. */
 function sortObject(obj: unknown): unknown {
   if (Array.isArray(obj)) return obj.map(sortObject)

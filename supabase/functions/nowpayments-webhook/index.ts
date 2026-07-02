@@ -68,7 +68,7 @@ serve(async (req) => {
     }).eq('payment_id', paymentId)
 
     const { data: order, error: orderErr } = await admin
-      .from('orders').select('id, user_id, total_price, status').eq('id', orderId).single()
+      .from('orders').select('id, user_id, total_price, credit_amount, status').eq('id', orderId).single()
     if (orderErr || !order) throw new Error('Commande introuvable: ' + orderId)
 
     // Idempotence : commande déjà finalisée (créditée ou annulée) -> ne rien refaire.
@@ -83,12 +83,15 @@ serve(async (req) => {
         .from('profiles').select('balance').eq('id', order.user_id).single()
       if (profileErr) throw new Error(profileErr.message)
 
-      const newBalance = (profile.balance || 0) + (order.total_price || 0)
+      // credit_amount inclut le bonus de recharge éventuel ; à défaut (anciennes
+      // commandes ou colonne vide) on retombe sur le montant réellement payé.
+      const creditedAmount = order.credit_amount ?? order.total_price ?? 0
+      const newBalance = (profile.balance || 0) + creditedAmount
       const { error: updErr } = await admin.from('profiles').update({ balance: newBalance }).eq('id', order.user_id)
       if (updErr) throw new Error(updErr.message)
 
       await admin.from('orders').update({ status: 'confirmed' }).eq('id', orderId)
-      console.log(`Recharge NOWPayments confirmée : +$${order.total_price} pour user ${order.user_id} (commande ${orderId})`)
+      console.log(`Recharge NOWPayments confirmée : +$${creditedAmount} pour user ${order.user_id} (commande ${orderId})`)
 
     } else if (FINAL_FAILURE.has(status)) {
       await admin.from('orders').update({ status: 'cancelled' }).eq('id', orderId)

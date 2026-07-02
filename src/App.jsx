@@ -2223,27 +2223,49 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
 };
 
 const CRYPTO_CURRENCIES = [
-  { id: 'btc', label: 'Bitcoin (BTC)' },
-  { id: 'eth', label: 'Ethereum (ETH)' },
-  { id: 'usdttrc20', label: 'USDT (TRC20)' },
-  { id: 'ltc', label: 'Litecoin (LTC)' },
+  { id: 'btc', label: 'Bitcoin', ticker: 'BTC', symbol: '₿', color: 'bg-orange-100 text-orange-600' },
+  { id: 'eth', label: 'Ethereum', ticker: 'ETH', symbol: 'Ξ', color: 'bg-indigo-100 text-indigo-600' },
+  { id: 'usdttrc20', label: 'USDT (TRC20)', ticker: 'USDT', symbol: '₮', color: 'bg-green-100 text-green-600' },
+  { id: 'ltc', label: 'Litecoin', ticker: 'LTC', symbol: 'Ł', color: 'bg-slate-100 text-slate-600' },
 ];
 
+const BONUS_TIERS = [
+  { amount: 100, pct: 1 },
+  { amount: 500, pct: 2 },
+  { amount: 1000, pct: 3 },
+  { amount: 10000, pct: 4 },
+];
+const bonusPercentFor = (amountUsd) => [...BONUS_TIERS].reverse().find(t => amountUsd >= t.amount)?.pct || 0;
+
 const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile }) => {
-  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 25);
+  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 50);
   const [payCurrency, setPayCurrency] = useState('usdttrc20');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('form'); // 'form' | 'awaiting' | 'success'
   const [error, setError] = useState('');
-  const [payment, setPayment] = useState(null); // { orderId, payAddress, payAmount, payCurrency }
+  const [payment, setPayment] = useState(null); // { orderId, payAddress, payAmount, payCurrency, bonusPct, creditAmount }
   const [copied, setCopied] = useState(false);
+  const [minAmounts, setMinAmounts] = useState({}); // { btc: 18.78, eth: 18.78, ... }
 
   useEffect(() => () => setSuggestedAmount(null), []);
 
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.functions.invoke('nowpayments-min-amounts').then(({ data }) => {
+      if (data && !data.error) setMinAmounts(data);
+    });
+  }, []);
+
   if (!session) { navigate('auth'); return null; }
+
+  const close = () => navigate('dashboard');
+  const bonusPct = bonusPercentFor(amountUsd);
+  const selectedMin = minAmounts[payCurrency];
+  const belowMin = typeof selectedMin === 'number' && amountUsd < selectedMin;
 
   const handleSubmit = async () => {
     if (amountUsd <= 0) { setError('Montant invalide.'); return; }
+    if (belowMin) { setError(`Montant minimum pour ${payCurrency.toUpperCase()} : $${selectedMin.toFixed(2)}`); return; }
 
     setLoading(true);
     setError('');
@@ -2266,9 +2288,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
         try {
           const body = await fnError.context?.json();
           if (body?.error) realMessage = body.error;
-        } catch { /* non-JSON or already-consumed body, keep the default message */ }
+        } catch { /* corps non-JSON ou déjà consommé, on garde le message par défaut */ }
         if (/less than minimal/i.test(realMessage)) {
-          realMessage = `This amount is below the minimum accepted for ${payCurrency.toUpperCase()}. Try a higher amount or a different cryptocurrency.`;
+          realMessage = `Ce montant est en dessous du minimum accepté pour ${payCurrency.toUpperCase()}. Essaie un montant plus élevé ou une autre cryptomonnaie.`;
         }
         throw new Error(realMessage);
       }
@@ -2312,113 +2334,144 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   }, [step, payment, session, fetchProfile]);
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-20 font-sans">
-      <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">Recharge my account</h2>
-      <p className="text-gray-500 mb-10 leading-relaxed">
-        Secure cryptocurrency payment — Bitcoin, Ethereum, USDT, Litecoin.
-      </p>
+    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-8 pt-8 pb-2">
+          <h2 className="text-2xl font-black text-gray-900">Recharger</h2>
+          <button onClick={close} className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"><X size={18} /></button>
+        </div>
 
-      {step === 'form' && (
-        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft space-y-6">
+        {step === 'form' && (
+          <div className="px-8 pb-8 pt-4 space-y-6">
+            <p className="text-sm text-gray-500">Plus vous rechargez, plus le bonus est important — crédité instantanément.</p>
 
-          {suggestedAmount && (
-            <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-gray-600">
-              You are short <span className="font-black text-primary">${suggestedAmount.toFixed(2)}</span> to finalize your order. You can adjust the amount if you want to recharge more.
-            </div>
-          )}
+            {suggestedAmount && (
+              <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-gray-600">
+                Il te manque <span className="font-black text-primary">${suggestedAmount.toFixed(2)}</span> pour finaliser ta commande.
+              </div>
+            )}
 
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-              Amount to recharge (USD)
-            </label>
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={amountUsd}
-              onChange={e => setAmountUsd(Number(e.target.value))}
-              className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-              Cryptocurrency
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {CRYPTO_CURRENCIES.map(c => (
+            <div className="grid grid-cols-4 gap-2">
+              {BONUS_TIERS.map(t => (
                 <button
-                  key={c.id}
-                  onClick={() => setPayCurrency(c.id)}
-                  className={`px-4 py-3 rounded-xl text-sm font-bold border transition-all ${payCurrency === c.id ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-primary/50'}`}
+                  key={t.amount}
+                  onClick={() => setAmountUsd(t.amount)}
+                  className={`px-2 py-2.5 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-0.5 ${amountUsd === t.amount ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-primary/50'}`}
                 >
-                  {c.label}
+                  <span>${t.amount >= 1000 ? `${t.amount / 1000}k` : t.amount}</span>
+                  <span className="text-primary font-black">+{t.pct}%</span>
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-2">Each cryptocurrency has its own network minimum — if your payment is rejected as "too small", try a higher amount.</p>
-          </div>
 
-          {error && (
-            <div className="bg-red-50 text-red-500 p-4 rounded-xl text-sm font-bold border border-red-100">
-              {error}
-            </div>
-          )}
-
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-gray-900 text-white hover:bg-primary shadow-black/10 disabled:opacity-40"
-          >
-            {loading
-              ? <><RefreshCcw size={20} className="animate-spin" /> Preparation...</>
-              : <><Send size={20} /> Pay ${amountUsd.toFixed(2)} in crypto</>}
-          </button>
-        </div>
-      )}
-
-      {step === 'awaiting' && payment && (
-        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft text-center space-y-6">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <RefreshCcw size={32} className="text-primary animate-spin" />
-          </div>
-          <h3 className="text-2xl font-black text-gray-900">Awaiting payment</h3>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            Send exactly the amount below to the indicated address. Your balance will be credited automatically after confirmation.
-          </p>
-          <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Amount to send</p>
-              <p className="text-2xl font-black text-primary font-mono">{payment.payAmount} {String(payment.payCurrency).toUpperCase()}</p>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant ($)</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={amountUsd}
+                onChange={e => setAmountUsd(Number(e.target.value))}
+                className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary"
+              />
+              {bonusPct > 0 && (
+                <p className="text-xs text-primary font-bold mt-2">Bonus +{bonusPct}% → tu recevras ${(amountUsd * (1 + bonusPct / 100)).toFixed(2)} sur ton solde.</p>
+              )}
             </div>
+
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Deposit address</p>
-              <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
-                <code className="text-xs font-mono text-gray-700 flex-grow break-all text-left">{payment.payAddress}</code>
-                <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Passerelle</label>
+              <div className="grid grid-cols-2 gap-3">
+                {CRYPTO_CURRENCIES.map(c => {
+                  const min = minAmounts[c.id];
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setPayCurrency(c.id)}
+                      className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${payCurrency === c.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
+                    >
+                      <span className="absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full">Auto</span>
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${c.color}`}>{c.symbol}</span>
+                      <span>
+                        <span className="block text-sm font-bold text-gray-900">{c.label}</span>
+                        <span className="block text-[10px] text-gray-400 font-medium">{min ? `Min. $${min.toFixed(2)}` : '…'}</span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-              {copied && <p className="text-xs text-primary font-bold mt-2">Address copied!</p>}
             </div>
-          </div>
-          <p className="text-xs text-gray-400">This page updates automatically upon receipt of payment.</p>
-        </div>
-      )}
 
-      {step === 'success' && (
-        <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft text-center space-y-6">
-          <CheckCircle size={72} className="text-green-500 mx-auto" />
-          <h3 className="text-2xl font-black text-gray-900">Balance credited!</h3>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            Your payment has been confirmed and your balance updated.
-          </p>
-          <button
-            onClick={() => navigate('dashboard')}
-            className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-primary transition-all"
-          >
-            My account
-          </button>
-        </div>
-      )}
+            <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
+              Dépôt en cryptomonnaie via NOWPayments. Choisis le montant → la passerelle → Crée ton dépôt.
+              {typeof selectedMin === 'number' && (
+                <> <span className="font-bold text-gray-700">Montant minimum pour {payCurrency.toUpperCase()} : ${selectedMin.toFixed(2)}.</span></>
+              )}
+              {' '}D'éventuels frais de réseau sont à ta charge.
+            </div>
+
+            {error && (
+              <div className="bg-red-50 text-red-500 p-4 rounded-xl text-sm font-bold border border-red-100">
+                {error}
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading || belowMin}
+              className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
+            >
+              {loading
+                ? <><RefreshCcw size={20} className="animate-spin" /> Préparation...</>
+                : <><Send size={20} /> Créer un dépôt</>}
+            </button>
+          </div>
+        )}
+
+        {step === 'awaiting' && payment && (
+          <div className="px-8 pb-8 pt-2 text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <RefreshCcw size={32} className="text-primary animate-spin" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900">En attente de paiement</h3>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation.
+              {payment.bonusPct > 0 && <> Avec le bonus, tu recevras <span className="font-black text-primary">${Number(payment.creditAmount).toFixed(2)}</span>.</>}
+            </p>
+            <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+              <div>
+                <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à envoyer</p>
+                <p className="text-2xl font-black text-primary font-mono">{payment.payAmount} {String(payment.payCurrency).toUpperCase()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Adresse de dépôt</p>
+                <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
+                  <code className="text-xs font-mono text-gray-700 flex-grow break-all text-left">{payment.payAddress}</code>
+                  <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+                </div>
+                {copied && <p className="text-xs text-primary font-bold mt-2">Adresse copiée !</p>}
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">Cette page se met à jour automatiquement dès réception du paiement.</p>
+          </div>
+        )}
+
+        {step === 'success' && (
+          <div className="px-8 pb-8 pt-2 text-center space-y-6">
+            <CheckCircle size={72} className="text-green-500 mx-auto" />
+            <h3 className="text-2xl font-black text-gray-900">Solde crédité !</h3>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Ton paiement a été confirmé et ton solde a été mis à jour.
+            </p>
+            <button
+              onClick={close}
+              className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-primary transition-all"
+            >
+              Mon compte
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
