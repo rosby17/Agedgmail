@@ -8,8 +8,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#13B87A",
-        primaryDark: "#0E8E5D",
+        // Vert de marque assombri pour l'accessibilité : l'ancien #13B87A ne
+        // donnait que 2.57:1 de contraste sur blanc (WCAG AA exige 4.5:1
+        // pour le texte, 3:1 pour les composants). #0D7A52 atteint ~5.35:1.
+        primary: "#0D7A52",
+        primaryDark: "#0A5F40",
         dark: "#121212",
         background: "#FFFFFF",
       },

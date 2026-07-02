@@ -293,7 +293,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
               <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </div>
             <div className="relative group">
-              <button className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
+              <button aria-label="Account menu" className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
                 <User size={18} />
               </button>
               {/* Menu déroulant au survol : ponte entre le bouton et le menu pour éviter la coupure du hover */}
@@ -439,7 +439,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
       <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between px-8 pt-8 pb-2">
           <h2 className="text-2xl font-black text-gray-900 dark:text-white">Order</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:text-white transition-all"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:text-white transition-all"><X size={18} /></button>
         </div>
 
         <div className="px-8 pb-8 pt-4 space-y-6">
@@ -1082,7 +1082,7 @@ const OrderCredentialsModal = ({ order, onClose }) => (
     <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
       <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
         <div><h3 className="text-xl font-bold">{order.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Your login credentials</p></div>
-        <button onClick={onClose} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
+        <button onClick={onClose} aria-label="Close" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
       </div>
       <div className="p-10 space-y-8">
         <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
@@ -1316,18 +1316,18 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                     <div className="flex gap-2">
                       {!isRecharge(order) && order.status === 'confirmed' && (
                         <button onClick={() => setSelectedOrder(order)}
-                          className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all" title="Voir les accès livrés">
+                          className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all" title="Voir les accès livrés" aria-label="Voir les accès livrés">
                           <Eye size={14} />
                         </button>
                       )}
                       {(order.status === 'pending' || order.status === 'processing') && (
                         <button onClick={() => cancelOrder(order.id)}
-                          className="p-2 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 transition-all" title="Annuler (commande bloquée)">
+                          className="p-2 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 transition-all" title="Annuler (commande bloquée)" aria-label="Annuler la commande">
                           <X size={14} />
                         </button>
                       )}
                       <button onClick={() => deleteOrder(order.id)}
-                        className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-all" title="Supprimer définitivement">
+                        className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-all" title="Supprimer définitivement" aria-label="Supprimer la commande">
                         <Trash size={14} />
                       </button>
                     </div>
@@ -1348,7 +1348,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                 <h3 className="text-2xl font-bold text-gray-900">Détail de la commande</h3>
                 <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">ID: #{String(selectedOrder.id).toUpperCase()}</p>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="w-12 h-12 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all">
+              <button onClick={() => setSelectedOrder(null)} aria-label="Close" className="w-12 h-12 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all">
                 <X size={20} />
               </button>
             </div>
@@ -1576,7 +1576,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                       <td className="py-4"><input type="checkbox" checked={editForm.active} onChange={e => setEditForm({ ...editForm, active: e.target.checked })} /></td>
                       <td className="py-4 flex gap-2">
                         <button onClick={() => saveEdit(m.id)} className="p-2 rounded-lg bg-green-500 text-white"><Save size={14} /></button>
-                        <button onClick={() => setEditing(null)} className="p-2 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
+                        <button onClick={() => setEditing(null)} aria-label="Cancel edit" className="p-2 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
                       </td>
                     </>
                   ) : (
@@ -1921,7 +1921,7 @@ const AdminView = ({
                         <h3 className="text-xl font-bold text-gray-900">{viewingClient.email}</h3>
                         <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Solde actuel : ${viewingClient.balance?.toFixed(2)}</p>
                       </div>
-                      <button onClick={() => setViewingClient(null)} className="w-10 h-10 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all"><X size={18} /></button>
+                      <button onClick={() => setViewingClient(null)} aria-label="Close" className="w-10 h-10 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all"><X size={18} /></button>
                     </div>
                     {(() => {
                       const clientOrders = allOrders.filter(o => o.user_id === viewingClient.id);
@@ -2112,7 +2112,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between px-8 pt-8 pb-2">
           <h2 className="text-2xl font-black text-gray-900">Recharger</h2>
-          <button onClick={close} className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"><X size={18} /></button>
+          <button onClick={close} aria-label="Close" className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"><X size={18} /></button>
         </div>
 
         {step === 'form' && (
@@ -2656,7 +2656,7 @@ const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, c
       <div className="absolute top-0 right-0 h-full w-full max-w-md bg-white dark:bg-gray-900 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-lg font-black text-gray-900 dark:text-white">Cart</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:text-white transition-all"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close cart" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:text-white transition-all"><X size={18} /></button>
         </div>
 
         <div className="flex-grow overflow-y-auto px-6 py-6">
@@ -3124,33 +3124,31 @@ function App() {
     }
     // 1. Fetch products
     const { data: productsData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    if (pErr || !productsData) return;
 
-    if (!pErr && productsData) {
-      // Fetch counts for each product individually to bypass 1000-row limits
-      const updatedProducts = await Promise.all(productsData.map(async (p) => {
-        let stock;
-        if (p.is_dropship) {
-          // Produit reseller : la dispo vient du fournisseur (synchro périodique)
-          stock = p.supplier_stock || 0;
-        } else {
-          // Produit à stock local : comptage account_stock (comportement existant)
-          const { count } = await supabase
-            .from('account_stock')
-            .select('*', { count: 'exact', head: true })
-            .eq('product_id', p.id)
-            .eq('is_delivered', false);
-          stock = count || 0;
-        }
-
-        return {
-          ...p,
-          stock,
-          details: getProductDetails(p)
-        };
-      }));
-
-      setProducts(updatedProducts);
+    // 2. Compter le stock local disponible en UNE seule requête (au lieu d'une
+    // requête par produit) : on récupère les product_id non livrés, puis on
+    // agrège les comptes côté client.
+    const localStockIds = productsData.filter(p => !p.is_dropship).map(p => p.id);
+    const stockCountByProduct = new Map();
+    if (localStockIds.length > 0) {
+      const { data: stockRows } = await supabase
+        .from('account_stock')
+        .select('product_id')
+        .in('product_id', localStockIds)
+        .eq('is_delivered', false);
+      (stockRows || []).forEach(r => stockCountByProduct.set(r.product_id, (stockCountByProduct.get(r.product_id) || 0) + 1));
     }
+
+    const updatedProducts = productsData.map(p => ({
+      ...p,
+      // Produit reseller : la dispo vient du fournisseur (synchro périodique).
+      // Produit à stock local : compté ci-dessus.
+      stock: p.is_dropship ? (p.supplier_stock || 0) : (stockCountByProduct.get(p.id) || 0),
+      details: getProductDetails(p),
+    }));
+
+    setProducts(updatedProducts);
   };
 
   const fetchAllOrders = async () => {
