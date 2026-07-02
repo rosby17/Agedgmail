@@ -11,8 +11,14 @@ export default {
         // Vert de marque assombri pour l'accessibilité : l'ancien #13B87A ne
         // donnait que 2.57:1 de contraste sur blanc (WCAG AA exige 4.5:1
         // pour le texte, 3:1 pour les composants). #0D7A52 atteint ~5.35:1.
+        // Reste la couleur DOMINANTE (badges, prix, stock, liens, catégories).
         primary: "#0D7A52",
         primaryDark: "#0A5F40",
+        // Accent or/ambre pour les boutons d'action (Acheter, Payer, Recharger)
+        // — inspiré de la palette Coolors fournie, assombri pour un contraste
+        // de 5.42:1 en texte blanc (calcul vérifié).
+        accent: "#9C5A08",
+        accentDark: "#7A4606",
         dark: "#121212",
         background: "#FFFFFF",
       },
