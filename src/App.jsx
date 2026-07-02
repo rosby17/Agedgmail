@@ -8,7 +8,6 @@ import * as XLSX from 'xlsx';
 // CONFIGURATION ADMIN & SUPPORT
 // ==========================================
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
-const SUPPORT_WHATSAPP = "237655306425";
 
 // ==========================================
 // COMPOSANTS UI STYLÉS
@@ -96,22 +95,8 @@ const SmsLogo = ({ className = brandBox }) => (
 );
 
 // ==========================================
-// COMPOSANT SUPPORT CHAT
+// COMPOSANT SUPPORT CHAT — retiré (plus de contact WhatsApp)
 // ==========================================
-const SupportChat = () => (
-  <a
-    href={`https://wa.me/${SUPPORT_WHATSAPP}`}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="fixed bottom-8 right-8 z-[1000] w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 hover:rotate-6 transition-all duration-300 group"
-    title="Contactez-nous sur WhatsApp"
-  >
-    <MessageCircle size={32} className="group-hover:scale-110 transition-transform" />
-    <span className="absolute -top-12 right-0 bg-white text-gray-900 text-[10px] font-black px-4 py-2 rounded-xl shadow-xl border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none uppercase tracking-widest">
-      Besoin d'aide ?
-    </span>
-  </a>
-);
 
 // ==========================================
 // CATALOGUE PRODUITS
@@ -316,10 +301,6 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <Shield size={14} /> Admin
           </button>
         )}
-        <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noopener noreferrer" title="Assistance / Chat"
-          className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
-          <MessageCircle size={18} />
-        </a>
         {session ? (
           <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end border-r border-gray-100 dark:border-gray-700 pr-4">
@@ -397,81 +378,115 @@ const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange
 );
 
 // ==========================================
-// API VIEW — Vitrine "Revendez via API"
+// API VIEW — API revendeur (doc + gestion de clé)
 // ==========================================
-const ApiView = ({ navigate }) => {
-  const endpoints = [
-    ['products', 'Liste des produits, prix de gros et stock en temps réel'],
-    ['add_order', 'Passer une commande (produit + quantité)'],
-    ['order_status', 'Suivre le statut d\'une commande'],
-    ['result', 'Récupérer les comptes livrés'],
-    ['balance', 'Consulter votre solde revendeur'],
+const API_BASE_URL = 'https://ncjpbkfwhmsispiczzgl.functions.supabase.co/api-v2';
+
+const ApiView = ({ navigate, session }) => {
+  const [apiKey, setApiKey] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!session || !supabase) return;
+    supabase.from('api_keys').select('api_key').eq('user_id', session.user.id).eq('active', true)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+      .then(({ data }) => { if (data) setApiKey(data.api_key); });
+  }, [session]);
+
+  const generateKey = async () => {
+    if (!session) { navigate('auth'); return; }
+    setLoading(true);
+    const key = 'ak_' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+    const { error } = await supabase.from('api_keys').insert({ user_id: session.user.id, api_key: key, label: 'default' });
+    if (!error) setApiKey(key);
+    setLoading(false);
+  };
+
+  const copyKey = () => { if (apiKey) { navigator.clipboard?.writeText(apiKey); setCopied(true); setTimeout(() => setCopied(false), 1500); } };
+
+  const actions = [
+    ['balance', 'key, action', '{ "balance": 42.5, "currency": "USD" }', 'Consulter votre solde revendeur.'],
+    ['products', 'key, action', '[ { "product": 12, "name": "…", "rate": 6.60, "available": 120, "status": "In stock" } ]', 'Lister le catalogue, vos prix et le stock en temps réel.'],
+    ['add_order', 'key, action, product, quantity', '{ "order": 10231 }', 'Passer une commande. Débite votre solde, livraison automatique.'],
+    ['order_status', 'key, action, order', '{ "status": "Completed", "charge": "6.60", "currency": "USD" }', 'Statuts : Pending, Processing, Completed, Canceled.'],
+    ['result', 'key, action, order', '{ "result": ["mail:pass:recovery", "…"] }', 'Récupérer les comptes livrés (une ligne par compte).'],
   ];
-  const steps = [
-    ['1', 'Créez votre compte', 'Inscrivez-vous et rechargez votre solde revendeur.'],
-    ['2', 'Obtenez votre clé API', 'Contactez-nous pour activer l\'accès API sur votre compte.'],
-    ['3', 'Intégrez et vendez', 'Automatisez vos achats et revendez à vos propres clients.'],
-  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-16 font-sans">
+    <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
       {/* En-tête */}
-      <div className="text-center max-w-3xl mx-auto mb-16">
-        <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark dark:text-primary px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
+      <div className="max-w-3xl mb-12">
+        <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
           <Zap size={14} /> API Revendeur
         </div>
-        <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
-          Revendez à votre tour, <span className="text-primary">automatiquement via notre API</span>
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-6">
+          Revendez notre catalogue <span className="text-primary">via notre API</span>
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed">
-          Intégrez notre catalogue directement dans votre boutique. Achetez au prix de gros,
-          passez vos commandes par API et livrez vos clients sans effort — 24h/24.
+        <p className="text-gray-500 text-lg leading-relaxed">
+          Intégrez notre catalogue dans votre propre boutique. Achetez par programme,
+          passez vos commandes et livrez vos clients automatiquement, 24h/24. Réponses JSON,
+          authentification par clé.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
-          <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noopener noreferrer"
-            className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2">
-            <MessageCircle size={18} /> Obtenir ma clé API
-          </a>
-          <button onClick={() => navigate('home')} className="px-8 py-4 rounded-full font-bold text-sm border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-primary hover:text-primary transition-all">
-            Voir le catalogue
-          </button>
+      </div>
+
+      {/* Clé API */}
+      <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft mb-10">
+        <h2 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2"><Shield size={18} className="text-primary" /> Votre clé API</h2>
+        {!session ? (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <p className="text-gray-500 text-sm flex-grow">Connectez-vous pour générer votre clé API et commencer.</p>
+            <button onClick={() => navigate('auth')} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Se connecter</button>
+          </div>
+        ) : apiKey ? (
+          <div>
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4">
+              <code className="text-primary font-mono text-sm flex-grow break-all">{apiKey}</code>
+              <button onClick={copyKey} className="shrink-0 text-xs font-bold px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all">{copied ? 'Copié !' : 'Copier'}</button>
+            </div>
+            <p className="text-gray-400 text-xs mt-3">Gardez cette clé secrète. Elle donne accès à votre solde et à vos commandes.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <p className="text-gray-500 text-sm flex-grow">Aucune clé active. Générez-en une pour accéder à l'API.</p>
+            <button onClick={generateKey} disabled={loading} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-50">{loading ? 'Génération…' : 'Générer ma clé API'}</button>
+          </div>
+        )}
+      </div>
+
+      {/* Connexion */}
+      <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft mb-10">
+        <h2 className="text-lg font-black text-gray-900 mb-4">Connexion</h2>
+        <div className="space-y-2 text-sm">
+          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Endpoint</span><code className="text-primary font-mono break-all">{API_BASE_URL}</code></div>
+          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Méthode</span><span className="text-gray-700 font-mono">POST</span></div>
+          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Content-Type</span><span className="text-gray-700 font-mono">application/x-www-form-urlencoded</span></div>
+          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Réponse</span><span className="text-gray-700 font-mono">JSON</span></div>
+        </div>
+        <div className="mt-6 bg-gray-900 rounded-2xl p-5 overflow-x-auto">
+          <pre className="text-[12px] text-gray-200 font-mono leading-relaxed">{`curl -X POST ${API_BASE_URL} \\
+  -d "key=VOTRE_CLE_API" \\
+  -d "action=products"`}</pre>
         </div>
       </div>
 
-      {/* Étapes */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-        {steps.map(([n, title, desc]) => (
-          <div key={n} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-8 shadow-soft">
-            <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-black mb-5">{n}</div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{desc}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Endpoints */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] p-10 shadow-soft mb-16">
-        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-8">Ce que permet l'API</h2>
-        <div className="space-y-3">
-          {endpoints.map(([name, desc]) => (
-            <div key={name} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60">
-              <code className="text-primary font-mono font-bold text-sm shrink-0 w-40">{name}</code>
-              <span className="text-gray-600 dark:text-gray-300 text-sm">{desc}</span>
+      {/* Actions */}
+      <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft">
+        <h2 className="text-lg font-black text-gray-900 mb-6">Actions disponibles</h2>
+        <div className="space-y-6">
+          {actions.map(([name, params, example, desc]) => (
+            <div key={name} className="border-b border-gray-50 last:border-0 pb-6 last:pb-0">
+              <div className="flex items-center gap-3 mb-2">
+                <code className="text-primary font-mono font-black text-sm">action={name}</code>
+              </div>
+              <p className="text-gray-600 text-sm mb-2">{desc}</p>
+              <p className="text-xs text-gray-400 mb-3"><span className="font-bold">Paramètres :</span> <code className="font-mono">{params}</code></p>
+              <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
+                <pre className="text-[12px] text-gray-200 font-mono">{example}</pre>
+              </div>
             </div>
           ))}
         </div>
-        <p className="text-gray-400 dark:text-gray-500 text-xs mt-6">
-          Réponses JSON • authentification par clé • prix de gros négociés selon votre volume.
-        </p>
-      </div>
-
-      {/* CTA final */}
-      <div className="text-center bg-gray-900 dark:bg-gray-800 rounded-[2.5rem] p-12">
-        <h2 className="text-3xl font-black text-white mb-4">Prêt à devenir revendeur ?</h2>
-        <p className="text-gray-300 mb-8 max-w-xl mx-auto">Contactez-nous pour activer votre accès API et démarrer en quelques minutes.</p>
-        <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">
-          <MessageCircle size={18} /> Parler à un conseiller
-        </a>
       </div>
     </div>
   );
@@ -2756,7 +2771,7 @@ const Footer = ({ navigate }) => (
           <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Support</h4>
           <ul className="space-y-4">
             <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Privacy Policy</button></li>
-            <li><button onClick={() => window.open(`https://wa.me/${SUPPORT_WHATSAPP}`, '_blank')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Contact Us</button></li>
+            <li><button onClick={() => navigate('api')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">API</button></li>
           </ul>
         </div>
       </div>
@@ -3269,7 +3284,7 @@ function App() {
       <div className="flex-grow">
         {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} categories={productCategories} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
-        {currentView === 'api' && <ApiView navigate={navigate} />}
+        {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />}
@@ -3313,7 +3328,6 @@ function App() {
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
 
-      <SupportChat />
       <Footer navigate={navigate} />
     </div>
   );
