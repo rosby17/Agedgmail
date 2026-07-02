@@ -25,9 +25,9 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, type = 'dan
         <h3 className="text-2xl font-black text-center mb-3 tracking-tighter">{title}</h3>
         <p className="text-gray-500 text-center mb-10 leading-relaxed font-medium">{message}</p>
         <div className="flex gap-4">
-          <button onClick={onCancel} className="flex-1 h-14 rounded-2xl font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 transition-all border border-gray-100">Annuler</button>
+          <button onClick={onCancel} className="flex-1 h-14 rounded-2xl font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 transition-all border border-gray-100">Cancel</button>
           <button onClick={onConfirm} className={`flex-1 h-14 rounded-2xl font-bold text-white transition-all shadow-xl ${type === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' : 'bg-gray-900 hover:bg-primary shadow-gray-900/20'}`}>
-            Confirmer
+            Confirm
           </button>
         </div>
       </div>
@@ -103,18 +103,18 @@ const SmsLogo = ({ className = brandBox }) => (
 // ==========================================
 
 const CATEGORIES = [
-  { id: 'all', name: 'Tous les produits' },
+  { id: 'all', name: 'All products' },
   { id: 'email', name: 'Email (Gmail)' },
-  { id: 'youtube_aged', name: 'Chaînes Youtube Anciennes' },
-  { id: 'youtube_monetized', name: 'Chaînes Monétisées' },
-  { id: 'youtube_not_monetized', name: 'Chaînes Non-Monétisées' },
-  { id: 'youtube_cpa', name: 'Chaînes Spéciales' },
-  { id: 'facebook', name: 'Page Facebook' },
+  { id: 'youtube_aged', name: 'Aged Youtube Channels' },
+  { id: 'youtube_monetized', name: 'Monetized Channels' },
+  { id: 'youtube_not_monetized', name: 'Non-Monetized Channels' },
+  { id: 'youtube_cpa', name: 'Special Channels' },
+  { id: 'facebook', name: 'Facebook Page' },
 ];
 
 // Nom affichable d'une catégorie : libellé connu, sinon la catégorie brute
 // (les catégories importées de YTSeller sont utilisées telles quelles).
-const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat || 'Autres';
+const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat || 'Others';
 
 // Choix du visuel/logo à partir d'une catégorie (insensible à la casse,
 // fonctionne aussi pour les catégories importées).
@@ -137,7 +137,7 @@ const categoryVisual = (cat = '') => {
 const GROUP_LABELS = {
   gmail: 'Gmail', youtube: 'Youtube', discord: 'Discord', facebook: 'Facebook',
   instagram: 'Instagram', twitter: 'Twitter X', tiktok: 'Tiktok', apple: 'Apple ID',
-  telegram: 'Telegram', sms: 'SMS', other: 'Autres',
+  telegram: 'Telegram', sms: 'SMS', other: 'Others',
 };
 const GROUP_ORDER = ['gmail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'tiktok', 'apple', 'telegram', 'sms', 'other'];
 
@@ -164,22 +164,22 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
 
 
 const getProductDetails = (product) => {
-  const commonTerms = "Veuillez lire les spécifications avant d'acheter. Vous êtes responsable de toutes les actions sur le compte. Utilisez des IP résidentielles fraîches. Changez les accès après 48h seulement.";
+  const commonTerms = "Please read the specifications before purchasing. You are responsible for all actions on the account. Use fresh residential IPs. Change access after 48h only.";
   return {
     info: product.category === 'email'
-      ? `Âge : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Pays : ${product.name.includes('US') ? 'US' : 'Aléatoire'} | Format : Gmail/Pass/Récup/2FA`
+      ? `Age : ${product.name.match(/\d{4}/)?.[0] || 'Aged'} | Country : ${product.name.includes('US') ? 'US' : 'Random'} | Format : Gmail/Pass/Recovery/2FA`
       : product.category === 'facebook'
-        ? "Âge : Ancien (2012-2020) | Amis : 50+ | Statut : Vérifié | Qualité : Verte"
+        ? "Age : Aged (2012-2020) | Friends : 50+ | Status : Verified | Quality : Green"
         : product.category === 'youtube_not_monetized'
-          ? `Abonnés : ${product.name.split(' – ')[1] || '1k+'} | Éligibilité : Immédiate | Contenu : Aucun`
-          : `Année : ${product.name.match(/\d{4}/)?.[0] || 'Ancien'} | Statut : ${product.category === 'youtube_monetized' ? 'Monétisée' : 'Non-Monétisée'} | Contenu : Propre`,
+          ? `Subscribers : ${product.name.split(' – ')[1] || '1k+'} | Eligibility : Immediate | Content : None`
+          : `Year : ${product.name.match(/\d{4}/)?.[0] || 'Aged'} | Status : ${product.category === 'youtube_monetized' ? 'Monetized' : 'Non-Monetized'} | Content : Clean`,
     note: product.category === 'facebook'
-      ? "Idéal pour le Meta Ads. Compte stable avec historique."
+      ? "Ideal for Meta Ads. Stable account with history."
       : product.category.includes('youtube')
-        ? "Parfait pour le business YT automation."
-        : "Gmail de haute qualité. Format : Email | Pass | Récup | 2FA.",
+        ? "Perfect for YT automation business."
+        : "High quality Gmail. Format: Email | Pass | Recovery | 2FA.",
     terms: commonTerms,
-    refund: "Garantie de 3 jours jusqu'à la connexion."
+    refund: "3-day warranty until login."
   };
 };
 
@@ -231,7 +231,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
           <div className="text-xl font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</div>
           {product.stock <= 0 && (
             <div className="bg-red-50 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-widest">
-              Rupture
+              Out of stock
             </div>
           )}
         </div>
@@ -257,7 +257,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
           disabled={product.stock <= 0}
           className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${product.stock <= 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : added ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'bg-gray-900 text-white hover:bg-primary shadow-lg shadow-black/5'}`}
         >
-          {product.stock <= 0 ? 'Épuisé' : added ? <><CheckCircle size={14} /> Ajouté !</> : <><ShoppingCart size={14} /> Ajouter</>}
+          {product.stock <= 0 ? 'Sold out' : added ? <><CheckCircle size={14} /> Added!</> : <><ShoppingCart size={14} /> Add</>}
         </button>
       </div>
     </div>
@@ -294,9 +294,9 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
 
       {/* Menu central */}
       <nav className="hidden lg:flex items-center gap-8">
-        <button onClick={() => go('home', 'all', 'all')} className={linkCls(currentView === 'home')}>Produits</button>
+        <button onClick={() => go('home', 'all', 'all')} className={linkCls(currentView === 'home')}>Products</button>
         <button onClick={() => go('home', 'all', 'sms')} className={linkCls(false)}>SMS</button>
-        <button onClick={() => session ? navigate('dashboard') : navigate('auth')} className={linkCls(currentView === 'dashboard')}>Mes commandes</button>
+        <button onClick={() => session ? navigate('dashboard') : navigate('auth')} className={linkCls(currentView === 'dashboard')}>My orders</button>
         <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>API</button>
       </nav>
 
@@ -309,7 +309,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
         {session ? (
           <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end border-r border-gray-100 dark:border-gray-700 pr-4">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mon Solde</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">My Balance</span>
               <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </div>
             <button onClick={() => navigate('dashboard')} className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
@@ -324,7 +324,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
         <button onClick={() => navigate('cart')} className="bg-gray-900 dark:bg-primary text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
           <ShoppingCart size={18} />
           {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
-          <span className="border-l border-white/20 pl-3">PANIER / ${cartTotal.toFixed(2)}</span>
+          <span className="border-l border-white/20 pl-3">CART / ${cartTotal.toFixed(2)}</span>
         </button>
       </div>
     </div>
@@ -342,7 +342,7 @@ const HomeView = ({
   filteredProducts, addToCart, navigate, setSelectedProduct,
   groups = [], subCategories = [],
 }) => {
-  const activeGroupLabel = activeGroup === 'all' ? 'Tous les produits' : (GROUP_LABELS[activeGroup] || 'Autres');
+  const activeGroupLabel = activeGroup === 'all' ? 'All products' : (GROUP_LABELS[activeGroup] || 'Others');
 
   const pillCls = (active) =>
     `shrink-0 px-5 py-2.5 rounded-full text-sm font-bold border transition-all whitespace-nowrap ${
@@ -458,11 +458,11 @@ const ApiView = ({ navigate, session }) => {
   const copyKey = () => { if (apiKey) { navigator.clipboard?.writeText(apiKey); setCopied(true); setTimeout(() => setCopied(false), 1500); } };
 
   const actions = [
-    ['balance', 'key, action', '{ "balance": 42.5, "currency": "USD" }', 'Consulter votre solde revendeur.'],
-    ['products', 'key, action', '[ { "product": 12, "name": "…", "rate": 6.60, "available": 120, "status": "In stock" } ]', 'Lister le catalogue, vos prix et le stock en temps réel.'],
-    ['add_order', 'key, action, product, quantity', '{ "order": 10231 }', 'Passer une commande. Débite votre solde, livraison automatique.'],
-    ['order_status', 'key, action, order', '{ "status": "Completed", "charge": "6.60", "currency": "USD" }', 'Statuts : Pending, Processing, Completed, Canceled.'],
-    ['result', 'key, action, order', '{ "result": ["mail:pass:recovery", "…"] }', 'Récupérer les comptes livrés (une ligne par compte).'],
+    ['balance', 'key, action', '{ "balance": 42.5, "currency": "USD" }', 'Check your reseller balance.'],
+    ['products', 'key, action', '[ { "product": 12, "name": "…", "rate": 6.60, "available": 120, "status": "In stock" } ]', 'List the catalog, your prices, and real-time stock.'],
+    ['add_order', 'key, action, product, quantity', '{ "order": 10231 }', 'Place an order. Debits your balance, automatic delivery.'],
+    ['order_status', 'key, action, order', '{ "status": "Completed", "charge": "6.60", "currency": "USD" }', 'Statuses: Pending, Processing, Completed, Canceled.'],
+    ['result', 'key, action, order', '{ "result": ["mail:pass:recovery", "…"] }', 'Retrieve delivered accounts (one line per account).'],
   ];
 
   return (
@@ -470,61 +470,61 @@ const ApiView = ({ navigate, session }) => {
       {/* En-tête */}
       <div className="max-w-3xl mb-12">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
-          <Zap size={14} /> API Revendeur
+          <Zap size={14} /> Reseller API
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-6">
-          Revendez notre catalogue <span className="text-primary">via notre API</span>
+          Resell our catalog <span className="text-primary">via our API</span>
         </h1>
         <p className="text-gray-500 text-lg leading-relaxed">
-          Intégrez notre catalogue dans votre propre boutique. Achetez par programme,
-          passez vos commandes et livrez vos clients automatiquement, 24h/24. Réponses JSON,
-          authentification par clé.
+          Integrate our catalog into your own store. Buy programmatically,
+          place your orders, and deliver to your clients automatically, 24/7. JSON responses,
+          key authentication.
         </p>
       </div>
 
       {/* Clé API */}
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft mb-10">
-        <h2 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2"><Shield size={18} className="text-primary" /> Votre clé API</h2>
+        <h2 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2"><Shield size={18} className="text-primary" /> Your API Key</h2>
         {!session ? (
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <p className="text-gray-500 text-sm flex-grow">Connectez-vous pour générer votre clé API et commencer.</p>
-            <button onClick={() => navigate('auth')} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Se connecter</button>
+            <p className="text-gray-500 text-sm flex-grow">Log in to generate your API key and get started.</p>
+            <button onClick={() => navigate('auth')} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Log in</button>
           </div>
         ) : apiKey ? (
           <div>
             <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4">
               <code className="text-primary font-mono text-sm flex-grow break-all">{apiKey}</code>
-              <button onClick={copyKey} className="shrink-0 text-xs font-bold px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all">{copied ? 'Copié !' : 'Copier'}</button>
+              <button onClick={copyKey} className="shrink-0 text-xs font-bold px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all">{copied ? 'Copied!' : 'Copy'}</button>
             </div>
-            <p className="text-gray-400 text-xs mt-3">Gardez cette clé secrète. Elle donne accès à votre solde et à vos commandes.</p>
+            <p className="text-gray-400 text-xs mt-3">Keep this key secret. It grants access to your balance and your orders.</p>
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <p className="text-gray-500 text-sm flex-grow">Aucune clé active. Générez-en une pour accéder à l'API.</p>
-            <button onClick={generateKey} disabled={loading} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-50">{loading ? 'Génération…' : 'Générer ma clé API'}</button>
+            <p className="text-gray-500 text-sm flex-grow">No active key. Generate one to access the API.</p>
+            <button onClick={generateKey} disabled={loading} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-50">{loading ? 'Generating…' : 'Generate my API Key'}</button>
           </div>
         )}
       </div>
 
       {/* Connexion */}
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft mb-10">
-        <h2 className="text-lg font-black text-gray-900 mb-4">Connexion</h2>
+        <h2 className="text-lg font-black text-gray-900 mb-4">Connection</h2>
         <div className="space-y-2 text-sm">
           <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Endpoint</span><code className="text-primary font-mono break-all">{API_BASE_URL}</code></div>
-          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Méthode</span><span className="text-gray-700 font-mono">POST</span></div>
+          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Method</span><span className="text-gray-700 font-mono">POST</span></div>
           <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Content-Type</span><span className="text-gray-700 font-mono">application/x-www-form-urlencoded</span></div>
-          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Réponse</span><span className="text-gray-700 font-mono">JSON</span></div>
+          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Response</span><span className="text-gray-700 font-mono">JSON</span></div>
         </div>
         <div className="mt-6 bg-gray-900 rounded-2xl p-5 overflow-x-auto">
           <pre className="text-[12px] text-gray-200 font-mono leading-relaxed">{`curl -X POST ${API_BASE_URL} \\
-  -d "key=VOTRE_CLE_API" \\
+  -d "key=YOUR_API_KEY" \\
   -d "action=products"`}</pre>
         </div>
       </div>
 
       {/* Actions */}
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft">
-        <h2 className="text-lg font-black text-gray-900 mb-6">Actions disponibles</h2>
+        <h2 className="text-lg font-black text-gray-900 mb-6">Available actions</h2>
         <div className="space-y-6">
           {actions.map(([name, params, example, desc]) => (
             <div key={name} className="border-b border-gray-50 last:border-0 pb-6 last:pb-0">
@@ -532,7 +532,7 @@ const ApiView = ({ navigate, session }) => {
                 <code className="text-primary font-mono font-black text-sm">action={name}</code>
               </div>
               <p className="text-gray-600 text-sm mb-2">{desc}</p>
-              <p className="text-xs text-gray-400 mb-3"><span className="font-bold">Paramètres :</span> <code className="font-mono">{params}</code></p>
+              <p className="text-xs text-gray-400 mb-3"><span className="font-bold">Parameters :</span> <code className="font-mono">{params}</code></p>
               <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
                 <pre className="text-[12px] text-gray-200 font-mono">{example}</pre>
               </div>
@@ -550,42 +550,42 @@ const ApiView = ({ navigate, session }) => {
 const POLICY_SECTIONS = [
   {
     id: 'terms',
-    title: "Conditions d'utilisation",
+    title: "Terms of Service",
     icon: FileText,
     content: [
-      "Veuillez lire attentivement la description du produit et cette politique avant tout achat.",
-      "Vous êtes entièrement responsable de toutes les actions effectuées sur le compte après la livraison.",
-      "Dès réception du compte, vous devez vous connecter et le vérifier immédiatement pour vous assurer qu'il correspond à la description.",
+      "Please read the product description and this policy carefully before purchasing.",
+      "You are fully responsible for all actions taken on the account after delivery.",
+      "Upon receipt of the account, you must log in and check it immediately to ensure it matches the description.",
     ],
   },
   {
     id: 'disclaimer',
-    title: 'Avertissement',
+    title: 'Disclaimer',
     icon: Shield,
     content: [
-      "Vous acceptez que l'utilisation d'AgedGmailYT se fait à vos propres risques. AgedGmailYT ne pourra être tenu responsable d'aucun dommage que vous ou votre activité pourriez subir.",
-      "AgedGmailYT ne garantit pas la disponibilité continue du site, celui-ci reposant sur des services internet tiers.",
+      "You agree that your use of AgedGmailYT is at your own risk. AgedGmailYT cannot be held liable for any damages you or your business may suffer.",
+      "AgedGmailYT does not guarantee the continuous availability of the site, as it relies on third-party internet services.",
     ],
   },
   {
     id: 'purchase',
-    title: "Politique d'achat",
+    title: "Purchase Policy",
     icon: ShoppingCart,
     content: [
-      "En achetant des crédits ou en rechargeant votre solde, vous confirmez comprendre et accepter votre achat, et vous vous engagez à ne pas ouvrir de litige frauduleux ni publier d'avis de mauvaise foi.",
-      "En cas de tentative de litige frauduleux ou d'avis abusif, nous nous réservons le droit de réinitialiser les crédits, de suspendre le compte et/ou de bannir définitivement l'adresse IP concernée.",
-      "Le solde crédité sur AgedGmailYT n'est pas remboursable tant que le système et le site fonctionnent normalement. La garantie du produit est calculée à partir du moment où il vous est livré ; l'absence de connexion de votre part ne donne pas droit à un remplacement ni à un remboursement.",
-      "Après achat, veuillez télécharger et conserver vos données de votre côté. Les commandes sont automatiquement supprimées de nos systèmes après 30 jours pour des raisons de sécurité.",
-      "Lorsqu'un produit est au format EMAIL | MOT DE PASSE | (RÉCUPÉRATION), l'email et le mot de passe sont toujours fournis ; l'information de récupération dépend du stock disponible au moment de la commande.",
-      "Les crédits ne sont pas transférables entre différents produits ou services.",
-      "Le produit est délivré immédiatement après l'achat ; il est de votre responsabilité de l'utiliser, même si vous ne vous connectez pas tout de suite.",
-      "Après la première connexion, et seulement après quelques jours, changez systématiquement le mot de passe, l'email de récupération, le numéro de téléphone, et activez la vérification en deux étapes pour sécuriser le compte.",
-      "Utilisez toujours une IP résidentielle/propre pour vous connecter. N'utilisez jamais de proxy gratuit ou de VPN, les plateformes sociales les détectent. Aucun remplacement ne sera effectué si vous utilisez un VPN ou un proxy gratuit pour vous connecter.",
+      "By purchasing credits or topping up your balance, you confirm you understand and accept your purchase, and agree not to open fraudulent disputes or post bad faith reviews.",
+      "In case of an attempted fraudulent dispute or abusive review, we reserve the right to reset credits, suspend the account, and/or permanently ban the relevant IP address.",
+      "The balance credited on AgedGmailYT is non-refundable as long as the system and site are operating normally. The product warranty is calculated from the moment it is delivered to you; your failure to log in does not entitle you to a replacement or refund.",
+      "After purchase, please download and keep your data on your end. Orders are automatically deleted from our systems after 30 days for security reasons.",
+      "When a product is in EMAIL | PASSWORD | (RECOVERY) format, the email and password are always provided; recovery information depends on stock availability at the time of order.",
+      "Credits are not transferable between different products or services.",
+      "The product is delivered immediately after purchase; it is your responsibility to use it, even if you do not log in right away.",
+      "After the first login, and only after a few days, systematically change the password, recovery email, phone number, and enable two-step verification to secure the account.",
+      "Always use a clean/residential IP to connect. Never use a free proxy or VPN, social platforms detect them. No replacement will be made if you use a VPN or a free proxy to connect.",
     ],
   },
   {
     id: 'warranty',
-    title: 'Politique de garantie',
+    title: 'Warranty Policy',
     icon: CheckCircle,
     content: [],
   },
@@ -593,30 +593,30 @@ const POLICY_SECTIONS = [
 
 const WARRANTY_BLOCKS = [
   {
-    label: 'Garantie',
+    label: 'Warranty',
     items: [
-      "Nous garantissons uniquement la première connexion réussie et que le produit est livré conforme à sa description.",
-      "Nous ne garantissons pas que les informations du compte puissent être modifiées immédiatement (de nombreuses plateformes exigent une utilisation prolongée depuis la même IP et le même appareil).",
-      "Nous ne pouvons pas garantir la réception de codes de vérification envoyés à un ancien email ou un ancien numéro. Ajoutez votre propre email et numéro si besoin.",
-      "Aucune garantie n'est appliquée si : vous avez changé le mot de passe, l'email de récupération, le numéro de téléphone ou activé la 2FA ; vous vous êtes connecté via un VPN ou un proxy gratuit ; ou si la connexion fonctionne de notre côté mais pas du vôtre (problème lié à votre configuration).",
+      "We only guarantee the first successful login and that the product is delivered as described.",
+      "We do not guarantee that account information can be changed immediately (many platforms require prolonged use from the same IP and device).",
+      "We cannot guarantee the receipt of verification codes sent to an old email or old number. Add your own email and number if needed.",
+      "No warranty is applied if: you have changed the password, recovery email, phone number, or enabled 2FA; you connected via a VPN or free proxy; or if the login works on our end but not yours (issue related to your configuration).",
     ],
   },
   {
-    label: 'Recommandations',
+    label: 'Recommendations',
     items: [
-      "Changez le mot de passe, l'email de récupération, vérifiez l'activité de l'appareil, ajoutez un numéro de téléphone et activez la 2FA pour sécuriser votre compte.",
-      "Il est recommandé d'effectuer ces changements au moins 7 jours après la première connexion, avec le même profil de navigateur et la même IP/proxy.",
-      "Si vous débutez ou n'êtes pas sûr de la gestion de plusieurs comptes ou chaînes, contactez le support pour être guidé.",
-      "Pour certaines régions (Chine, Nigéria, Russie…), l'utilisation d'un proxy adapté pour Gmail/YouTube est recommandée.",
+      "Change the password, recovery email, check device activity, add a phone number, and enable 2FA to secure your account.",
+      "It is recommended to make these changes at least 7 days after the first login, with the same browser profile and IP/proxy.",
+      "If you are a beginner or unsure about managing multiple accounts or channels, contact support for guidance.",
+      "For certain regions (China, Nigeria, Russia...), using a suitable proxy for Gmail/YouTube is recommended.",
     ],
   },
   {
-    label: 'Politique de remboursement',
+    label: 'Refund Policy',
     items: [
-      "Si la livraison est impossible en raison d'une mise à jour de plateforme, vous pouvez choisir d'attendre ou de demander l'annulation.",
-      "La garantie prend fin immédiatement après la première connexion réussie.",
-      "Les comptes sont garantis 1 jour (2 jours pour les commandes groupées) jusqu'à votre première connexion.",
-      "Si le compte ne fonctionne pas ou est banni avant votre première connexion, contactez-nous pour vérification et remplacement.",
+      "If delivery is impossible due to a platform update, you can choose to wait or request a cancellation.",
+      "The warranty ends immediately after the first successful login.",
+      "Accounts are guaranteed 1 day (2 days for bulk orders) until your first login.",
+      "If the account does not work or is banned before your first login, contact us for verification and replacement.",
     ],
   },
 ];
@@ -631,8 +631,8 @@ const PoliciesView = ({ navigate }) => {
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
           <Shield size={14} /> Politiques
         </div>
-        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">Conditions d'utilisation, garantie et politiques d'achat</h1>
-        <p className="text-gray-500 text-lg leading-relaxed">Merci de lire attentivement ces politiques avant tout achat sur AgedGmailYT.</p>
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">Terms of Service, Warranty, and Purchase Policies</h1>
+        <p className="text-gray-500 text-lg leading-relaxed">Please read these policies carefully before any purchase on AgedGmailYT.</p>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-10">
@@ -683,8 +683,7 @@ const PoliciesView = ({ navigate }) => {
       </div>
 
       <div className="text-center mt-12">
-        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline">Retour au catalogue</button>
-      </div>
+        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline">Back to catalog</button>      </div>
     </div>
   );
 };
@@ -731,7 +730,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
       onUpdate();
     } catch (error) {
-      setErrorMessage("Erreur upload : Assurez-vous d'avoir créé un bucket public 'avatars' dans Supabase.");
+      setErrorMessage("Upload error: Ensure you have created a public 'avatars' bucket in Supabase.");
     } finally {
       setUploading(false);
     }
@@ -769,7 +768,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
 
   const handleUpdatePassword = async () => {
     if (!newPassword || newPassword !== confirmPassword) {
-      setErrorMessage("Les mots de passe ne correspondent pas.");
+      setErrorMessage("Passwords do not match.");
       return;
     }
     setLoading(true);
@@ -793,7 +792,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
     });
     if (error) setErrorMessage(error.message);
     else {
-      alert("Un email de configuration de mot de passe vous a été envoyé. Une fois configuré, vous pourrez vous connecter via email/pass.");
+      alert("A password setup email has been sent to you. Once configured, you can log in via email/pass.");
     }
     setLoading(false);
   };
@@ -801,15 +800,15 @@ const SettingsTab = ({ profile, onUpdate }) => {
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Paramètres du Profil</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Profile Settings</h2>
         <form className="space-y-8" onSubmit={handleSave}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Prénom</label><input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: Roosevelt" /></div>
-            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nom</label><input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: Mogo Kamdem" /></div>
+            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">First Name</label><input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: John" /></div>
+            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Last Name</label><input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: Doe" /></div>
           </div>
-          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pseudo (Public) *</label><input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /><p className="text-[10px] text-gray-400 italic mt-2">C'est le nom qui apparaîtra sur votre tableau de bord et vos avis.</p></div>
+          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Username (Public) *</label><input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /><p className="text-[10px] text-gray-400 italic mt-2">This is the name that will appear on your dashboard and your reviews.</p></div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Photo de profil</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Profile Picture</label>
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 bg-gray-50 rounded-[2rem] border border-gray-100 flex items-center justify-center overflow-hidden relative group">
                 {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" alt="Preview" /> : <User size={30} className="text-gray-300" />}
@@ -818,35 +817,35 @@ const SettingsTab = ({ profile, onUpdate }) => {
               <div className="space-y-3">
                 <input type="file" id="avatar" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
                 <label htmlFor="avatar" className="inline-block bg-white border border-gray-100 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer">
-                  {uploading ? "Chargement..." : "Choisir une photo"}
+                  {uploading ? "Loading..." : "Choose a photo"}
                 </label>
-                <p className="text-[10px] text-gray-400 font-medium italic">JPG, PNG supportés. Max 2Mo.</p>
+                <p className="text-[10px] text-gray-400 font-medium italic">JPG, PNG supported. Max 2MB.</p>
               </div>
             </div>
           </div>
-          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Adresse Email *</label><input type="email" value={email} readOnly className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div>
+          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address *</label><input type="email" value={email} readOnly className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div>
           {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
           <button type="submit" disabled={loading} className={`px-12 py-5 rounded-full font-bold text-sm transition-all shadow-xl shadow-black/10 flex items-center gap-2 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-black'}`}>
-            {loading ? <RefreshCcw size={16} className="animate-spin" /> : success ? <><CheckCircle size={16} /> Modifié avec succès</> : 'Enregistrer les modifications'}
+            {loading ? <RefreshCcw size={16} className="animate-spin" /> : success ? <><CheckCircle size={16} /> Successfully modified</> : 'Save changes'}
           </button>
         </form>
       </div>
 
       <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight flex items-center gap-3"><ShieldCheck size={28} className="text-primary" /> Sécurité & Connexion</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight flex items-center gap-3"><ShieldCheck size={28} className="text-primary" /> Security & Connection</h2>
         <div className="space-y-8">
           <div className="flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
             <div className="flex items-center gap-6">
               <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm"><img src="https://www.google.com/favicon.ico" className="w-6 h-6" alt="Google" /></div>
-              <div><h4 className="font-bold text-gray-900">Compte Google</h4><p className="text-xs text-gray-400 font-medium">Connecté via Google Auth</p></div>
+              <div><h4 className="font-bold text-gray-900">Google Account</h4><p className="text-xs text-gray-400 font-medium">Connected via Google Auth</p></div>
             </div>
-            <button onClick={handleDissociateGoogle} disabled={loading} className="px-6 py-3 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all">Dissocier</button>
+            <button onClick={handleDissociateGoogle} disabled={loading} className="px-6 py-3 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all">Unlink</button>
           </div>
 
           <div className="flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
             <div className="flex items-center gap-6">
               <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary"><CreditCard size={24} /></div>
-              <div><h4 className="font-bold text-gray-900">Authentification à deux facteurs (2FA)</h4><p className="text-xs text-gray-400 font-medium">Ajoutez une couche de sécurité supplémentaire à votre compte.</p></div>
+              <div><h4 className="font-bold text-gray-900">Two-Factor Authentication (2FA)</h4><p className="text-xs text-gray-400 font-medium">Add an extra layer of security to your account.</p></div>
             </div>
             <button onClick={async () => {
               const newVal = !tfaEnabled;
@@ -858,13 +857,13 @@ const SettingsTab = ({ profile, onUpdate }) => {
           </div>
 
           <div className="pt-6 border-t border-gray-100">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Changement de mot de passe</h3>
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Password Change</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
-              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmer le mot de passe" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
             </div>
             <button onClick={handleUpdatePassword} disabled={loading} className="text-sm font-black text-primary hover:underline uppercase tracking-wider disabled:opacity-50">
-              {loading ? "Mise à jour..." : "Mettre à jour le mot de passe"}
+              {loading ? "Updating..." : "Update password"}
             </button>
           </div>
         </div>
@@ -884,7 +883,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
   const sidebarItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'orders', label: 'Orders', icon: History },
-    { id: 'settings', label: 'Paramètres', icon: Settings },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -893,14 +892,14 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
-              <div><h3 className="text-xl font-bold">{viewOrder.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Vos identifiants de connexion</p></div>
+              <div><h3 className="text-xl font-bold">{viewOrder.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Your login credentials</p></div>
               <button onClick={() => setViewOrder(null)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
             </div>
             <div className="p-10 space-y-8">
               <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
                 <div className="flex justify-between items-center mb-6">
                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                    <Info size={12} className="text-primary" /> Format : Email | Password | Recovery | 2FA
+                    <Info size={12} className="text-primary" /> Format: Email | Password | Recovery | 2FA
                   </div>
                   <button
                     onClick={() => {
@@ -909,21 +908,21 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                     }}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
                   >
-                    <Copy size={12} /> Copier Tout
+                    <Copy size={12} /> Copy All
                   </button>
                 </div>
                 <div
                   className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2 mt-6"
                   dangerouslySetInnerHTML={{
                     __html: (() => {
-                      if (!viewOrder.credentials && !viewOrder.data) return "En attente de livraison...";
+                      if (!viewOrder.credentials && !viewOrder.data) return "Waiting for delivery...";
 
                       const creds = viewOrder.credentials || viewOrder.data;
                       const highlighted = creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
 
                       return `<div class="space-y-4">
-                          <p>Merci beaucoup pour votre achat.</p>
-                          <p>Voici vos produits :</p>
+                          <p>Thank you very much for your purchase.</p>
+                          <p>Here are your products:</p>
                           <p class="font-black text-lg text-gray-900 border-b border-gray-100 pb-2">${viewOrder.product_name}</p>
                           <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner">
                             ${highlighted}
@@ -932,13 +931,13 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                           <div class="h-px bg-gray-100 my-8"></div>
                           
                           <div class="bg-primary/5 p-6 rounded-3xl border border-primary/10">
-                            <h4 class="text-gray-900 font-black mb-4 uppercase">Comment se connecter (2FA)</h4>
-                            <p class="text-xs leading-relaxed text-gray-600 mb-4">Collez la chaîne 2FA sur <a href="https://2fa.live" target="_blank" class="text-primary underline font-bold">2fa.live</a> pour obtenir le code à 6 chiffres.</p>
-                            <p class="text-xs font-bold">Tutoriel : <a href="https://www.youtube.com/watch?v=JbjION2rdPA" target="_blank" class="text-primary underline">YouTube</a></p>
+                            <h4 class="text-gray-900 font-black mb-4 uppercase">How to connect (2FA)</h4>
+                            <p class="text-xs leading-relaxed text-gray-600 mb-4">Paste the 2FA string on <a href="https://2fa.live" target="_blank" class="text-primary underline font-bold">2fa.live</a> to get the 6-digit code.</p>
+                            <p class="text-xs font-bold">Tutorial: <a href="https://www.youtube.com/watch?v=JbjION2rdPA" target="_blank" class="text-primary underline">YouTube</a></p>
                           </div>
 
                           <div class="bg-red-50 p-6 rounded-3xl border border-red-100 mt-6">
-                            <p class="text-red-500 font-bold text-xs">Période de garantie terminée après connexion réussie.</p>
+                            <p class="text-red-500 font-bold text-xs">Warranty period ends after successful login.</p>
                           </div>
                         </div>`;
                     })()
@@ -946,7 +945,7 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
                 />
               </div>
             </div>
-            <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Fermer la fenêtre</button>
+            <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Close window</button>
           </div>
         </div>
       )}
@@ -964,10 +963,10 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
               </div>
               <div className="overflow-hidden">
                 <div className="text-sm font-black text-gray-900 truncate">
-                  {profile?.first_name || profile?.last_name ? `${profile.first_name} ${profile.last_name}` : "Utilisateur"}
+                  {profile?.first_name || profile?.last_name ? `${profile.first_name} ${profile.last_name}` : "User"}
                 </div>
                 <div className="text-[10px] text-gray-400 font-bold tracking-wider truncate lowercase">
-                  @{profile?.display_name?.toLowerCase() || "pseudo"}
+                  @{profile?.display_name?.toLowerCase() || "username"}
                 </div>
               </div>
             </div>
@@ -992,29 +991,29 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-gray-900 rounded-[3rem] p-10 text-white relative overflow-hidden group shadow-2xl">
                   <div className="relative z-10">
-                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Solde Actuel</div>
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Current Balance</div>
                     <div className="text-5xl font-black mb-10 font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
-                    <button onClick={() => navigate('recharge')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 inline-flex"><Plus size={18} /> Recharger le compte</button>
+                    <button onClick={() => navigate('recharge')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 inline-flex"><Plus size={18} /> Top up account</button>
                   </div>
                   <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5 group-hover:scale-110 transition-transform duration-700" />
                 </div>
                 <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft flex flex-col justify-between">
                   <div>
-                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Dernière Commande</div>
-                    <div className="text-xl font-bold text-gray-900 mb-2">{orders[0]?.product_name || "Aucune commande"}</div>
-                    <div className="text-sm text-gray-400 font-medium">Effectuée le {orders[0]?.created_at ? new Date(orders[0].created_at).toLocaleDateString() : "--/--/----"}</div>
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Last Order</div>
+                    <div className="text-xl font-bold text-gray-900 mb-2">{orders[0]?.product_name || "No order"}</div>
+                    <div className="text-sm text-gray-400 font-medium">Placed on {orders[0]?.created_at ? new Date(orders[0].created_at).toLocaleDateString() : "--/--/----"}</div>
                   </div>
                   {orders[0]?.product_name !== "Recharge Binance" && (
                     <button onClick={() => setViewOrder(orders[0])} disabled={!orders[0]} className="text-sm font-black text-primary hover:underline flex items-center gap-2 mt-6 disabled:text-gray-300">
-                      Voir les accès <ChevronRight size={16} />
+                      View access <ChevronRight size={16} />
                     </button>
                   )}
                 </div>
               </div>
               <section className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h3 className="text-lg font-bold mb-8">Activités Récentes</h3>
+                <h3 className="text-lg font-bold mb-8">Recent Activities</h3>
                 {orders.length === 0 ? (
-                  <div className="text-center py-10"><p className="text-gray-400 text-sm font-medium">Vous n'avez pas encore effectué d'achats.</p></div>
+                  <div className="text-center py-10"><p className="text-gray-400 text-sm font-medium">You haven't made any purchases yet.</p></div>
                 ) : (
                   <div className="space-y-6">
                     {orders.slice(0, 3).map(order => (
@@ -1044,28 +1043,28 @@ const DashboardView = ({ profile, navigate, orders = [] }) => {
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
               <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Orders</h2>
               {orders.length === 0 ? (
-                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Aucune commande trouvée.</p></div>
+                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">No order found.</p></div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Commande</th><th className="pb-6">Date</th><th className="pb-6">Statut</th><th className="pb-6">Actions</th><th className="pb-6 text-right">Total</th></tr></thead>
+                    <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Order</th><th className="pb-6">Date</th><th className="pb-6">Status</th><th className="pb-6">Actions</th><th className="pb-6 text-right">Total</th></tr></thead>
                     <tbody className="divide-y divide-gray-50">
                       {orders.map(order => (
                         <tr key={order.id} className="group">
-                          <td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantité: {order.quantity}</div></td>
+                          <td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantity: {order.quantity}</div></td>
                           <td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
                           <td className="py-6">
                             <span className={`text-xs font-bold px-3 py-1 rounded-full border ${order.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' :
                               order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
                                 'bg-yellow-100 text-yellow-700 border-yellow-200'
                               }`}>
-                              {order.status === 'confirmed' ? 'Confirmé' : order.status === 'cancelled' ? 'Annulé' : 'En attente'}
+                              {order.status === 'confirmed' ? 'Confirmed' : order.status === 'cancelled' ? 'Cancelled' : 'Pending'}
                             </span>
                           </td>
                           <td className="py-6">
                             {order.product_name !== "Recharge Binance" && (
                               <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
-                                <Eye size={14} /> Voir les accès
+                                <Eye size={14} /> View access
                               </button>
                             )}
                           </td>
@@ -1172,14 +1171,14 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
       <div className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Gérer le Stock</h3>
+            <h3 className="text-xl font-bold text-gray-900">Manage Stock</h3>
             <p className="text-sm text-gray-400 mt-1 font-medium">{product.name}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 transition-all"><X size={16} /></button>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          {[['Total', stockInfo.total, 'bg-gray-50 text-gray-700'], ['Disponibles', stockInfo.available, 'bg-green-50 text-green-700'], ['Livrés', stockInfo.delivered, 'bg-blue-50 text-blue-700']].map(([label, val, cls]) => (
+          {[['Total', stockInfo.total, 'bg-gray-50 text-gray-700'], ['Available', stockInfo.available, 'bg-green-50 text-green-700'], ['Delivered', stockInfo.delivered, 'bg-blue-50 text-blue-700']].map(([label, val, cls]) => (
             <div key={label} className={`${cls} rounded-2xl p-4 text-center`}>
               <div className="text-2xl font-black font-mono">{val}</div>
               <div className="text-[10px] font-black uppercase tracking-widest mt-1">{label}</div>
@@ -1192,20 +1191,20 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
             onClick={() => setShowExisting(false)}
             className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${!showExisting ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            Ajouter du Stock
+            Add Stock
           </button>
           <button
             onClick={() => setShowExisting(true)}
             className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${showExisting ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            Modifier l'existant ({stockInfo.available})
+            Modify existing ({stockInfo.available})
           </button>
         </div>
 
         {!showExisting ? (
           <div className="space-y-6">
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Coller les nouveaux comptes <span className="font-normal normal-case text-gray-300">(1 par ligne)</span></label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Paste new accounts <span className="font-normal normal-case text-gray-300">(1 per line)</span></label>
               <textarea
                 value={bulkText}
                 onChange={e => setBulkText(e.target.value)}
@@ -1213,20 +1212,20 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
                 placeholder={`email@gmail.com|Password123|recovery@mail.com\nemail2@gmail.com|Password456|recovery2@mail.com`}
                 className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
               />
-              <p className="text-[10px] text-gray-400 mt-2">{bulkText.split('\n').filter(l => l.trim()).length} ligne(s) prête(s) à importer</p>
+              <p className="text-[10px] text-gray-400 mt-2">{bulkText.split('\n').filter(l => l.trim()).length} line(s) ready to import</p>
             </div>
 
             {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} />{error}</div>}
 
             <button onClick={handleImport} disabled={loading || importSuccess}
               className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${importSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-              {loading ? <><RefreshCcw size={16} className="animate-spin" /> Import en cours...</> : importSuccess ? <><CheckCircle size={16} /> Importé !</> : <><Upload size={16} /> Importer les comptes</>}
+              {loading ? <><RefreshCcw size={16} className="animate-spin" /> Importing...</> : importSuccess ? <><CheckCircle size={16} /> Imported!</> : <><Upload size={16} /> Import accounts</>}
             </button>
           </div>
         ) : (
           <div className="space-y-6">
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Modifier/Supprimer les comptes en stock <span className="text-red-400 font-bold">(Attention : Les lignes supprimées disparaîtront)</span></label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Modify/Delete accounts in stock <span className="text-red-400 font-bold">(Warning: Deleted lines will disappear)</span></label>
               <textarea
                 value={existingStock}
                 onChange={e => setExistingStock(e.target.value)}
@@ -1234,8 +1233,8 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
                 className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
               />
               <div className="flex justify-between items-center mt-2">
-                <p className="text-[10px] text-gray-400">{existingStock.split('\n').filter(l => l.trim()).length} compte(s) restant(s)</p>
-                <button onClick={() => setExistingStock('')} className="text-[10px] font-bold text-red-400 hover:underline">Vider tout le stock</button>
+                <p className="text-[10px] text-gray-400">{existingStock.split('\n').filter(l => l.trim()).length} account(s) remaining</p>
+                <button onClick={() => setExistingStock('')} className="text-[10px] font-bold text-red-400 hover:underline">Clear all stock</button>
               </div>
             </div>
 
@@ -1243,7 +1242,7 @@ const StockManager = ({ product, onClose, fetchProducts }) => {
 
             <button onClick={handleUpdateStock} disabled={loading || importSuccess}
               className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${importSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-              {loading ? <><RefreshCcw size={16} className="animate-spin" /> Mise à jour...</> : importSuccess ? <><CheckCircle size={16} /> Stock mis à jour !</> : <><Save size={16} /> Enregistrer les modifications</>}
+              {loading ? <><RefreshCcw size={16} className="animate-spin" /> Updating...</> : importSuccess ? <><CheckCircle size={16} /> Stock updated!</> : <><Save size={16} /> Save changes</>}
             </button>
           </div>
         )}
@@ -1692,17 +1691,17 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
       <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
         <div className="flex items-center justify-between flex-wrap gap-6">
           <div>
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Solde YTSeller</div>
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">YTSeller Balance</div>
             <div className="text-4xl font-black font-mono text-gray-900">
               {settings ? `${Number(settings.balance).toFixed(2)} ${settings.currency}` : '—'}
             </div>
             <div className="text-xs text-gray-400 mt-2">
-              {settings?.last_catalog_sync ? `Dernière synchro : ${new Date(settings.last_catalog_sync).toLocaleString()}` : 'Jamais synchronisé'}
+              {settings?.last_catalog_sync ? `Last sync: ${new Date(settings.last_catalog_sync).toLocaleString()}` : 'Never synced'}
             </div>
           </div>
           <div className="flex items-end gap-3 flex-wrap">
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Marge globale %</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Global margin %</label>
               <div className="flex gap-2">
                 <input type="number" value={marginInput} onChange={e => setMarginInput(e.target.value)} className="w-24 h-12 px-4 rounded-xl border border-gray-200 font-mono" />
                 <button onClick={handleSaveMargin} className="h-12 px-4 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200"><Save size={16} /></button>
@@ -1710,32 +1709,32 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
             </div>
             <button onClick={handleSync} disabled={syncing}
               className="h-12 px-6 rounded-2xl bg-gray-900 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
-              <RefreshCcw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Synchro…' : 'Synchroniser'}
+              <RefreshCcw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing…' : 'Sync'}
             </button>
             <button onClick={handleFullImport} disabled={syncing}
               className="h-12 px-6 rounded-2xl bg-primary text-white font-bold text-sm flex items-center gap-2 hover:bg-primaryDark transition-all disabled:opacity-50">
-              <Download size={16} /> Import complet (reset)
+              <Download size={16} /> Full import (reset)
             </button>
           </div>
         </div>
         {msg && <div className="mt-6 text-sm font-bold text-gray-600 bg-gray-50 rounded-2xl px-5 py-3">{msg}</div>}
         {settings && Number(settings.balance) <= 0 && (
           <div className="mt-6 text-sm font-bold text-red-600 bg-red-50 rounded-2xl px-5 py-3 flex items-center gap-2">
-            <AlertTriangle size={16} /> Solde fournisseur à 0 — aucune commande dropship ne pourra être livrée. Rechargez votre compte YTSeller.
+            <AlertTriangle size={16} /> Supplier balance is 0 — no dropship orders can be delivered. Top up your YTSeller account.
           </div>
         )}
       </div>
 
       {/* Mapping produits */}
       <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8">Mapping produits</h2>
+        <h2 className="text-2xl font-bold mb-8">Product mapping</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                <th className="pb-4">Mon produit</th><th className="pb-4">ID YTSeller</th><th className="pb-4">Coût</th>
-                <th className="pb-4">Marge %</th><th className="pb-4">Prix vente</th><th className="pb-4">Dispo</th>
-                <th className="pb-4">Actif</th><th className="pb-4">Actions</th>
+                <th className="pb-4">My product</th><th className="pb-4">YTSeller ID</th><th className="pb-4">Cost</th>
+                <th className="pb-4">Margin %</th><th className="pb-4">Sell price</th><th className="pb-4">Avail</th>
+                <th className="pb-4">Active</th><th className="pb-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -1765,7 +1764,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                         <span className={m.supplier_available > 0 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{m.supplier_available}</span>
                         <span className="text-[10px] text-gray-400 ml-1">{m.supplier_status || ''}</span>
                       </td>
-                      <td className="py-4">{m.active ? <span className="text-green-600 font-bold">Oui</span> : <span className="text-gray-400">Non</span>}</td>
+                      <td className="py-4">{m.active ? <span className="text-green-600 font-bold">Yes</span> : <span className="text-gray-400">No</span>}</td>
                       <td className="py-4 flex gap-2">
                         <button onClick={() => startEdit(m)} className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"><Edit size={14} /></button>
                         <button onClick={() => handleDelete(m)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><Trash size={14} /></button>
@@ -1774,7 +1773,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                   )}
                 </tr>
               ))}
-              {mappings.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">Aucun produit mappé.</td></tr>}
+              {mappings.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">No mapped product.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1782,33 +1781,33 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
         {/* Ajout mapping */}
         <div className="mt-8 pt-8 border-t border-gray-100 flex flex-wrap items-end gap-4">
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Produit</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Product</label>
             <select value={newMap.product_id} onChange={e => setNewMap({ ...newMap, product_id: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-bold min-w-[220px]">
-              <option value="">— Choisir —</option>
+              <option value="">— Choose —</option>
               {unmappedProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">ID YTSeller</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">YTSeller ID</label>
             <input value={newMap.ytseller_product_id} onChange={e => setNewMap({ ...newMap, ytseller_product_id: e.target.value })} placeholder="ex: 11" className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-28" />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Marge %</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Margin %</label>
             <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-24" />
           </div>
-          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2"><Plus size={16} /> Mapper</button>
+          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2"><Plus size={16} /> Map</button>
         </div>
       </div>
 
       {/* Commandes en attente fournisseur */}
       <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8">Commandes en attente fournisseur ({pending.length})</h2>
+        <h2 className="text-2xl font-bold mb-8">Pending supplier orders ({pending.length})</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                <th className="pb-4">Commande</th><th className="pb-4">Produit</th><th className="pb-4">Qté</th>
-                <th className="pb-4">YTSeller #</th><th className="pb-4">Statut</th><th className="pb-4">Dernier check</th>
+                <th className="pb-4">Order</th><th className="pb-4">Product</th><th className="pb-4">Qty</th>
+                <th className="pb-4">YTSeller #</th><th className="pb-4">Status</th><th className="pb-4">Last check</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -1822,7 +1821,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                   <td className="py-4 text-xs text-gray-400">{o.supplier_last_checked_at ? new Date(o.supplier_last_checked_at).toLocaleString() : '—'}</td>
                 </tr>
               ))}
-              {pending.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Aucune commande en attente.</td></tr>}
+              {pending.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">No pending order.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1831,8 +1830,8 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
       {/* Logs */}
       <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold">Journal fournisseur</h2>
-          <button onClick={fetchAll} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><RefreshCcw size={14} /> Rafraîchir</button>
+          <h2 className="text-2xl font-bold">Supplier log</h2>
+          <button onClick={fetchAll} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><RefreshCcw size={14} /> Refresh</button>
         </div>
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {logs.map(l => (
@@ -1842,7 +1841,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
               <span>{l.message}{l.order_id ? ` (cmd #${l.order_id})` : ''}</span>
             </div>
           ))}
-          {logs.length === 0 && <div className="py-8 text-center text-gray-400 text-sm">Aucun log.</div>}
+          {logs.length === 0 && <div className="py-8 text-center text-gray-400 text-sm">No log.</div>}
         </div>
       </div>
     </div>
@@ -1882,20 +1881,20 @@ const AdminView = ({
       {managingStock && <StockManager product={managingStock} fetchProducts={fetchProducts} onClose={() => { setManagingStock(null); fetchProducts(); }} />}
       <div className="flex items-center justify-between mb-12">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Console Administration</h1>
-          <p className="text-gray-400 text-sm mt-2">Gestion dynamique du catalogue et des clients.</p>
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Administration Console</h1>
+          <p className="text-gray-400 text-sm mt-2">Dynamic management of catalog and clients.</p>
         </div>
-        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><ArrowLeft size={16} /> Retour au site</button>
+        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><ArrowLeft size={16} /> Back to site</button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
         <aside className="lg:col-span-1 space-y-2">
           {[
-            { id: 'dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
-            { id: 'stock', label: 'Catalogue Produits', icon: Package },
-            { id: 'orders', label: 'Commandes', icon: FileText },
-            { id: 'users', label: 'Gestion Clients', icon: Users },
-            { id: 'supplier', label: 'Fournisseur', icon: Database },
+            { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+            { id: 'stock', label: 'Product Catalog', icon: Package },
+            { id: 'orders', label: 'Orders', icon: FileText },
+            { id: 'users', label: 'Client Management', icon: Users },
+            { id: 'supplier', label: 'Supplier', icon: Database },
           ].map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-gray-900 text-white shadow-xl' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}>
@@ -1908,24 +1907,24 @@ const AdminView = ({
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu Total</div><div className="text-3xl font-black text-gray-900">${allOrders.reduce((s, o) => s + (o.total_price || 0), 0).toFixed(2)}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Produits en Ligne</div><div className="text-3xl font-black text-gray-900">{products.length}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Total</div><div className="text-3xl font-black text-gray-900">{products.reduce((s, p) => s + (p.stock || 0), 0)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Revenue</div><div className="text-3xl font-black text-gray-900">${allOrders.reduce((s, o) => s + (o.total_price || 0), 0).toFixed(2)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Products Online</div><div className="text-3xl font-black text-gray-900">{products.length}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Stock</div><div className="text-3xl font-black text-gray-900">{products.reduce((s, p) => s + (p.stock || 0), 0)}</div></div>
               </div>
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h3 className="text-lg font-bold mb-8">Statistiques de Vente</h3>
-                <p className="text-gray-400 text-sm italic">Les ventes sont gérées manuellement. Une fois le paiement reçu, livrez le client par email.</p>
+                <h3 className="text-lg font-bold mb-8">Sales Statistics</h3>
+                <p className="text-gray-400 text-sm italic">Sales are managed manually. Once payment is received, deliver the client by email.</p>
               </div>
 
               <div className="bg-red-50/50 border border-red-100 rounded-[3rem] p-10">
-                <h3 className="text-lg font-bold text-red-900 mb-2 flex items-center gap-2"><Settings size={20} /> Zone de Maintenance</h3>
-                <p className="text-red-600 text-sm mb-8 font-medium">Nettoyez les données de test avant le lancement officiel. Ces actions sont irréversibles.</p>
+                <h3 className="text-lg font-bold text-red-900 mb-2 flex items-center gap-2"><Settings size={20} /> Maintenance Zone</h3>
+                <p className="text-red-600 text-sm mb-8 font-medium">Clean test data before official launch. These actions are irreversible.</p>
                 <div className="flex flex-wrap gap-4">
                   <button onClick={handleResetSystem} className="bg-red-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-red-700 transition-all shadow-xl shadow-red-500/20 flex items-center gap-2">
-                    <Trash2 size={18} /> Réinitialiser Commandes & Soldes
+                    <Trash2 size={18} /> Reset Orders & Balances
                   </button>
                   <button onClick={handleDeleteAllProducts} className="bg-white text-red-600 border border-red-200 px-8 py-4 rounded-2xl font-bold hover:bg-red-50 transition-all flex items-center gap-2">
-                    <PackageX size={18} /> Supprimer tous les Produits
+                    <PackageX size={18} /> Delete all Products
                   </button>
                 </div>
               </div>
@@ -1936,35 +1935,35 @@ const AdminView = ({
             <div className="space-y-8">
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
                 <div className="flex justify-between items-center mb-10">
-                  <h2 className="text-2xl font-bold">Catalogue Produits</h2>
+                  <h2 className="text-2xl font-bold">Product Catalog</h2>
                   <div className="flex gap-4 items-center">
                     <button
                       onClick={() => handleDeleteAllProducts()}
                       className="text-red-500 hover:bg-red-50 px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all"
                     >
-                      <Trash2 size={18} /> Tout supprimer
+                      <Trash2 size={18} /> Delete all
                     </button>
                     <input type="file" id="excel-import" className="hidden" accept=".xlsx, .xls" onChange={handleExcelProductImport} />
                     <label htmlFor="excel-import" className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer hover:bg-green-700 transition-all shadow-lg shadow-green-500/20">
-                      <Upload size={18} /> Importer Excel
+                      <Upload size={18} /> Import Excel
                     </label>
                     <button onClick={handleExportExcel} className="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all shadow-lg shadow-gray-900/10">
-                      <Download size={18} /> Exporter Excel
+                      <Download size={18} /> Export Excel
                     </button>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 mb-12">
                   <div className="bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100">
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8">{editingProduct ? 'Modifier le Produit' : 'Ajouter un nouveau Produit'}</h3>
+                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8">{editingProduct ? 'Modify Product' : 'Add a new Product'}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Titre du Produit</label>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Product Title</label>
                           <input type="text" value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20" placeholder="ex: Gmail Aged 2018" />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Catégorie</label>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Category</label>
                           <select value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold">
                             {CATEGORIES.filter(c => c.id !== "all").map(cat => (
                               <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -1976,7 +1975,7 @@ const AdminView = ({
 
                         <div className="grid grid-cols-1 gap-4">
                           <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Prix ($)</label>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Price ($)</label>
                             <input type="number" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: parseFloat(e.target.value) })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono" />
                           </div>
                         </div>
@@ -1984,20 +1983,20 @@ const AdminView = ({
                       <div className="space-y-4">
                         <div>
                           <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
-                          <textarea value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} rows="6" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Détails du produit..." />
+                          <textarea value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} rows="6" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Product details..." />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Image du produit (URL)</label>
-                          <input type="text" value={productForm.image_url || ''} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-mono" placeholder="https://…/image.png (laisser vide = logo auto)" />
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Product Image (URL)</label>
+                          <input type="text" value={productForm.image_url || ''} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-mono" placeholder="https://…/image.png (leave empty = auto logo)" />
                           {productForm.image_url ? (
                             <div className="mt-3 w-24 h-24 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden">
-                              <img src={productForm.image_url} alt="aperçu" className="w-full h-full object-contain" />
+                              <img src={productForm.image_url} alt="preview" className="w-full h-full object-contain" />
                             </div>
                           ) : null}
                         </div>
                         <button onClick={handleSaveProduct} disabled={actionStatus === 'loading'} className="w-full h-14 bg-gray-900 text-white rounded-xl font-bold hover:bg-primary transition-all flex items-center justify-center gap-2">
                           {actionStatus === 'loading' ? <RefreshCcw className="animate-spin" /> : <Save size={18} />}
-                          {editingProduct ? 'Mettre à jour' : 'Valider le Produit'}
+                          {editingProduct ? 'Update' : 'Validate Product'}
                         </button>
                       </div>
                     </div>
@@ -2008,8 +2007,8 @@ const AdminView = ({
                   <table className="w-full text-left">
                     <thead>
                       <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                        <th className="pb-6">Produit</th>
-                        <th className="pb-6">Prix</th>
+                        <th className="pb-6">Product</th>
+                        <th className="pb-6">Price</th>
                         <th className="pb-6">Stock</th>
                         <th className="pb-6 text-right">Actions</th>
                       </tr>
@@ -2032,7 +2031,7 @@ const AdminView = ({
                           <td className="py-5 font-mono font-bold text-gray-500">{p.stock}</td>
                           <td className="py-5 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => setManagingStock(p)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Gérer Stock"><Database size={16} /></button>
+                              <button onClick={() => setManagingStock(p)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Manage Stock"><Database size={16} /></button>
                               <button onClick={() => { setEditingProduct(p); setProductForm({ name: p.name, category: p.category, description: p.description, price: p.price, image_url: p.image_url || '' }); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Edit size={16} /></button>
                               <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash size={16} /></button>
                             </div>
@@ -2051,15 +2050,15 @@ const AdminView = ({
           {activeTab === 'users' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
               <div className="flex justify-between items-center mb-10">
-                <h2 className="text-2xl font-bold">Gestion Clients</h2>
-                <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} inscrits</div>
+                <h2 className="text-2xl font-bold">Client Management</h2>
+                <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} registered</div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                      <th className="pb-6">Utilisateur</th>
-                      <th className="pb-6">Solde</th>
+                      <th className="pb-6">User</th>
+                      <th className="pb-6">Balance</th>
                       <th className="pb-6">Actions</th>
                     </tr>
                   </thead>
@@ -2073,9 +2072,9 @@ const AdminView = ({
                         <td className="py-6 font-mono font-black text-primary">${user.balance?.toFixed(2)}</td>
                         <td className="py-6">
                           <button onClick={() => {
-                            const amount = prompt("Montant à ajouter ($) :", "10");
+                            const amount = prompt("Amount to add ($):", "10");
                             if (amount) handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
-                          }} className="p-2 bg-primary/10 text-primary rounded-lg font-bold text-xs">Créditer</button>
+                          }} className="p-2 bg-primary/10 text-primary rounded-lg font-bold text-xs">Credit</button>
                         </td>
                       </tr>
                     ))}
@@ -2156,11 +2155,11 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
   return (
     <div className="space-y-8">
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-sm space-y-6">
-        <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">Informations de Transfert</h4>
+        <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">Transfer Information</h4>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center group">
-            <span className="text-sm font-bold text-gray-500">Devise :</span>
+            <span className="text-sm font-bold text-gray-500">Currency :</span>
             <div className="flex items-center gap-3">
               <span className="font-mono font-black text-gray-900">USDT (Binance Pay)</span>
               <button onClick={() => copyToClipboard('USDT')} className="text-gray-300 hover:text-primary transition-colors"><Copy size={16} /></button>
@@ -2188,12 +2187,12 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
           onClick={() => copyToClipboard(`ID: 160684871 | Note: ${noteValue}`)}
           className="w-full py-4 bg-gray-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all flex items-center justify-center gap-2"
         >
-          <Copy size={14} /> Copier toutes les infos
+          <Copy size={14} /> Copy all info
         </button>
 
         <div className="p-4 bg-red-50 rounded-xl border border-red-100">
           <p className="text-[10px] text-red-500 font-bold leading-relaxed italic">
-            * IMPORTANT : Assurez-vous d'ajouter la note ci-dessus lors du transfert sur Binance pour une confirmation automatique.
+            * IMPORTANT: Make sure to add the note above during transfer on Binance for automatic confirmation.
           </p>
         </div>
       </div>
@@ -2203,13 +2202,13 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
           <div className="flex items-center gap-3 text-gray-900 font-bold mb-2">
             <Clock size={18} className="text-primary" /> Confirmation
           </div>
-          <p className="text-[10px] text-gray-500 font-medium">Les transactions sont généralement confirmées en 5-15 minutes.</p>
+          <p className="text-[10px] text-gray-500 font-medium">Transactions are generally confirmed in 5-15 minutes.</p>
         </div>
         <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
           <div className="flex items-center gap-3 text-gray-900 font-bold mb-2">
             <MessageSquare size={18} className="text-primary" /> Support
           </div>
-          <p className="text-[10px] text-gray-500 font-medium">Besoin d'aide ? Contactez-nous sur WhatsApp ou Telegram.</p>
+          <p className="text-[10px] text-gray-500 font-medium">Need help? Contact us on WhatsApp or Telegram.</p>
         </div>
       </div>
 
@@ -2217,7 +2216,7 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
 
       <button onClick={handleOrderSubmit} disabled={loading || success} className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl flex items-center justify-center gap-3 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary shadow-black/10'}`}>
         {loading ? <RefreshCcw className="animate-spin" /> : success ? <CheckCircle /> : <ShieldCheck />}
-        {loading ? "Vérification..." : success ? "Commande Envoyée !" : "J'ai effectué le transfert"}
+        {loading ? "Verification..." : success ? "Order Sent!" : "I made the transfer"}
       </button>
     </div>
   );
@@ -2231,8 +2230,8 @@ const CRYPTO_CURRENCIES = [
 ];
 
 const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile }) => {
-  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 10);
-  const [payCurrency, setPayCurrency] = useState('btc');
+  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 25);
+  const [payCurrency, setPayCurrency] = useState('usdttrc20');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('form'); // 'form' | 'awaiting' | 'success'
   const [error, setError] = useState('');
@@ -2259,7 +2258,20 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
         },
       });
 
-      if (fnError) throw new Error(fnError.message);
+      if (fnError) {
+        // Le SDK Supabase masque le corps JSON réel derrière un message
+        // générique ("Edge Function returned a non-2xx status code").
+        // On va chercher la vraie raison dans la réponse HTTP sous-jacente.
+        let realMessage = fnError.message;
+        try {
+          const body = await fnError.context?.json();
+          if (body?.error) realMessage = body.error;
+        } catch { /* non-JSON or already-consumed body, keep the default message */ }
+        if (/less than minimal/i.test(realMessage)) {
+          realMessage = `This amount is below the minimum accepted for ${payCurrency.toUpperCase()}. Try a higher amount or a different cryptocurrency.`;
+        }
+        throw new Error(realMessage);
+      }
       if (fnData?.error) throw new Error(fnData.error);
       if (!fnData?.payAddress) throw new Error('Réponse NOWPayments invalide.');
 
@@ -2301,9 +2313,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-20 font-sans">
-      <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">Recharger mon compte</h2>
+      <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">Recharge my account</h2>
       <p className="text-gray-500 mb-10 leading-relaxed">
-        Paiement sécurisé en cryptomonnaie — Bitcoin, Ethereum, USDT, Litecoin.
+        Secure cryptocurrency payment — Bitcoin, Ethereum, USDT, Litecoin.
       </p>
 
       {step === 'form' && (
@@ -2311,13 +2323,13 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
           {suggestedAmount && (
             <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-gray-600">
-              Il te manque <span className="font-black text-primary">${suggestedAmount.toFixed(2)}</span> pour finaliser ta commande. Tu peux ajuster le montant si tu veux recharger plus.
+              You are short <span className="font-black text-primary">${suggestedAmount.toFixed(2)}</span> to finalize your order. You can adjust the amount if you want to recharge more.
             </div>
           )}
 
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-              Montant à recharger (USD)
+              Amount to recharge (USD)
             </label>
             <input
               type="number"
@@ -2331,7 +2343,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-              Cryptomonnaie
+              Cryptocurrency
             </label>
             <div className="grid grid-cols-2 gap-3">
               {CRYPTO_CURRENCIES.map(c => (
@@ -2344,6 +2356,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 </button>
               ))}
             </div>
+            <p className="text-xs text-gray-400 mt-2">Each cryptocurrency has its own network minimum — if your payment is rejected as "too small", try a higher amount.</p>
           </div>
 
           {error && (
@@ -2358,8 +2371,8 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-gray-900 text-white hover:bg-primary shadow-black/10 disabled:opacity-40"
           >
             {loading
-              ? <><RefreshCcw size={20} className="animate-spin" /> Préparation...</>
-              : <><Send size={20} /> Payer ${amountUsd.toFixed(2)} en crypto</>}
+              ? <><RefreshCcw size={20} className="animate-spin" /> Preparation...</>
+              : <><Send size={20} /> Pay ${amountUsd.toFixed(2)} in crypto</>}
           </button>
         </div>
       )}
@@ -2369,40 +2382,40 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
             <RefreshCcw size={32} className="text-primary animate-spin" />
           </div>
-          <h3 className="text-2xl font-black text-gray-900">En attente de paiement</h3>
+          <h3 className="text-2xl font-black text-gray-900">Awaiting payment</h3>
           <p className="text-gray-500 text-sm leading-relaxed">
-            Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation.
+            Send exactly the amount below to the indicated address. Your balance will be credited automatically after confirmation.
           </p>
           <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à envoyer</p>
+              <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Amount to send</p>
               <p className="text-2xl font-black text-primary font-mono">{payment.payAmount} {String(payment.payCurrency).toUpperCase()}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Adresse de dépôt</p>
+              <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Deposit address</p>
               <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
                 <code className="text-xs font-mono text-gray-700 flex-grow break-all text-left">{payment.payAddress}</code>
                 <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
               </div>
-              {copied && <p className="text-xs text-primary font-bold mt-2">Adresse copiée !</p>}
+              {copied && <p className="text-xs text-primary font-bold mt-2">Address copied!</p>}
             </div>
           </div>
-          <p className="text-xs text-gray-400">Cette page se met à jour automatiquement dès réception du paiement.</p>
+          <p className="text-xs text-gray-400">This page updates automatically upon receipt of payment.</p>
         </div>
       )}
 
       {step === 'success' && (
         <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft text-center space-y-6">
           <CheckCircle size={72} className="text-green-500 mx-auto" />
-          <h3 className="text-2xl font-black text-gray-900">Solde crédité !</h3>
+          <h3 className="text-2xl font-black text-gray-900">Balance credited!</h3>
           <p className="text-gray-500 text-sm leading-relaxed">
-            Ton paiement a été confirmé et ton solde a été mis à jour.
+            Your payment has been confirmed and your balance updated.
           </p>
           <button
             onClick={() => navigate('dashboard')}
             className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-primary transition-all"
           >
-            Mon compte
+            My account
           </button>
         </div>
       )}
@@ -2428,7 +2441,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
     setErrorMessage("");
 
     try {
-      if (profile.balance < cartTotal) throw new Error("Solde insuffisant.");
+      if (profile.balance < cartTotal) throw new Error("Insufficient balance.");
 
       // Process each item in cart
       for (const item of cart) {
@@ -2450,7 +2463,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
           }).select('id').single();
 
           if (dsErr) throw dsErr;
-          if (!dsOrder) throw new Error("La commande n'a pas pu être créée.");
+          if (!dsOrder) throw new Error("The order could not be created.");
 
           // Déclenche la passation fournisseur en arrière-plan (ne bloque pas
           // l'UI). En cas d'échec, la fonction rembourse automatiquement.
@@ -2469,9 +2482,9 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
           .eq('is_delivered', false)
           .limit(item.quantity);
 
-        if (stockErr) throw new Error("Erreur lors de la récupération du stock.");
+        if (stockErr) throw new Error("Error retrieving stock.");
         if (!stockRows || stockRows.length < item.quantity) {
-          throw new Error(`Plus de comptes disponibles en stock pour ${item.name}.`);
+          throw new Error(`No more accounts available in stock for ${item.name}.`);
         }
 
         const deliveredCreds = stockRows.map(r => r.credentials).join('\n');
@@ -2493,7 +2506,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
         }).select('id').single();
 
         if (orderInsertErr) throw orderInsertErr;
-        if (!orderData) throw new Error("La commande a été créée mais l'ID n'a pas pu être récupéré.");
+        if (!orderData) throw new Error("Order created but ID could not be retrieved.");
 
         // 3. Mark credentials as delivered and link to order
         const { error: stockUpdateErr } = await supabase.from('account_stock').update({
@@ -2502,7 +2515,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
           delivered_to: session.user.id,
         }).in('id', stockIds);
 
-        if (stockUpdateErr) console.error("Erreur mise à jour stock_account:", stockUpdateErr);
+        if (stockUpdateErr) console.error("Error updating stock_account:", stockUpdateErr);
       }
 
       // 4. Deduct balance from profile
@@ -2539,7 +2552,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         <div className="lg:col-span-2">
-          <h2 className="text-4xl font-bold text-gray-900 mb-12 tracking-tight">Finaliser la Commande</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-12 tracking-tight">Finalize Order</h2>
 
           <div className="space-y-8">
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft overflow-hidden relative">
@@ -2551,16 +2564,16 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                     <Wallet size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">Paiement par Solde</h3>
-                    <p className="text-sm text-gray-400">Utilisez les crédits disponibles sur votre compte.</p>
+                    <h3 className="text-xl font-bold text-gray-900">Payment by Balance</h3>
+                    <p className="text-sm text-gray-400">Use the available credits on your account.</p>
                   </div>
                 </div>
 
                 <div className="bg-gray-50 rounded-3xl p-8 mb-10 border border-gray-100/50">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Votre Solde Actuel</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Your Current Balance</span>
                     <span className={`text-xs font-bold px-3 py-1 rounded-full ${hasEnoughBalance ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>
-                      {hasEnoughBalance ? 'Solde Suffisant' : 'Solde Insuffisant'}
+                      {hasEnoughBalance ? 'Sufficient Balance' : 'Insufficient Balance'}
                     </span>
                   </div>
                   <div className="text-4xl font-black text-gray-900 font-mono">${(profile?.balance || 0).toFixed(2)}</div>
@@ -2571,8 +2584,8 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                     <div className="p-6 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-4">
                       <div className="mt-1 text-red-500"><AlertTriangle size={20} /></div>
                       <p className="text-sm text-red-600 leading-relaxed font-medium">
-                        Désolé, votre solde est de <span className="font-bold">${(profile?.balance || 0).toFixed(2)}</span>.
-                        Vous avez besoin de <span className="font-bold">${cartTotal.toFixed(2)}</span> pour cette commande.
+                        Sorry, your balance is <span className="font-bold">${(profile?.balance || 0).toFixed(2)}</span>.
+                        You need <span className="font-bold">${cartTotal.toFixed(2)}</span> for this order.
                       </p>
                     </div>
                     <button
@@ -2583,7 +2596,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                       }}
                       className="w-full py-5 rounded-[2rem] bg-gray-900 text-white font-bold hover:bg-primary transition-all shadow-xl shadow-gray-900/10 flex items-center justify-center gap-3"
                     >
-                      <Plus size={20} /> Recharger ${Math.max(0, Math.round((cartTotal - (profile?.balance || 0)) * 100) / 100).toFixed(2)}
+                      <Plus size={20} /> Recharge ${Math.max(0, Math.round((cartTotal - (profile?.balance || 0)) * 100) / 100).toFixed(2)}
                     </button>
                   </div>
                 ) : (
@@ -2593,7 +2606,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                     className={`w-full py-6 rounded-[2rem] font-black text-lg transition-all shadow-2xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20'}`}
                   >
                     {isProcessing ? <RefreshCcw size={24} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={24} /> : <Zap size={24} />}
-                    {isProcessing ? "Traitement..." : purchaseSuccess ? "Paiement Réussi !" : `Confirmer le Paiement ($${cartTotal.toFixed(2)})`}
+                    {isProcessing ? "Processing..." : purchaseSuccess ? "Payment Successful!" : `Confirm Payment ($${cartTotal.toFixed(2)})`}
                   </button>
                 )}
 
@@ -2607,7 +2620,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 
             <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-dashed border-gray-200">
               <p className="text-center text-xs text-gray-400 font-medium">
-                En validant cette commande, vous acceptez nos <button onClick={() => navigate('policies')} className="text-primary hover:underline">conditions d'utilisation</button> et la politique de livraison instantanée.
+                By validating this order, you accept our <button onClick={() => navigate('policies')} className="text-primary hover:underline">terms of service</button> and the instant delivery policy.
               </p>
             </div>
           </div>
@@ -2615,13 +2628,13 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 
         <div className="h-fit sticky top-32">
           <div className="bg-gray-900 text-white p-10 rounded-[3rem] shadow-2xl">
-            <h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Résumé</h3>
+            <h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Summary</h3>
             <div className="space-y-6 mb-10 text-sm font-medium text-gray-400">
-              <div className="flex justify-between"><span>Articles (${cart.length})</span><span className="text-white">${cartTotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Frais de service</span><span className="text-green-400">Gratuit</span></div>
+              <div className="flex justify-between"><span>Items ({cart.length})</span><span className="text-white">${cartTotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Service fee</span><span className="text-green-400">Free</span></div>
             </div>
             <div className="flex justify-between text-3xl font-bold mb-4"><span>Total</span><span>${cartTotal.toFixed(2)}</span></div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Sécurisé par Chiffrement SSL</div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Secured by SSL Encryption</div>
           </div>
         </div>
       </div>
@@ -2643,12 +2656,12 @@ const ProductView = ({ product, addToCart, navigate }) => {
           <div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden group-hover:scale-[1.6] transition-transform duration-700">
             <ProductVisual product={product} iconSize={80} />
           </div>
-          {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">COMPTE US</div>}
+          {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">US ACCOUNT</div>}
         </div>
 
         <div className="flex flex-col justify-center">
           <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">
-            <button onClick={() => navigate('home')} className="hover:text-primary">ACCUEIL</button>
+            <button onClick={() => navigate('home')} className="hover:text-primary">HOME</button>
             <span>/</span>
             <span className="text-primary">{categoryName(product.category)}</span>
           </nav>
@@ -2727,14 +2740,14 @@ const ProductView = ({ product, addToCart, navigate }) => {
             </div>
 
             <div className="bg-primary/5 border border-primary/10 p-8 rounded-[2.5rem]">
-              <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-4"><Info size={14} /> Description Additionnelle</h4>
+              <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-4"><Info size={14} /> Additional Description</h4>
               <p className="text-gray-600 font-medium leading-relaxed italic">{product.description || product.details?.note}</p>
             </div>
           </div>
 
           <div className="space-y-12">
             <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100">
-              <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><ShieldAlert size={14} className="text-primary" /> Conditions d'utilisation</h4>
+              <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><ShieldAlert size={14} className="text-primary" /> Terms of Service</h4>
               <div className="text-xs text-gray-500 leading-relaxed space-y-4">
                 {product.details?.terms?.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
               </div>
@@ -2753,18 +2766,18 @@ const ProductView = ({ product, addToCart, navigate }) => {
 const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, navigate, session }) => (
   <div className="max-w-4xl mx-auto py-20 px-6 font-sans">
     <div className="flex items-center justify-between mb-16">
-      <h2 className="text-5xl font-bold text-gray-900 tracking-tighter">Votre Panier</h2>
+      <h2 className="text-5xl font-bold text-gray-900 tracking-tighter">Your Cart</h2>
       <div className="flex items-center gap-6">
         {cart.length > 0 && (
           <button onClick={clearCart} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition-colors flex items-center gap-2 border border-gray-100 px-4 py-2 rounded-xl">
-            <Trash2 size={14} /> Vider le panier
+            <Trash2 size={14} /> Clear cart
           </button>
         )}
-        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline uppercase tracking-widest">Continuer les achats</button>
+        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline uppercase tracking-widest">Continue shopping</button>
       </div>
     </div>
     {cart.length === 0 ? (
-      <div className="text-center py-20 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Votre panier est vide.</p></div>
+      <div className="text-center py-20 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Your cart is empty.</p></div>
     ) : (
       <div className="space-y-6">
         {cart.map((item) => (
@@ -2792,7 +2805,7 @@ const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTot
             onClick={() => session ? navigate('payment') : navigate('auth')}
             className="bg-primary text-white px-16 py-6 rounded-full font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/20"
           >
-            {session ? 'Passer au Paiement' : 'Se connecter pour payer'}
+            {session ? 'Proceed to Checkout' : 'Log in to pay'}
           </button>
         </div>
       </div>
@@ -2836,7 +2849,7 @@ const AuthView = ({ navigate }) => {
           }
         });
         if (error) throw error;
-        alert("Vérifiez vos emails pour confirmer votre inscription !");
+        alert("Check your emails to confirm your registration!");
       }
       navigate('home');
     } catch (err) {
@@ -2848,7 +2861,7 @@ const AuthView = ({ navigate }) => {
 
   const handleResetPassword = async () => {
     if (!email) {
-      setErrorMessage("Veuillez entrer votre adresse email pour réinitialiser votre mot de passe.");
+      setErrorMessage("Please enter your email address to reset your password.");
       return;
     }
     setLoading(true);
@@ -2858,7 +2871,7 @@ const AuthView = ({ navigate }) => {
         redirectTo: window.location.origin,
       });
       if (error) throw error;
-      alert("Un email de réinitialisation a été envoyé !");
+      alert("A reset email has been sent!");
     } catch (err) {
       setErrorMessage(err.message);
     } finally {
@@ -2885,8 +2898,8 @@ const AuthView = ({ navigate }) => {
 
         {/* Welcome Text */}
         <div className="text-center mb-16">
-          <h2 className="text-[40px] font-bold text-gray-900 mb-4 tracking-tight leading-none">Bienvenue</h2>
-          <p className="text-gray-400 font-medium text-lg">Marketplace N°1 de comptes certifiés.</p>
+          <h2 className="text-[40px] font-bold text-gray-900 mb-4 tracking-tight leading-none">Welcome</h2>
+          <p className="text-gray-400 font-medium text-lg">#1 Marketplace for certified accounts.</p>
         </div>
 
         {!showForm ? (
@@ -2896,7 +2909,7 @@ const AuthView = ({ navigate }) => {
               className="w-full h-20 bg-white border border-gray-100 rounded-[2rem] flex items-center justify-center gap-4 hover:bg-gray-50 transition-all group shadow-sm"
             >
               <img src="https://www.google.com/favicon.ico" className="w-6 h-6 group-hover:scale-110 transition-transform" alt="Google" />
-              <span className="text-gray-700 font-bold text-lg">Continuer avec Google</span>
+              <span className="text-gray-700 font-bold text-lg">Continue with Google</span>
             </button>
 
             <button
@@ -2904,7 +2917,7 @@ const AuthView = ({ navigate }) => {
               className="w-full h-20 bg-[#10B981] text-white rounded-[2rem] flex items-center justify-center gap-4 hover:bg-[#059669] transition-all shadow-xl shadow-green-500/10"
             >
               <Mail size={24} />
-              <span className="font-bold text-lg">Continuer avec Email</span>
+              <span className="font-bold text-lg">Continue with Email</span>
             </button>
           </div>
         ) : (
@@ -2912,27 +2925,27 @@ const AuthView = ({ navigate }) => {
             {!isLogin && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nom</label>
-                  <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Nom" />
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Last Name</label>
+                  <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Last Name" />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Prénom</label>
-                  <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Prénom" />
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">First Name</label>
+                  <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="First Name" />
                 </div>
               </div>
             )}
             {!isLogin && (
               <div className="space-y-2">
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Username</label>
-                <input type="text" required value={username} onChange={e => setUsername(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Nom d'utilisateur" />
+                <input type="text" required value={username} onChange={e => setUsername(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Username" />
               </div>
             )}
             <div className="space-y-2">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="votre@email.com" />
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="your@email.com" />
             </div>
             <div className="space-y-2">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mot de passe</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
               <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="••••••••" />
             </div>
 
@@ -2945,22 +2958,22 @@ const AuthView = ({ navigate }) => {
             <div className="flex gap-4 pt-4">
               <button type="submit" disabled={loading} className="flex-grow h-16 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-2">
                 {loading && <RefreshCcw size={16} className="animate-spin" />}
-                {isLogin ? 'Se Connecter' : "S'inscrire"}
+                {isLogin ? 'Log In' : "Sign Up"}
               </button>
               <button type="button" onClick={() => setIsLogin(!isLogin)} className="flex-grow h-16 bg-gray-100 text-gray-500 rounded-2xl font-bold text-sm hover:bg-gray-200 transition-all">
-                {isLogin ? "S'inscrire" : "Connexion"}
+                {isLogin ? "Sign Up" : "Log In"}
               </button>
             </div>
 
             <button type="button" onClick={() => setShowForm(false)} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-4">
-              ← Retour aux options
+              ← Back to options
             </button>
           </form>
         )}
 
         <div className="mt-10 text-center">
           <button onClick={handleResetPassword} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
-            Mot de passe oublié ?
+            Forgot your password?
           </button>
         </div>
       </div>
@@ -2982,7 +2995,7 @@ const Footer = ({ navigate }) => (
             <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('home')} />
           </div>
           <p className="text-gray-400 text-lg max-w-md leading-relaxed mb-10 font-medium">
-            La marketplace N°1 pour l'acquisition de comptes certifiés et de services digitaux premium. Sécurité, rapidité et fiabilité garanties.
+            The #1 marketplace for acquiring certified accounts and premium digital services. Security, speed, and reliability guaranteed.
           </p>
           <div className="flex gap-4">
             <div className="flex flex-wrap gap-3">
@@ -2995,7 +3008,7 @@ const Footer = ({ navigate }) => (
 
         {/* Links Sections */}
         <div>
-          <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Plateforme</h4>
+          <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Platform</h4>
           <ul className="space-y-4">
             <li><button onClick={() => navigate('dashboard')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Account</button></li>
             <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Service</button></li>
@@ -3017,13 +3030,13 @@ const Footer = ({ navigate }) => (
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">Copyright 2026 © AgedGmailYT</span>
           <span className="text-gray-200 hidden md:block">•</span>
-          <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">Tous droits réservés</span>
+          <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">All rights reserved</span>
         </div>
 
         <div className="flex gap-8 items-center">
           <div className="flex gap-4 items-center">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Système Opérationnel</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Operational</span>
           </div>
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100">
             <ChevronUp size={18} />
@@ -3070,8 +3083,8 @@ function App() {
   const handleDeleteProduct = (id) => {
     setConfirmModal({
       isOpen: true,
-      title: "Supprimer ce produit ?",
-      message: "Cette action est irréversible. Le produit sera définitivement retiré du catalogue.",
+      title: "Delete this product?",
+      message: "This action is irreversible. The product will be permanently removed from the catalog.",
       type: "danger",
       onConfirm: async () => {
         try {
@@ -3079,7 +3092,7 @@ function App() {
           if (error) throw error;
           fetchProducts();
         } catch (err) {
-          alert("Erreur : " + err.message);
+          alert("Error: " + err.message);
         } finally {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
         }
@@ -3090,8 +3103,8 @@ function App() {
   const handleDeleteAllProducts = () => {
     setConfirmModal({
       isOpen: true,
-      title: "Tout supprimer ?",
-      message: "ATTENTION : Vous allez supprimer TOUS les produits du catalogue. Cette action ne peut pas être annulée.",
+      title: "Delete all?",
+      message: "WARNING: You are about to delete ALL products from the catalog. This action cannot be undone.",
       type: "danger",
       onConfirm: async () => {
         try {
