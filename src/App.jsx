@@ -2273,48 +2273,72 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const selectedMin = minAmounts[payCurrency];
   const belowMin = typeof selectedMin === 'number' && amountUsd < selectedMin;
 
-  const handleSubmit = async () => {
-    if (gateway !== 'nowpayments') { setError('Choisis une passerelle de paiement.'); return; }
-    if (amountUsd <= 0) { setError('Montant invalide.'); return; }
-    if (belowMin) { setError(`Montant minimum pour ${payCurrency.toUpperCase()} : $${selectedMin.toFixed(2)}`); return; }
-
-    setLoading(true);
-    setError('');
-
+  const extractFnErrorMessage = async (fnError) => {
+    // Le SDK Supabase masque le corps JSON réel derrière un message
+    // générique ("Edge Function returned a non-2xx status code").
+    // On va chercher la vraie raison dans la réponse HTTP sous-jacente.
+    let realMessage = fnError.message;
     try {
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('nowpayments-create', {
-        body: {
-          userId: session.user.id,
-          email: session.user.email,
-          amountUsd,
-          payCurrency,
-        },
-      });
+      const body = await fnError.context?.json();
+      if (body?.error) realMessage = body.error;
+    } catch { /* corps non-JSON ou déjà consommé, on garde le message par défaut */ }
+    return realMessage;
+  };
 
-      if (fnError) {
-        // Le SDK Supabase masque le corps JSON réel derrière un message
-        // générique ("Edge Function returned a non-2xx status code").
-        // On va chercher la vraie raison dans la réponse HTTP sous-jacente.
-        let realMessage = fnError.message;
-        try {
-          const body = await fnError.context?.json();
-          if (body?.error) realMessage = body.error;
-        } catch { /* corps non-JSON ou déjà consommé, on garde le message par défaut */ }
-        if (/less than minimal/i.test(realMessage)) {
-          realMessage = `Ce montant est en dessous du minimum accepté pour ${payCurrency.toUpperCase()}. Essaie un montant plus élevé ou une autre cryptomonnaie.`;
+  const handleSubmit = async () => {
+    if (!gateway) { setError('Choisis une passerelle de paiement.'); return; }
+    if (amountUsd <= 0) { setError('Montant invalide.'); return; }
+
+    if (gateway === 'nowpayments') {
+      if (belowMin) { setError(`Montant minimum pour ${payCurrency.toUpperCase()} : $${selectedMin.toFixed(2)}`); return; }
+
+      setLoading(true);
+      setError('');
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('nowpayments-create', {
+          body: { userId: session.user.id, email: session.user.email, amountUsd, payCurrency },
+        });
+
+        if (fnError) {
+          let realMessage = await extractFnErrorMessage(fnError);
+          if (/less than minimal/i.test(realMessage)) {
+            realMessage = `Ce montant est en dessous du minimum accepté pour ${payCurrency.toUpperCase()}. Essaie un montant plus élevé ou une autre cryptomonnaie.`;
+          }
+          throw new Error(realMessage);
         }
-        throw new Error(realMessage);
+        if (fnData?.error) throw new Error(fnData.error);
+        if (!fnData?.payAddress) throw new Error('Réponse NOWPayments invalide.');
+
+        setPayment({ provider: 'nowpayments', ...fnData });
+        setStep('awaiting');
+      } catch (err) {
+        setError(err.message || 'Une erreur est survenue.');
+      } finally {
+        setLoading(false);
       }
-      if (fnData?.error) throw new Error(fnData.error);
-      if (!fnData?.payAddress) throw new Error('Réponse NOWPayments invalide.');
+      return;
+    }
 
-      setPayment(fnData);
-      setStep('awaiting');
+    if (gateway === 'cryptomus') {
+      setLoading(true);
+      setError('');
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('cryptomus-create', {
+          body: { userId: session.user.id, email: session.user.email, amountUsd },
+        });
 
-    } catch (err) {
-      setError(err.message || 'Une erreur est survenue.');
-    } finally {
-      setLoading(false);
+        if (fnError) throw new Error(await extractFnErrorMessage(fnError));
+        if (fnData?.error) throw new Error(fnData.error);
+        if (!fnData?.payUrl) throw new Error('Réponse Cryptomus invalide.');
+
+        setPayment({ provider: 'cryptomus', ...fnData });
+        setStep('awaiting');
+        window.open(fnData.payUrl, '_blank', 'noopener,noreferrer');
+      } catch (err) {
+        setError(err.message || 'Une erreur est survenue.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -2447,16 +2471,22 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             )}
 
+            {gateway === 'cryptomus' && (
+              <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
+                Dépôt via Cryptomus : une page de paiement sécurisée s'ouvre dans un nouvel onglet pour choisir ta crypto et finaliser le règlement.
+              </div>
+            )}
+
             {error && (
               <div className="bg-red-50 text-red-500 p-4 rounded-xl text-sm font-bold border border-red-100">
                 {error}
               </div>
             )}
 
-            {gateway === 'nowpayments' && (
+            {gateway && (
               <button
                 onClick={handleSubmit}
-                disabled={loading || belowMin}
+                disabled={loading || (gateway === 'nowpayments' && belowMin)}
                 className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
               >
                 {loading
@@ -2474,23 +2504,35 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </div>
             <h3 className="text-2xl font-black text-gray-900">En attente de paiement</h3>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation.
+              {payment.provider === 'cryptomus'
+                ? "Finalise ton paiement dans l'onglet Cryptomus ouvert. Ton solde sera crédité automatiquement après confirmation."
+                : "Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation."}
               {payment.bonusPct > 0 && <> Avec le bonus, tu recevras <span className="font-black text-primary">${Number(payment.creditAmount).toFixed(2)}</span>.</>}
             </p>
-            <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
-              <div>
-                <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à envoyer</p>
-                <p className="text-2xl font-black text-primary font-mono">{payment.payAmount} {String(payment.payCurrency).toUpperCase()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Adresse de dépôt</p>
-                <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
-                  <code className="text-xs font-mono text-gray-700 flex-grow break-all text-left">{payment.payAddress}</code>
-                  <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+
+            {payment.provider === 'cryptomus' ? (
+              <button
+                onClick={() => window.open(payment.payUrl, '_blank', 'noopener,noreferrer')}
+                className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white hover:bg-primary transition-all flex items-center justify-center gap-2"
+              >
+                <ExternalLink size={18} /> Rouvrir la page de paiement
+              </button>
+            ) : (
+              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à envoyer</p>
+                  <p className="text-2xl font-black text-primary font-mono">{payment.payAmount} {String(payment.payCurrency).toUpperCase()}</p>
                 </div>
-                {copied && <p className="text-xs text-primary font-bold mt-2">Adresse copiée !</p>}
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Adresse de dépôt</p>
+                  <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
+                    <code className="text-xs font-mono text-gray-700 flex-grow break-all text-left">{payment.payAddress}</code>
+                    <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+                  </div>
+                  {copied && <p className="text-xs text-primary font-bold mt-2">Adresse copiée !</p>}
+                </div>
               </div>
-            </div>
+            )}
             <p className="text-xs text-gray-400">Cette page se met à jour automatiquement dès réception du paiement.</p>
           </div>
         )}
