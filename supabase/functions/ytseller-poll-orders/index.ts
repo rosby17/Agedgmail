@@ -64,6 +64,9 @@ serve(async (req) => {
             order_id: orderId, action: 'deliver', level: 'info',
             message: `Livraison OK : ${result.length} compte(s) livré(s) (YTSeller #${order.supplier_order_id}).`,
           })
+          await alertAdmin('💰 Vente confirmée', {
+            order_id: orderId, amount: `${order.total_price || 0} USD`, quantity: String(result.length),
+          })
           continue
         }
 

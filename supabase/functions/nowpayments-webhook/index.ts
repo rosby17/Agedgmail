@@ -11,6 +11,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyIPNSignature } from '../_shared/nowpayments.ts'
+import { alertAdmin } from '../_shared/supplier-db.ts'
 
 const IPN_SECRET = Deno.env.get('NOWPAYMENTS_IPN_SECRET') ?? ''
 
@@ -92,6 +93,9 @@ serve(async (req) => {
 
       await admin.from('orders').update({ status: 'confirmed' }).eq('id', orderId)
       console.log(`Recharge NOWPayments confirmée : +$${creditedAmount} pour user ${order.user_id} (commande ${orderId})`)
+      await alertAdmin('💰 Recharge confirmée (NOWPayments)', {
+        order_id: orderId, amount: `${creditedAmount} USD`,
+      })
 
     } else if (FINAL_FAILURE.has(status)) {
       await admin.from('orders').update({ status: 'cancelled' }).eq('id', orderId)

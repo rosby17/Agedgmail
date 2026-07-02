@@ -1466,15 +1466,76 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
 // ADMIN VIEW
 // ==========================================
 
+// Barre de revenu par jour (7 ou 30 derniers jours), sans dépendance externe.
+const RevenueChart = ({ confirmedOrders }) => {
+  const [range, setRange] = useState(7);
+
+  const days = [...Array(range)].map((_, i) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (range - 1 - i));
+    return d;
+  });
+
+  const totals = days.map(day => {
+    const next = new Date(day); next.setDate(next.getDate() + 1);
+    return confirmedOrders
+      .filter(o => { const t = new Date(o.created_at); return t >= day && t < next; })
+      .reduce((s, o) => s + (o.total_price || 0), 0);
+  });
+
+  const max = Math.max(...totals, 1);
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-lg font-bold text-gray-900">Revenu confirmé</h3>
+        <div className="flex gap-2">
+          {[7, 30].map(r => (
+            <button key={r} onClick={() => setRange(r)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === r ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-100'}`}>
+              {r} jours
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-end gap-1 h-40">
+        {totals.map((amount, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+            <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold bg-gray-900 text-white px-2 py-1 rounded-lg whitespace-nowrap z-10">
+              ${amount.toFixed(2)} — {days[i].toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+            </div>
+            <div
+              className={`w-full rounded-t-md transition-all ${amount > 0 ? 'bg-primary hover:bg-primaryDark' : 'bg-gray-100'}`}
+              style={{ height: `${Math.max((amount / max) * 100, 2)}%` }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between mt-3 text-[9px] text-gray-400 font-bold uppercase">
+        <span>{days[0]?.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+        <span>{days[days.length - 1]?.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+      </div>
+    </div>
+  );
+};
+
 const AdminView = ({
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
   actionStatus, setActionStatus,
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
+  const [supplierBalance, setSupplierBalance] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('agedgmail_admin_tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.from('supplier_settings').select('balance, currency').eq('supplier', 'ytseller').maybeSingle()
+      .then(({ data }) => setSupplierBalance(data || null));
+  }, []);
 
   const handleUpdateBalanceManual = async (userId, email, amount) => {
     setActionStatus('loading');
@@ -1492,6 +1553,25 @@ const AdminView = ({
   const totalRevenue = confirmedOrders.reduce((s, o) => s + (o.total_price || 0), 0);
   const pendingCount = allOrders.filter(o => o.status === 'pending' || o.status === 'processing').length;
   const avgOrderValue = confirmedOrders.length ? totalRevenue / confirmedOrders.length : 0;
+
+  // Commandes bloquées : en attente/en cours depuis plus de 15 min (au-delà,
+  // le poll YTSeller aurait déjà dû rembourser — signal qu'il faut regarder).
+  const STUCK_MIN = 15;
+  const stuckOrders = allOrders.filter(o =>
+    (o.status === 'pending' || o.status === 'processing') &&
+    (Date.now() - new Date(o.created_at).getTime()) / 60000 > STUCK_MIN
+  );
+
+  // Top produits vendus (hors recharges, product_id 999).
+  const topProducts = (() => {
+    const counts = new Map();
+    confirmedOrders.filter(o => o.product_id !== 999).forEach(o => {
+      const key = o.product_name || 'Produit';
+      const cur = counts.get(key) || { count: 0, revenue: 0 };
+      counts.set(key, { count: cur.count + (o.quantity || 1), revenue: cur.revenue + (o.total_price || 0) });
+    });
+    return [...counts.entries()].sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 5);
+  })();
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
@@ -1521,6 +1601,26 @@ const AdminView = ({
         <main className="lg:col-span-3 space-y-8">
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
+              {supplierBalance && Number(supplierBalance.balance) <= 0 && (
+                <div className="bg-red-50 border border-red-100 rounded-[2rem] p-6 flex items-center gap-4">
+                  <AlertTriangle size={24} className="text-red-500 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-red-700">Solde fournisseur YTSeller à 0 — aucune commande dropship ne peut être livrée.</p>
+                    <button onClick={() => setActiveTab('supplier')} className="text-xs font-black text-red-600 hover:underline uppercase tracking-widest mt-1">Voir l'onglet Supplier</button>
+                  </div>
+                </div>
+              )}
+
+              {stuckOrders.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-100 rounded-[2rem] p-6 flex items-center gap-4">
+                  <Clock size={24} className="text-yellow-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-yellow-800">{stuckOrders.length} commande(s) en attente depuis plus de {STUCK_MIN} min — à vérifier.</p>
+                    <button onClick={() => setActiveTab('orders')} className="text-xs font-black text-yellow-700 hover:underline uppercase tracking-widest mt-1">Voir les commandes</button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu réel (payé)</div><div className="text-3xl font-black text-gray-900">${totalRevenue.toFixed(2)}</div></div>
                 <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><CheckCircle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Commandes payées</div><div className="text-3xl font-black text-gray-900">{confirmedOrders.length}</div></div>
@@ -1530,6 +1630,30 @@ const AdminView = ({
                 <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-4"><TrendingUp size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Panier moyen</div><div className="text-3xl font-black text-gray-900">${avgOrderValue.toFixed(2)}</div></div>
                 <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4"><Users size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Clients inscrits</div><div className="text-3xl font-black text-gray-900">{allUsers.length}</div></div>
                 <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Produits en ligne</div><div className="text-3xl font-black text-gray-900">{products.length}</div></div>
+              </div>
+
+              <RevenueChart confirmedOrders={confirmedOrders} />
+
+              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+                <h3 className="text-lg font-bold text-gray-900 mb-8">Top produits vendus</h3>
+                {topProducts.length === 0 ? (
+                  <p className="text-gray-400 text-sm italic">Aucune vente confirmée pour l'instant.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {topProducts.map(([name, stats], i) => (
+                      <div key={name} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                        <div className="flex items-center gap-4">
+                          <span className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 font-black text-xs flex items-center justify-center">{i + 1}</span>
+                          <div>
+                            <div className="text-sm font-bold text-gray-900">{name}</div>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{stats.count} vendu(s)</div>
+                          </div>
+                        </div>
+                        <div className="text-sm font-black text-primary font-mono">${stats.revenue.toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
