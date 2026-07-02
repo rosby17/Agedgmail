@@ -3267,10 +3267,19 @@ function App() {
     // with an empty hash. Detect that explicitly and send the user to the
     // dashboard instead of falling back to the last saved view.
     const params = new URLSearchParams(window.location.search);
-    if (params.get('paymentStatus')) {
+    const rawHash = window.location.hash;
+
+    if (rawHash.includes('access_token=') || rawHash.includes('error_description=') || rawHash.includes('error=')) {
+      // Retour de connexion OAuth (Google) : le hash contient les jetons de
+      // session que Supabase doit lire lui-même, pas un nom de page. Si on le
+      // traite comme une route, currentView devient une chaîne inconnue et
+      // la page reste vide -> on force un atterrissage propre sur l'accueil.
+      setCurrentView('home');
+      window.history.replaceState(null, '', window.location.pathname + '#home');
+    } else if (params.get('paymentStatus')) {
       setCurrentView('dashboard');
       window.history.replaceState(null, '', `${window.location.pathname}#dashboard`);
-    } else if (window.location.hash) {
+    } else if (rawHash) {
       handleHashChange();
     } else {
       window.location.hash = currentView;
