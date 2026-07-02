@@ -432,7 +432,7 @@ const HomeView = ({
 // ==========================================
 // API VIEW — API revendeur (doc + gestion de clé)
 // ==========================================
-const API_BASE_URL = 'https://ncjpbkfwhmsispiczzgl.functions.supabase.co/api-v2';
+const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
 
 const ApiView = ({ navigate, session }) => {
   const [apiKey, setApiKey] = useState(null);
