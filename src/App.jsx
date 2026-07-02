@@ -287,7 +287,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <ArrowLeft size={20} />
           </button>
         )}
-        <button onClick={() => go('home', 'all', 'all')} className="h-12 flex items-center group transition-all">
+        <button onClick={() => go('home', 'all', 'all')} className="h-20 flex items-center group transition-all">
           <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
         </button>
       </div>
@@ -2939,7 +2939,7 @@ const Footer = ({ navigate }) => (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
         {/* Brand Section */}
         <div className="md:col-span-2">
-          <div className="h-14 mb-8">
+          <div className="h-24 mb-8">
             <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('home')} />
           </div>
           <p className="text-gray-400 text-lg max-w-md leading-relaxed mb-10 font-medium">
