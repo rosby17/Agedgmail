@@ -133,6 +133,14 @@ const categoryVisual = (cat = '') => {
   return 'other';
 };
 
+// Libellés + ordre d'affichage des groupes de premier niveau (barre du haut).
+const GROUP_LABELS = {
+  gmail: 'Gmail', youtube: 'Youtube', discord: 'Discord', facebook: 'Facebook',
+  instagram: 'Instagram', twitter: 'Twitter X', tiktok: 'Tiktok', apple: 'Apple ID',
+  telegram: 'Telegram', sms: 'SMS', other: 'Autres',
+};
+const GROUP_ORDER = ['gmail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'tiktok', 'apple', 'telegram', 'sms', 'other'];
+
 // Visuel d'un produit : image personnalisée (image_url) prioritaire, sinon
 // logo de marque déduit de la catégorie, sinon icône générique.
 const ProductVisual = ({ product = {}, iconSize = 48 }) => {
@@ -154,13 +162,6 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
   }
 };
 
-const PRICE_RANGES = [
-  { id: 'all', name: 'Tous les prix' },
-  { id: 'under5', name: 'Moins de 5$' },
-  { id: '5-10', name: '5$ - 10$' },
-  { id: '10-50', name: '10$ - 50$' },
-  { id: 'over50', name: 'Plus de 50$' },
-];
 
 const getProductDetails = (product) => {
   const commonTerms = "Veuillez lire les spécifications avant d'acheter. Vous êtes responsable de toutes les actions sur le compte. Utilisez des IP résidentielles fraîches. Changez les accès après 48h seulement.";
@@ -267,8 +268,12 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 // NAVBAR
 // ==========================================
 
-const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView, setActiveCategory }) => {
-  const go = (view, cat) => { if (cat !== undefined && setActiveCategory) setActiveCategory(cat); navigate(view); };
+const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView, setActiveCategory, setActiveGroup }) => {
+  const go = (view, cat, group) => {
+    if (cat !== undefined && setActiveCategory) setActiveCategory(cat);
+    if (group !== undefined && setActiveGroup) setActiveGroup(group);
+    navigate(view);
+  };
   const linkCls = (active) => `text-sm font-bold transition-colors ${active ? 'text-primary' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}`;
   return (
   <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 font-sans">
@@ -282,15 +287,15 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <ArrowLeft size={20} />
           </button>
         )}
-        <button onClick={() => go('home', 'all')} className="h-12 flex items-center group transition-all">
+        <button onClick={() => go('home', 'all', 'all')} className="h-12 flex items-center group transition-all">
           <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
         </button>
       </div>
 
       {/* Menu central */}
       <nav className="hidden lg:flex items-center gap-8">
-        <button onClick={() => go('home', 'all')} className={linkCls(currentView === 'home')}>Produits</button>
-        <button onClick={() => go('home', 'SMS')} className={linkCls(false)}>SMS</button>
+        <button onClick={() => go('home', 'all', 'all')} className={linkCls(currentView === 'home')}>Produits</button>
+        <button onClick={() => go('home', 'all', 'sms')} className={linkCls(false)}>SMS</button>
         <button onClick={() => session ? navigate('dashboard') : navigate('auth')} className={linkCls(currentView === 'dashboard')}>Mes commandes</button>
         <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>API</button>
       </nav>
@@ -331,51 +336,98 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
 // HOME VIEW
 // ==========================================
 
-const HomeView = ({ activeCategory, setActiveCategory, priceRange, setPriceRange, filteredProducts, addToCart, navigate, setSelectedProduct, categories = CATEGORIES }) => (
-  <>
-    <main id="catalog" className="max-w-7xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-12 font-sans">
-      <div className="w-full lg:w-72 flex-shrink-0">
-        <div className="sticky top-32 space-y-12">
-          <div>
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Catégories</h3>
-            <ul className="space-y-2">{categories.map(cat => (<li key={cat.id}><button onClick={() => setActiveCategory(cat.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-900 text-white shadow-xl' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>{cat.name}</button></li>))}</ul>
-          </div>
-          <div>
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Filtrer par Prix</h3>
-            <ul className="space-y-2">{PRICE_RANGES.map(range => (<li key={range.id}><button onClick={() => setPriceRange(range.id)} className={`w-full text-left px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${priceRange === range.id ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>{range.name}</button></li>))}</ul>
-          </div>
-        </div>
+const HomeView = ({
+  activeGroup, setActiveGroup, activeCategory, setActiveCategory,
+  sortBy, setSortBy, searchTerm, setSearchTerm,
+  filteredProducts, addToCart, navigate, setSelectedProduct,
+  groups = [], subCategories = [],
+}) => {
+  const activeGroupLabel = activeGroup === 'all' ? 'Tous les produits' : (GROUP_LABELS[activeGroup] || 'Autres');
+
+  const pillCls = (active) =>
+    `shrink-0 px-5 py-2.5 rounded-full text-sm font-bold border transition-all whitespace-nowrap ${
+      active
+        ? 'bg-primary/10 border-primary text-primary'
+        : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:border-primary/50'
+    }`;
+
+  return (
+    <main id="catalog" className="max-w-7xl mx-auto px-6 py-10 font-sans">
+      {/* Groupes de premier niveau */}
+      <div className="flex items-center gap-3 overflow-x-auto pb-4 -mx-1 px-1">
+        <button onClick={() => { setActiveGroup('all'); setActiveCategory('all'); }} className={pillCls(activeGroup === 'all')}>
+          All products
+        </button>
+        {groups.map(g => (
+          <button key={g.id} onClick={() => { setActiveGroup(g.id); setActiveCategory('all'); }} className={pillCls(activeGroup === g.id)}>
+            {g.name.toUpperCase()}
+          </button>
+        ))}
       </div>
-      <div className="flex-grow">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 border-b border-gray-100 dark:border-gray-800 pb-10">
-          <div>
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Catalogue Officiel</h2>
-            <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{filteredProducts.length} produits disponibles</div>
-          </div>
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+
+      {/* Sous-catégories du groupe sélectionné */}
+      {activeGroup !== 'all' && subCategories.length > 0 && (
+        <div className="flex items-center gap-3 overflow-x-auto pb-5 mb-2 border-b border-gray-100 dark:border-gray-800 -mx-1 px-1">
+          <button
+            onClick={() => setActiveCategory('all')}
+            className={`shrink-0 w-9 h-9 rounded-full text-xs font-black flex items-center justify-center transition-all ${
+              activeCategory === 'all' ? 'bg-gray-900 dark:bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+            }`}
+            title="Toutes les sous-catégories"
+          >
+            All
+          </button>
+          {subCategories.map(sc => (
+            <button key={sc.id} onClick={() => setActiveCategory(sc.id)} className={pillCls(activeCategory === sc.id)}>
+              {sc.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* En-tête : titre du groupe, compteur, recherche, tri */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 mt-8 mb-8">
+        <div className="flex items-center gap-3">
+          <span className="w-1.5 h-6 rounded-full bg-primary" />
+          <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{activeGroupLabel}</h2>
+          <span className="bg-primary/10 text-primaryDark dark:text-primary text-xs font-black px-3 py-1 rounded-full">{filteredProducts.length} produits</span>
+        </div>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-grow md:w-64">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="Rechercher un compte..."
-              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500 text-sm focus:ring-2 focus:ring-primary/20 outline-none shadow-sm transition-all"
+              value={searchTerm}
+              placeholder="Rechercher…"
+              className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />))}
-          {filteredProducts.length === 0 && (
-            <div className="col-span-full py-20 text-center bg-gray-50 rounded-[3rem] border border-dashed border-gray-200">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Aucun produit trouvé</h3>
-              <p className="text-gray-400 text-sm">Essayez de modifier votre recherche ou de changer de catégorie.</p>
-            </div>
-          )}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-white text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          >
+            <option value="price_asc">Prix croissant</option>
+            <option value="price_desc">Prix décroissant</option>
+            <option value="name_asc">Nom (A-Z)</option>
+          </select>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />))}
+        {filteredProducts.length === 0 && (
+          <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-800">
+            <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Aucun produit trouvé</h3>
+            <p className="text-gray-400 text-sm">Essayez de modifier votre recherche ou de changer de catégorie.</p>
+          </div>
+        )}
+      </div>
     </main>
-  </>
-);
+  );
+};
 
 // ==========================================
 // API VIEW — API revendeur (doc + gestion de clé)
@@ -2812,7 +2864,9 @@ function App() {
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
   });
   const [activeCategory, setActiveCategory] = useState(() => localStorage.getItem('agedgmail_category') || 'all');
-  const [priceRange, setPriceRange] = useState(() => localStorage.getItem('agedgmail_price_range') || 'all');
+  const [activeGroup, setActiveGroup] = useState(() => localStorage.getItem('agedgmail_group') || 'all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('price_asc');
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem('agedgmail_cart');
     try { return saved ? JSON.parse(saved) : []; } catch { return []; }
@@ -3031,8 +3085,8 @@ function App() {
   }, [activeCategory]);
 
   useEffect(() => {
-    localStorage.setItem('agedgmail_price_range', priceRange);
-  }, [priceRange]);
+    localStorage.setItem('agedgmail_group', activeGroup);
+  }, [activeGroup]);
 
   const fetchProducts = async () => {
     if (!supabase) {
@@ -3208,28 +3262,34 @@ function App() {
     }
   };
 
-  // Catégories affichées dans la boutique : dérivées des produits réellement
-  // en catalogue (miroir YTSeller) + "Tous". Ordonnées par nombre de produits.
-  const productCategories = (() => {
+  // Groupes de premier niveau (barre du haut), dérivés des produits réellement
+  // en catalogue (miroir YTSeller), dans l'ordre GROUP_ORDER, comptés puis filtrés à ceux non-vides.
+  const productGroups = (() => {
     const counts = new Map();
-    products.forEach(p => { if (p.category) counts.set(p.category, (counts.get(p.category) || 0) + 1); });
-    const dynamic = [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([id]) => ({ id, name: categoryName(id) }));
-    return [{ id: 'all', name: 'Tous les produits' }, ...dynamic];
+    products.forEach(p => { const g = categoryVisual(p.category); counts.set(g, (counts.get(g) || 0) + 1); });
+    return GROUP_ORDER.filter(id => counts.get(id) > 0).map(id => ({ id, name: GROUP_LABELS[id], count: counts.get(id) }));
+  })();
+
+  // Sous-catégories (barre du bas) : catégories réelles du groupe actif.
+  const productSubCategories = (() => {
+    if (activeGroup === 'all') return [];
+    const counts = new Map();
+    products.forEach(p => {
+      if (categoryVisual(p.category) !== activeGroup) return;
+      counts.set(p.category, (counts.get(p.category) || 0) + 1);
+    });
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => ({ id, name: categoryName(id) }));
   })();
 
   const filteredProducts = products
+    .filter(p => activeGroup === 'all' || categoryVisual(p.category) === activeGroup)
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
-    .filter(p => {
-      if (priceRange === 'all') return true;
-      if (priceRange === 'under5') return p.price < 5;
-      if (priceRange === '5-10') return p.price >= 5 && p.price <= 10;
-      if (priceRange === '10-50') return p.price > 10 && p.price <= 50;
-      if (priceRange === 'over50') return p.price > 50;
-      return true;
-    })
-    .sort((a, b) => a.price - b.price);
+    .filter(p => !searchTerm.trim() || p.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'price_desc') return b.price - a.price;
+      if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
+      return a.price - b.price;
+    });
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -3280,9 +3340,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} />
+      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} />
       <div className="flex-grow">
-        {currentView === 'home' && <HomeView activeCategory={activeCategory} setActiveCategory={setActiveCategory} priceRange={priceRange} setPriceRange={setPriceRange} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} categories={productCategories} />}
+        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} groups={productGroups} subCategories={productSubCategories} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
