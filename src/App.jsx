@@ -544,6 +544,151 @@ const ApiView = ({ navigate, session }) => {
   );
 };
 
+// ==========================================
+// POLICIES VIEW — CGU / Avertissement / Politique d'achat / Garantie
+// ==========================================
+const POLICY_SECTIONS = [
+  {
+    id: 'terms',
+    title: "Conditions d'utilisation",
+    icon: FileText,
+    content: [
+      "Veuillez lire attentivement la description du produit et cette politique avant tout achat.",
+      "Vous êtes entièrement responsable de toutes les actions effectuées sur le compte après la livraison.",
+      "Dès réception du compte, vous devez vous connecter et le vérifier immédiatement pour vous assurer qu'il correspond à la description.",
+    ],
+  },
+  {
+    id: 'disclaimer',
+    title: 'Avertissement',
+    icon: Shield,
+    content: [
+      "Vous acceptez que l'utilisation d'AgedGmailYT se fait à vos propres risques. AgedGmailYT ne pourra être tenu responsable d'aucun dommage que vous ou votre activité pourriez subir.",
+      "AgedGmailYT ne garantit pas la disponibilité continue du site, celui-ci reposant sur des services internet tiers.",
+    ],
+  },
+  {
+    id: 'purchase',
+    title: "Politique d'achat",
+    icon: ShoppingCart,
+    content: [
+      "En achetant des crédits ou en rechargeant votre solde, vous confirmez comprendre et accepter votre achat, et vous vous engagez à ne pas ouvrir de litige frauduleux ni publier d'avis de mauvaise foi.",
+      "En cas de tentative de litige frauduleux ou d'avis abusif, nous nous réservons le droit de réinitialiser les crédits, de suspendre le compte et/ou de bannir définitivement l'adresse IP concernée.",
+      "Le solde crédité sur AgedGmailYT n'est pas remboursable tant que le système et le site fonctionnent normalement. La garantie du produit est calculée à partir du moment où il vous est livré ; l'absence de connexion de votre part ne donne pas droit à un remplacement ni à un remboursement.",
+      "Après achat, veuillez télécharger et conserver vos données de votre côté. Les commandes sont automatiquement supprimées de nos systèmes après 30 jours pour des raisons de sécurité.",
+      "Lorsqu'un produit est au format EMAIL | MOT DE PASSE | (RÉCUPÉRATION), l'email et le mot de passe sont toujours fournis ; l'information de récupération dépend du stock disponible au moment de la commande.",
+      "Les crédits ne sont pas transférables entre différents produits ou services.",
+      "Le produit est délivré immédiatement après l'achat ; il est de votre responsabilité de l'utiliser, même si vous ne vous connectez pas tout de suite.",
+      "Après la première connexion, et seulement après quelques jours, changez systématiquement le mot de passe, l'email de récupération, le numéro de téléphone, et activez la vérification en deux étapes pour sécuriser le compte.",
+      "Utilisez toujours une IP résidentielle/propre pour vous connecter. N'utilisez jamais de proxy gratuit ou de VPN, les plateformes sociales les détectent. Aucun remplacement ne sera effectué si vous utilisez un VPN ou un proxy gratuit pour vous connecter.",
+    ],
+  },
+  {
+    id: 'warranty',
+    title: 'Politique de garantie',
+    icon: CheckCircle,
+    content: [],
+  },
+];
+
+const WARRANTY_BLOCKS = [
+  {
+    label: 'Garantie',
+    items: [
+      "Nous garantissons uniquement la première connexion réussie et que le produit est livré conforme à sa description.",
+      "Nous ne garantissons pas que les informations du compte puissent être modifiées immédiatement (de nombreuses plateformes exigent une utilisation prolongée depuis la même IP et le même appareil).",
+      "Nous ne pouvons pas garantir la réception de codes de vérification envoyés à un ancien email ou un ancien numéro. Ajoutez votre propre email et numéro si besoin.",
+      "Aucune garantie n'est appliquée si : vous avez changé le mot de passe, l'email de récupération, le numéro de téléphone ou activé la 2FA ; vous vous êtes connecté via un VPN ou un proxy gratuit ; ou si la connexion fonctionne de notre côté mais pas du vôtre (problème lié à votre configuration).",
+    ],
+  },
+  {
+    label: 'Recommandations',
+    items: [
+      "Changez le mot de passe, l'email de récupération, vérifiez l'activité de l'appareil, ajoutez un numéro de téléphone et activez la 2FA pour sécuriser votre compte.",
+      "Il est recommandé d'effectuer ces changements au moins 7 jours après la première connexion, avec le même profil de navigateur et la même IP/proxy.",
+      "Si vous débutez ou n'êtes pas sûr de la gestion de plusieurs comptes ou chaînes, contactez le support pour être guidé.",
+      "Pour certaines régions (Chine, Nigéria, Russie…), l'utilisation d'un proxy adapté pour Gmail/YouTube est recommandée.",
+    ],
+  },
+  {
+    label: 'Politique de remboursement',
+    items: [
+      "Si la livraison est impossible en raison d'une mise à jour de plateforme, vous pouvez choisir d'attendre ou de demander l'annulation.",
+      "La garantie prend fin immédiatement après la première connexion réussie.",
+      "Les comptes sont garantis 1 jour (2 jours pour les commandes groupées) jusqu'à votre première connexion.",
+      "Si le compte ne fonctionne pas ou est banni avant votre première connexion, contactez-nous pour vérification et remplacement.",
+    ],
+  },
+];
+
+const PoliciesView = ({ navigate }) => {
+  const [active, setActive] = useState('terms');
+  const activeSection = POLICY_SECTIONS.find(s => s.id === active);
+
+  return (
+    <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
+      <div className="mb-12">
+        <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
+          <Shield size={14} /> Politiques
+        </div>
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">Conditions d'utilisation, garantie et politiques d'achat</h1>
+        <p className="text-gray-500 text-lg leading-relaxed">Merci de lire attentivement ces politiques avant tout achat sur AgedGmailYT.</p>
+      </div>
+
+      <div className="flex flex-wrap gap-3 mb-10">
+        {POLICY_SECTIONS.map(s => (
+          <button
+            key={s.id}
+            onClick={() => setActive(s.id)}
+            className={`flex items-center gap-2 px-5 py-3 rounded-full text-sm font-bold border transition-all ${
+              active === s.id ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-primary/50'
+            }`}
+          >
+            <s.icon size={16} /> {s.title}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+          <activeSection.icon size={22} className="text-primary" /> {activeSection.title}
+        </h2>
+
+        {active === 'warranty' ? (
+          <div className="space-y-10">
+            {WARRANTY_BLOCKS.map(block => (
+              <div key={block.label}>
+                <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4">{block.label}</h3>
+                <ul className="space-y-3">
+                  {block.items.map((item, i) => (
+                    <li key={i} className="flex gap-3 text-gray-600 text-sm leading-relaxed">
+                      <CheckCircle size={16} className="text-primary shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ul className="space-y-4">
+            {activeSection.content.map((item, i) => (
+              <li key={i} className="flex gap-3 text-gray-600 text-sm leading-relaxed">
+                <CheckCircle size={16} className="text-primary shrink-0 mt-0.5" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="text-center mt-12">
+        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline">Retour au catalogue</button>
+      </div>
+    </div>
+  );
+};
+
 const SettingsTab = ({ profile, onUpdate }) => {
   const [firstName, setFirstName] = useState(profile?.first_name || "");
   const [lastName, setLastName] = useState(profile?.last_name || "");
@@ -2423,7 +2568,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 
             <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-dashed border-gray-200">
               <p className="text-center text-xs text-gray-400 font-medium">
-                En validant cette commande, vous acceptez nos <button onClick={() => navigate('faq')} className="text-primary hover:underline">conditions d'utilisation</button> et la politique de livraison instantanée.
+                En validant cette commande, vous acceptez nos <button onClick={() => navigate('policies')} className="text-primary hover:underline">conditions d'utilisation</button> et la politique de livraison instantanée.
               </p>
             </div>
           </div>
@@ -2822,7 +2967,7 @@ const Footer = ({ navigate }) => (
         <div>
           <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Support</h4>
           <ul className="space-y-4">
-            <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Privacy Policy</button></li>
+            <li><button onClick={() => navigate('policies')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Policies</button></li>
             <li><button onClick={() => navigate('api')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">API</button></li>
           </ul>
         </div>
@@ -3345,6 +3490,7 @@ function App() {
         {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} groups={productGroups} subCategories={productSubCategories} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
+        {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />}
