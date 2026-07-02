@@ -166,15 +166,15 @@ const PRODUCTS = PRODUCTS_RAW.map(p => ({ ...p, details: getProductDetails(p) })
 // PRODUCT CARD
 // ==========================================
 
-const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
-  const [localQty, setLocalQty] = useState(1);
+const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNow }) => {
   const [added, setAdded] = useState(false);
   const isUS = product.name.toUpperCase().includes('US') || product.name.toUpperCase().includes('USA');
+  const outOfStock = product.stock <= 0;
 
   const handleAdd = () => {
-    addToCart(product, localQty);
+    addToCart(product, 1);
     setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    setTimeout(() => setAdded(false), 1500);
   };
 
   return (
@@ -190,6 +190,9 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
         {isUS && product.category === 'email' && (
           <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
         )}
+        <div className="absolute top-4 right-4 bg-primary/10 text-primaryDark dark:text-primary text-[9px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1">
+          <Zap size={10} /> Instant
+        </div>
       </div>
 
       {/* Content */}
@@ -205,36 +208,37 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
         </h3>
 
         <div className="flex items-center justify-between mb-6">
-          <div className="text-xl font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</div>
-          {product.stock <= 0 && (
-            <div className="bg-red-50 text-red-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-widest">
-              Out of stock
-            </div>
-          )}
+          <div>
+            <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Stock</div>
+            {outOfStock ? (
+              <div className="text-xs font-bold text-red-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Out of stock</div>
+            ) : (
+              <div className="text-xs font-bold text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> {product.stock} left</div>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Price</div>
+            <div className="text-lg font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</div>
+          </div>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center bg-gray-50 rounded-xl p-1 shrink-0 border border-gray-100">
-          <button onClick={() => localQty > 1 && setLocalQty(localQty - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Minus size={14} /></button>
-          <input
-            type="number"
-            value={localQty}
-            onChange={(e) => {
-              const val = parseInt(e.target.value);
-              if (!isNaN(val) && val >= 1) setLocalQty(Math.min(val, 9999));
-            }}
-            className="w-12 bg-transparent text-center text-xs font-bold text-gray-900 outline-none border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-          <button onClick={() => localQty < 9999 && setLocalQty(localQty + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-gray-400"><Plus size={14} /></button>
-        </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onBuyNow(product)}
+          disabled={outOfStock}
+          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${outOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primaryDark shadow-lg shadow-primary/20'}`}
+        >
+          {outOfStock ? 'Sold out' : 'Buy now'}
+        </button>
         <button
           onClick={handleAdd}
-          disabled={product.stock <= 0}
-          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${product.stock <= 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : added ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'bg-gray-900 text-white hover:bg-primary shadow-lg shadow-black/5'}`}
+          disabled={outOfStock}
+          title="Add to cart"
+          className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center transition-all border ${outOfStock ? 'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed' : added ? 'bg-green-50 text-green-600 border-green-200' : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary hover:text-primary'}`}
         >
-          {product.stock <= 0 ? 'Sold out' : added ? <><CheckCircle size={14} /> Added!</> : <><ShoppingCart size={14} /> Add</>}
+          {added ? <CheckCircle size={16} /> : <ShoppingCart size={16} />}
         </button>
       </div>
     </div>
@@ -326,13 +330,216 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
 };
 
 // ==========================================
+// QUICK ORDER MODAL — achat direct depuis la fiche produit, sans passer par le panier
+// ==========================================
+const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchProfile, fetchProducts, setRechargeSuggestedAmount }) => {
+  const [qty, setQty] = useState(1);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoMsg, setPromoMsg] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const total = product.price * qty;
+  const balance = profile?.balance || 0;
+  const hasEnoughBalance = balance >= total;
+
+  const applyPromo = () => {
+    if (!promoCode.trim()) return;
+    setPromoMsg("Code promo invalide.");
+  };
+
+  const handlePay = async () => {
+    if (!session || !profile) { onClose(); navigate('auth'); return; }
+    setIsProcessing(true);
+    setErrorMessage('');
+
+    try {
+      if (balance < total) throw new Error("Insufficient balance.");
+
+      if (product.is_dropship) {
+        const { data: dsOrder, error: dsErr } = await supabase.from('orders').insert({
+          user_id: session.user.id,
+          buyer_email: session.user.email,
+          product_id: product.id,
+          product_name: product.name,
+          quantity: qty,
+          total_price: total,
+          status: 'processing',
+          supplier: 'ytseller',
+          created_at: new Date().toISOString()
+        }).select('id').single();
+
+        if (dsErr) throw dsErr;
+        if (!dsOrder) throw new Error("The order could not be created.");
+
+        supabase.functions.invoke('ytseller-place-order', { body: { orderId: dsOrder.id } })
+          .catch(e => console.error('ytseller-place-order invoke:', e));
+
+      } else {
+        const { data: stockRows, error: stockErr } = await supabase
+          .from('account_stock')
+          .select('id, credentials')
+          .eq('product_id', product.id)
+          .eq('is_delivered', false)
+          .limit(qty);
+
+        if (stockErr) throw new Error("Error retrieving stock.");
+        if (!stockRows || stockRows.length < qty) {
+          throw new Error(`No more accounts available in stock for ${product.name}.`);
+        }
+
+        const deliveredCreds = stockRows.map(r => r.credentials).join('\n');
+        const stockIds = stockRows.map(r => r.id);
+
+        const { data: orderData, error: orderInsertErr } = await supabase.from('orders').insert({
+          user_id: session.user.id,
+          buyer_email: session.user.email,
+          product_id: product.id,
+          product_name: product.name,
+          quantity: qty,
+          total_price: total,
+          status: 'confirmed',
+          credentials: deliveredCreds,
+          data: deliveredCreds,
+          created_at: new Date().toISOString()
+        }).select('id').single();
+
+        if (orderInsertErr) throw orderInsertErr;
+        if (!orderData) throw new Error("Order created but ID could not be retrieved.");
+
+        await supabase.from('account_stock').update({
+          is_delivered: true,
+          order_id: String(orderData.id),
+          delivered_to: session.user.id,
+        }).in('id', stockIds);
+      }
+
+      const { error: balanceErr } = await supabase
+        .from('profiles')
+        .update({ balance: balance - total })
+        .eq('id', session.user.id);
+      if (balanceErr) throw balanceErr;
+
+      setPurchaseSuccess(true);
+      await fetchProfile(session.user.id);
+      if (fetchProducts) await fetchProducts();
+
+      setTimeout(() => { onClose(); navigate('dashboard'); }, 1500);
+
+    } catch (err) {
+      console.error('Quick order error:', err);
+      setErrorMessage(err.message);
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-8 pt-8 pb-2">
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white">Order</h2>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:text-white transition-all"><X size={18} /></button>
+        </div>
+
+        <div className="px-8 pb-8 pt-4 space-y-6">
+          {!session ? (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500">Log in to buy this product with your balance.</p>
+              <button onClick={() => { onClose(); navigate('auth'); }} className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white hover:bg-primary transition-all">Log in</button>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Payment method</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-2xl border-2 border-primary bg-primary/5 flex flex-col">
+                    <span className="text-[9px] font-black uppercase text-primary tracking-widest mb-1">Selected</span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">Balance (${balance.toFixed(2)})</span>
+                  </div>
+                  <button onClick={() => { onClose(); navigate('recharge'); }} className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary/50 transition-all text-left">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-300 flex items-center gap-1"><Plus size={14} /> Top up</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cart</span>
+                  <span className="w-5 h-5 rounded-full bg-gray-900 dark:bg-primary text-white text-[10px] font-black flex items-center justify-center">1</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0"><ProductVisual product={product} iconSize={20} /></div>
+                  <div className="flex-grow min-w-0">
+                    <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{product.name}</div>
+                    <div className="text-xs text-gray-400">${product.price.toFixed(2)} × {qty}</div>
+                  </div>
+                  <div className="flex items-center bg-white dark:bg-gray-900 rounded-full border border-gray-200 dark:border-gray-700 shrink-0">
+                    <button onClick={() => qty > 1 && setQty(qty - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"><Minus size={12} /></button>
+                    <div className="w-8 text-center font-bold text-sm">{qty}</div>
+                    <button onClick={() => qty < product.stock && setQty(qty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"><Plus size={12} /></button>
+                  </div>
+                  <div className="text-sm font-black text-primary font-mono shrink-0">${total.toFixed(2)}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Promo code</label>
+                <div className="flex gap-2">
+                  <input type="text" value={promoCode} onChange={e => { setPromoCode(e.target.value); setPromoMsg(''); }} className="flex-grow px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Enter code" />
+                  <button onClick={applyPromo} className="px-5 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Apply</button>
+                </div>
+                {promoMsg && <p className="text-xs text-red-500 font-bold mt-2">{promoMsg}</p>}
+              </div>
+
+              <div className="h-px bg-gray-100 dark:bg-gray-800" />
+
+              <div className="flex items-center justify-between">
+                <span className="text-base font-black text-gray-900 dark:text-white">Total</span>
+                <span className="text-xl font-black text-gray-900 dark:text-white">${total.toFixed(2)}</span>
+              </div>
+
+              {errorMessage && (
+                <div className="bg-red-50 text-red-500 p-4 rounded-xl text-sm font-bold border border-red-100">{errorMessage}</div>
+              )}
+
+              {!hasEnoughBalance && !purchaseSuccess ? (
+                <button
+                  onClick={() => {
+                    const missing = Math.round((total - balance) * 100) / 100;
+                    setRechargeSuggestedAmount(missing > 0 ? missing : null);
+                    onClose(); navigate('recharge');
+                  }}
+                  className="w-full py-5 rounded-2xl font-bold text-lg bg-gray-900 text-white hover:bg-primary transition-all shadow-xl flex items-center justify-center gap-3"
+                >
+                  <Plus size={20} /> Top up ${Math.max(0, Math.round((total - balance) * 100) / 100).toFixed(2)}
+                </button>
+              ) : (
+                <button
+                  onClick={handlePay}
+                  disabled={isProcessing || purchaseSuccess}
+                  className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white' : 'bg-primary text-white hover:bg-primaryDark shadow-primary/20'}`}
+                >
+                  {isProcessing ? <RefreshCcw size={20} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={20} /> : <Zap size={20} />}
+                  {isProcessing ? 'Processing...' : purchaseSuccess ? 'Delivered!' : 'Pay & receive'}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
 // HOME VIEW
 // ==========================================
 
 const HomeView = ({
   activeGroup, setActiveGroup, activeCategory, setActiveCategory,
   sortBy, setSortBy, searchTerm, setSearchTerm,
-  filteredProducts, addToCart, navigate, setSelectedProduct,
+  filteredProducts, addToCart, navigate, setSelectedProduct, onBuyNow,
   groups = [], subCategories = [],
 }) => {
   const activeGroupLabel = activeGroup === 'all' ? 'All products' : (GROUP_LABELS[activeGroup] || 'Others');
@@ -409,7 +616,7 @@ const HomeView = ({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} />))}
+        {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={onBuyNow} />))}
         {filteredProducts.length === 0 && (
           <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-800">
             <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
@@ -2310,7 +2517,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 // ==========================================
 // PRODUCT VIEW
 // ==========================================
-const ProductView = ({ product, addToCart, navigate, onCartClick }) => {
+const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) => {
   const [quantity, setQuantity] = useState(1);
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
@@ -2365,16 +2572,26 @@ const ProductView = ({ product, addToCart, navigate, onCartClick }) => {
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                addToCart(product, quantity);
-                onCartClick();
-              }}
-              disabled={product.stock <= 0}
-              className={`w-full max-w-md h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-            >
-              {product.stock > 0 ? 'Buy now' : 'Out of stock'}
-            </button>
+            <div className="flex gap-4 w-full max-w-md">
+              <button
+                onClick={() => onBuyNow(product)}
+                disabled={product.stock <= 0}
+                className={`flex-grow h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+              >
+                {product.stock > 0 ? 'Buy now' : 'Out of stock'}
+              </button>
+              <button
+                onClick={() => {
+                  addToCart(product, quantity);
+                  onCartClick();
+                }}
+                disabled={product.stock <= 0}
+                title="Add to cart"
+                className={`w-20 h-20 shrink-0 rounded-[2rem] flex items-center justify-center transition-all border-2 ${product.stock <= 0 ? 'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary'}`}
+              >
+                <ShoppingCart size={24} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -2755,6 +2972,7 @@ function App() {
     try { return saved ? JSON.parse(saved) : []; } catch { return []; }
   });
   const [cartOpen, setCartOpen] = useState(false);
+  const [quickOrderProduct, setQuickOrderProduct] = useState(null);
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -2789,6 +3007,12 @@ function App() {
       } else {
         setProfile(null);
         setOrders([]);
+        // Déconnexion explicite : vide le panier pour que la personne suivante
+        // sur cet appareil ne voie jamais le panier/le solde du client précédent.
+        if (event === 'SIGNED_OUT') {
+          setCart([]);
+          setCartOpen(false);
+        }
       }
     });
 
@@ -3059,9 +3283,21 @@ function App() {
     <div className="min-h-screen bg-white dark:bg-gray-950 font-sans flex flex-col">
       <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />
+      {quickOrderProduct && (
+        <QuickOrderModal
+          product={quickOrderProduct}
+          session={session}
+          profile={profile}
+          navigate={navigate}
+          onClose={() => setQuickOrderProduct(null)}
+          fetchProfile={fetchProfile}
+          fetchProducts={fetchProducts}
+          setRechargeSuggestedAmount={setRechargeSuggestedAmount}
+        />
+      )}
       <div className="flex-grow">
-        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} groups={productGroups} subCategories={productSubCategories} />}
-        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} />}
+        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} />}
+        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
