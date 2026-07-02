@@ -1013,9 +1013,13 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
   const [filter, setFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
 
+  // Cet écran ne montre que les commandes d'achat réelles. Les recharges de
+  // solde (product_id 999) sont consultables par client dans "Client Management".
+  const purchaseOrders = allOrders.filter(o => o.product_id !== 999);
+
   const filtered = filter === 'all'
-    ? allOrders
-    : allOrders.filter(o => (o.status || 'pending') === filter);
+    ? purchaseOrders
+    : purchaseOrders.filter(o => (o.status || 'pending') === filter);
 
   const cancelOrder = async (id) => {
     if (!window.confirm("Annuler cette commande ? Si elle correspond à une recharge crypto déjà payée, le client ne sera pas recrédité automatiquement.")) return;
@@ -1526,6 +1530,7 @@ const AdminView = ({
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
   const [supplierBalance, setSupplierBalance] = useState(null);
+  const [viewingClient, setViewingClient] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('agedgmail_admin_tab', activeTab);
@@ -1684,16 +1689,61 @@ const AdminView = ({
                         </td>
                         <td className="py-6 font-mono font-black text-primary">${user.balance?.toFixed(2)}</td>
                         <td className="py-6">
-                          <button onClick={() => {
-                            const amount = prompt("Amount to add ($):", "10");
-                            if (amount) handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
-                          }} className="p-2 bg-primary/10 text-primary rounded-lg font-bold text-xs">Credit</button>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setViewingClient(user)} className="p-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-all" title="Voir recharges et achats">
+                              <Eye size={14} />
+                            </button>
+                            <button onClick={() => {
+                              const amount = prompt("Amount to add ($):", "10");
+                              if (amount) handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
+                            }} className="p-2 bg-primary/10 text-primary rounded-lg font-bold text-xs">Credit</button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+
+              {viewingClient && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewingClient(null)} />
+                  <div className="relative w-full max-w-3xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-6 animate-in fade-in zoom-in duration-300">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-6">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">{viewingClient.email}</h3>
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Solde actuel : ${viewingClient.balance?.toFixed(2)}</p>
+                      </div>
+                      <button onClick={() => setViewingClient(null)} className="w-10 h-10 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all"><X size={18} /></button>
+                    </div>
+                    {(() => {
+                      const clientOrders = allOrders.filter(o => o.user_id === viewingClient.id);
+                      if (clientOrders.length === 0) return <p className="text-gray-400 text-sm italic py-8 text-center">Aucune activité pour ce client.</p>;
+                      return (
+                        <div className="max-h-[50vh] overflow-y-auto space-y-3">
+                          {clientOrders.map(o => (
+                            <div key={o.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                              <div>
+                                <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                  {o.product_id === 999 ? <span className="text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Recharge</span> : <span className="text-[9px] font-black uppercase bg-primary/10 text-primary px-2 py-0.5 rounded-full">Achat</span>}
+                                  {o.product_name}
+                                </div>
+                                <div className="text-[10px] text-gray-400 font-bold mt-1">{new Date(o.created_at).toLocaleString('fr-FR')}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-black text-gray-900 font-mono">${o.total_price?.toFixed(2)}</div>
+                                <div className={`text-[10px] font-bold uppercase mt-1 ${o.status === 'confirmed' ? 'text-green-600' : o.status === 'cancelled' ? 'text-red-500' : 'text-yellow-600'}`}>
+                                  {o.status === 'confirmed' ? 'Payé' : o.status === 'cancelled' ? 'Annulé' : o.status === 'processing' ? 'En cours' : 'En attente'}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
