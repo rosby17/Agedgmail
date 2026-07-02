@@ -2223,18 +2223,23 @@ const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetc
   );
 };
 
-const USD_TO_FCFA = 600;
+const CRYPTO_CURRENCIES = [
+  { id: 'btc', label: 'Bitcoin (BTC)' },
+  { id: 'eth', label: 'Ethereum (ETH)' },
+  { id: 'usdttrc20', label: 'USDT (TRC20)' },
+  { id: 'ltc', label: 'Litecoin (LTC)' },
+];
 
-const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount }) => {
+const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile }) => {
   const [amountUsd, setAmountUsd] = useState(suggestedAmount || 10);
+  const [payCurrency, setPayCurrency] = useState('btc');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState('form'); // 'form' | 'redirecting' | 'success'
+  const [step, setStep] = useState('form'); // 'form' | 'awaiting' | 'success'
   const [error, setError] = useState('');
-  const [payUrl, setPayUrl] = useState('');
+  const [payment, setPayment] = useState(null); // { orderId, payAddress, payAmount, payCurrency }
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => () => setSuggestedAmount(null), []);
-
-  const amountFcfa = Math.round(amountUsd * USD_TO_FCFA);
 
   if (!session) { navigate('auth'); return null; }
 
@@ -2245,20 +2250,21 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     setError('');
 
     try {
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('moneroo-initialize', {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('nowpayments-create', {
         body: {
           userId: session.user.id,
           email: session.user.email,
-          name: profile?.display_name || '',
           amountUsd,
+          payCurrency,
         },
       });
 
       if (fnError) throw new Error(fnError.message);
-      if (!fnData?.url) throw new Error(fnData?.error || 'Réponse Moneroo invalide.');
+      if (fnData?.error) throw new Error(fnData.error);
+      if (!fnData?.payAddress) throw new Error('Réponse NOWPayments invalide.');
 
-      setPayUrl(fnData.url);
-      setStep('redirecting');
+      setPayment(fnData);
+      setStep('awaiting');
 
     } catch (err) {
       setError(err.message || 'Une erreur est survenue.');
@@ -2267,16 +2273,37 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     }
   };
 
-  const openPayment = () => {
-    window.open(payUrl, '_blank', 'noopener,noreferrer');
-    setStep('success');
+  const copyAddress = () => {
+    if (payment?.payAddress) {
+      navigator.clipboard?.writeText(payment.payAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
   };
+
+  // Poll le statut de la commande jusqu'à confirmation (le webhook NOWPayments crédite le solde côté serveur).
+  useEffect(() => {
+    if (step !== 'awaiting' || !payment?.orderId || !supabase) return;
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from('orders').select('status').eq('id', payment.orderId).maybeSingle();
+      if (data?.status === 'confirmed') {
+        clearInterval(interval);
+        if (fetchProfile) await fetchProfile(session.user.id);
+        setStep('success');
+      } else if (data?.status === 'cancelled') {
+        clearInterval(interval);
+        setError('Le paiement a échoué ou a expiré. Réessaie avec un nouveau paiement.');
+        setStep('form');
+      }
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [step, payment, session, fetchProfile]);
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-20 font-sans">
       <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">Recharger mon compte</h2>
       <p className="text-gray-500 mb-10 leading-relaxed">
-        Paiement sécurisé par Mobile Money — Orange Money, MTN MoMo, Wave, Moov, Airtel.
+        Paiement sécurisé en cryptomonnaie — Bitcoin, Ethereum, USDT, Litecoin.
       </p>
 
       {step === 'form' && (
@@ -2300,9 +2327,23 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               onChange={e => setAmountUsd(Number(e.target.value))}
               className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary"
             />
-            <p className="text-xs text-gray-400 mt-2 font-medium">
-              ≈ <span className="text-gray-700 font-black">{amountFcfa.toLocaleString('fr-FR')} FCFA</span> débités de ton Mobile Money
-            </p>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+              Cryptomonnaie
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {CRYPTO_CURRENCIES.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setPayCurrency(c.id)}
+                  className={`px-4 py-3 rounded-xl text-sm font-bold border transition-all ${payCurrency === c.id ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-primary/50'}`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && (
@@ -2318,53 +2359,51 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           >
             {loading
               ? <><RefreshCcw size={20} className="animate-spin" /> Préparation...</>
-              : <><Send size={20} /> Payer {amountFcfa.toLocaleString('fr-FR')} FCFA</>}
+              : <><Send size={20} /> Payer ${amountUsd.toFixed(2)} en crypto</>}
           </button>
         </div>
       )}
 
-      {step === 'redirecting' && (
+      {step === 'awaiting' && payment && (
         <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft text-center space-y-6">
-          <div className="w-20 h-20 rounded-full bg-violet-100 flex items-center justify-center mx-auto">
-            <ExternalLink size={36} className="text-violet-600" />
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <RefreshCcw size={32} className="text-primary animate-spin" />
           </div>
-          <h3 className="text-2xl font-black text-gray-900">Commande créée !</h3>
-          <p className="text-gray-500">Clique pour finaliser le paiement sur la page sécurisée Moneroo.</p>
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à payer</p>
-            <p className="text-2xl font-black text-primary font-mono">{amountFcfa.toLocaleString('fr-FR')} FCFA</p>
+          <h3 className="text-2xl font-black text-gray-900">En attente de paiement</h3>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation.
+          </p>
+          <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à envoyer</p>
+              <p className="text-2xl font-black text-primary font-mono">{payment.payAmount} {String(payment.payCurrency).toUpperCase()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Adresse de dépôt</p>
+              <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
+                <code className="text-xs font-mono text-gray-700 flex-grow break-all text-left">{payment.payAddress}</code>
+                <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+              </div>
+              {copied && <p className="text-xs text-primary font-bold mt-2">Adresse copiée !</p>}
+            </div>
           </div>
-          <button
-            onClick={openPayment}
-            className="w-full py-5 rounded-2xl font-bold text-lg bg-gray-900 text-white hover:bg-primary transition-all shadow-xl flex items-center justify-center gap-3"
-          >
-            <ExternalLink size={20} /> Ouvrir la page de paiement
-          </button>
-          <p className="text-xs text-gray-400">La page s'ouvre dans un nouvel onglet.</p>
+          <p className="text-xs text-gray-400">Cette page se met à jour automatiquement dès réception du paiement.</p>
         </div>
       )}
 
       {step === 'success' && (
         <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-soft text-center space-y-6">
           <CheckCircle size={72} className="text-green-500 mx-auto" />
-          <h3 className="text-2xl font-black text-gray-900">Paiement initié !</h3>
+          <h3 className="text-2xl font-black text-gray-900">Solde crédité !</h3>
           <p className="text-gray-500 text-sm leading-relaxed">
-            Complète le paiement dans l'onglet Moneroo. Ton solde sera crédité après confirmation automatique.
+            Ton paiement a été confirmé et ton solde a été mis à jour.
           </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => window.open(payUrl, '_blank')}
-              className="flex-1 border border-gray-200 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
-            >
-              <ExternalLink size={16} /> Rouvrir
-            </button>
-            <button
-              onClick={() => navigate('dashboard')}
-              className="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-primary transition-all"
-            >
-              Mon compte
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('dashboard')}
+            className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-primary transition-all"
+          >
+            Mon compte
+          </button>
         </div>
       )}
     </div>
@@ -3495,7 +3534,7 @@ function App() {
         {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />}
         {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} setRechargeSuggestedAmount={setRechargeSuggestedAmount} />}
-        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} />}
+        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
           <AdminView
             navigate={navigate}
