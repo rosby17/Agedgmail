@@ -3271,11 +3271,13 @@ function App() {
 
     if (rawHash.includes('access_token=') || rawHash.includes('error_description=') || rawHash.includes('error=')) {
       // Retour de connexion OAuth (Google) : le hash contient les jetons de
-      // session que Supabase doit lire lui-même, pas un nom de page. Si on le
-      // traite comme une route, currentView devient une chaîne inconnue et
-      // la page reste vide -> on force un atterrissage propre sur l'accueil.
+      // session que le client Supabase doit lire et nettoyer lui-même
+      // (detectSessionInUrl). On NE TOUCHE PAS à window.location.hash ici —
+      // un history.replaceState prématuré effacerait le jeton avant que
+      // Supabase ait fini de le traiter et casserait la connexion. On se
+      // contente d'afficher l'accueil pendant que Supabase travaille en
+      // arrière-plan ; il nettoiera l'URL une fois la session établie.
       setCurrentView('home');
-      window.history.replaceState(null, '', window.location.pathname + '#home');
     } else if (params.get('paymentStatus')) {
       setCurrentView('dashboard');
       window.history.replaceState(null, '', `${window.location.pathname}#dashboard`);
