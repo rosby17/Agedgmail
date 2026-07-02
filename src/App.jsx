@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
-import * as XLSX from 'xlsx';
 
 // ==========================================
 // CONFIGURATION ADMIN & SUPPORT
@@ -12,28 +11,6 @@ const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 // ==========================================
 // COMPOSANTS UI STYLÉS
 // ==========================================
-
-const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, type = 'danger' }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onCancel} />
-      <div className="bg-white rounded-[3rem] w-full max-w-md p-10 relative shadow-2xl border border-white/20">
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-8 mx-auto ${type === 'danger' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>
-          {type === 'danger' ? <Trash2 size={36} /> : <Info size={36} />}
-        </div>
-        <h3 className="text-2xl font-black text-center mb-3 tracking-tighter">{title}</h3>
-        <p className="text-gray-500 text-center mb-10 leading-relaxed font-medium">{message}</p>
-        <div className="flex gap-4">
-          <button onClick={onCancel} className="flex-1 h-14 rounded-2xl font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 transition-all border border-gray-100">Cancel</button>
-          <button onClick={onConfirm} className={`flex-1 h-14 rounded-2xl font-bold text-white transition-all shadow-xl ${type === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' : 'bg-gray-900 hover:bg-primary shadow-gray-900/20'}`}>
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const YouTubeLogo = ({ className = "" }) => (
   <img src="/youtube-logo.png" alt="YouTube" className={`w-full h-full object-contain scale-[1.5] ${className}`} />
@@ -1023,269 +1000,31 @@ const SettingsView = ({ profile, navigate, fetchProfile, session }) => (
 );
 
 // ==========================================
-// STOCK MANAGER COMPONENT
-// ==========================================
-const StockManager = ({ product, onClose, fetchProducts }) => {
-  const [bulkText, setBulkText] = useState('');
-  const [stockInfo, setStockInfo] = useState({ total: 0, available: 0, delivered: 0 });
-  const [loading, setLoading] = useState(false);
-  const [importSuccess, setImportSuccess] = useState(false);
-  const [error, setError] = useState('');
-  const [existingStock, setExistingStock] = useState('');
-  const [showExisting, setShowExisting] = useState(false);
-
-  const fetchStock = async () => {
-    const { data } = await supabase.from('account_stock')
-      .select('id, credentials, is_delivered')
-      .eq('product_id', product.id);
-
-    if (data) {
-      const available = data.filter(r => !r.is_delivered);
-      const deliveredCount = data.length - available.length;
-      setStockInfo({ total: data.length, available: available.length, delivered: deliveredCount });
-      setExistingStock(available.map(r => r.credentials).join('\n'));
-    }
-  };
-
-  useEffect(() => {
-    fetchStock();
-  }, [product.id]);
-
-  const handleImport = async () => {
-    const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length === 0) { setError('Collez au moins une ligne de credentials.'); return; }
-    setLoading(true); setError('');
-    const rows = lines.map(cred => ({ product_id: product.id, credentials: cred, is_delivered: false }));
-    const { error: insErr } = await supabase.from('account_stock').insert(rows);
-    if (insErr) { setError('Erreur : ' + insErr.message); setLoading(false); return; }
-    setImportSuccess(true);
-    setBulkText('');
-    await fetchStock();
-    if (fetchProducts) fetchProducts();
-    setTimeout(() => setImportSuccess(false), 2000);
-    setLoading(false);
-  };
-
-  const handleUpdateStock = async () => {
-    setLoading(true); setError('');
-    try {
-      // 1. Delete all non-delivered stock for this product
-      const { error: delErr } = await supabase
-        .from('account_stock')
-        .delete()
-        .eq('product_id', product.id)
-        .eq('is_delivered', false);
-
-      if (delErr) throw delErr;
-
-      // 2. Insert new lines
-      const lines = existingStock.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length > 0) {
-        const rows = lines.map(cred => ({ product_id: product.id, credentials: cred, is_delivered: false }));
-        const { error: insErr } = await supabase.from('account_stock').insert(rows);
-        if (insErr) throw insErr;
-      }
-
-      setImportSuccess(true);
-      await fetchStock();
-      if (fetchProducts) fetchProducts();
-      setTimeout(() => {
-        setImportSuccess(false);
-        setShowExisting(false);
-      }, 2000);
-    } catch (err) {
-      setError('Erreur lors de la mise à jour : ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">Manage Stock</h3>
-            <p className="text-sm text-gray-400 mt-1 font-medium">{product.name}</p>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 transition-all"><X size={16} /></button>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          {[['Total', stockInfo.total, 'bg-gray-50 text-gray-700'], ['Available', stockInfo.available, 'bg-green-50 text-green-700'], ['Delivered', stockInfo.delivered, 'bg-blue-50 text-blue-700']].map(([label, val, cls]) => (
-            <div key={label} className={`${cls} rounded-2xl p-4 text-center`}>
-              <div className="text-2xl font-black font-mono">{val}</div>
-              <div className="text-[10px] font-black uppercase tracking-widest mt-1">{label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2 p-1 bg-gray-50 rounded-2xl">
-          <button
-            onClick={() => setShowExisting(false)}
-            className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${!showExisting ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
-          >
-            Add Stock
-          </button>
-          <button
-            onClick={() => setShowExisting(true)}
-            className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${showExisting ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
-          >
-            Modify existing ({stockInfo.available})
-          </button>
-        </div>
-
-        {!showExisting ? (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Paste new accounts <span className="font-normal normal-case text-gray-300">(1 per line)</span></label>
-              <textarea
-                value={bulkText}
-                onChange={e => setBulkText(e.target.value)}
-                rows={8}
-                placeholder={`email@gmail.com|Password123|recovery@mail.com\nemail2@gmail.com|Password456|recovery2@mail.com`}
-                className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
-              />
-              <p className="text-[10px] text-gray-400 mt-2">{bulkText.split('\n').filter(l => l.trim()).length} line(s) ready to import</p>
-            </div>
-
-            {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} />{error}</div>}
-
-            <button onClick={handleImport} disabled={loading || importSuccess}
-              className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${importSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-              {loading ? <><RefreshCcw size={16} className="animate-spin" /> Importing...</> : importSuccess ? <><CheckCircle size={16} /> Imported!</> : <><Upload size={16} /> Import accounts</>}
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Modify/Delete accounts in stock <span className="text-red-400 font-bold">(Warning: Deleted lines will disappear)</span></label>
-              <textarea
-                value={existingStock}
-                onChange={e => setExistingStock(e.target.value)}
-                rows={12}
-                className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 focus:outline-none font-mono text-xs resize-none"
-              />
-              <div className="flex justify-between items-center mt-2">
-                <p className="text-[10px] text-gray-400">{existingStock.split('\n').filter(l => l.trim()).length} account(s) remaining</p>
-                <button onClick={() => setExistingStock('')} className="text-[10px] font-bold text-red-400 hover:underline">Clear all stock</button>
-              </div>
-            </div>
-
-            {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} />{error}</div>}
-
-            <button onClick={handleUpdateStock} disabled={loading || importSuccess}
-              className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${importSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary'}`}>
-              {loading ? <><RefreshCcw size={16} className="animate-spin" /> Updating...</> : importSuccess ? <><CheckCircle size={16} /> Stock updated!</> : <><Save size={16} /> Save changes</>}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
 // ORDERS ADMIN — Composant gestion commandes
 // ==========================================
 
-const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
+// Commandes — vue lecture seule. Depuis l'automatisation des paiements
+// (NOWPayments/Cryptomus pour les recharges, YTSeller pour la livraison
+// dropship), plus aucune validation manuelle n'est nécessaire : tout se
+// confirme et se livre tout seul via les webhooks. Cet écran sert juste à
+// suivre l'état des commandes, avec une action d'annulation pour les cas
+// bloqués et une suppression pour le nettoyage de test.
+const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
   const [filter, setFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [adminNote, setAdminNote] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionSuccess, setActionSuccess] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
   const filtered = filter === 'all'
     ? allOrders
     : allOrders.filter(o => (o.status || 'pending') === filter);
 
-  const confirmOrder = async () => {
-    setActionLoading(true);
-
-    if (selectedOrder.product_name === "Recharge Binance") {
-      let currentBalance = 0;
-      const { data: userData, error: userError } = await supabase.from('profiles').select('balance').eq('id', selectedOrder.user_id).maybeSingle();
-      if (!userError && userData) currentBalance = userData.balance || 0;
-
-      const newBalance = currentBalance + (selectedOrder.total_price || 0);
-      const { error: balanceError } = await supabase.from('profiles').upsert({
-        id: selectedOrder.user_id, email: selectedOrder.buyer_email, balance: newBalance
-      });
-
-      if (balanceError) {
-        setErrorMessage("Erreur solde : " + balanceError.message);
-        setActionLoading(false);
-        return;
-      }
-
-      await supabase.from('orders').update({
-        status: 'confirmed',
-        admin_note: adminNote.trim() || null,
-        confirmed_at: new Date().toISOString(),
-      }).eq('id', selectedOrder.id);
-
-      setActionSuccess(true);
-
-    } else {
-      // Auto-distribute from account_stock
-      const qty = selectedOrder.quantity || 1;
-      const { data: stockRows, error: stockErr } = await supabase
-        .from('account_stock')
-        .select('id, credentials')
-        .eq('product_id', selectedOrder.product_id)
-        .eq('is_delivered', false)
-        .limit(qty);
-
-      if (stockErr) {
-        setErrorMessage("Erreur stock : " + stockErr.message);
-        setActionLoading(false);
-        return;
-      }
-
-      if (!stockRows || stockRows.length < qty) {
-        setErrorMessage(`⚠️ Stock insuffisant ! Disponible : ${stockRows?.length || 0} compte(s), requis : ${qty}. Ajoutez des comptes via "Gérer Stock".`);
-        setActionLoading(false);
-        return;
-      }
-
-      const deliveredCreds = stockRows.map(r => r.credentials).join('\n');
-      const stockIds = stockRows.map(r => r.id);
-
-      await supabase.from('account_stock').update({
-        is_delivered: true, order_id: String(selectedOrder.id), delivered_to: selectedOrder.user_id,
-      }).in('id', stockIds);
-
-      await supabase.from('orders').update({
-        status: 'confirmed',
-        credentials: deliveredCreds,
-        data: deliveredCreds,
-        admin_note: adminNote.trim() || null,
-        confirmed_at: new Date().toISOString(),
-      }).eq('id', selectedOrder.id);
-
-      setActionSuccess(true);
-    }
-
-    setTimeout(() => {
-      setSelectedOrder(null);
-      setAdminNote('');
-      fetchAllOrders();
-      if (fetchProducts) fetchProducts();
-      setActionLoading(false);
-      setActionSuccess(false);
-    }, 1500);
-  };
-
   const cancelOrder = async (id) => {
+    if (!window.confirm("Annuler cette commande ? Si elle correspond à une recharge crypto déjà payée, le client ne sera pas recrédité automatiquement.")) return;
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', id);
     fetchAllOrders();
   };
 
   const deleteOrder = async (id) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer définitivement cette commande ?")) return;
+    if (!window.confirm("Supprimer définitivement cette commande ?")) return;
     await supabase.from('orders').delete().eq('id', id);
     fetchAllOrders();
   };
@@ -1294,17 +1033,23 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
     const s = status || 'pending';
     const map = {
       pending: { label: 'En attente', icon: Clock, cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-      confirmed: { label: 'Confirmé', icon: CheckCircle, cls: 'bg-green-100 text-green-700 border-green-200' },
+      processing: { label: 'En cours', icon: RefreshCcw, cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+      confirmed: { label: 'Payé / livré', icon: CheckCircle, cls: 'bg-green-100 text-green-700 border-green-200' },
       cancelled: { label: 'Annulé', icon: X, cls: 'bg-red-100 text-red-700 border-red-200' },
     };
     const { label, icon: Icon, cls } = map[s] || map.pending;
     return <span className={`text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1 w-fit ${cls}`}><Icon size={12} /> {label}</span>;
   };
 
+  const isRecharge = (order) => order.product_id === 999;
+
   return (
     <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Commandes</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Commandes</h2>
+          <p className="text-xs text-gray-400 font-medium mt-1">Suivi uniquement — le paiement et la livraison se font automatiquement.</p>
+        </div>
         <button onClick={fetchAllOrders} className="p-2 rounded-xl border border-gray-100 text-gray-400 hover:text-primary transition-all">
           <RefreshCcw size={16} />
         </button>
@@ -1313,9 +1058,10 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
       <div className="flex gap-2 flex-wrap">
         {[
           { key: 'pending', label: 'En attente', icon: Clock },
-          { key: 'confirmed', label: 'Confirmés', icon: CheckCircle },
-          { key: 'cancelled', label: 'Annulés', icon: X },
-          { key: 'all', label: 'Tous', icon: FileText },
+          { key: 'processing', label: 'En cours', icon: RefreshCcw },
+          { key: 'confirmed', label: 'Payées / livrées', icon: CheckCircle },
+          { key: 'cancelled', label: 'Annulées', icon: X },
+          { key: 'all', label: 'Toutes', icon: FileText },
         ].map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${filter === f.key ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-100'
@@ -1337,7 +1083,6 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
                 <th className="pb-4">Produit / ID</th>
                 <th className="pb-4">Email</th>
                 <th className="pb-4">Montant</th>
-                <th className="pb-4">TX Binance</th>
                 <th className="pb-4">Statut</th>
                 <th className="pb-4">Date</th>
                 <th className="pb-4" />
@@ -1348,38 +1093,26 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
                 <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-5">
                     <p className="font-bold text-gray-900 text-sm">{order.product_name}</p>
-                    <p className="text-gray-400 text-[10px] font-mono">#{order.id.slice(0, 8).toUpperCase()}</p>
+                    <p className="text-gray-400 text-[10px] font-mono">#{String(order.id).slice(0, 8).toUpperCase()}</p>
                   </td>
                   <td className="py-5 text-sm text-gray-600">{order.buyer_email || '—'}</td>
                   <td className="py-5 font-black text-primary font-mono">${order.total_price?.toFixed(2)}</td>
-                  <td className="py-5">
-                    {order.binance_tx_id
-                      ? <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded-lg text-gray-600">{order.binance_tx_id}</span>
-                      : <span className="text-gray-300 text-xs italic">Non fourni</span>
-                    }
-                  </td>
                   <td className="py-5">{statusBadge(order.status)}</td>
                   <td className="py-5 text-xs text-gray-400 whitespace-nowrap">
                     {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="py-5">
                     <div className="flex gap-2">
-                      {(!order.status || order.status === 'pending') && (
-                        <>
-                          <button onClick={() => { setSelectedOrder(order); setCredentials(''); setAdminNote(''); }}
-                            className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-all" title="Confirmer">
-                            <CheckCircle size={14} />
-                          </button>
-                          <button onClick={() => cancelOrder(order.id)}
-                            className="p-2 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 transition-all" title="Annuler">
-                            <X size={14} />
-                          </button>
-                        </>
-                      )}
-                      {order.status === 'confirmed' && (
+                      {!isRecharge(order) && order.status === 'confirmed' && (
                         <button onClick={() => setSelectedOrder(order)}
-                          className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all" title="Voir credentials">
+                          className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all" title="Voir les accès livrés">
                           <Eye size={14} />
+                        </button>
+                      )}
+                      {(order.status === 'pending' || order.status === 'processing') && (
+                        <button onClick={() => cancelOrder(order.id)}
+                          className="p-2 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 transition-all" title="Annuler (commande bloquée)">
+                          <X size={14} />
                         </button>
                       )}
                       <button onClick={() => deleteOrder(order.id)}
@@ -1398,99 +1131,45 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, fetchProducts }) => {
       {selectedOrder && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
-          <div className="relative w-full max-w-4xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-8 animate-in fade-in zoom-in duration-300">
+          <div className="relative w-full max-w-3xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-8 animate-in fade-in zoom-in duration-300">
             <div className="flex justify-between items-center border-b border-gray-100 pb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {(!selectedOrder.status || selectedOrder.status === 'pending') ? 'Confirmer la commande' : 'Détail de la commande'}
-                </h3>
-                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">ID: #{selectedOrder.id.toUpperCase()}</p>
+                <h3 className="text-2xl font-bold text-gray-900">Détail de la commande</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">ID: #{String(selectedOrder.id).toUpperCase()}</p>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="w-12 h-12 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-6">
-                <div className="bg-gray-50/50 border border-gray-100 rounded-3xl p-8 space-y-4">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2 mb-4">Informations Client</h4>
-                  {[
-                    ['Produit', selectedOrder.product_name, Package],
-                    ['Email Client', selectedOrder.buyer_email || '—', Mail],
-                    ['Montant', `$${selectedOrder.total_price?.toFixed(2)}`, Wallet],
-                    ['TX Binance', selectedOrder.binance_tx_id || 'Non fourni', Hash],
-                    ['Date', new Date(selectedOrder.created_at).toLocaleString(), Clock],
-                  ].map(([label, val, Icon]) => (
-                    <div key={label} className="flex justify-between items-center group">
-                      <span className="text-gray-400 font-medium text-xs flex items-center gap-2">
-                        <Icon size={14} className="text-gray-300 group-hover:text-primary transition-colors" /> {label}
-                      </span>
-                      <span className="font-bold text-gray-900 text-sm">{val}</span>
-                    </div>
-                  ))}
+            <div className="bg-gray-50/50 border border-gray-100 rounded-3xl p-8 space-y-4">
+              {[
+                ['Produit', selectedOrder.product_name, Package],
+                ['Email Client', selectedOrder.buyer_email || '—', Mail],
+                ['Montant', `$${selectedOrder.total_price?.toFixed(2)}`, Wallet],
+                ['Date', new Date(selectedOrder.created_at).toLocaleString(), Clock],
+              ].map(([label, val, Icon]) => (
+                <div key={label} className="flex justify-between items-center group">
+                  <span className="text-gray-400 font-medium text-xs flex items-center gap-2">
+                    <Icon size={14} className="text-gray-300 group-hover:text-primary transition-colors" /> {label}
+                  </span>
+                  <span className="font-bold text-gray-900 text-sm">{val}</span>
                 </div>
+              ))}
+            </div>
 
-                {(!selectedOrder.status || selectedOrder.status === 'pending') && (
-                  <div className="space-y-6">
-                    {selectedOrder.product_name !== "Recharge Binance" && (
-                      <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 flex items-start gap-4">
-                        <Zap size={24} className="text-blue-500 mt-1" />
-                        <div>
-                          <p className="text-sm font-bold text-blue-800">Livraison automatique prête</p>
-                          <p className="text-xs text-blue-600 mt-1 leading-relaxed">Le système va distribuer <span className="font-black underline">{selectedOrder.quantity || 1} compte(s)</span> depuis le stock <span className="font-bold">{selectedOrder.product_name}</span>.</p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="space-y-4">
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Note administrative</label>
-                      <textarea
-                        value={adminNote}
-                        onChange={e => setAdminNote(e.target.value)}
-                        placeholder="Note interne (ex: Paiement reçu sur Binance)..."
-                        className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none text-sm min-h-[100px] resize-none"
-                      />
-                    </div>
-                    {errorMessage && (
-                      <div className="bg-red-50 text-red-500 p-4 rounded-2xl text-xs font-bold border border-red-100 flex items-center gap-2">
-                        <AlertTriangle size={14} /> {errorMessage}
-                      </div>
-                    )}
-                    <button onClick={confirmOrder} disabled={actionLoading || actionSuccess}
-                      className={`w-full py-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-xl ${actionSuccess ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary shadow-gray-900/10'}`}>
-                      {actionLoading ? <><RefreshCcw size={18} className="animate-spin" /> Traitement...</> : actionSuccess ? <><CheckCircle size={18} /> Confirmé !</> : (selectedOrder.product_name === "Recharge Binance" ? <><CheckCircle size={18} /> Valider Recharge</> : <><Zap size={18} /> Livrer Instantanément</>)}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  {selectedOrder.product_name === "Recharge Binance" ? "Confirmation" : "Contenu de la livraison"}
-                </label>
-                <div className="bg-white border border-gray-100 rounded-3xl p-1 shadow-inner h-full min-h-[300px]">
-                  <div
-                    className="font-mono text-xs text-gray-600 p-6 leading-relaxed whitespace-pre-wrap break-all h-full max-h-[500px] overflow-y-auto custom-scrollbar"
-                    dangerouslySetInnerHTML={{
-                      __html: (() => {
-                        if (selectedOrder.status !== 'confirmed') {
-                          return '<div class="text-gray-300 italic flex items-center justify-center h-full">La commande doit être validée pour afficher les accès.</div>';
-                        }
-                        if (selectedOrder.product_name === "Recharge Binance") {
-                          return '<div class="flex items-center gap-2 text-green-600 font-bold"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Recharge effectuée avec succès.</div>';
-                        }
-                        const creds = selectedOrder.credentials || selectedOrder.data || "Identifiants introuvables.";
-                        return creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
-                      })()
-                    }}
-                  />
-                </div>
-                {selectedOrder.admin_note && (
-                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Note de confirmation</p>
-                    <p className="text-xs text-gray-600 italic">"{selectedOrder.admin_note}"</p>
-                  </div>
-                )}
+            <div className="space-y-4">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Contenu livré au client</label>
+              <div className="bg-white border border-gray-100 rounded-3xl p-1 shadow-inner">
+                <div
+                  className="font-mono text-xs text-gray-600 p-6 leading-relaxed whitespace-pre-wrap break-all max-h-[400px] overflow-y-auto custom-scrollbar"
+                  dangerouslySetInnerHTML={{
+                    __html: (() => {
+                      const creds = selectedOrder.credentials || selectedOrder.data || "Identifiants introuvables.";
+                      return creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
+                    })()
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -1789,18 +1468,13 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
 
 const AdminView = ({
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
-  actionStatus, setActionStatus, editingProduct, setEditingProduct, productForm,
-  setProductForm, handleSaveProduct, handleDeleteProduct, handleDeleteAllProducts, handleResetSystem, handleExcelProductImport, handleExportExcel, adminSearch, setAdminSearch,
-  adminPage, setAdminPage
+  actionStatus, setActionStatus,
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
-  const [managingStock, setManagingStock] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('agedgmail_admin_tab', activeTab);
   }, [activeTab]);
-
-  const itemsPerPage = 10;
 
   const handleUpdateBalanceManual = async (userId, email, amount) => {
     setActionStatus('loading');
@@ -1811,13 +1485,20 @@ const AdminView = ({
     setActionStatus(null);
   };
 
+  // Revenu réel = uniquement les commandes 'confirmed' (paiement effectivement
+  // reçu — recharge crypto confirmée par webhook, ou compte dropship livré).
+  // Les commandes 'pending'/'processing'/'cancelled' ne comptent jamais.
+  const confirmedOrders = allOrders.filter(o => o.status === 'confirmed');
+  const totalRevenue = confirmedOrders.reduce((s, o) => s + (o.total_price || 0), 0);
+  const pendingCount = allOrders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+  const avgOrderValue = confirmedOrders.length ? totalRevenue / confirmedOrders.length : 0;
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      {managingStock && <StockManager product={managingStock} fetchProducts={fetchProducts} onClose={() => { setManagingStock(null); fetchProducts(); }} />}
       <div className="flex items-center justify-between mb-12">
         <div>
           <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Administration Console</h1>
-          <p className="text-gray-400 text-sm mt-2">Dynamic management of catalog and clients.</p>
+          <p className="text-gray-400 text-sm mt-2">Suivi des ventes et des clients.</p>
         </div>
         <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><ArrowLeft size={16} /> Back to site</button>
       </div>
@@ -1826,7 +1507,6 @@ const AdminView = ({
         <aside className="lg:col-span-1 space-y-2">
           {[
             { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-            { id: 'stock', label: 'Product Catalog', icon: Package },
             { id: 'orders', label: 'Orders', icon: FileText },
             { id: 'users', label: 'Client Management', icon: Users },
             { id: 'supplier', label: 'Supplier', icon: Database },
@@ -1842,145 +1522,19 @@ const AdminView = ({
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Revenue</div><div className="text-3xl font-black text-gray-900">${allOrders.reduce((s, o) => s + (o.total_price || 0), 0).toFixed(2)}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Products Online</div><div className="text-3xl font-black text-gray-900">{products.length}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><AlertTriangle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Stock</div><div className="text-3xl font-black text-gray-900">{products.reduce((s, p) => s + (p.stock || 0), 0)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu réel (payé)</div><div className="text-3xl font-black text-gray-900">${totalRevenue.toFixed(2)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><CheckCircle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Commandes payées</div><div className="text-3xl font-black text-gray-900">{confirmedOrders.length}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><Clock size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">En attente / en cours</div><div className="text-3xl font-black text-gray-900">{pendingCount}</div></div>
               </div>
-              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h3 className="text-lg font-bold mb-8">Sales Statistics</h3>
-                <p className="text-gray-400 text-sm italic">Sales are managed manually. Once payment is received, deliver the client by email.</p>
-              </div>
-
-              <div className="bg-red-50/50 border border-red-100 rounded-[3rem] p-10">
-                <h3 className="text-lg font-bold text-red-900 mb-2 flex items-center gap-2"><Settings size={20} /> Maintenance Zone</h3>
-                <p className="text-red-600 text-sm mb-8 font-medium">Clean test data before official launch. These actions are irreversible.</p>
-                <div className="flex flex-wrap gap-4">
-                  <button onClick={handleResetSystem} className="bg-red-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-red-700 transition-all shadow-xl shadow-red-500/20 flex items-center gap-2">
-                    <Trash2 size={18} /> Reset Orders & Balances
-                  </button>
-                  <button onClick={handleDeleteAllProducts} className="bg-white text-red-600 border border-red-200 px-8 py-4 rounded-2xl font-bold hover:bg-red-50 transition-all flex items-center gap-2">
-                    <PackageX size={18} /> Delete all Products
-                  </button>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-4"><TrendingUp size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Panier moyen</div><div className="text-3xl font-black text-gray-900">${avgOrderValue.toFixed(2)}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4"><Users size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Clients inscrits</div><div className="text-3xl font-black text-gray-900">{allUsers.length}</div></div>
+                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Produits en ligne</div><div className="text-3xl font-black text-gray-900">{products.length}</div></div>
               </div>
             </div>
           )}
 
-          {activeTab === 'stock' && (
-            <div className="space-y-8">
-              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <div className="flex justify-between items-center mb-10">
-                  <h2 className="text-2xl font-bold">Product Catalog</h2>
-                  <div className="flex gap-4 items-center">
-                    <button
-                      onClick={() => handleDeleteAllProducts()}
-                      className="text-red-500 hover:bg-red-50 px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all"
-                    >
-                      <Trash2 size={18} /> Delete all
-                    </button>
-                    <input type="file" id="excel-import" className="hidden" accept=".xlsx, .xls" onChange={handleExcelProductImport} />
-                    <label htmlFor="excel-import" className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer hover:bg-green-700 transition-all shadow-lg shadow-green-500/20">
-                      <Upload size={18} /> Import Excel
-                    </label>
-                    <button onClick={handleExportExcel} className="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all shadow-lg shadow-gray-900/10">
-                      <Download size={18} /> Export Excel
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 mb-12">
-                  <div className="bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100">
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8">{editingProduct ? 'Modify Product' : 'Add a new Product'}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Product Title</label>
-                          <input type="text" value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20" placeholder="ex: Gmail Aged 2018" />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Category</label>
-                          <select value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold">
-                            {CATEGORIES.filter(c => c.id !== "all").map(cat => (
-                              <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                          </select>
-                        </div>
-
-
-
-                        <div className="grid grid-cols-1 gap-4">
-                          <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Price ($)</label>
-                            <input type="number" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: parseFloat(e.target.value) })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
-                          <textarea value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} rows="6" className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Product details..." />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Product Image (URL)</label>
-                          <input type="text" value={productForm.image_url || ''} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-mono" placeholder="https://…/image.png (leave empty = auto logo)" />
-                          {productForm.image_url ? (
-                            <div className="mt-3 w-24 h-24 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden">
-                              <img src={productForm.image_url} alt="preview" className="w-full h-full object-contain" />
-                            </div>
-                          ) : null}
-                        </div>
-                        <button onClick={handleSaveProduct} disabled={actionStatus === 'loading'} className="w-full h-14 bg-gray-900 text-white rounded-xl font-bold hover:bg-primary transition-all flex items-center justify-center gap-2">
-                          {actionStatus === 'loading' ? <RefreshCcw className="animate-spin" /> : <Save size={18} />}
-                          {editingProduct ? 'Update' : 'Validate Product'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                        <th className="pb-6">Product</th>
-                        <th className="pb-6">Price</th>
-                        <th className="pb-6">Stock</th>
-                        <th className="pb-6 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {products.map(p => (
-                        <tr key={p.id} className="group hover:bg-gray-50/50 transition-colors">
-                          <td className="py-5">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center p-2 border border-gray-100">
-                                <ProductVisual product={p} iconSize={24} />
-                              </div>
-                              <div>
-                                <div className="font-bold text-gray-900">{p.name}</div>
-                                <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{p.category}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-5 font-mono font-black text-primary">${p.price?.toFixed(2)}</td>
-                          <td className="py-5 font-mono font-bold text-gray-500">{p.stock}</td>
-                          <td className="py-5 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => setManagingStock(p)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Manage Stock"><Database size={16} /></button>
-                              <button onClick={() => { setEditingProduct(p); setProductForm({ name: p.name, category: p.category, description: p.description, price: p.price, image_url: p.image_url || '' }); }} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Edit size={16} /></button>
-                              <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash size={16} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} fetchProducts={fetchProducts} />}
+          {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />}
 
           {activeTab === 'users' && (
             <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
@@ -2022,137 +1576,6 @@ const AdminView = ({
           {activeTab === 'supplier' && <SupplierAdmin products={products} fetchProducts={fetchProducts} />}
         </main>
       </div>
-    </div>
-  );
-};
-
-// ==========================================
-// RECHARGE VIEW & BINANCE PAY
-// ==========================================
-
-const BinancePaySection = ({ cartTotal, session, navigate, cart, clearCart, fetchProducts, profile }) => {
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const noteValue = profile?.display_name?.toLowerCase() || session?.user?.email?.split('@')[0];
-
-  const handleOrderSubmit = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      // 1. Create pending orders with the username as reference
-      for (const item of cart) {
-        const { error: orderErr } = await supabase.from('orders').insert({
-          user_id: session.user.id,
-          buyer_email: session.user.email,
-          product_id: item.id,
-          product_name: item.name,
-          quantity: item.quantity,
-          total_price: item.price * item.quantity,
-          status: 'pending',
-          binance_tx_id: `NOTE:${noteValue}`, // Use Note as reference
-          created_at: new Date().toISOString()
-        });
-        if (orderErr) throw orderErr;
-      }
-
-      // 2. Alert Admin
-      await fetch("https://formsubmit.co/ajax/rooseveltmkr@gmail.com", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject: "💰 Nouveau Paiement Direct Binance Pay (AgedGmailYT)",
-          username: noteValue,
-          total: cartTotal + " USD",
-          note_utilisee: noteValue,
-          details: cart.map(i => `${i.name} (x${i.quantity})`).join(', ')
-        })
-      });
-
-      setSuccess(true);
-      setTimeout(() => {
-        clearCart();
-        navigate('dashboard');
-      }, 3000);
-    } catch (err) {
-      setError("Erreur : " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    // Simple feedback could be added here
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-sm space-y-6">
-        <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">Transfer Information</h4>
-
-        <div className="space-y-4">
-          <div className="flex justify-between items-center group">
-            <span className="text-sm font-bold text-gray-500">Currency :</span>
-            <div className="flex items-center gap-3">
-              <span className="font-mono font-black text-gray-900">USDT (Binance Pay)</span>
-              <button onClick={() => copyToClipboard('USDT')} className="text-gray-300 hover:text-primary transition-colors"><Copy size={16} /></button>
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center group">
-            <span className="text-sm font-bold text-gray-500">Binance User ID :</span>
-            <div className="flex items-center gap-3">
-              <span className="font-mono font-black text-gray-900">160684871</span>
-              <button onClick={() => copyToClipboard('160684871')} className="text-gray-300 hover:text-primary transition-colors"><Copy size={16} /></button>
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center group bg-primary/5 p-4 rounded-xl border border-primary/10">
-            <span className="text-sm font-bold text-primary">Note (IMPORTANT) :</span>
-            <div className="flex items-center gap-3">
-              <span className="font-mono font-black text-primary uppercase">{noteValue}</span>
-              <button onClick={() => copyToClipboard(noteValue)} className="text-primary/40 hover:text-primary transition-colors"><Copy size={16} /></button>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => copyToClipboard(`ID: 160684871 | Note: ${noteValue}`)}
-          className="w-full py-4 bg-gray-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all flex items-center justify-center gap-2"
-        >
-          <Copy size={14} /> Copy all info
-        </button>
-
-        <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-          <p className="text-[10px] text-red-500 font-bold leading-relaxed italic">
-            * IMPORTANT: Make sure to add the note above during transfer on Binance for automatic confirmation.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-          <div className="flex items-center gap-3 text-gray-900 font-bold mb-2">
-            <Clock size={18} className="text-primary" /> Confirmation
-          </div>
-          <p className="text-[10px] text-gray-500 font-medium">Transactions are generally confirmed in 5-15 minutes.</p>
-        </div>
-        <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-          <div className="flex items-center gap-3 text-gray-900 font-bold mb-2">
-            <MessageSquare size={18} className="text-primary" /> Support
-          </div>
-          <p className="text-[10px] text-gray-500 font-medium">Need help? Contact us on WhatsApp or Telegram.</p>
-        </div>
-      </div>
-
-      {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100">{error}</div>}
-
-      <button onClick={handleOrderSubmit} disabled={loading || success} className={`w-full py-6 rounded-[2rem] font-bold text-xl transition-all shadow-2xl flex items-center justify-center gap-3 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-primary shadow-black/10'}`}>
-        {loading ? <RefreshCcw className="animate-spin" /> : success ? <CheckCircle /> : <ShieldCheck />}
-        {loading ? "Verification..." : success ? "Order Sent!" : "I made the transfer"}
-      </button>
     </div>
   );
 };
@@ -3143,7 +2566,6 @@ const Footer = ({ navigate }) => (
 
 function App() {
   const [products, setProducts] = useState([]);
-  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { }, type: "danger" });
 
   const [currentView, setCurrentView] = useState(() => localStorage.getItem('agedgmail_view') || 'home');
   const [selectedProduct, setSelectedProduct] = useState(() => {
@@ -3166,86 +2588,6 @@ function App() {
   const [allOrders, setAllOrders] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [actionStatus, setActionStatus] = useState(null);
-  const [adminSearch, setAdminSearch] = useState("");
-  const [adminPage, setAdminPage] = useState(1);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [productForm, setProductForm] = useState({ name: '', category: 'email', description: '', price: 0, stock: 0 });
-
-  const handleDeleteProduct = (id) => {
-    setConfirmModal({
-      isOpen: true,
-      title: "Delete this product?",
-      message: "This action is irreversible. The product will be permanently removed from the catalog.",
-      type: "danger",
-      onConfirm: async () => {
-        try {
-          const { error } = await supabase.from('products').delete().eq('id', id);
-          if (error) throw error;
-          fetchProducts();
-        } catch (err) {
-          alert("Error: " + err.message);
-        } finally {
-          setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        }
-      }
-    });
-  };
-
-  const handleDeleteAllProducts = () => {
-    setConfirmModal({
-      isOpen: true,
-      title: "Delete all?",
-      message: "WARNING: You are about to delete ALL products from the catalog. This action cannot be undone.",
-      type: "danger",
-      onConfirm: async () => {
-        try {
-          const { error } = await supabase.from("products").delete().neq("id", 0);
-
-          if (error) throw error;
-          fetchProducts();
-        } catch (err) {
-          alert("Erreur : " + err.message);
-        } finally {
-          setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        }
-      }
-    });
-  };
-
-  const handleResetSystem = () => {
-    setConfirmModal({
-      isOpen: true,
-      title: "Réinitialisation Totale ?",
-      message: "Cette action va supprimer TOUTES les commandes, TOUT le stock d'emails et REMETTRE À ZÉRO tous les soldes clients. Les produits seront conservés. Voulez-vous continuer ?",
-      type: "danger",
-      onConfirm: async () => {
-        try {
-          setActionStatus('loading');
-          // 1. Delete all stock first (resolves foreign key constraints if any)
-          const { error: err2 } = await supabase.from('account_stock').delete().not('id', 'is', null);
-          // 2. Delete all orders
-          const { error: err1 } = await supabase.from('orders').delete().not('id', 'is', null);
-          // 3. Reset all balances to 0
-          const { error: err3 } = await supabase.from('profiles').update({ balance: 0 }).not('id', 'is', null);
-
-          if (err1 || err2 || err3) {
-            console.error({ err1, err2, err3 });
-            throw new Error(`DB Error: ${err1?.message || err2?.message || err3?.message}`);
-          }
-
-          await fetchProducts();
-          await fetchAllOrders();
-          await fetchUsers();
-          alert("Base de données réinitialisée (Commandes + Stock + Soldes clients).");
-        } catch (err) {
-          alert("Erreur : " + err.message);
-        } finally {
-          setActionStatus(null);
-          setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        }
-      }
-    });
-  };
 
   useEffect(() => {
     if (!supabase) {
@@ -3425,93 +2767,6 @@ function App() {
     if (data) setAllUsers(data);
   };
 
-  const handleSaveProduct = async () => {
-    setActionStatus('loading');
-    const { stock, details, ...payload } = productForm; // Exclude computed fields from DB save
-    const { error } = editingProduct
-      ? await supabase.from('products').update(payload).eq('id', editingProduct.id)
-      : await supabase.from('products').insert([payload]);
-
-    if (error) alert("Erreur : " + error.message);
-    else {
-      setEditingProduct(null);
-      setProductForm({ name: '', category: 'email', description: '', price: 0 });
-      fetchProducts();
-    }
-    setActionStatus(null);
-  };
-
-
-  const handleExcelProductImport = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setActionStatus('loading');
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const bstr = evt.target.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
-
-        const itemsToInsert = data.map(row => {
-          const rawCategory = row['Catégorie'] || row.Catégorie || row.category || row.Category || "";
-          const categoryId = CATEGORIES.find(c => c.name.toLowerCase().trim() === rawCategory.toString().toLowerCase().trim())?.id || "email";
-
-          return {
-            name: (row['Titre du Produit'] || row.name || row.Name || row.Titre || "Produit Importé").toString().trim(),
-            category: categoryId,
-            price: parseFloat(row['Prix ($)'] || row.price || row.Price || row.Prix || 0),
-            description: row.Description || row.description || ""
-          };
-        }).filter(item => item.name && item.name !== "Produit Importé");
-
-        if (itemsToInsert.length === 0) throw new Error("Aucune donnée valide trouvée.");
-
-        const { data: existingProducts } = await supabase.from('products').select('id, name');
-        const existingNamesMap = new Map(existingProducts?.map(p => [p.name.toLowerCase().trim(), p.id]) || []);
-
-        const duplicateItems = itemsToInsert.filter(item => existingNamesMap.has(item.name.toLowerCase().trim()));
-
-        if (duplicateItems.length > 0) {
-          if (confirm(`${duplicateItems.length} produits existent déjà (nom identique ou similaire). Voulez-vous les REMPLACER ?\n(Annuler créera des doublons)`)) {
-            const idsToDelete = duplicateItems.map(item => existingNamesMap.get(item.name.toLowerCase().trim()));
-            const { error: delError } = await supabase.from('products').delete().in('id', idsToDelete);
-            if (delError) throw delError;
-          }
-        }
-
-        const { error } = await supabase.from('products').insert(itemsToInsert);
-        if (error) throw error;
-
-        fetchProducts();
-        setActionStatus('success');
-        setTimeout(() => setActionStatus(null), 3000);
-      } catch (err) {
-        alert("Erreur Import Excel : " + err.message);
-        setActionStatus('error');
-      }
-    };
-    reader.readAsBinaryString(file);
-    e.target.value = '';
-  };
-
-  const handleExportExcel = () => {
-    const dataToExport = products.map(p => ({
-      'Titre du Produit': p.name,
-      'Catégorie': CATEGORIES.find(c => c.id === p.category)?.name || p.category,
-      'Prix ($)': p.price,
-      'Quantité en Stock': p.stock,
-      'Description': p.description
-    }));
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Produits");
-    XLSX.writeFile(wb, `AgedGmail_Produits_${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
-
   const fetchProfile = async (userId) => {
     if (!supabase) return;
     const { data: profileData, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
@@ -3651,32 +2906,9 @@ function App() {
             fetchUsers={fetchUsers}
             actionStatus={actionStatus}
             setActionStatus={setActionStatus}
-            editingProduct={editingProduct}
-            setEditingProduct={setEditingProduct}
-            productForm={productForm}
-            setProductForm={setProductForm}
-            handleSaveProduct={handleSaveProduct}
-            handleDeleteProduct={handleDeleteProduct}
-            handleDeleteAllProducts={handleDeleteAllProducts}
-            handleResetSystem={handleResetSystem}
-            handleExcelProductImport={handleExcelProductImport}
-            handleExportExcel={handleExportExcel}
-            adminSearch={adminSearch}
-            setAdminSearch={setAdminSearch}
-            adminPage={adminPage}
-            setAdminPage={setAdminPage}
           />
         )}
       </div>
-
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        type={confirmModal.type}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-      />
 
       <Footer navigate={navigate} />
     </div>
