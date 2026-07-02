@@ -268,7 +268,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct }) => {
 // NAVBAR
 // ==========================================
 
-const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView, setActiveCategory, setActiveGroup }) => {
+const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView, setActiveCategory, setActiveGroup, onCartClick }) => {
   const go = (view, cat, group) => {
     if (cat !== undefined && setActiveCategory) setActiveCategory(cat);
     if (group !== undefined && setActiveGroup) setActiveGroup(group);
@@ -296,7 +296,6 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
       <nav className="hidden lg:flex items-center gap-8">
         <button onClick={() => go('home', 'all', 'all')} className={linkCls(currentView === 'home')}>Products</button>
         <button onClick={() => go('home', 'all', 'sms')} className={linkCls(false)}>SMS</button>
-        <button onClick={() => session ? navigate('dashboard') : navigate('auth')} className={linkCls(currentView === 'dashboard')}>My orders</button>
         <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>API</button>
       </nav>
 
@@ -312,16 +311,33 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">My Balance</span>
               <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </div>
-            <button onClick={() => navigate('dashboard')} className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
-              <User size={18} />
-            </button>
+            <div className="relative group">
+              <button className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
+                <User size={18} />
+              </button>
+              {/* Menu déroulant au survol : ponte entre le bouton et le menu pour éviter la coupure du hover */}
+              <div className="absolute right-0 top-full pt-2 w-52 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
+                <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-2">
+                  <button onClick={() => navigate('dashboard')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-all">
+                    <History size={16} /> My orders
+                  </button>
+                  <button onClick={() => navigate('settings')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-all">
+                    <Settings size={16} /> Settings
+                  </button>
+                  <div className="h-px bg-gray-100 dark:bg-gray-800 my-2" />
+                  <button onClick={() => supabase.auth.signOut()} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
+                    <LogOut size={16} /> Log out
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]">
             <User size={18} /> LOGIN/SIGNUP
           </button>
         )}
-        <button onClick={() => navigate('cart')} className="bg-gray-900 dark:bg-primary text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
+        <button onClick={onCartClick} className="bg-gray-900 dark:bg-primary text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
           <ShoppingCart size={18} />
           {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
           <span className="border-l border-white/20 pl-3">CART / ${cartTotal.toFixed(2)}</span>
@@ -876,216 +892,135 @@ const SettingsTab = ({ profile, onUpdate }) => {
 // DASHBOARD VIEW
 // ==========================================
 
-const DashboardView = ({ profile, navigate, orders = [] }) => {
-  const [activeTab, setActiveTab] = useState('overview');
+// Modale de crédentiels réutilisée par MyOrdersView (extraite pour éviter la duplication).
+const OrderCredentialsModal = ({ order, onClose }) => (
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+    <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
+        <div><h3 className="text-xl font-bold">{order.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Your login credentials</p></div>
+        <button onClick={onClose} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
+      </div>
+      <div className="p-10 space-y-8">
+        <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
+          <div className="flex justify-between items-center mb-6">
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <Info size={12} className="text-primary" /> Format: Email | Password | Recovery | 2FA
+            </div>
+            <button
+              onClick={() => navigator.clipboard.writeText(order.credentials || order.data || "")}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+            >
+              <Copy size={12} /> Copy All
+            </button>
+          </div>
+          <div
+            className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2 mt-6"
+            dangerouslySetInnerHTML={{
+              __html: (() => {
+                if (!order.credentials && !order.data) return "Waiting for delivery...";
+                const creds = order.credentials || order.data;
+                const highlighted = creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
+                return `<div class="space-y-4">
+                    <p>Thank you very much for your purchase.</p>
+                    <p>Here are your products:</p>
+                    <p class="font-black text-lg text-gray-900 border-b border-gray-100 pb-2">${order.product_name}</p>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner">
+                      ${highlighted}
+                    </div>
+                    <div class="h-px bg-gray-100 my-8"></div>
+                    <div class="bg-primary/5 p-6 rounded-3xl border border-primary/10">
+                      <h4 class="text-gray-900 font-black mb-4 uppercase">How to connect (2FA)</h4>
+                      <p class="text-xs leading-relaxed text-gray-600 mb-4">Paste the 2FA string on <a href="https://2fa.live" target="_blank" class="text-primary underline font-bold">2fa.live</a> to get the 6-digit code.</p>
+                      <p class="text-xs font-bold">Tutorial: <a href="https://www.youtube.com/watch?v=JbjION2rdPA" target="_blank" class="text-primary underline">YouTube</a></p>
+                    </div>
+                    <div class="bg-red-50 p-6 rounded-3xl border border-red-100 mt-6">
+                      <p class="text-red-500 font-bold text-xs">Warranty period ends after successful login.</p>
+                    </div>
+                  </div>`;
+              })()
+            }}
+          />
+        </div>
+      </div>
+      <button onClick={onClose} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Close window</button>
+    </div>
+  </div>
+);
+
+// Page "My orders" : solde + recharge en tête, liste des commandes en dessous.
+// Plus de sidebar à onglets (Dashboard/Orders/Settings) — Settings vit maintenant
+// dans sa propre page (menu déroulant du profil), et l'onglet "Dashboard" a été
+// retiré car redondant avec cette page elle-même.
+const MyOrdersView = ({ profile, navigate, orders = [] }) => {
   const [viewOrder, setViewOrder] = useState(null);
 
-  const sidebarItems = [
-    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'orders', label: 'Orders', icon: History },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
-
   return (
-    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      {viewOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
-              <div><h3 className="text-xl font-bold">{viewOrder.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Your login credentials</p></div>
-              <button onClick={() => setViewOrder(null)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
-            </div>
-            <div className="p-10 space-y-8">
-              <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
-                <div className="flex justify-between items-center mb-6">
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                    <Info size={12} className="text-primary" /> Format: Email | Password | Recovery | 2FA
-                  </div>
-                  <button
-                    onClick={() => {
-                      const text = (viewOrder.credentials || viewOrder.data || "");
-                      navigator.clipboard.writeText(text);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
-                  >
-                    <Copy size={12} /> Copy All
-                  </button>
-                </div>
-                <div
-                  className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2 mt-6"
-                  dangerouslySetInnerHTML={{
-                    __html: (() => {
-                      if (!viewOrder.credentials && !viewOrder.data) return "Waiting for delivery...";
+    <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
+      {viewOrder && <OrderCredentialsModal order={viewOrder} onClose={() => setViewOrder(null)} />}
 
-                      const creds = viewOrder.credentials || viewOrder.data;
-                      const highlighted = creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
+      <div className="flex items-center justify-between mb-10">
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">My orders</h1>
+      </div>
 
-                      return `<div class="space-y-4">
-                          <p>Thank you very much for your purchase.</p>
-                          <p>Here are your products:</p>
-                          <p class="font-black text-lg text-gray-900 border-b border-gray-100 pb-2">${viewOrder.product_name}</p>
-                          <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner">
-                            ${highlighted}
-                          </div>
-                          
-                          <div class="h-px bg-gray-100 my-8"></div>
-                          
-                          <div class="bg-primary/5 p-6 rounded-3xl border border-primary/10">
-                            <h4 class="text-gray-900 font-black mb-4 uppercase">How to connect (2FA)</h4>
-                            <p class="text-xs leading-relaxed text-gray-600 mb-4">Paste the 2FA string on <a href="https://2fa.live" target="_blank" class="text-primary underline font-bold">2fa.live</a> to get the 6-digit code.</p>
-                            <p class="text-xs font-bold">Tutorial: <a href="https://www.youtube.com/watch?v=JbjION2rdPA" target="_blank" class="text-primary underline">YouTube</a></p>
-                          </div>
-
-                          <div class="bg-red-50 p-6 rounded-3xl border border-red-100 mt-6">
-                            <p class="text-red-500 font-bold text-xs">Warranty period ends after successful login.</p>
-                          </div>
-                        </div>`;
-                    })()
-                  }}
-                />
-              </div>
-            </div>
-            <button onClick={() => setViewOrder(null)} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Close window</button>
-          </div>
+      <div className="bg-gray-900 rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="relative z-10">
+          <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Current Balance</div>
+          <div className="text-4xl font-black font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
         </div>
-      )}
+        <button onClick={() => navigate('recharge')} className="relative z-10 bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 shrink-0"><Plus size={18} /> Top up account</button>
+        <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5" />
+      </div>
 
-      <div className="flex flex-col lg:flex-row gap-12">
-        <aside className="w-full lg:w-64 flex-shrink-0">
-          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-soft sticky top-32">
-            <div className="flex items-center gap-4 mb-10 pb-6 border-b border-gray-50">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold overflow-hidden border border-primary/20">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  profile?.display_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase()
-                )}
-              </div>
-              <div className="overflow-hidden">
-                <div className="text-sm font-black text-gray-900 truncate">
-                  {profile?.first_name || profile?.last_name ? `${profile.first_name} ${profile.last_name}` : "User"}
-                </div>
-                <div className="text-[10px] text-gray-400 font-bold tracking-wider truncate lowercase">
-                  @{profile?.display_name?.toLowerCase() || "username"}
-                </div>
-              </div>
-            </div>
-            <nav className="space-y-2">
-              {sidebarItems.map(item => (
-                <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <item.icon size={18} /> {item.label}
-                </button>
-              ))}
-            </nav>
-            <div className="mt-10 pt-6 border-t border-gray-50">
-              <button onClick={() => supabase.auth.signOut()} className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all">
-                <LogOut size={18} /> Logout
-              </button>
-            </div>
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-8 md:p-10 shadow-soft">
+        {orders.length === 0 ? (
+          <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">No order found.</p></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Order</th><th className="pb-6">Date</th><th className="pb-6">Status</th><th className="pb-6">Actions</th><th className="pb-6 text-right">Total</th></tr></thead>
+              <tbody className="divide-y divide-gray-50">
+                {orders.map(order => (
+                  <tr key={order.id} className="group">
+                    <td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantity: {order.quantity}</div></td>
+                    <td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                    <td className="py-6">
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${order.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' :
+                        order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
+                          'bg-yellow-100 text-yellow-700 border-yellow-200'
+                        }`}>
+                        {order.status === 'confirmed' ? 'Confirmed' : order.status === 'cancelled' ? 'Cancelled' : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="py-6">
+                      {order.product_name !== "Recharge Binance" && (
+                        <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
+                          <Eye size={14} /> View access
+                        </button>
+                      )}
+                    </td>
+                    <td className="py-6 text-right font-black text-gray-900">${order.total_price?.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </aside>
-
-        <main className="flex-grow">
-          {activeTab === 'overview' && (
-            <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-gray-900 rounded-[3rem] p-10 text-white relative overflow-hidden group shadow-2xl">
-                  <div className="relative z-10">
-                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Current Balance</div>
-                    <div className="text-5xl font-black mb-10 font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
-                    <button onClick={() => navigate('recharge')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 inline-flex"><Plus size={18} /> Top up account</button>
-                  </div>
-                  <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5 group-hover:scale-110 transition-transform duration-700" />
-                </div>
-                <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft flex flex-col justify-between">
-                  <div>
-                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Last Order</div>
-                    <div className="text-xl font-bold text-gray-900 mb-2">{orders[0]?.product_name || "No order"}</div>
-                    <div className="text-sm text-gray-400 font-medium">Placed on {orders[0]?.created_at ? new Date(orders[0].created_at).toLocaleDateString() : "--/--/----"}</div>
-                  </div>
-                  {orders[0]?.product_name !== "Recharge Binance" && (
-                    <button onClick={() => setViewOrder(orders[0])} disabled={!orders[0]} className="text-sm font-black text-primary hover:underline flex items-center gap-2 mt-6 disabled:text-gray-300">
-                      View access <ChevronRight size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <section className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h3 className="text-lg font-bold mb-8">Recent Activities</h3>
-                {orders.length === 0 ? (
-                  <div className="text-center py-10"><p className="text-gray-400 text-sm font-medium">You haven't made any purchases yet.</p></div>
-                ) : (
-                  <div className="space-y-6">
-                    {orders.slice(0, 3).map(order => (
-                      <div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><History size={18} /></div>
-                          <div>
-                            <div className="text-sm font-bold text-gray-900">{order.product_name}</div>
-                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleDateString()}</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-sm font-black text-gray-900">${order.total_price?.toFixed(2)}</div>
-                          {order.product_name !== "Recharge Binance" && (
-                            <button onClick={() => setViewOrder(order)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-primary transition-all"><Eye size={18} /></button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            </div>
-          )}
-
-          {activeTab === 'orders' && (
-            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Orders</h2>
-              {orders.length === 0 ? (
-                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">No order found.</p></div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Order</th><th className="pb-6">Date</th><th className="pb-6">Status</th><th className="pb-6">Actions</th><th className="pb-6 text-right">Total</th></tr></thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {orders.map(order => (
-                        <tr key={order.id} className="group">
-                          <td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantity: {order.quantity}</div></td>
-                          <td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
-                          <td className="py-6">
-                            <span className={`text-xs font-bold px-3 py-1 rounded-full border ${order.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' :
-                              order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
-                                'bg-yellow-100 text-yellow-700 border-yellow-200'
-                              }`}>
-                              {order.status === 'confirmed' ? 'Confirmed' : order.status === 'cancelled' ? 'Cancelled' : 'Pending'}
-                            </span>
-                          </td>
-                          <td className="py-6">
-                            {order.product_name !== "Recharge Binance" && (
-                              <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
-                                <Eye size={14} /> View access
-                              </button>
-                            )}
-                          </td>
-                          <td className="py-6 text-right font-black text-gray-900">${order.total_price?.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <SettingsTab profile={profile} onUpdate={() => navigate('dashboard')} />
-          )}
-        </main>
+        )}
       </div>
     </div>
   );
 };
+
+// Page Paramètres dédiée (accessible via le menu déroulant du profil, plus
+// via un onglet noyé dans un dashboard).
+const SettingsView = ({ profile, navigate, fetchProfile, session }) => (
+  <div className="max-w-3xl mx-auto px-6 py-16 font-sans">
+    <div className="flex items-center gap-4 mb-10">
+      <button onClick={() => navigate('dashboard')} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all border border-gray-100"><ArrowLeft size={18} /></button>
+      <h1 className="text-3xl font-black text-gray-900 tracking-tight">Settings</h1>
+    </div>
+    <SettingsTab profile={profile} onUpdate={() => fetchProfile && session && fetchProfile(session.user.id)} />
+  </div>
+);
 
 // ==========================================
 // STOCK MANAGER COMPONENT
@@ -2778,7 +2713,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
 // ==========================================
 // PRODUCT VIEW
 // ==========================================
-const ProductView = ({ product, addToCart, navigate }) => {
+const ProductView = ({ product, addToCart, navigate, onCartClick }) => {
   const [quantity, setQuantity] = useState(1);
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
@@ -2836,7 +2771,7 @@ const ProductView = ({ product, addToCart, navigate }) => {
             <button
               onClick={() => {
                 addToCart(product, quantity);
-                navigate('cart');
+                onCartClick();
               }}
               disabled={product.stock <= 0}
               className={`w-full max-w-md h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
@@ -2897,55 +2832,76 @@ const ProductView = ({ product, addToCart, navigate }) => {
 // CART VIEW
 // ==========================================
 
-const CartView = ({ cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, navigate, session }) => (
-  <div className="max-w-4xl mx-auto py-20 px-6 font-sans">
-    <div className="flex items-center justify-between mb-16">
-      <h2 className="text-5xl font-bold text-gray-900 tracking-tighter">Your Cart</h2>
-      <div className="flex items-center gap-6">
-        {cart.length > 0 && (
-          <button onClick={clearCart} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition-colors flex items-center gap-2 border border-gray-100 px-4 py-2 rounded-xl">
-            <Trash2 size={14} /> Clear cart
-          </button>
-        )}
-        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline uppercase tracking-widest">Continue shopping</button>
-      </div>
-    </div>
-    {cart.length === 0 ? (
-      <div className="text-center py-20 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">Your cart is empty.</p></div>
-    ) : (
-      <div className="space-y-6">
-        {cart.map((item) => (
-          <div key={item.id} className="bg-white border border-gray-100 p-8 rounded-[2.5rem] flex items-center justify-between group shadow-soft">
-            <div className="flex items-center gap-8">
-              <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform relative">
-                <ProductVisual product={item} iconSize={32} />
-                {item.name.includes('US') && item.category === 'email' && <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[8px] font-black px-1 rounded">US</div>}
-              </div>
-              <div><h4 className="font-bold text-gray-900 mb-1">{item.name}</h4><p className="text-primary font-bold">${item.price.toFixed(2)}</p></div>
+// Panier en panneau coulissant (drawer), ouvert depuis n'importe quelle page
+// via l'icône panier de la navbar — remplace l'ancienne page dédiée.
+const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, navigate, session }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[300] font-sans" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute top-0 right-0 h-full w-full max-w-md bg-white dark:bg-gray-900 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-black text-gray-900 dark:text-white">Cart</h2>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:text-white transition-all"><X size={18} /></button>
+        </div>
+
+        <div className="flex-grow overflow-y-auto px-6 py-6">
+          {cart.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-center py-20">
+              <p className="text-gray-400 font-medium">Your cart is empty.</p>
             </div>
-            <div className="flex items-center gap-10">
-              <div className="flex items-center bg-gray-100 rounded-full p-1.5">
-                <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-full transition-all"><Minus size={14} /></button>
-                <div className="w-10 text-center font-bold">{item.quantity}</div>
-                <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-full transition-all"><Plus size={14} /></button>
-              </div>
-              <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={22} /></button>
+          ) : (
+            <div className="space-y-4">
+              {cart.length > 0 && (
+                <button onClick={clearCart} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition-colors flex items-center gap-2 mb-2">
+                  <Trash2 size={12} /> Clear cart
+                </button>
+              )}
+              {cart.map((item) => (
+                <div key={item.id} className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl">
+                  <div className="w-14 h-14 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0 relative">
+                    <ProductVisual product={item} iconSize={22} />
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{item.name}</h4>
+                    <p className="text-primary font-bold text-sm">${item.price.toFixed(2)}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center bg-white dark:bg-gray-900 rounded-full border border-gray-200 dark:border-gray-700">
+                        <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"><Minus size={11} /></button>
+                        <div className="w-7 text-center font-bold text-xs">{item.quantity}</div>
+                        <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"><Plus size={11} /></button>
+                      </div>
+                      <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button onClick={() => { onClose(); navigate('home'); }} className="text-xs font-bold text-primary hover:underline uppercase tracking-widest">Continue shopping</button>
             </div>
+          )}
+        </div>
+
+        <div className="border-t border-gray-100 dark:border-gray-800 px-6 py-6 space-y-4">
+          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+            <span>Subtotal</span>
+            <span className="font-bold text-gray-700 dark:text-gray-200">${cartTotal.toFixed(2)}</span>
           </div>
-        ))}
-        <div className="pt-10 flex flex-col items-end">
-          <div className="text-4xl font-bold text-gray-900 mb-8 tracking-tighter">Total: ${cartTotal.toFixed(2)}</div>
+          <div className="flex items-center justify-between text-base">
+            <span className="font-black text-gray-900 dark:text-white">Total</span>
+            <span className="font-black text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
+          </div>
           <button
-            onClick={() => session ? navigate('payment') : navigate('auth')}
-            className="bg-primary text-white px-16 py-6 rounded-full font-bold text-xl hover:bg-primaryDark transition-all shadow-2xl shadow-primary/20"
+            onClick={() => { onClose(); session ? navigate('payment') : navigate('auth'); }}
+            disabled={cart.length === 0}
+            className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-base hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {session ? 'Proceed to Checkout' : 'Log in to pay'}
+            {session ? 'Checkout' : 'Log in to pay'}
           </button>
         </div>
       </div>
-    )}
-  </div>
-);
+    </div>
+  );
+};
 
 // ==========================================
 // AUTH VIEW
@@ -3202,6 +3158,7 @@ function App() {
     const saved = localStorage.getItem('agedgmail_cart');
     try { return saved ? JSON.parse(saved) : []; } catch { return []; }
   });
+  const [cartOpen, setCartOpen] = useState(false);
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -3671,15 +3628,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} />
+      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} />
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />
       <div className="flex-grow">
         {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} groups={productGroups} subCategories={productSubCategories} />}
-        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} />}
+        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'dashboard' && session && <DashboardView profile={profile} navigate={navigate} orders={orders} />}
-        {currentView === 'cart' && <CartView cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />}
+        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} />}
+        {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} />}
         {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} setRechargeSuggestedAmount={setRechargeSuggestedAmount} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
