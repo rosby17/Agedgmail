@@ -110,58 +110,61 @@ const CATEGORIES = [
 // (les catégories importées de YTSeller sont utilisées telles quelles).
 const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat || 'Others';
 
-// Choix du visuel/logo à partir d'une catégorie (insensible à la casse,
-// fonctionne aussi pour les catégories importées).
-const categoryVisual = (cat = '') => {
-  const c = String(cat).toLowerCase();
-  if (c.includes('youtube')) return 'youtube';
-  if (c.includes('gmail') || c === 'email' || c.includes('mail')) return 'gmail';
-  if (c.includes('facebook')) return 'facebook';
-  if (c.includes('instagram')) return 'instagram';
-  if (c.includes('tiktok') || c.includes('tik tok')) return 'tiktok';
-  if (c.includes('twitter') || c.includes('/x') || c === 'x') return 'twitter';
-  if (c.includes('discord')) return 'discord';
-  if (c.includes('icloud') || c.includes('apple')) return 'apple';
-  if (c.includes('telegram')) return 'telegram';
-  if (c.includes('sms')) return 'sms';
-  return 'other';
-};
-
 // Libellés + ordre d'affichage des groupes de premier niveau (barre du haut).
 const GROUP_LABELS = {
-  gmail: 'Gmail', youtube: 'Youtube', discord: 'Discord', facebook: 'Facebook',
-  instagram: 'Instagram', twitter: 'Twitter X', tiktok: 'Tiktok', apple: 'Apple ID',
+  gmail: 'Gmail', mail: 'Outlook & Mail', youtube: 'Youtube', discord: 'Discord', facebook: 'Facebook',
+  instagram: 'Instagram', twitter: 'Twitter X', reddit: 'Reddit', tiktok: 'Tiktok', apple: 'Apple ID',
   telegram: 'Telegram', sms: 'SMS', other: 'Others',
 };
-const GROUP_ORDER = ['gmail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'tiktok', 'apple', 'telegram', 'sms', 'other'];
+const GROUP_ORDER = ['gmail', 'mail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'reddit', 'tiktok', 'apple', 'telegram', 'sms', 'other'];
 
 // Palette stable pour l'avatar générique (basée sur le nom de catégorie, pas aléatoire).
 const AVATAR_COLORS = ['#0D7A52', '#B45309', '#1D4ED8', '#BE185D', '#4338CA', '#0E7490', '#7C3AED'];
 const hashStr = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
 
-// Détection fine du visuel à afficher, en s'appuyant sur la catégorie ET le
-// nom du produit (certaines catégories importées de fournisseurs tiers sont
-// mal étiquetées, ex. des comptes Twitter classés "AMAZON" — on rattrape ça
-// en regardant aussi le nom du produit plutôt que de laisser une icône vide).
-const resolveVisual = (product = {}) => {
+// Catégories fournisseur connues pour être des fourre-tout non fiables : leur
+// texte de catégorie ne décrit pas le vrai contenu du produit (ex. des
+// comptes Gmail/Twitter importés sous "Accounts-Telegram" ou "Amazon"). Pour
+// celles-ci uniquement, on se fie au nom du produit plutôt qu'à la catégorie.
+const JUNK_CATEGORIES = ['accounts-telegram', 'amazon'];
+
+// Détecte un bucket à partir d'UN SEUL texte (catégorie seule, ou nom seul) —
+// ne jamais mélanger les deux sources dans un même passage, sinon un nom qui
+// mentionne "Gmail" ferait basculer un produit pourtant bien catégorisé "SMS".
+const detectFromText = (text) => {
+  const t = text;
+  if (t.includes('youtube')) return 'youtube';
+  if (t === 'email' || t.includes('gmail')) return 'gmail';
+  if (t.includes('gmx') || t.includes('rambler') || t.includes('mail ru') || t.includes('mail.ru') || t.includes('hotmail') || t.includes('outlook')) return 'mail';
+  if (t.includes('facebook')) return 'facebook';
+  if (t.includes('instagram')) return 'instagram';
+  if (t.includes('tiktok') || t.includes('tik tok')) return 'tiktok';
+  if (t.includes('reddit')) return 'reddit';
+  if (t.includes('twitter') || t.includes('/x') || t === 'x' || / x[)\s]/.test(t)) return 'twitter';
+  if (t.includes('discord')) return 'discord';
+  if (t.includes('icloud') || t.includes('apple')) return 'apple';
+  if (t.includes('telegram')) return 'telegram';
+  if (t.includes('sms')) return 'sms';
+  if (t.includes('amazon')) return 'amazon';
+  return null;
+};
+
+// Détection du groupe/visuel d'un produit. La catégorie du fournisseur fait
+// foi dans le cas général (elle reflète fidèlement des buckets fiables comme
+// "SMS" ou "Gmail 2FA"). Seules les catégories fourre-tout connues (cf.
+// JUNK_CATEGORIES) basculent en priorité sur le nom du produit, qui reflète
+// alors mieux son vrai contenu que l'étiquette fournisseur.
+const categoryVisual = (product = {}) => {
+  // Compat : anciens appels avec une simple chaîne de catégorie.
+  if (typeof product === 'string') product = { category: product };
   const cat = String(product.category || '').toLowerCase();
   const name = String(product.name || '').toLowerCase();
-  const has = (s) => cat.includes(s) || name.includes(s);
+  const isJunkCategory = JUNK_CATEGORIES.some(j => cat === j || cat.includes(j));
 
-  if (has('youtube')) return 'youtube';
-  if (has('gmail') || cat === 'email') return 'gmail';
-  if (has('facebook')) return 'facebook';
-  if (has('instagram')) return 'instagram';
-  if (has('tiktok') || has('tik tok')) return 'tiktok';
-  if (has('reddit')) return 'reddit';
-  if (has('twitter') || has('/x') || cat === 'x' || / x[)\s]/.test(name)) return 'twitter';
-  if (has('discord')) return 'discord';
-  if (has('icloud') || has('apple')) return 'apple';
-  if (has('telegram')) return 'telegram';
-  if (has('sms')) return 'sms';
-  if (has('gmx') || has('rambler') || has('mail ru') || has('mail.ru') || has('hotmail') || has('outlook') || has('mail')) return 'mail';
-  if (has('amazon')) return 'amazon';
-  return 'other';
+  if (isJunkCategory) {
+    return detectFromText(name) || detectFromText(cat) || 'other';
+  }
+  return detectFromText(cat) || detectFromText(name) || 'other';
 };
 
 // Visuel d'un produit : image personnalisée (image_url) prioritaire, sinon
@@ -171,7 +174,7 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
   if (product.image_url) {
     return <img src={product.image_url} alt={product.name || ''} className="w-full h-full object-contain" loading="lazy" />;
   }
-  switch (resolveVisual(product)) {
+  switch (categoryVisual(product)) {
     case 'youtube':   return <YouTubeLogo />;
     case 'gmail':     return <GmailLogo />;
     case 'facebook':  return <FacebookIcon className="w-full h-full object-contain p-3 text-blue-600" />;
@@ -197,6 +200,37 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
   }
 };
 
+
+// Nettoie un nom de produit pour l'affichage : certains fournisseurs (ex.
+// SMMSHIBA) renvoient des titres dupliqués ("Nom - Nom"), truffés d'emojis
+// et de tags séparés par des pipes/backslashes, longs de 100-250 caractères
+// — ça ressemble à du spam pour un visiteur. On ne modifie jamais la donnée
+// stockée (utile pour les regex de getProductDetails), seulement l'affichage.
+const cleanProductName = (raw) => {
+  if (!raw) return raw;
+  let s = String(raw).trim();
+
+  // Le fournisseur répète parfois le titre deux fois, séparé par " - ".
+  const dashIdx = s.indexOf(' - ');
+  if (dashIdx > 15) {
+    const first = s.slice(0, dashIdx).trim();
+    const rest = s.slice(dashIdx + 3).trim();
+    const probe = first.slice(0, Math.min(14, first.length)).toLowerCase();
+    if (probe && rest.toLowerCase().startsWith(probe)) s = first;
+  }
+
+  // Retire les emojis/symboles décoratifs (spam visuel).
+  s = s.replace(/[\u{1F300}-\u{1FAFF}☀-➿←-⇿⬀-⯿]/gu, '').trim();
+  s = s.replace(/\s{2,}/g, ' ').trim();
+
+  const MAX = 70;
+  if (s.length > MAX) {
+    const cut = s.slice(0, MAX);
+    const lastSep = Math.max(cut.lastIndexOf(' | '), cut.lastIndexOf(' \\ '), cut.lastIndexOf(', '), cut.lastIndexOf(' + '));
+    s = (lastSep > 20 ? cut.slice(0, lastSep) : cut).trim() + '…';
+  }
+  return s;
+};
 
 const getProductDetails = (product) => {
   const commonTerms = "Please read the specifications before purchasing. You are responsible for all actions on the account. Use fresh residential IPs. Change access after 48h only.";
@@ -262,7 +296,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
           className="text-[15px] font-bold text-gray-900 dark:text-white leading-snug cursor-pointer mb-4 hover:text-primary dark:hover:text-primaryLight transition-colors"
           onClick={() => { setSelectedProduct(product); navigate('product'); }}
         >
-          {product.name}
+          {cleanProductName(product.name)}
         </h3>
 
         <div className="flex items-center justify-between mb-6">
@@ -529,7 +563,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0"><ProductVisual product={product} iconSize={20} /></div>
                   <div className="flex-grow min-w-0">
-                    <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{product.name}</div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{cleanProductName(product.name)}</div>
                     <div className="text-xs text-gray-400">${product.price.toFixed(2)} × {qty}</div>
                   </div>
                   <div className="flex items-center bg-white dark:bg-gray-900 rounded-full border border-gray-200 dark:border-gray-700 shrink-0">
@@ -598,9 +632,19 @@ const HomeView = ({
   activeGroup, setActiveGroup, activeCategory, setActiveCategory,
   sortBy, setSortBy, searchTerm, setSearchTerm,
   filteredProducts, addToCart, navigate, setSelectedProduct, onBuyNow,
-  groups = [], subCategories = [],
+  groups = [], subCategories = [], groupOf,
 }) => {
   const activeGroupLabel = activeGroup === 'all' ? 'All products' : (GROUP_LABELS[activeGroup] || 'Others');
+
+  // Vue "All products" : au lieu d'une grille où toutes les catégories sont
+  // mélangées, on affiche une section par groupe (Gmail, Youtube, ...) dans
+  // l'ordre du menu, chacune listant tous ses produits (triés comme demandé).
+  const showGrouped = activeGroup === 'all' && activeCategory === 'all' && !searchTerm.trim() && groupOf;
+  const sections = showGrouped
+    ? groups
+        .map(g => ({ ...g, items: filteredProducts.filter(p => groupOf(p) === g.id) }))
+        .filter(g => g.items.length > 0)
+    : null;
 
   const pillCls = (active) =>
     `shrink-0 px-5 py-2.5 rounded-full text-sm font-bold border transition-all whitespace-nowrap ${
@@ -673,16 +717,39 @@ const HomeView = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={onBuyNow} />))}
-        {filteredProducts.length === 0 && (
-          <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-800">
-            <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Aucun produit trouvé</h3>
-            <p className="text-gray-400 text-sm">Essayez de modifier votre recherche ou de changer de catégorie.</p>
-          </div>
-        )}
-      </div>
+      {showGrouped ? (
+        <div className="space-y-14">
+          {sections.map(section => (
+            <div key={section.id}>
+              <div className="flex items-center gap-3 mb-6">
+                <span className="w-1.5 h-5 rounded-full bg-primary" />
+                <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">{section.name}</h3>
+                <span className="bg-primary/10 text-primaryDark dark:text-primary text-xs font-black px-3 py-1 rounded-full">{section.items.length}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {section.items.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={onBuyNow} />))}
+              </div>
+            </div>
+          ))}
+          {sections.length === 0 && (
+            <div className="py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-800">
+              <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Aucun produit trouvé</h3>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={onBuyNow} />))}
+          {filteredProducts.length === 0 && (
+            <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-800">
+              <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Aucun produit trouvé</h3>
+              <p className="text-gray-400 text-sm">Essayez de modifier votre recherche ou de changer de catégorie.</p>
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 };
@@ -2451,7 +2518,7 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
             <span className="text-primary">{categoryName(product.category)}</span>
           </nav>
 
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 tracking-tight leading-snug">{product.name}</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 tracking-tight leading-snug">{cleanProductName(product.name)}</h1>
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-xs font-bold border border-green-100">
@@ -2703,7 +2770,7 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
               <div key={item.id} className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0"><ProductVisual product={item} iconSize={16} /></div>
                 <div className="flex-grow min-w-0">
-                  <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{item.name}</div>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{cleanProductName(item.name)}</div>
                   <div className="text-xs text-gray-400">${item.price.toFixed(2)} × {item.quantity}</div>
                 </div>
                 <div className="text-sm font-black text-primary font-mono shrink-0">${(item.price * item.quantity).toFixed(2)}</div>
@@ -2778,7 +2845,7 @@ const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, c
                     <ProductVisual product={item} iconSize={22} />
                   </div>
                   <div className="flex-grow min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{item.name}</h4>
+                    <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{cleanProductName(item.name)}</h4>
                     <p className="text-primary font-bold text-sm">${item.price.toFixed(2)}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex items-center bg-white dark:bg-gray-900 rounded-full border border-gray-200 dark:border-gray-700">
@@ -3302,7 +3369,7 @@ function App() {
   // en catalogue (miroir YTSeller), dans l'ordre GROUP_ORDER, comptés puis filtrés à ceux non-vides.
   const productGroups = (() => {
     const counts = new Map();
-    products.forEach(p => { const g = categoryVisual(p.category); counts.set(g, (counts.get(g) || 0) + 1); });
+    products.forEach(p => { const g = categoryVisual(p); counts.set(g, (counts.get(g) || 0) + 1); });
     return GROUP_ORDER.filter(id => counts.get(id) > 0).map(id => ({ id, name: GROUP_LABELS[id], count: counts.get(id) }));
   })();
 
@@ -3311,14 +3378,14 @@ function App() {
     if (activeGroup === 'all') return [];
     const counts = new Map();
     products.forEach(p => {
-      if (categoryVisual(p.category) !== activeGroup) return;
+      if (categoryVisual(p) !== activeGroup) return;
       counts.set(p.category, (counts.get(p.category) || 0) + 1);
     });
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => ({ id, name: categoryName(id) }));
   })();
 
   const filteredProducts = products
-    .filter(p => activeGroup === 'all' || categoryVisual(p.category) === activeGroup)
+    .filter(p => activeGroup === 'all' || categoryVisual(p) === activeGroup)
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .filter(p => !searchTerm.trim() || p.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
     .sort((a, b) => {
@@ -3416,7 +3483,7 @@ function App() {
         />
       )}
       <div className="flex-grow">
-        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} />}
+        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
