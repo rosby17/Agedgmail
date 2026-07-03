@@ -8,17 +8,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Ambre/orange chaud devenu la couleur DOMINANTE (prix, liens,
-        // catégories, boutons d'action) — inspiré de la palette Coolors
-        // fournie, assombri pour un contraste vérifié de 4.87:1 (texte) /
-        // 4.87:1 (texte blanc sur fond) sur blanc, conforme WCAG AA.
-        primary: "#B05A08",
-        primaryDark: "#8C4706",
-        primaryLight: "#FBEBD9",
-        // Le vert est volontairement réservé aux statuts positifs ponctuels
-        // (badge "Instant", stock disponible) — voir Tailwind green-* utilisé
-        // directement à ces endroits précis dans App.jsx, pas ce token.
-        dark: "#1F1712",
+        // Le vert redevient la couleur dominante (boutons d'action, prix,
+        // liens, catégories) — rampe de plusieurs nuances pour varier
+        // cartes/contours/textes/hover au lieu d'un vert plat partout.
+        // Contrastes vérifiés sur blanc : primary 5.35:1, primaryLight 3.84:1
+        // (réservé aux éléments larges/gras, pas au texte fin).
+        primary: "#0D7A52",       // boutons, prix, liens — texte/CTA
+        primaryDark: "#0A5F40",   // hover/active des boutons
+        primaryLight: "#189464",  // variante plus claire (icônes, accents larges)
+        primarySoft: "#EAF7F1",   // fond très pâle (hover de carte, badges alternatifs)
+        primaryMist: "#DCF0E6",   // un cran plus soutenu que primarySoft (contours au survol)
+        dark: "#10241B",
+        // Fond de page : léger lavis vert au lieu d'un blanc uni plat. Les
+        // cartes restent bg-white pour ressortir dessus.
+        canvas: "#F4FAF7",
         background: "#FFFFFF",
       },
       fontFamily: {

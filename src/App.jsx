@@ -178,13 +178,13 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
   };
 
   return (
-    <div className="bg-white dark:bg-transparent flex flex-col h-full font-sans">
+    <div className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-5 flex flex-col h-full font-sans transition-all duration-200 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/[0.06] hover:-translate-y-0.5">
       {/* Logo Area */}
       <div
-        className="aspect-[1.5] bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0"
+        className="aspect-[1.5] bg-primarySoft dark:bg-gray-800/60 rounded-[1.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0"
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
-        <div className="w-full h-full p-8 flex items-center justify-center">
+        <div className="w-full h-full p-8 flex items-center justify-center transition-transform duration-300 group-hover:scale-[1.04]">
           <ProductVisual product={product} iconSize={48} />
         </div>
         {isUS && product.category === 'email' && (
@@ -201,7 +201,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
           {categoryName(product.category)}
         </div>
         <h3
-          className="text-[15px] font-bold text-primary leading-snug cursor-pointer mb-4 hover:text-red-600 transition-colors"
+          className="text-[15px] font-bold text-gray-900 dark:text-white leading-snug cursor-pointer mb-4 hover:text-primary dark:hover:text-primaryLight transition-colors"
           onClick={() => { setSelectedProduct(product); navigate('product'); }}
         >
           {product.name}
@@ -218,7 +218,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
           </div>
           <div className="text-right">
             <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Price</div>
-            <div className="text-lg font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</div>
+            <div className="text-lg font-bold text-primaryDark dark:text-primaryLight">${product.price.toFixed(2)}</div>
           </div>
         </div>
       </div>
@@ -228,7 +228,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
         <button
           onClick={() => onBuyNow(product)}
           disabled={outOfStock}
-          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${outOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primaryDark shadow-lg shadow-primary/20'}`}
+          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${outOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primaryDark shadow-lg shadow-primary/20'}`}
         >
           {outOfStock ? 'Sold out' : 'Buy now'}
         </button>
@@ -236,7 +236,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
           onClick={handleAdd}
           disabled={outOfStock}
           title="Add to cart"
-          className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center transition-all border ${outOfStock ? 'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed' : added ? 'bg-green-50 text-green-600 border-green-200' : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary hover:text-primary'}`}
+          className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center transition-all active:scale-[0.94] border ${outOfStock ? 'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed' : added ? 'bg-green-50 text-green-600 border-green-200' : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primarySoft hover:text-primaryDark'}`}
         >
           {added ? <CheckCircle size={16} /> : <ShoppingCart size={16} />}
         </button>
@@ -2967,10 +2967,9 @@ function App() {
   const [activeGroup, setActiveGroup] = useState(() => localStorage.getItem('agedgmail_group') || 'all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('price_asc');
-  const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem('agedgmail_cart');
-    try { return saved ? JSON.parse(saved) : []; } catch { return []; }
-  });
+  // Le panier ne survit jamais à un rafraîchissement de page (voulu) : il vit
+  // uniquement en mémoire pour la session en cours, jamais dans localStorage.
+  const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [quickOrderProduct, setQuickOrderProduct] = useState(null);
   const [session, setSession] = useState(null);
@@ -3103,10 +3102,6 @@ function App() {
     if (selectedProduct) localStorage.setItem('agedgmail_product', JSON.stringify(selectedProduct));
     else localStorage.removeItem('agedgmail_product');
   }, [selectedProduct]);
-
-  useEffect(() => {
-    localStorage.setItem('agedgmail_cart', JSON.stringify(cart));
-  }, [cart]);
 
   useEffect(() => {
     localStorage.setItem('agedgmail_category', activeCategory);
@@ -3289,7 +3284,7 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 font-sans flex flex-col">
+    <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans flex flex-col">
       <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />
       {quickOrderProduct && (
