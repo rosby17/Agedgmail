@@ -2375,27 +2375,25 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
   const [quantity, setQuantity] = useState(1);
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-24">
 
-
-        <div className="bg-gray-50/50 rounded-[3rem] aspect-square flex items-center justify-center border border-gray-100 overflow-hidden relative group">
-          <div className="absolute top-6 left-6 z-10 bg-red-500 text-white font-black px-4 py-2 rounded-xl shadow-xl rotate-[-10deg] animate-pulse">20% OFF</div>
-          <div className="w-full h-full flex items-center justify-center scale-150 overflow-hidden group-hover:scale-[1.6] transition-transform duration-700">
-            <ProductVisual product={product} iconSize={80} />
+        <div className="bg-gray-50/50 rounded-[2rem] aspect-[4/3] max-h-[360px] flex items-center justify-center border border-gray-100 overflow-hidden relative">
+          <div className="w-full h-full flex items-center justify-center p-10">
+            <ProductVisual product={product} iconSize={64} />
           </div>
-          {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-10 right-10 bg-primary text-white text-xs font-black px-4 py-2 rounded-xl shadow-2xl tracking-tighter">US ACCOUNT</div>}
+          {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-5 right-5 bg-primary text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm">US ACCOUNT</div>}
         </div>
 
         <div className="flex flex-col justify-center">
-          <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">
+          <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-5">
             <button onClick={() => navigate('home')} className="hover:text-primary">HOME</button>
             <span>/</span>
             <span className="text-primary">{categoryName(product.category)}</span>
           </nav>
 
-          <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tighter leading-tight">{product.name}</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 tracking-tight leading-snug">{product.name}</h1>
 
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-3 mb-6">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-xs font-bold border border-green-100">
               <Package size={14} /> In stock ({product.stock})
             </div>
@@ -2404,8 +2402,8 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
             </div>
           </div>
 
-          <div className="text-5xl font-black text-gray-900 mb-10 tracking-tight flex items-baseline gap-2">
-            <span className="text-2xl text-gray-400 font-bold">$</span>{product.price.toFixed(1)}
+          <div className="text-3xl font-bold text-gray-900 mb-8 tracking-tight flex items-baseline gap-1">
+            <span className="text-lg text-gray-400 font-bold">$</span>{product.price.toFixed(2)}
           </div>
 
           <div className="flex flex-col gap-6">
@@ -2461,38 +2459,37 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-          <div className="lg:col-span-2 space-y-12">
-            <div>
-              <h3 className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-6 underline">INFORMATION</h3>
-              <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2 space-y-8">
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Information</h3>
+              <div className="divide-y divide-gray-200/70">
                 {product.details?.info?.split(' | ').map((line, i) => (
-                  <div key={i} className="flex items-center gap-4 text-gray-700 font-bold">
-                    <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
-                    <span className="text-gray-400 font-medium min-w-[120px]">{line.split(' : ')[0]} :</span>
-                    <span className="text-gray-900">{line.split(' : ')[1]}</span>
+                  <div key={i} className="flex items-center justify-between py-2.5 text-sm">
+                    <span className="text-gray-500 font-medium">{line.split(' : ')[0]}</span>
+                    <span className="text-gray-900 font-bold">{line.split(' : ')[1]}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-primary/5 border border-primary/10 p-8 rounded-[2.5rem]">
-              <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-4"><Info size={14} /> Additional Description</h4>
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+              <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"><Info size={14} className="text-primary" /> Additional Description</h4>
               {product.description ? (
                 <div
-                  className="text-gray-600 font-medium leading-relaxed text-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1.5 [&_p]:mb-3 [&_strong]:font-bold [&_strong]:text-gray-900 [&_u]:underline"
+                  className="text-gray-600 leading-relaxed text-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1.5 [&_p]:mb-3 [&_strong]:font-bold [&_strong]:text-gray-900 [&_u]:underline"
                   dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(product.description) }}
                 />
               ) : (
-                <p className="text-gray-600 font-medium leading-relaxed italic">{product.details?.note}</p>
+                <p className="text-gray-600 leading-relaxed italic text-sm">{product.details?.note}</p>
               )}
             </div>
           </div>
 
-          <div className="space-y-12">
-            <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100">
-              <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6"><ShieldAlert size={14} className="text-primary" /> Terms of Service</h4>
-              <div className="text-xs text-gray-500 leading-relaxed space-y-4">
+          <div className="space-y-8">
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+              <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"><ShieldAlert size={14} className="text-primary" /> Terms of Service</h4>
+              <div className="text-xs text-gray-500 leading-relaxed space-y-3">
                 {product.details?.terms?.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
               </div>
             </div>
