@@ -68,6 +68,25 @@ const TelegramLogo = ({ className = brandBox }) => (
 const SmsLogo = ({ className = brandBox }) => (
   <img src="/sms-logo.png" alt="SMS" className={className.includes('object-') ? className : `${className} object-contain`} />
 );
+const RedditLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="12" fill="#FF4500"/>
+    <path fill="#fff" d="M19 12a1.6 1.6 0 00-2.71-1.14 8.3 8.3 0 00-4.13-1.31l.7-3.3 2.3.49a1.14 1.14 0 102.13-.58L17 5.8a.36.36 0 00-.4-.2l-2.58.55a.36.36 0 00-.28.28l-.79 3.73a8.3 8.3 0 00-4.16 1.32A1.6 1.6 0 105 12.9a3.16 3.16 0 000 .55 3.5 3.5 0 00-.05.6c0 2.37 2.76 4.29 6.16 4.29s6.16-1.92 6.16-4.29a3.5 3.5 0 00-.05-.6A1.6 1.6 0 0019 12zm-9.83 1.31a1.02 1.02 0 111.02-1.02 1.02 1.02 0 01-1.02 1.02zm5.9 2.4a3.7 3.7 0 01-2.53.84 3.7 3.7 0 01-2.53-.84.32.32 0 01.44-.46 3.06 3.06 0 002.09.68 3.06 3.06 0 002.09-.68.32.32 0 11.44.46zm-.24-2.4a1.02 1.02 0 111.02-1.02 1.02 1.02 0 01-1.02 1.02z"/>
+  </svg>
+);
+const MailGenericLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect x="1.5" y="4.5" width="21" height="15" rx="3" fill="#64748B"/>
+    <path d="M3 6.5l9 6.5 9-6.5" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const AmazonLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="12" fill="#131921"/>
+    <path fill="#FF9900" d="M6.2 15.3c2.9 1.9 6.9 2.1 10.3.4.2-.1.4.1.2.3-1 1.1-3.3 2.3-6 2.3-2.8 0-5.3-1-7.2-2.7-.2-.1 0-.4.2-.3zm11-.5c-.1-.3-.9-.2-1.3-.1-.1 0-.1-.1 0-.2.6-.4 1.6-.3 1.7-.1.1.1 0 1.1-.6 1.6-.1.1-.2 0-.2-.1.1-.3.3-.9.4-1.1z"/>
+    <path fill="#fff" d="M9.5 9.6c0-.5.1-.9.4-1.2.3-.3.7-.5 1.3-.5.5 0 1 .1 1.3.4.3.3.4.6.4 1.1v2.3c0 .2 0 .3.1.4l.1.2c0 .1-.1.1-.1.2l-.5.4h-.2l-.4-.5c-.1.1-.3.3-.5.4-.2.1-.4.1-.7.1-.5 0-.8-.1-1.1-.4-.3-.3-.4-.6-.4-1.1 0-.5.2-.9.5-1.2.4-.3.9-.4 1.6-.4h.5v-.3c0-.3-.1-.5-.2-.6-.1-.1-.3-.2-.6-.2-.2 0-.4 0-.6.1-.1.1-.2.2-.3.4 0 .1-.1.1-.2.1l-.7-.1c-.1 0-.1-.1-.1-.2zm2.2 1.6h-.3c-.4 0-.7.1-.9.2-.2.1-.3.3-.3.6 0 .2.1.4.2.5.1.1.3.2.5.2.3 0 .5-.1.6-.2.2-.2.2-.4.2-.7v-.6z"/>
+  </svg>
+);
 
 // ==========================================
 // COMPOSANT SUPPORT CHAT — retiré (plus de contact WhatsApp)
@@ -116,24 +135,65 @@ const GROUP_LABELS = {
 };
 const GROUP_ORDER = ['gmail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'tiktok', 'apple', 'telegram', 'sms', 'other'];
 
+// Palette stable pour l'avatar générique (basée sur le nom de catégorie, pas aléatoire).
+const AVATAR_COLORS = ['#0D7A52', '#B45309', '#1D4ED8', '#BE185D', '#4338CA', '#0E7490', '#7C3AED'];
+const hashStr = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+
+// Détection fine du visuel à afficher, en s'appuyant sur la catégorie ET le
+// nom du produit (certaines catégories importées de fournisseurs tiers sont
+// mal étiquetées, ex. des comptes Twitter classés "AMAZON" — on rattrape ça
+// en regardant aussi le nom du produit plutôt que de laisser une icône vide).
+const resolveVisual = (product = {}) => {
+  const cat = String(product.category || '').toLowerCase();
+  const name = String(product.name || '').toLowerCase();
+  const has = (s) => cat.includes(s) || name.includes(s);
+
+  if (has('youtube')) return 'youtube';
+  if (has('gmail') || cat === 'email') return 'gmail';
+  if (has('facebook')) return 'facebook';
+  if (has('instagram')) return 'instagram';
+  if (has('tiktok') || has('tik tok')) return 'tiktok';
+  if (has('reddit')) return 'reddit';
+  if (has('twitter') || has('/x') || cat === 'x' || / x[)\s]/.test(name)) return 'twitter';
+  if (has('discord')) return 'discord';
+  if (has('icloud') || has('apple')) return 'apple';
+  if (has('telegram')) return 'telegram';
+  if (has('sms')) return 'sms';
+  if (has('gmx') || has('rambler') || has('mail ru') || has('mail.ru') || has('hotmail') || has('outlook') || has('mail')) return 'mail';
+  if (has('amazon')) return 'amazon';
+  return 'other';
+};
+
 // Visuel d'un produit : image personnalisée (image_url) prioritaire, sinon
-// logo de marque déduit de la catégorie, sinon icône générique.
+// logo de marque déduit de la catégorie/nom, sinon avatar générique coloré
+// (jamais une icône vide — cf. retour utilisateur "produits sans image").
 const ProductVisual = ({ product = {}, iconSize = 48 }) => {
   if (product.image_url) {
     return <img src={product.image_url} alt={product.name || ''} className="w-full h-full object-contain" loading="lazy" />;
   }
-  switch (categoryVisual(product.category)) {
+  switch (resolveVisual(product)) {
     case 'youtube':   return <YouTubeLogo />;
     case 'gmail':     return <GmailLogo />;
     case 'facebook':  return <FacebookIcon className="w-full h-full object-contain p-3 text-blue-600" />;
     case 'instagram': return <InstagramLogo />;
     case 'tiktok':    return <TikTokLogo />;
     case 'twitter':   return <TwitterLogo />;
+    case 'reddit':    return <RedditLogo />;
     case 'discord':   return <DiscordLogo />;
     case 'apple':     return <AppleLogo />;
     case 'telegram':  return <TelegramLogo />;
     case 'sms':       return <SmsLogo />;
-    default:          return <Share2 size={iconSize} className="text-gray-300" />;
+    case 'mail':      return <MailGenericLogo />;
+    case 'amazon':    return <AmazonLogo />;
+    default: {
+      const label = categoryName(product.category) || 'Others';
+      const color = AVATAR_COLORS[hashStr(label) % AVATAR_COLORS.length];
+      return (
+        <div className="w-full h-full rounded-2xl flex items-center justify-center font-black text-white" style={{ backgroundColor: color, fontSize: iconSize * 0.5 }}>
+          {label.trim().charAt(0).toUpperCase() || '?'}
+        </div>
+      );
+    }
   }
 };
 
