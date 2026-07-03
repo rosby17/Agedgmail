@@ -2326,217 +2326,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 // ==========================================
 
 
-const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, fetchProfile, fetchProducts, fetchAllOrders, setRechargeSuggestedAmount }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const handleBalancePayment = async () => {
-    if (!session || !profile) return;
-    setIsProcessing(true);
-    setErrorMessage("");
-
-    try {
-      if (profile.balance < cartTotal) throw new Error("Insufficient balance.");
-
-      // Process each item in cart
-      for (const item of cart) {
-        // --- Produit reseller (YTSeller) : livraison différée ---
-        if (item.is_dropship) {
-          // Commande créée en 'processing' (credentials remplis plus tard par
-          // le job ytseller-poll-orders). L'UI "Mes commandes" affiche déjà
-          // "En attente de livraison…" tant que credentials est vide.
-          const { data: dsOrder, error: dsErr } = await supabase.from('orders').insert({
-            user_id: session.user.id,
-            buyer_email: session.user.email,
-            product_id: item.id,
-            product_name: item.name,
-            quantity: item.quantity,
-            total_price: item.price * item.quantity,
-            status: 'processing',
-            supplier: 'ytseller',
-            created_at: new Date().toISOString()
-          }).select('id').single();
-
-          if (dsErr) throw dsErr;
-          if (!dsOrder) throw new Error("The order could not be created.");
-
-          // Déclenche la passation fournisseur en arrière-plan (ne bloque pas
-          // l'UI). En cas d'échec, la fonction rembourse automatiquement.
-          supabase.functions.invoke('dropship-place-order', { body: { orderId: dsOrder.id } })
-            .catch(e => console.error('dropship-place-order invoke:', e));
-
-          continue;
-        }
-
-        // --- Produit à stock local (comportement existant inchangé) ---
-        // 1. Fetch available credentials from account_stock
-        const { data: stockRows, error: stockErr } = await supabase
-          .from('account_stock')
-          .select('id, credentials')
-          .eq('product_id', item.id)
-          .eq('is_delivered', false)
-          .limit(item.quantity);
-
-        if (stockErr) throw new Error("Error retrieving stock.");
-        if (!stockRows || stockRows.length < item.quantity) {
-          throw new Error(`No more accounts available in stock for ${item.name}.`);
-        }
-
-        const deliveredCreds = stockRows.map(r => r.credentials).join('\n');
-        const stockIds = stockRows.map(r => r.id);
-
-        // 2. Create the CONFIRMED order
-        // Note: Using .select() to get the ID for linking with account_stock
-        const { data: orderData, error: orderInsertErr } = await supabase.from('orders').insert({
-          user_id: session.user.id,
-          buyer_email: session.user.email,
-          product_id: item.id,
-          product_name: item.name,
-          quantity: item.quantity,
-          total_price: item.price * item.quantity,
-          status: 'confirmed',
-          credentials: deliveredCreds,
-          data: deliveredCreds,
-          created_at: new Date().toISOString()
-        }).select('id').single();
-
-        if (orderInsertErr) throw orderInsertErr;
-        if (!orderData) throw new Error("Order created but ID could not be retrieved.");
-
-        // 3. Mark credentials as delivered and link to order
-        const { error: stockUpdateErr } = await supabase.from('account_stock').update({
-          is_delivered: true,
-          order_id: String(orderData.id),
-          delivered_to: session.user.id,
-        }).in('id', stockIds);
-
-        if (stockUpdateErr) console.error("Error updating stock_account:", stockUpdateErr);
-      }
-
-      // 4. Deduct balance from profile
-      const { error: balanceErr } = await supabase
-        .from('profiles')
-        .update({ balance: profile.balance - cartTotal })
-        .eq('id', session.user.id);
-
-      if (balanceErr) throw balanceErr;
-
-      // 5. Finalize UI state
-      setPurchaseSuccess(true);
-
-      // Refresh all relevant data
-      await fetchProfile(session.user.id);
-      await fetchProducts();
-      await fetchAllOrders(); // Update admin view if necessary
-
-      setTimeout(() => {
-        clearCart();
-        navigate('dashboard');
-      }, 2000);
-
-    } catch (err) {
-      console.error("Payment Error:", err);
-      setErrorMessage(err.message);
-      setIsProcessing(false);
-    }
-  };
-
-  const hasEnoughBalance = (profile?.balance || 0) >= cartTotal;
-
-  return (
-    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-        <div className="lg:col-span-2">
-          <h2 className="text-4xl font-bold text-gray-900 mb-12 tracking-tight">Finalize Order</h2>
-
-          <div className="space-y-8">
-            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-
-              <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-10">
-                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
-                    <Wallet size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Payment by Balance</h3>
-                    <p className="text-sm text-gray-400">Use the available credits on your account.</p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-3xl p-8 mb-10 border border-gray-100/50">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Your Current Balance</span>
-                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${hasEnoughBalance ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>
-                      {hasEnoughBalance ? 'Sufficient Balance' : 'Insufficient Balance'}
-                    </span>
-                  </div>
-                  <div className="text-4xl font-black text-gray-900 font-mono">${(profile?.balance || 0).toFixed(2)}</div>
-                </div>
-
-                {(!hasEnoughBalance && !purchaseSuccess) ? (
-                  <div className="space-y-6">
-                    <div className="p-6 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-4">
-                      <div className="mt-1 text-red-500"><AlertTriangle size={20} /></div>
-                      <p className="text-sm text-red-600 leading-relaxed font-medium">
-                        Sorry, your balance is <span className="font-bold">${(profile?.balance || 0).toFixed(2)}</span>.
-                        You need <span className="font-bold">${cartTotal.toFixed(2)}</span> for this order.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const missing = Math.round((cartTotal - (profile?.balance || 0)) * 100) / 100;
-                        setRechargeSuggestedAmount(missing > 0 ? missing : null);
-                        navigate('recharge');
-                      }}
-                      className="w-full py-5 rounded-[2rem] bg-gray-900 text-white font-bold hover:bg-primary transition-all shadow-xl shadow-gray-900/10 flex items-center justify-center gap-3"
-                    >
-                      <Plus size={20} /> Recharge ${Math.max(0, Math.round((cartTotal - (profile?.balance || 0)) * 100) / 100).toFixed(2)}
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleBalancePayment}
-                    disabled={isProcessing || purchaseSuccess}
-                    className={`w-full py-6 rounded-[2rem] font-black text-lg transition-all shadow-2xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-primary text-white hover:bg-primaryDark shadow-primary/20'}`}
-                  >
-                    {isProcessing ? <RefreshCcw size={24} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={24} /> : <Zap size={24} />}
-                    {isProcessing ? "Processing..." : purchaseSuccess ? "Payment Successful!" : `Confirm Payment ($${cartTotal.toFixed(2)})`}
-                  </button>
-                )}
-
-                {errorMessage && (
-                  <div className="mt-6 p-4 bg-red-50 text-red-500 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2">
-                    <AlertTriangle size={14} /> {errorMessage}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-dashed border-gray-200">
-              <p className="text-center text-xs text-gray-400 font-medium">
-                By validating this order, you accept our <button onClick={() => navigate('policies')} className="text-primary hover:underline">terms of service</button> and the instant delivery policy.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="h-fit sticky top-32">
-          <div className="bg-gray-900 text-white p-10 rounded-[3rem] shadow-2xl">
-            <h3 className="text-xl font-bold mb-10 border-b border-white/10 pb-6">Summary</h3>
-            <div className="space-y-6 mb-10 text-sm font-medium text-gray-400">
-              <div className="flex justify-between"><span>Items ({cart.length})</span><span className="text-white">${cartTotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Service fee</span><span className="text-green-400">Free</span></div>
-            </div>
-            <div className="flex justify-between text-3xl font-bold mb-4"><span>Total</span><span>${cartTotal.toFixed(2)}</span></div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Secured by SSL Encryption</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 // Nettoie le HTML fourni par le fournisseur (product.description) avant tout
 // rendu : liste blanche de balises de mise en forme, tout le reste est retiré
 // ou dépouillé de ses attributs. Nécessaire car ce HTML vient d'un tiers —
@@ -2720,7 +2509,190 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
 
 // Panier en panneau coulissant (drawer), ouvert depuis n'importe quelle page
 // via l'icône panier de la navbar — remplace l'ancienne page dédiée.
-const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, navigate, session }) => {
+const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, navigate, clearCart, fetchProfile, fetchProducts, fetchAllOrders, setRechargeSuggestedAmount }) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  if (!open) return null;
+
+  const balance = profile?.balance || 0;
+  const hasEnoughBalance = balance >= cartTotal;
+
+  const handleBalancePayment = async () => {
+    if (!session || !profile) return;
+    setIsProcessing(true);
+    setErrorMessage('');
+
+    try {
+      if (balance < cartTotal) throw new Error("Insufficient balance.");
+
+      for (const item of cart) {
+        if (item.is_dropship) {
+          const { data: dsOrder, error: dsErr } = await supabase.from('orders').insert({
+            user_id: session.user.id,
+            buyer_email: session.user.email,
+            product_id: item.id,
+            product_name: item.name,
+            quantity: item.quantity,
+            total_price: item.price * item.quantity,
+            status: 'processing',
+            supplier: 'ytseller',
+            created_at: new Date().toISOString()
+          }).select('id').single();
+
+          if (dsErr) throw dsErr;
+          if (!dsOrder) throw new Error("The order could not be created.");
+
+          supabase.functions.invoke('dropship-place-order', { body: { orderId: dsOrder.id } })
+            .catch(e => console.error('dropship-place-order invoke:', e));
+
+          continue;
+        }
+
+        const { data: stockRows, error: stockErr } = await supabase
+          .from('account_stock')
+          .select('id, credentials')
+          .eq('product_id', item.id)
+          .eq('is_delivered', false)
+          .limit(item.quantity);
+
+        if (stockErr) throw new Error("Error retrieving stock.");
+        if (!stockRows || stockRows.length < item.quantity) {
+          throw new Error(`No more accounts available in stock for ${item.name}.`);
+        }
+
+        const deliveredCreds = stockRows.map(r => r.credentials).join('\n');
+        const stockIds = stockRows.map(r => r.id);
+
+        const { data: orderData, error: orderInsertErr } = await supabase.from('orders').insert({
+          user_id: session.user.id,
+          buyer_email: session.user.email,
+          product_id: item.id,
+          product_name: item.name,
+          quantity: item.quantity,
+          total_price: item.price * item.quantity,
+          status: 'confirmed',
+          credentials: deliveredCreds,
+          data: deliveredCreds,
+          created_at: new Date().toISOString()
+        }).select('id').single();
+
+        if (orderInsertErr) throw orderInsertErr;
+        if (!orderData) throw new Error("Order created but ID could not be retrieved.");
+
+        const { error: stockUpdateErr } = await supabase.from('account_stock').update({
+          is_delivered: true,
+          order_id: String(orderData.id),
+          delivered_to: session.user.id,
+        }).in('id', stockIds);
+
+        if (stockUpdateErr) console.error("Error updating stock_account:", stockUpdateErr);
+      }
+
+      const { error: balanceErr } = await supabase
+        .from('profiles')
+        .update({ balance: balance - cartTotal })
+        .eq('id', session.user.id);
+      if (balanceErr) throw balanceErr;
+
+      setPurchaseSuccess(true);
+      await fetchProfile(session.user.id);
+      await fetchProducts();
+      await fetchAllOrders();
+
+      setTimeout(() => {
+        clearCart();
+        setPurchaseSuccess(false);
+        onClose();
+        navigate('dashboard');
+      }, 1500);
+
+    } catch (err) {
+      console.error("Payment Error:", err);
+      setErrorMessage(err.message);
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans" onClick={(e) => { if (e.target === e.currentTarget && !isProcessing) onClose(); }}>
+      <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-8 pt-8 pb-2">
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white">Checkout</h2>
+          <button onClick={onClose} disabled={isProcessing} aria-label="Close" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:text-white transition-all disabled:opacity-40"><X size={18} /></button>
+        </div>
+
+        <div className="px-8 pb-8 pt-4 space-y-6">
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Payment method</label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-2xl border-2 border-primary bg-primary/5 flex flex-col">
+                <span className="text-[9px] font-black uppercase text-primary tracking-widest mb-1">Selected</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">Balance (${balance.toFixed(2)})</span>
+              </div>
+              <button onClick={() => { onClose(); navigate('recharge'); }} className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary/50 transition-all text-left">
+                <span className="text-sm font-bold text-gray-600 dark:text-gray-300 flex items-center gap-1"><Plus size={14} /> Top up</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-5 space-y-3 max-h-64 overflow-y-auto">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Items</span>
+              <span className="w-5 h-5 rounded-full bg-gray-900 dark:bg-primary text-white text-[10px] font-black flex items-center justify-center">{cart.length}</span>
+            </div>
+            {cart.map(item => (
+              <div key={item.id} className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0"><ProductVisual product={item} iconSize={16} /></div>
+                <div className="flex-grow min-w-0">
+                  <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{item.name}</div>
+                  <div className="text-xs text-gray-400">${item.price.toFixed(2)} × {item.quantity}</div>
+                </div>
+                <div className="text-sm font-black text-primary font-mono shrink-0">${(item.price * item.quantity).toFixed(2)}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="h-px bg-gray-100 dark:bg-gray-800" />
+
+          <div className="flex items-center justify-between">
+            <span className="text-base font-black text-gray-900 dark:text-white">Total</span>
+            <span className="text-xl font-black text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
+          </div>
+
+          {errorMessage && (
+            <div className="bg-red-50 text-red-500 p-4 rounded-xl text-sm font-bold border border-red-100">{errorMessage}</div>
+          )}
+
+          {!hasEnoughBalance && !purchaseSuccess ? (
+            <button
+              onClick={() => {
+                const missing = Math.round((cartTotal - balance) * 100) / 100;
+                setRechargeSuggestedAmount(missing > 0 ? missing : null);
+                onClose(); navigate('recharge');
+              }}
+              className="w-full py-5 rounded-2xl font-bold text-lg bg-primary text-white hover:bg-primaryDark transition-all shadow-xl flex items-center justify-center gap-3"
+            >
+              <Plus size={20} /> Top up ${Math.max(0, Math.round((cartTotal - balance) * 100) / 100).toFixed(2)}
+            </button>
+          ) : (
+            <button
+              onClick={handleBalancePayment}
+              disabled={isProcessing || purchaseSuccess || cart.length === 0}
+              className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white' : 'bg-primary text-white hover:bg-primaryDark shadow-primary/20'}`}
+            >
+              {isProcessing ? <RefreshCcw size={20} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={20} /> : <Zap size={20} />}
+              {isProcessing ? 'Processing...' : purchaseSuccess ? 'Delivered!' : 'Pay & receive'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, navigate, session, onCheckout }) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[300] font-sans" role="dialog" aria-modal="true">
@@ -2777,7 +2749,7 @@ const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, c
             <span className="font-black text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
           </div>
           <button
-            onClick={() => { onClose(); session ? navigate('payment') : navigate('auth'); }}
+            onClick={() => { onClose(); session ? onCheckout() : navigate('auth'); }}
             disabled={cart.length === 0}
             className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-base hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
@@ -3043,6 +3015,7 @@ function App() {
   // uniquement en mémoire pour la session en cours, jamais dans localStorage.
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [quickOrderProduct, setQuickOrderProduct] = useState(null);
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -3358,7 +3331,21 @@ function App() {
   return (
     <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans flex flex-col">
       <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} />
-      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} />
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />
+      <CartCheckoutModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        cart={cart}
+        cartTotal={cartTotal}
+        session={session}
+        profile={profile}
+        navigate={navigate}
+        clearCart={clearCart}
+        fetchProfile={fetchProfile}
+        fetchProducts={fetchProducts}
+        fetchAllOrders={fetchAllOrders}
+        setRechargeSuggestedAmount={setRechargeSuggestedAmount}
+      />
       {quickOrderProduct && (
         <QuickOrderModal
           product={quickOrderProduct}
@@ -3379,7 +3366,6 @@ function App() {
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} />}
         {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} />}
-        {currentView === 'payment' && <PaymentView cart={cart} cartTotal={cartTotal} navigate={navigate} clearCart={clearCart} profile={profile} session={session} fetchProfile={fetchProfile} fetchProducts={fetchProducts} fetchAllOrders={fetchAllOrders} setRechargeSuggestedAmount={setRechargeSuggestedAmount} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
           <AdminView
