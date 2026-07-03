@@ -14,7 +14,7 @@
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { getBalance, getProducts } from '../_shared/ytseller.ts'
-import { getAdmin, logSupplier, corsHeaders } from '../_shared/supplier-db.ts'
+import { getAdmin, logSupplier, corsHeaders, resolveCheapestSupplier } from '../_shared/supplier-db.ts'
 
 // Retire toute trace du fournisseur (liens + marque) des textes affichés, et
 // neutralise les constructions HTML dangereuses (le contenu vient d'un tiers
@@ -64,7 +64,7 @@ serve(async (req) => {
     // 3. Mappings existants indexés par id YTSeller
     const { data: existing } = await admin
       .from('product_supplier_mapping').select('*').eq('supplier', 'ytseller')
-    const byYt = new Map((existing ?? []).map((m) => [String(m.ytseller_product_id), m]))
+    const byYt = new Map((existing ?? []).map((m) => [String(m.supplier_product_id), m]))
     const seen = new Set<string>()
 
     let created = 0, updated = 0
@@ -80,24 +80,23 @@ serve(async (req) => {
       const description = sanitize(yt.description)
 
       const map = byYt.get(ytId)
-      const margin = map?.margin_percent != null ? Number(map.margin_percent) : DEFAULT_MARGIN
-      const price = Math.round(rate * (1 + margin / 100) * 100) / 100
 
       if (map) {
-        // Produit déjà lié : mise à jour vitrine + mapping
-        await admin.from('products').update({
-          name, category, description, price,
-          is_dropship: true, supplier_stock: inventory,
-        }).eq('id', map.product_id)
+        // Produit déjà lié : met à jour la vitrine (nom/catégorie/description)
+        // et le mapping ; le prix/stock affiché est recalculé juste après par
+        // resolveCheapestSupplier (peut dépendre d'un autre fournisseur moins cher).
+        await admin.from('products').update({ name, category, description }).eq('id', map.product_id)
 
         await admin.from('product_supplier_mapping').update({
-          ytseller_rate: rate, supplier_available: inventory,
+          supplier_rate: rate, supplier_available: inventory,
           supplier_status: yt.status ?? null, supplier_currency: currency,
           last_synced_at: new Date().toISOString(),
         }).eq('id', map.id)
+        await resolveCheapestSupplier(admin, map.product_id, DEFAULT_MARGIN)
         updated++
       } else {
         // Nouveau produit importé
+        const price = Math.round(rate * (1 + DEFAULT_MARGIN / 100) * 100) / 100
         const { data: prod, error: insErr } = await admin.from('products').insert({
           name, category, description, price,
           is_dropship: true, supplier_stock: inventory,
@@ -108,8 +107,8 @@ serve(async (req) => {
           continue
         }
         await admin.from('product_supplier_mapping').insert({
-          product_id: prod.id, supplier: 'ytseller', ytseller_product_id: ytId,
-          margin_percent: DEFAULT_MARGIN, ytseller_rate: rate, supplier_available: inventory,
+          product_id: prod.id, supplier: 'ytseller', supplier_product_id: ytId,
+          margin_percent: DEFAULT_MARGIN, supplier_rate: rate, supplier_available: inventory,
           supplier_status: yt.status ?? null, supplier_currency: currency,
           active: true, last_synced_at: new Date().toISOString(),
         })
@@ -120,7 +119,7 @@ serve(async (req) => {
     // 4. Produits YTSeller disparus : mettre à 0 (on garde la fiche)
     let vanished = 0
     for (const m of existing ?? []) {
-      if (!seen.has(String(m.ytseller_product_id))) {
+      if (!seen.has(String(m.supplier_product_id))) {
         await admin.from('product_supplier_mapping').update({
           supplier_available: 0, supplier_status: 'Not found', last_synced_at: new Date().toISOString(),
         }).eq('id', m.id)

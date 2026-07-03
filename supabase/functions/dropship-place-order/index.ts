@@ -1,18 +1,25 @@
 // ============================================================
-// ytseller-place-order
+// dropship-place-order
+// Remplace ytseller-place-order : dispatche vers le BON fournisseur (celui
+// dont le mapping est actuellement "active" pour ce produit — potentiellement
+// ytseller OU smmshiba selon qui est le moins cher au moment de la synchro).
+//
 // Appelée juste après un paiement client confirmé (depuis le front, via
 // supabase.functions.invoke) avec { orderId }.
-//
-//  1. Garde-fou solde fournisseur (action=balance) — évite d'accepter une
-//     commande qu'on ne pourra pas honorer.
+//  1. Garde-fou solde fournisseur (action=balance).
 //  2. action=add_product_order -> stocke supplier_order_id, statut 'processing'.
 //  3. En cas d'échec : rembourse le client + alerte admin.
 //
-// Le polling/livraison est ensuite pris en charge par ytseller-poll-orders.
+// Le polling/livraison est ensuite pris en charge par dropship-poll-orders.
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { getBalance, addProductOrder } from '../_shared/ytseller.ts'
+import * as ytseller from '../_shared/ytseller.ts'
+import * as smmshiba from '../_shared/smmshiba.ts'
 import { getAdmin, logSupplier, refundOrder, corsHeaders } from '../_shared/supplier-db.ts'
+
+const ADAPTERS: Record<string, { getBalance: typeof ytseller.getBalance; addProductOrder: typeof ytseller.addProductOrder }> = {
+  ytseller, smmshiba,
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -43,46 +50,49 @@ serve(async (req) => {
       throw new Error(`Statut commande inattendu: ${order.status}`)
     }
 
-    // 2. Mapping fournisseur (actif)
+    // 2. Mapping actif pour ce produit, peu importe le fournisseur — c'est
+    // resolveCheapestSupplier (exécuté à chaque synchro catalogue) qui décide
+    // lequel est actif (le moins cher, en stock).
     const { data: map, error: mErr } = await admin
       .from('product_supplier_mapping')
       .select('*')
       .eq('product_id', order.product_id)
-      .eq('supplier', 'ytseller')
       .eq('active', true)
       .maybeSingle()
     if (mErr) throw new Error(mErr.message)
-    if (!map) throw new Error(`Aucun mapping YTSeller actif pour le produit ${order.product_id}`)
+    if (!map) throw new Error(`Aucun mapping fournisseur actif pour le produit ${order.product_id}`)
+
+    const supplier = String(map.supplier)
+    const adapter = ADAPTERS[supplier]
+    if (!adapter) throw new Error(`Fournisseur inconnu : ${supplier}`)
 
     const quantity = Number(order.quantity) || 1
-    const cost = (Number(map.ytseller_rate) || 0) * quantity
+    const cost = (Number(map.supplier_rate) || 0) * quantity
 
     // 3. Garde-fou solde fournisseur
-    const { balance, currency } = await getBalance()
+    const { balance, currency } = await adapter.getBalance()
     await admin.from('supplier_settings').update({
       balance, currency, last_balance_check: new Date().toISOString(),
-    }).eq('supplier', 'ytseller')
+    }).eq('supplier', supplier)
 
     if (balance < cost) {
       await logSupplier(admin, {
-        order_id: orderId,
-        action: 'place-order',
-        level: 'error',
-        message: `Solde YTSeller insuffisant : ${balance} ${currency} < coût ${cost} ${currency}. Commande remboursée.`,
+        order_id: orderId, action: 'place-order', level: 'error', supplier,
+        message: `Solde ${supplier} insuffisant : ${balance} ${currency} < coût ${cost} ${currency}. Commande remboursée.`,
         payload: { balance, cost, quantity },
       })
-      await refundOrder(admin, orderId, 'Solde fournisseur insuffisant')
+      await refundOrder(admin, orderId, `Solde fournisseur (${supplier}) insuffisant`)
       return new Response(JSON.stringify({ ok: false, refunded: true, reason: 'insufficient_supplier_balance' }), {
         status: 402,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // 4. Passer la commande fournisseur
-    const supplierOrderId = await addProductOrder(map.ytseller_product_id, quantity)
+    // 4. Passer la commande chez le bon fournisseur
+    const supplierOrderId = await adapter.addProductOrder(map.supplier_product_id, quantity)
 
     await admin.from('orders').update({
-      supplier: 'ytseller',
+      supplier,
       supplier_order_id: supplierOrderId,
       supplier_status: 'Pending',
       supplier_attempts: 0,
@@ -91,26 +101,21 @@ serve(async (req) => {
     }).eq('id', orderId)
 
     await logSupplier(admin, {
-      order_id: orderId,
-      action: 'place-order',
-      level: 'info',
-      message: `Commande fournisseur créée (YTSeller #${supplierOrderId}) pour ${quantity}x produit ${map.ytseller_product_id}.`,
+      order_id: orderId, action: 'place-order', level: 'info', supplier,
+      message: `Commande fournisseur créée (${supplier} #${supplierOrderId}) pour ${quantity}x produit ${map.supplier_product_id}.`,
       payload: { supplierOrderId, quantity },
     })
 
-    return new Response(JSON.stringify({ ok: true, supplier_order_id: supplierOrderId }), {
+    return new Response(JSON.stringify({ ok: true, supplier, supplier_order_id: supplierOrderId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
     await logSupplier(admin, {
-      order_id: orderId ?? null,
-      action: 'place-order',
-      level: 'error',
+      order_id: orderId ?? null, action: 'place-order', level: 'error',
       message: (err as Error).message,
     })
-    // Échec de passation : on rembourse pour ne pas laisser le client débité sans rien.
     if (orderId) await refundOrder(admin, orderId, 'Échec passation commande fournisseur')
-    console.error('Erreur ytseller-place-order:', (err as Error).message)
+    console.error('Erreur dropship-place-order:', (err as Error).message)
     return new Response(JSON.stringify({ error: (err as Error).message, refunded: !!orderId }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

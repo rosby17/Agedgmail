@@ -28,12 +28,13 @@ export async function logSupplier(
     level?: 'info' | 'error'
     message: string
     payload?: unknown
+    supplier?: string
   },
 ) {
   try {
     await admin.from('supplier_logs').insert({
       order_id: entry.order_id ?? null,
-      supplier: 'ytseller',
+      supplier: entry.supplier ?? 'ytseller',
       action: entry.action,
       level: entry.level ?? 'info',
       message: entry.message,
@@ -41,6 +42,46 @@ export async function logSupplier(
     })
   } catch (e) {
     console.error('logSupplier a échoué:', (e as Error).message)
+  }
+}
+
+/**
+ * Recalcule, pour un produit donné, quel mapping fournisseur (ytseller,
+ * smmshiba, ...) a le coût le plus bas parmi ceux actifs/en stock, applique
+ * sa marge, met à jour products.price/supplier_stock en conséquence, et
+ * marque ce mapping comme actif (les autres passent inactifs). Permet à un
+ * même produit d'être approvisionné par plusieurs fournisseurs sans qu'ils
+ * ne s'écrasent mutuellement — on garde toujours le moins cher en vitrine.
+ */
+export async function resolveCheapestSupplier(
+  admin: ReturnType<typeof getAdmin>,
+  productId: number,
+  defaultMargin = 50,
+) {
+  const { data: mappings } = await admin
+    .from('product_supplier_mapping')
+    .select('*')
+    .eq('product_id', productId)
+
+  if (!mappings || mappings.length === 0) return
+
+  // Ne considère que les mappings avec du stock dispo ; à défaut, tous.
+  const inStock = mappings.filter((m) => Number(m.supplier_available) > 0)
+  const pool = inStock.length > 0 ? inStock : mappings
+
+  const cheapest = pool.reduce((best, m) =>
+    Number(m.supplier_rate) < Number(best.supplier_rate) ? m : best
+  , pool[0])
+
+  const margin = cheapest.margin_percent != null ? Number(cheapest.margin_percent) : defaultMargin
+  const price = Math.round(Number(cheapest.supplier_rate) * (1 + margin / 100) * 100) / 100
+
+  await admin.from('products').update({
+    price, is_dropship: true, supplier_stock: Number(cheapest.supplier_available) || 0,
+  }).eq('id', productId)
+
+  for (const m of mappings) {
+    await admin.from('product_supplier_mapping').update({ active: m.id === cheapest.id }).eq('id', m.id)
   }
 }
 

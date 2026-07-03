@@ -123,7 +123,7 @@ serve(async (req) => {
       await db.from('profiles').update({ balance: balance - total }).eq('id', userId)
 
       // Fulfilment fournisseur (rembourse automatiquement en cas d'échec)
-      const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ytseller-place-order`, {
+      const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/dropship-place-order`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,

@@ -1,20 +1,24 @@
 // ============================================================
-// ytseller-poll-orders
-// Cron (~60 s). Pour chaque commande en 'processing' transmise au
-// fournisseur :
-//   - action=product_order_status
-//   - Completed        -> action=result_product -> livre les comptes,
-//                         passe la commande en 'confirmed'
-//   - Partial          -> livre le partiel + rembourse le manquant
-//   - Canceled         -> rembourse intégralement
-//   - Pending/Proc/...  -> patiente ; au-delà du timeout -> rembourse + alerte
+// dropship-poll-orders
+// Remplace ytseller-poll-orders : traite les commandes 'processing' de TOUS
+// les fournisseurs dropship (ytseller, smmshiba...), en dispatchant vers le
+// bon adaptateur selon orders.supplier (posé par dropship-place-order).
 //
-// La livraison = écrire credentials/data sur la commande : la page
-// "Mes commandes" les affiche automatiquement (aucun changement d'UI).
+// Cron (~60 s). Pour chaque commande en 'processing' transmise au fournisseur :
+//   - action=product_order_status
+//   - Completed  -> action=result_product -> livre les comptes, 'confirmed'
+//   - Partial    -> livre le partiel + rembourse le manquant
+//   - Canceled   -> rembourse intégralement
+//   - Pending/... -> patiente ; au-delà du timeout -> rembourse + alerte
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { getOrderStatus, getResult } from '../_shared/ytseller.ts'
+import * as ytseller from '../_shared/ytseller.ts'
+import * as smmshiba from '../_shared/smmshiba.ts'
 import { getAdmin, logSupplier, alertAdmin, refundOrder, corsHeaders } from '../_shared/supplier-db.ts'
+
+const ADAPTERS: Record<string, { getOrderStatus: typeof ytseller.getOrderStatus; getResult: typeof ytseller.getResult }> = {
+  ytseller, smmshiba,
+}
 
 const BATCH = 25
 const TIMEOUT_MIN = 15
@@ -28,9 +32,9 @@ serve(async (req) => {
   try {
     const { data: orders, error } = await admin
       .from('orders')
-      .select('id, user_id, quantity, total_price, created_at, supplier_order_id, supplier_attempts')
+      .select('id, user_id, quantity, total_price, created_at, supplier, supplier_order_id, supplier_attempts')
       .eq('status', 'processing')
-      .eq('supplier', 'ytseller')
+      .in('supplier', Object.keys(ADAPTERS))
       .not('supplier_order_id', 'is', null)
       .order('created_at', { ascending: true })
       .limit(BATCH)
@@ -39,8 +43,12 @@ serve(async (req) => {
     for (const order of orders ?? []) {
       summary.checked++
       const orderId = String(order.id)
+      const supplier = String(order.supplier)
+      const adapter = ADAPTERS[supplier]
       try {
-        const st = await getOrderStatus(order.supplier_order_id)
+        if (!adapter) throw new Error(`Fournisseur inconnu sur la commande : ${supplier}`)
+
+        const st = await adapter.getOrderStatus(order.supplier_order_id)
         const status = st.status.toLowerCase()
 
         await admin.from('orders').update({
@@ -51,28 +59,26 @@ serve(async (req) => {
 
         // ---- Completed : livraison intégrale ----
         if (status === 'completed') {
-          const result = await getResult(order.supplier_order_id)
+          const result = await adapter.getResult(order.supplier_order_id)
           if (result.length === 0) throw new Error('result_product vide malgré status Completed')
           const creds = result.join('\n')
           await admin.from('orders').update({
-            status: 'confirmed',
-            credentials: creds,
-            data: creds,
+            status: 'confirmed', credentials: creds, data: creds,
           }).eq('id', orderId)
           summary.completed++
           await logSupplier(admin, {
-            order_id: orderId, action: 'deliver', level: 'info',
-            message: `Livraison OK : ${result.length} compte(s) livré(s) (YTSeller #${order.supplier_order_id}).`,
+            order_id: orderId, action: 'deliver', level: 'info', supplier,
+            message: `Livraison OK : ${result.length} compte(s) livré(s) (${supplier} #${order.supplier_order_id}).`,
           })
           await alertAdmin('💰 Vente confirmée', {
-            order_id: orderId, amount: `${order.total_price || 0} USD`, quantity: String(result.length),
+            order_id: orderId, supplier, amount: `${order.total_price || 0} USD`, quantity: String(result.length),
           })
           continue
         }
 
         // ---- Partial : livrer le disponible + rembourser le manquant ----
         if (status === 'partial') {
-          const result = await getResult(order.supplier_order_id)
+          const result = await adapter.getResult(order.supplier_order_id)
           const creds = result.join('\n')
           const qty = Number(order.quantity) || 1
           const delivered = result.length
@@ -86,20 +92,17 @@ serve(async (req) => {
             }
           }
           await admin.from('orders').update({
-            status: 'confirmed',
-            credentials: creds,
-            data: creds,
-            supplier_status: 'Partial',
+            status: 'confirmed', credentials: creds, data: creds, supplier_status: 'Partial',
             admin_note: `Livraison partielle : ${delivered}/${qty} compte(s). ${refund > 0 ? `${refund} USD remboursés.` : ''}`.trim(),
           }).eq('id', orderId)
 
           summary.partial++
           await logSupplier(admin, {
-            order_id: orderId, action: 'deliver-partial', level: 'error',
-            message: `Partiel : ${delivered}/${qty} livré(s), ${refund} USD remboursés (YTSeller #${order.supplier_order_id}).`,
+            order_id: orderId, action: 'deliver-partial', level: 'error', supplier,
+            message: `Partiel : ${delivered}/${qty} livré(s), ${refund} USD remboursés (${supplier} #${order.supplier_order_id}).`,
           })
-          await alertAdmin('⚠️ Livraison YTSeller partielle', {
-            order_id: orderId, delivered: `${delivered}/${qty}`, refunded: `${refund} USD`,
+          await alertAdmin('⚠️ Livraison partielle', {
+            order_id: orderId, supplier, delivered: `${delivered}/${qty}`, refunded: `${refund} USD`,
           })
           continue
         }
@@ -115,8 +118,8 @@ serve(async (req) => {
         const ageMin = (Date.now() - new Date(order.created_at).getTime()) / 60000
         if (ageMin > TIMEOUT_MIN) {
           await logSupplier(admin, {
-            order_id: orderId, action: 'timeout', level: 'error',
-            message: `Timeout (${Math.round(ageMin)} min, statut "${st.status}"). Remboursement (YTSeller #${order.supplier_order_id}).`,
+            order_id: orderId, action: 'timeout', level: 'error', supplier,
+            message: `Timeout (${Math.round(ageMin)} min, statut "${st.status}"). Remboursement (${supplier} #${order.supplier_order_id}).`,
           })
           await refundOrder(admin, orderId, `Timeout fournisseur (${st.status})`)
           summary.timed_out++
@@ -126,7 +129,7 @@ serve(async (req) => {
       } catch (err) {
         summary.errors++
         await logSupplier(admin, {
-          order_id: orderId, action: 'poll', level: 'error',
+          order_id: orderId, action: 'poll', level: 'error', supplier,
           message: (err as Error).message,
         })
       }
@@ -136,7 +139,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
-    console.error('Erreur ytseller-poll-orders:', (err as Error).message)
+    console.error('Erreur dropship-poll-orders:', (err as Error).message)
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
