@@ -193,6 +193,19 @@ const categoryVisual = (product = {}) => {
   return detectFromText(cat) || detectFromText(name) || 'other';
 };
 
+// Étiquette de catégorie à afficher sur une carte/fiche produit. Pour une
+// catégorie fournisseur fiable, on garde le libellé précis ("Gmail 2FA",
+// "SMS"...). Pour une catégorie fourre-tout (JUNK_CATEGORIES, ex.
+// "Accounts-Telegram"), afficher le texte brut serait trompeur puisque le
+// produit est en réalité un Gmail/Twitter/etc. — on affiche alors le nom du
+// bucket détecté par `categoryVisual` à la place.
+const displayCategoryLabel = (product = {}) => {
+  const cat = String(product.category || '').toLowerCase();
+  const isJunkCategory = JUNK_CATEGORIES.some(j => cat === j || cat.includes(j));
+  if (isJunkCategory) return GROUP_LABELS[categoryVisual(product)] || categoryName(product.category);
+  return categoryName(product.category);
+};
+
 // Icône précise à afficher — plus fine que le bucket de menu `categoryVisual`
 // (qui regroupe Outlook/Hotmail/GMX/Mail.ru sous un même filtre "Outlook &
 // Mail" pour la navigation) : ici chaque marque reconnaissable a son propre
@@ -231,7 +244,7 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
     case 'snapchat':  return <SnapchatLogo />;
     case 'amazon':    return <AmazonLogo />;
     default: {
-      const label = categoryName(product.category) || 'Others';
+      const label = displayCategoryLabel(product) || 'Others';
       const color = AVATAR_COLORS[hashStr(label) % AVATAR_COLORS.length];
       return (
         <div className="w-full h-full rounded-2xl flex items-center justify-center font-black text-white" style={{ backgroundColor: color, fontSize: iconSize * 0.5 }}>
@@ -332,7 +345,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
       {/* Content */}
       <div className="flex-grow flex flex-col">
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-          {categoryName(product.category)}
+          {displayCategoryLabel(product)}
         </div>
         <h3
           className="text-[15px] font-bold text-gray-900 dark:text-white leading-snug cursor-pointer mb-4 hover:text-primary dark:hover:text-primaryLight transition-colors"
@@ -2557,7 +2570,7 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
           <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-5">
             <button onClick={() => navigate('home')} className="hover:text-primary">HOME</button>
             <span>/</span>
-            <span className="text-primary">{categoryName(product.category)}</span>
+            <span className="text-primary">{displayCategoryLabel(product)}</span>
           </nav>
 
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 tracking-tight leading-snug">{cleanProductName(product.name)}</h1>
@@ -2567,7 +2580,7 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
               <Package size={14} /> In stock ({product.stock})
             </div>
             <div className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-bold border border-gray-200">
-              {categoryName(product.category)}
+              {displayCategoryLabel(product)}
             </div>
           </div>
 
