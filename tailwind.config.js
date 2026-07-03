@@ -8,18 +8,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Vert de marque assombri pour l'accessibilité : l'ancien #13B87A ne
-        // donnait que 2.57:1 de contraste sur blanc (WCAG AA exige 4.5:1
-        // pour le texte, 3:1 pour les composants). #0D7A52 atteint ~5.35:1.
-        // Reste la couleur DOMINANTE (badges, prix, stock, liens, catégories).
-        primary: "#0D7A52",
-        primaryDark: "#0A5F40",
-        // Accent or/ambre pour les boutons d'action (Acheter, Payer, Recharger)
-        // — inspiré de la palette Coolors fournie, assombri pour un contraste
-        // de 5.42:1 en texte blanc (calcul vérifié).
-        accent: "#9C5A08",
-        accentDark: "#7A4606",
-        dark: "#121212",
+        // Ambre/orange chaud devenu la couleur DOMINANTE (prix, liens,
+        // catégories, boutons d'action) — inspiré de la palette Coolors
+        // fournie, assombri pour un contraste vérifié de 4.87:1 (texte) /
+        // 4.87:1 (texte blanc sur fond) sur blanc, conforme WCAG AA.
+        primary: "#B05A08",
+        primaryDark: "#8C4706",
+        primaryLight: "#FBEBD9",
+        // Le vert est volontairement réservé aux statuts positifs ponctuels
+        // (badge "Instant", stock disponible) — voir Tailwind green-* utilisé
+        // directement à ces endroits précis dans App.jsx, pas ce token.
+        dark: "#1F1712",
         background: "#FFFFFF",
       },
       fontFamily: {

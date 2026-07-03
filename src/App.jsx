@@ -190,7 +190,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
         {isUS && product.category === 'email' && (
           <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
         )}
-        <div className="absolute top-4 right-4 bg-primary/10 text-primaryDark dark:text-primary text-[9px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1">
+        <div className="absolute top-4 right-4 bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1">
           <Zap size={10} /> Instant
         </div>
       </div>
@@ -228,7 +228,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
         <button
           onClick={() => onBuyNow(product)}
           disabled={outOfStock}
-          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${outOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-accent text-white hover:bg-accentDark shadow-lg shadow-accent/20'}`}
+          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${outOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primaryDark shadow-lg shadow-primary/20'}`}
         >
           {outOfStock ? 'Sold out' : 'Buy now'}
         </button>
@@ -510,7 +510,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
                     setRechargeSuggestedAmount(missing > 0 ? missing : null);
                     onClose(); navigate('recharge');
                   }}
-                  className="w-full py-5 rounded-2xl font-bold text-lg bg-accent text-white hover:bg-accentDark transition-all shadow-xl flex items-center justify-center gap-3"
+                  className="w-full py-5 rounded-2xl font-bold text-lg bg-primary text-white hover:bg-primaryDark transition-all shadow-xl flex items-center justify-center gap-3"
                 >
                   <Plus size={20} /> Top up ${Math.max(0, Math.round((total - balance) * 100) / 100).toFixed(2)}
                 </button>
@@ -518,7 +518,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
                 <button
                   onClick={handlePay}
                   disabled={isProcessing || purchaseSuccess}
-                  className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white' : 'bg-accent text-white hover:bg-accentDark shadow-accent/20'}`}
+                  className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white' : 'bg-primary text-white hover:bg-primaryDark shadow-primary/20'}`}
                 >
                   {isProcessing ? <RefreshCcw size={20} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={20} /> : <Zap size={20} />}
                   {isProcessing ? 'Processing...' : purchaseSuccess ? 'Delivered!' : 'Pay & receive'}
@@ -1151,7 +1151,7 @@ const MyOrdersView = ({ profile, navigate, orders = [] }) => {
           <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Current Balance</div>
           <div className="text-4xl font-black font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
         </div>
-        <button onClick={() => navigate('recharge')} className="relative z-10 bg-accent text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-accentDark transition-all shadow-xl shadow-accent/20 flex items-center gap-2 shrink-0"><Plus size={18} /> Top up account</button>
+        <button onClick={() => navigate('recharge')} className="relative z-10 bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 shrink-0"><Plus size={18} /> Top up account</button>
         <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5" />
       </div>
 
@@ -2163,7 +2163,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                     disabled={!g.enabled}
                     className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${!g.enabled ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed' : gateway === g.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
                   >
-                    <span className="absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-primary bg-primary/10">
+                    <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.enabled ? 'text-green-700 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
                       {g.enabled ? 'Auto' : 'Bientôt'}
                     </span>
                     <span className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 bg-gray-100 text-gray-600">{g.symbol}</span>
@@ -2226,7 +2226,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               <button
                 onClick={handleSubmit}
                 disabled={loading || (gateway === 'nowpayments' && belowMin)}
-                className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-accent text-white hover:bg-accentDark shadow-accent/20 disabled:opacity-40"
+                className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
               >
                 {loading
                   ? <><RefreshCcw size={20} className="animate-spin" /> Préparation...</>
@@ -2476,7 +2476,7 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
                   <button
                     onClick={handleBalancePayment}
                     disabled={isProcessing || purchaseSuccess}
-                    className={`w-full py-6 rounded-[2rem] font-black text-lg transition-all shadow-2xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-accent text-white hover:bg-accentDark shadow-accent/20'}`}
+                    className={`w-full py-6 rounded-[2rem] font-black text-lg transition-all shadow-2xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white shadow-green-500/20' : 'bg-primary text-white hover:bg-primaryDark shadow-primary/20'}`}
                   >
                     {isProcessing ? <RefreshCcw size={24} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={24} /> : <Zap size={24} />}
                     {isProcessing ? "Processing..." : purchaseSuccess ? "Payment Successful!" : `Confirm Payment ($${cartTotal.toFixed(2)})`}
@@ -2576,7 +2576,7 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
               <button
                 onClick={() => onBuyNow(product)}
                 disabled={product.stock <= 0}
-                className={`flex-grow h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-accent text-white hover:bg-accentDark shadow-accent/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                className={`flex-grow h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
               >
                 {product.stock > 0 ? 'Buy now' : 'Out of stock'}
               </button>
@@ -2707,7 +2707,7 @@ const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, c
           <button
             onClick={() => { onClose(); session ? navigate('payment') : navigate('auth'); }}
             disabled={cart.length === 0}
-            className="w-full bg-accent text-white py-4 rounded-2xl font-bold text-base hover:bg-accentDark transition-all shadow-xl shadow-accent/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-base hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {session ? 'Checkout' : 'Log in to pay'}
           </button>
