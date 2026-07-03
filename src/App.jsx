@@ -80,6 +80,24 @@ const MailGenericLogo = ({ className = brandBox }) => (
     <path d="M3 6.5l9 6.5 9-6.5" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
+const OutlookLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect x="10.5" y="2" width="11.5" height="20" rx="1.2" fill="#0364B8"/>
+    <path fill="#0A2767" d="M10.5 12l11.5 5V4z" opacity=".35"/>
+    <rect x="13" y="5" width="7" height="4" fill="#28A8EA"/>
+    <rect x="13" y="10" width="7" height="4" fill="#0078D4"/>
+    <rect x="13" y="15" width="7" height="4" fill="#0364B8"/>
+    <rect x="1" y="6" width="13" height="12" rx="1.5" fill="#0F6CBD"/>
+    <ellipse cx="7.5" cy="12" rx="4" ry="4.6" fill="#fff"/>
+    <ellipse cx="7.5" cy="12" rx="2.5" ry="3" fill="#0F6CBD"/>
+  </svg>
+);
+const SnapchatLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="24" height="24" rx="6" fill="#FFFC00"/>
+    <path fill="#000" d="M12 4.3c1.9 0 3.4 1.6 3.4 3.9 0 .5 0 1.2-.1 1.8.5.2 1 .1 1.4-.1.3-.1.6 0 .7.3.1.3 0 .6-.3.8-.5.3-1.2.6-2 .7 0 .3.1.5.2.7.4.9 1.4 1.7 2.6 2 .3.1.4.4.3.6-.2.5-1 .8-2.1.9-.1.2-.1.5-.2.7-.1.2-.3.3-.6.3-.4 0-.9-.1-1.4-.1-.6 0-1 .2-1.5.5-.5.3-1 .6-1.7.6s-1.2-.3-1.7-.6c-.5-.3-.9-.5-1.5-.5-.5 0-1 .1-1.4.1-.3 0-.5-.1-.6-.3-.1-.2-.1-.5-.2-.7-1.1-.1-1.9-.4-2.1-.9-.1-.3 0-.5.3-.6 1.2-.4 2.2-1.1 2.6-2 .1-.2.1-.4.2-.7-.8-.1-1.5-.4-2-.7-.3-.2-.4-.5-.3-.8.1-.3.4-.4.7-.3.4.2.9.3 1.4.1-.1-.6-.1-1.3-.1-1.8 0-2.3 1.5-3.9 3.4-3.9z"/>
+  </svg>
+);
 const AmazonLogo = ({ className = brandBox }) => (
   <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
     <circle cx="12" cy="12" r="12" fill="#131921"/>
@@ -111,12 +129,16 @@ const CATEGORIES = [
 const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat || 'Others';
 
 // Libellés + ordre d'affichage des groupes de premier niveau (barre du haut).
+// Doit couvrir CHAQUE valeur que `categoryVisual` peut renvoyer : un bucket
+// absent de GROUP_ORDER disparaîtrait silencieusement de la vue "All
+// products" groupée par section (les produits ne matchant aucune section
+// n'y sont jamais rendus).
 const GROUP_LABELS = {
   gmail: 'Gmail', mail: 'Outlook & Mail', youtube: 'Youtube', discord: 'Discord', facebook: 'Facebook',
   instagram: 'Instagram', twitter: 'Twitter X', reddit: 'Reddit', tiktok: 'Tiktok', apple: 'Apple ID',
-  telegram: 'Telegram', sms: 'SMS', other: 'Others',
+  telegram: 'Telegram', sms: 'SMS', snapchat: 'Snapchat', amazon: 'Amazon', other: 'Others',
 };
-const GROUP_ORDER = ['gmail', 'mail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'reddit', 'tiktok', 'apple', 'telegram', 'sms', 'other'];
+const GROUP_ORDER = ['gmail', 'mail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'reddit', 'tiktok', 'apple', 'telegram', 'sms', 'snapchat', 'amazon', 'other'];
 
 // Palette stable pour l'avatar générique (basée sur le nom de catégorie, pas aléatoire).
 const AVATAR_COLORS = ['#0D7A52', '#B45309', '#1D4ED8', '#BE185D', '#4338CA', '#0E7490', '#7C3AED'];
@@ -133,9 +155,10 @@ const JUNK_CATEGORIES = ['accounts-telegram', 'amazon'];
 // mentionne "Gmail" ferait basculer un produit pourtant bien catégorisé "SMS".
 const detectFromText = (text) => {
   const t = text;
+  // Marques "sujet principal" vérifiées avant l'e-mail générique : un produit
+  // Twitter mentionnant "Outlook email verified" comme simple attribut reste
+  // un produit Twitter, pas un produit Outlook.
   if (t.includes('youtube')) return 'youtube';
-  if (t === 'email' || t.includes('gmail')) return 'gmail';
-  if (t.includes('gmx') || t.includes('rambler') || t.includes('mail ru') || t.includes('mail.ru') || t.includes('hotmail') || t.includes('outlook')) return 'mail';
   if (t.includes('facebook')) return 'facebook';
   if (t.includes('instagram')) return 'instagram';
   if (t.includes('tiktok') || t.includes('tik tok')) return 'tiktok';
@@ -145,6 +168,9 @@ const detectFromText = (text) => {
   if (t.includes('icloud') || t.includes('apple')) return 'apple';
   if (t.includes('telegram')) return 'telegram';
   if (t.includes('sms')) return 'sms';
+  if (t.includes('snapchat')) return 'snapchat';
+  if (t === 'email' || t.includes('gmail')) return 'gmail';
+  if (t.includes('gmx') || t.includes('rambler') || t.includes('mail ru') || t.includes('mail.ru') || t.includes('hotmail') || t.includes('outlook')) return 'mail';
   if (t.includes('amazon')) return 'amazon';
   return null;
 };
@@ -167,6 +193,20 @@ const categoryVisual = (product = {}) => {
   return detectFromText(cat) || detectFromText(name) || 'other';
 };
 
+// Icône précise à afficher — plus fine que le bucket de menu `categoryVisual`
+// (qui regroupe Outlook/Hotmail/GMX/Mail.ru sous un même filtre "Outlook &
+// Mail" pour la navigation) : ici chaque marque reconnaissable a son propre
+// logo, même si plusieurs partagent le même groupe de filtre.
+const resolveIcon = (product = {}) => {
+  const cat = String(product.category || '').toLowerCase();
+  const name = String(product.name || '').toLowerCase();
+  const has = (s) => cat.includes(s) || name.includes(s);
+  if (has('snapchat')) return 'snapchat';
+  const bucket = categoryVisual(product);
+  if (bucket === 'mail' && (has('outlook') || has('hotmail'))) return 'outlook';
+  return bucket;
+};
+
 // Visuel d'un produit : image personnalisée (image_url) prioritaire, sinon
 // logo de marque déduit de la catégorie/nom, sinon avatar générique coloré
 // (jamais une icône vide — cf. retour utilisateur "produits sans image").
@@ -174,7 +214,7 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
   if (product.image_url) {
     return <img src={product.image_url} alt={product.name || ''} className="w-full h-full object-contain" loading="lazy" />;
   }
-  switch (categoryVisual(product)) {
+  switch (resolveIcon(product)) {
     case 'youtube':   return <YouTubeLogo />;
     case 'gmail':     return <GmailLogo />;
     case 'facebook':  return <FacebookIcon className="w-full h-full object-contain p-3 text-blue-600" />;
@@ -187,6 +227,8 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
     case 'telegram':  return <TelegramLogo />;
     case 'sms':       return <SmsLogo />;
     case 'mail':      return <MailGenericLogo />;
+    case 'outlook':   return <OutlookLogo />;
+    case 'snapchat':  return <SnapchatLogo />;
     case 'amazon':    return <AmazonLogo />;
     default: {
       const label = categoryName(product.category) || 'Others';
