@@ -16,7 +16,10 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { getBalance, getProducts } from '../_shared/ytseller.ts'
 import { getAdmin, logSupplier, corsHeaders } from '../_shared/supplier-db.ts'
 
-// Retire toute trace du fournisseur (liens + marque) des textes affichés.
+// Retire toute trace du fournisseur (liens + marque) des textes affichés, et
+// neutralise les constructions HTML dangereuses (le contenu vient d'un tiers
+// et est ensuite rendu comme HTML côté client, et aussi renvoyé tel quel via
+// l'API revendeur à des tiers externes — donc nettoyé une fois à la source).
 function sanitize(input: string | null | undefined): string {
   if (!input) return ''
   let s = String(input)
@@ -24,6 +27,14 @@ function sanitize(input: string | null | undefined): string {
   s = s.replace(/https?:\/\/[^\s"'<>]*ytseller[^\s"'<>]*/gi, '')       // URLs ytseller
   s = s.replace(/yt\s*[-_ ]?seller\.com/gi, 'AgedGmail')
   s = s.replace(/yt\s*[-_ ]?seller/gi, 'AgedGmail')                    // marque
+  // Neutralisation XSS basique (défense en profondeur ; le rendu côté client
+  // applique en plus un filtrage par liste blanche avant tout affichage HTML).
+  s = s.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+  s = s.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+  s = s.replace(/<(iframe|object|embed|form|link|meta)\b[^>]*>/gi, '')
+  s = s.replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+  s = s.replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+  s = s.replace(/\shref\s*=\s*["']javascript:[^"']*["']/gi, '')
   return s.trim()
 }
 

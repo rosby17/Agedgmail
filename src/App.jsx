@@ -2514,6 +2514,48 @@ const PaymentView = ({ cart, cartTotal, navigate, clearCart, profile, session, f
     </div>
   );
 };
+// Nettoie le HTML fourni par le fournisseur (product.description) avant tout
+// rendu : liste blanche de balises de mise en forme, tout le reste est retiré
+// ou dépouillé de ses attributs. Nécessaire car ce HTML vient d'un tiers —
+// jamais faire confiance à du HTML externe sans le filtrer (risque XSS).
+const REMOVE_ENTIRELY = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'FORM', 'LINK', 'META']);
+const ALLOWED_TAGS = new Set(['P', 'STRONG', 'U', 'B', 'I', 'EM', 'UL', 'OL', 'LI', 'BR', 'SPAN', 'DIV']);
+
+function sanitizeDescriptionHtml(html) {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(String(html), 'text/html');
+
+  const walk = (node) => {
+    [...node.childNodes].forEach((child) => {
+      if (child.nodeType === Node.COMMENT_NODE) { child.remove(); return; }
+      if (child.nodeType !== Node.ELEMENT_NODE) return;
+
+      if (REMOVE_ENTIRELY.has(child.tagName)) { child.remove(); return; }
+
+      if (!ALLOWED_TAGS.has(child.tagName)) {
+        // Balise non autorisée : on garde le texte, on retire juste la balise.
+        child.replaceWith(...child.childNodes);
+        return;
+      }
+
+      [...child.attributes].forEach((attr) => {
+        const name = attr.name.toLowerCase();
+        const isEventHandler = name.startsWith('on');
+        const isStyle = name === 'style';
+        const styleIsSafe = isStyle && !/url\(|expression\(|javascript:/i.test(attr.value);
+        if (isEventHandler || (!isStyle) || (isStyle && !styleIsSafe)) {
+          child.removeAttribute(attr.name);
+        }
+      });
+
+      walk(child);
+    });
+  };
+
+  walk(doc.body);
+  return doc.body.innerHTML;
+}
+
 // ==========================================
 // PRODUCT VIEW
 // ==========================================
@@ -2624,7 +2666,14 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
 
             <div className="bg-primary/5 border border-primary/10 p-8 rounded-[2.5rem]">
               <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-4"><Info size={14} /> Additional Description</h4>
-              <p className="text-gray-600 font-medium leading-relaxed italic">{product.description || product.details?.note}</p>
+              {product.description ? (
+                <div
+                  className="text-gray-600 font-medium leading-relaxed text-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1.5 [&_p]:mb-3 [&_strong]:font-bold [&_strong]:text-gray-900 [&_u]:underline"
+                  dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(product.description) }}
+                />
+              ) : (
+                <p className="text-gray-600 font-medium leading-relaxed italic">{product.details?.note}</p>
+              )}
             </div>
           </div>
 
