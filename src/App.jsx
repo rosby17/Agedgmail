@@ -3436,7 +3436,15 @@ function App() {
       if (categoryVisual(p) !== activeGroup) return;
       counts.set(p.category, (counts.get(p.category) || 0) + 1);
     });
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => ({ id, name: categoryName(id) }));
+    // Le filtre reste basé sur la vraie catégorie (id), seul le libellé
+    // affiché change : une catégorie fourre-tout comme "Accounts-Telegram"
+    // n'a aucun sens listée sous l'onglet Gmail, on affiche le nom du groupe.
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => ({
+      id,
+      name: JUNK_CATEGORIES.some(j => String(id).toLowerCase() === j || String(id).toLowerCase().includes(j))
+        ? GROUP_LABELS[activeGroup]
+        : categoryName(id),
+    }));
   })();
 
   const filteredProducts = products
