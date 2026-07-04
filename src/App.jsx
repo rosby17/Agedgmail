@@ -2316,6 +2316,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       expectedAmount: resumeOrder.expected_amount,
       creditAmount: resumeOrder.credit_amount,
       paymentCode: profile?.display_name,
+      binanceOrderId: resumeOrder.binance_tx_id || undefined,
       expiresAt: resumeOrder.expires_at ? new Date(resumeOrder.expires_at).getTime() : Date.now() + 20 * 60_000,
     });
     setBinanceSubStep(resumeOrder.binance_tx_id ? 'submitted' : 'pay');
@@ -2331,6 +2332,24 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [step, payment]);
+
+  // Nouvelle tentative automatique périodique tant que l'approbation n'a pas
+  // encore trouvé de correspondance (ex. décalage de synchro côté Binance) —
+  // entièrement automatique, sans étape manuelle exposée au client.
+  useEffect(() => {
+    if (binanceSubStep !== 'submitted' || !payment?.orderId || !payment?.binanceOrderId) return;
+    const retry = setInterval(async () => {
+      const { data: fnData } = await supabase.functions.invoke('binance-submit-tx', {
+        body: { orderId: payment.orderId, binanceOrderId: payment.binanceOrderId },
+      });
+      if (fnData?.autoConfirmed) {
+        clearInterval(retry);
+        if (fetchProfile) await fetchProfile(session.user.id);
+        setStep('success');
+      }
+    }, 15000);
+    return () => clearInterval(retry);
+  }, [binanceSubStep, payment]);
 
   if (!session) { navigate('auth'); return null; }
 
@@ -2723,6 +2742,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                       if (fetchProfile) await fetchProfile(session.user.id);
                       setStep('success');
                     } else {
+                      setPayment(p => ({ ...p, binanceOrderId: binanceOrderIdInput.trim() }));
                       setBinanceSubStep('submitted');
                     }
                     setVerifying(false);
@@ -2741,8 +2761,8 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                   <RefreshCcw size={26} className="text-primary animate-spin" />
                 </div>
-                <p className="text-sm text-gray-600 font-bold">Order ID reçu — la vérification automatique n'a pas trouvé de correspondance immédiate, l'équipe va vérifier manuellement.</p>
-                <p className="text-xs text-gray-400">Cette page se met à jour automatiquement une fois le paiement validé.</p>
+                <p className="text-sm text-gray-600 font-bold">Vérification en cours d'approbation…</p>
+                <p className="text-xs text-gray-400">Cette page se met à jour automatiquement une fois le paiement approuvé.</p>
               </div>
             )}
           </div>
