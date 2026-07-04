@@ -99,6 +99,7 @@ serve(async (req) => {
         payment_method: paymentMethod,
         expected_amount: expectedAmount,
         expires_at: expiresAt,
+        pay_id: payId,
       })
       .select('id')
       .single()

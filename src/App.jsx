@@ -1321,7 +1321,7 @@ const OrderCredentialsModal = ({ order, onClose }) => (
 // Plus de sidebar à onglets (Dashboard/Orders/Settings) — Settings vit maintenant
 // dans sa propre page (menu déroulant du profil), et l'onglet "Dashboard" a été
 // retiré car redondant avec cette page elle-même.
-const MyOrdersView = ({ profile, navigate, orders = [] }) => {
+const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
   const [viewOrder, setViewOrder] = useState(null);
 
   return (
@@ -1362,7 +1362,17 @@ const MyOrdersView = ({ profile, navigate, orders = [] }) => {
                       </span>
                     </td>
                     <td className="py-6">
-                      {order.product_name !== "Recharge Binance" && (
+                      {order.product_id === 999 ? (
+                        order.status === 'pending' && order.payment_method === 'binance_pay' ? (
+                          new Date(order.expires_at || 0).getTime() > Date.now() ? (
+                            <button onClick={() => onResume && onResume(order)} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/20 transition-all">
+                              <RefreshCcw size={14} /> Continuer le paiement
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase tracking-tighter text-gray-400">Paiement expiré</span>
+                          )
+                        ) : null
+                      ) : (
                         <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
                           <Eye size={14} /> View access
                         </button>
@@ -2278,7 +2288,7 @@ const BONUS_TIERS = [
 ];
 const bonusPercentFor = (amountUsd) => [...BONUS_TIERS].reverse().find(t => amountUsd >= t.amount)?.pct || 0;
 
-const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile }) => {
+const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile, resumeOrder, clearResumeOrder }) => {
   const [amountUsd, setAmountUsd] = useState(suggestedAmount || 50);
   const [gateway, setGateway] = useState(null); // null tant que le client n'a pas choisi de passerelle
   const [payCurrency, setPayCurrency] = useState('usdttrc20');
@@ -2293,6 +2303,25 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => () => setSuggestedAmount(null), []);
+
+  // Reprise d'une commande Binance Pay 'pending' depuis "Mes commandes" : on
+  // rejoue l'étape d'attente avec les infos déjà en base, sans recréer de
+  // commande (le montant/code/expiration restent ceux d'origine).
+  useEffect(() => {
+    if (!resumeOrder) return;
+    setPayment({
+      provider: 'binance_pay',
+      orderId: resumeOrder.id,
+      payId: resumeOrder.pay_id,
+      expectedAmount: resumeOrder.expected_amount,
+      creditAmount: resumeOrder.credit_amount,
+      paymentCode: profile?.payment_code,
+      expiresAt: resumeOrder.expires_at ? new Date(resumeOrder.expires_at).getTime() : Date.now() + 20 * 60_000,
+    });
+    setBinanceSubStep(resumeOrder.binance_tx_id ? 'submitted' : 'pay');
+    setStep('awaiting');
+    if (clearResumeOrder) clearResumeOrder();
+  }, [resumeOrder]);
 
   // NOWPayments désactivé : plus besoin d'interroger les minimums de dépôt.
 
@@ -2631,7 +2660,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   Expire dans <span className={remainingMs < 60000 ? 'text-red-500' : 'text-primary'}>{remainingLabel}</span>
                 </div>
               </>
-            ) : (
+            ) : binanceSubStep === 'verify' ? (
               <>
                 <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between text-sm">
                   <div>
@@ -2690,10 +2719,8 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   Retour au paiement
                 </button>
               </>
-            )}
-
-            {binanceSubStep === 'submitted' && (
-              <div className="text-center space-y-4 pt-2 border-t border-gray-100">
+            ) : (
+              <div className="text-center space-y-4 py-4">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                   <RefreshCcw size={26} className="text-primary animate-spin" />
                 </div>
@@ -3463,6 +3490,7 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [rechargeSuggestedAmount, setRechargeSuggestedAmount] = useState(null);
+  const [resumeOrder, setResumeOrder] = useState(null); // commande Binance Pay 'pending' à reprendre
   const [allOrders, setAllOrders] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [actionStatus, setActionStatus] = useState(null);
@@ -3549,6 +3577,14 @@ function App() {
       supabase.removeChannel(ordersChannel);
     };
   }, []);
+
+  // Nettoie les recharges Binance Pay restées 'pending' au-delà de leur
+  // délai (client qui a fermé la fenêtre sans payer) — l'update déclenche
+  // le realtime ci-dessous, donc l'UI (badge "Expiré") se met à jour seule.
+  useEffect(() => {
+    if (!session || !supabase) return;
+    supabase.functions.invoke('binance-expire-stale', { body: {} }).catch(() => {});
+  }, [session]);
 
   // Real-time Orders — Client sees their own orders update instantly (e.g. recharge confirmed)
   useEffect(() => {
@@ -3814,9 +3850,9 @@ function App() {
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} />}
+        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} />}
         {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} />}
-        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} />}
+        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
           <AdminView
             navigate={navigate}
