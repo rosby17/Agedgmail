@@ -1942,6 +1942,68 @@ const RevenueChart = ({ confirmedOrders }) => {
   );
 };
 
+// Recharges Binance Pay en attente : confirmation manuelle (fallback tant
+// que l'historique Binance Pay n'est pas interrogeable automatiquement).
+const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
+  const [busyId, setBusyId] = useState(null);
+  const [msg, setMsg] = useState('');
+
+  const pending = allOrders.filter(o => o.product_id === 999 && o.payment_method === 'binance_pay' && o.status === 'pending');
+
+  const handleConfirm = async (order) => {
+    if (!window.confirm(`Confirmer la réception de $${Number(order.expected_amount).toFixed(4)} pour ${order.buyer_email} ?`)) return;
+    setBusyId(order.id);
+    setMsg('');
+    const { data, error } = await supabase.functions.invoke('binance-confirm-manual', { body: { orderId: order.id } });
+    if (error || data?.error) {
+      setMsg('Erreur : ' + (data?.error || error?.message));
+    } else {
+      setMsg(`Confirmé — $${Number(data.credited).toFixed(2)} crédité(s).`);
+      await fetchAllOrders();
+    }
+    setBusyId(null);
+  };
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+      <h2 className="text-2xl font-bold mb-2">Binance Pay — confirmations manuelles</h2>
+      <p className="text-xs text-gray-400 mb-8">Vérifie sur ton app Binance qu'un paiement du montant exact est bien arrivé avant de confirmer — l'opération crédite immédiatement le solde client.</p>
+      {msg && <div className="mb-6 text-sm font-bold text-gray-600 bg-gray-50 rounded-2xl px-5 py-3">{msg}</div>}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+              <th className="pb-4">Client</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
+              <th className="pb-4">Créé</th><th className="pb-4">Expire</th><th className="pb-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {pending.map(o => {
+              const expired = o.expires_at && new Date(o.expires_at).getTime() < Date.now();
+              return (
+                <tr key={o.id} className="text-gray-700">
+                  <td className="py-4 font-bold">{o.buyer_email}</td>
+                  <td className="py-4 font-mono font-black text-primary">${Number(o.expected_amount).toFixed(4)}</td>
+                  <td className="py-4 font-mono">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
+                  <td className="py-4 text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</td>
+                  <td className="py-4 text-xs">{expired ? <span className="text-red-500 font-bold">Expiré</span> : new Date(o.expires_at).toLocaleTimeString()}</td>
+                  <td className="py-4">
+                    <button onClick={() => handleConfirm(o)} disabled={busyId === o.id}
+                      className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50">
+                      {busyId === o.id ? 'Confirmation…' : 'Confirmer'}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {pending.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Aucun paiement Binance Pay en attente.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 const AdminView = ({
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
   actionStatus, setActionStatus,
@@ -2011,6 +2073,7 @@ const AdminView = ({
           {[
             { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
             { id: 'orders', label: 'Orders', icon: FileText },
+            { id: 'payments', label: 'Binance Pay', icon: Wallet },
             { id: 'users', label: 'Client Management', icon: Users },
             { id: 'supplier', label: 'Supplier', icon: Database },
           ].map(item => (
@@ -2165,6 +2228,8 @@ const AdminView = ({
             </div>
           )}
 
+          {activeTab === 'payments' && <BinancePaymentsAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />}
+
           {activeTab === 'supplier' && <SupplierAdmin products={products} fetchProducts={fetchProducts} />}
         </main>
       </div>
@@ -2179,13 +2244,15 @@ const CRYPTO_CURRENCIES = [
   { id: 'ltc', label: 'Litecoin', ticker: 'LTC', symbol: 'Ł', color: 'bg-slate-100 text-slate-600' },
 ];
 
-// Passerelles de paiement. Seule NOWPayments est branchée aujourd'hui ;
-// les autres apparaissent en aperçu ("Bientôt") tant qu'elles ne sont pas
-// réellement intégrées, pour ne jamais laisser croire qu'un moyen de
-// paiement fonctionne alors qu'il ne le fait pas.
+// Passerelles de paiement. Binance Pay est branché (confirmation manuelle
+// admin en attendant l'accès à l'historique Binance Pay). Les autres
+// apparaissent en aperçu ("Bientôt") tant qu'elles ne sont pas réellement
+// intégrées, pour ne jamais laisser croire qu'un moyen de paiement fonctionne
+// alors qu'il ne le fait pas.
 // NOWPayments mis hors service (remplacé par Binance) — code gardé au cas où
 // on le réactive plus tard, juste retiré de la liste des moyens proposés.
 const PAYMENT_GATEWAYS = [
+  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑' },
   { id: 'nowpayments', name: 'NOWPayments', sub: 'BTC, ETH, USDT, LTC…', enabled: false, symbol: '⛓' },
   { id: 'cryptomus', name: 'Cryptomus', sub: 'Crypto', enabled: false, symbol: '◆' },
 ];
@@ -2211,12 +2278,14 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
   useEffect(() => () => setSuggestedAmount(null), []);
 
+  // NOWPayments désactivé : plus besoin d'interroger les minimums de dépôt.
+
+  const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    if (!supabase) return;
-    supabase.functions.invoke('nowpayments-min-amounts').then(({ data }) => {
-      if (data && !data.error) setMinAmounts(data);
-    });
-  }, []);
+    if (step !== 'awaiting' || payment?.provider !== 'binance_pay') return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [step, payment]);
 
   if (!session) { navigate('auth'); return null; }
 
@@ -2224,6 +2293,8 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const bonusPct = bonusPercentFor(amountUsd);
   const selectedMin = minAmounts[payCurrency];
   const belowMin = typeof selectedMin === 'number' && amountUsd < selectedMin;
+  const remainingMs = payment?.expiresAt ? Math.max(0, payment.expiresAt - now) : 0;
+  const remainingLabel = `${Math.floor(remainingMs / 60000)}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0')}`;
 
   const extractFnErrorMessage = async (fnError) => {
     // Le SDK Supabase masque le corps JSON réel derrière un message
@@ -2240,6 +2311,31 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const handleSubmit = async () => {
     if (!gateway) { setError('Choisis une passerelle de paiement.'); return; }
     if (amountUsd <= 0) { setError('Montant invalide.'); return; }
+
+    if (gateway === 'binance_pay') {
+      setLoading(true);
+      setError('');
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('binance-create-order', {
+          body: { userId: session.user.id, email: session.user.email, amountUsd, paymentMethod: 'binance_pay' },
+        });
+        if (fnError) throw new Error(await extractFnErrorMessage(fnError));
+        if (fnData?.error) throw new Error(fnData.error);
+        if (!fnData?.payId || !fnData?.expectedAmount) throw new Error('Réponse Binance invalide.');
+
+        setPayment({
+          provider: 'binance_pay',
+          ...fnData,
+          expiresAt: Date.now() + fnData.expiresInMinutes * 60_000,
+        });
+        setStep('awaiting');
+      } catch (err) {
+        setError(err.message || 'Une erreur est survenue.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     if (gateway === 'nowpayments') {
       if (belowMin) { setError(`Montant minimum pour ${payCurrency.toUpperCase()} : $${selectedMin.toFixed(2)}`); return; }
@@ -2413,6 +2509,12 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             )}
 
+            {gateway === 'binance_pay' && (
+              <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
+                Paiement via Binance Pay. Un montant légèrement décalé (quelques centimes) te sera indiqué pour identifier ton paiement — envoie ce montant exact. Confirmation vérifiée manuellement, généralement rapide.
+              </div>
+            )}
+
             {gateway === 'nowpayments' && (
               <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
                 Dépôt en cryptomonnaie via NOWPayments.
@@ -2458,11 +2560,37 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             <p className="text-gray-500 text-sm leading-relaxed">
               {payment.provider === 'cryptomus'
                 ? "Finalise ton paiement dans l'onglet Cryptomus ouvert. Ton solde sera crédité automatiquement après confirmation."
-                : "Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation."}
+                : payment.provider === 'binance_pay'
+                  ? "Envoie exactement ce montant vers ce Pay ID Binance. La confirmation est vérifiée manuellement, ton solde est crédité dès validation."
+                  : "Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation."}
               {payment.bonusPct > 0 && <> Avec le bonus, tu recevras <span className="font-black text-primary">${Number(payment.creditAmount).toFixed(2)}</span>.</>}
             </p>
 
-            {payment.provider === 'cryptomus' ? (
+            {payment.provider === 'binance_pay' ? (
+              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`binancepay://pay?receiverId=${payment.payId}&amount=${payment.expectedAmount}`)}`}
+                  alt="QR Binance Pay"
+                  className="w-36 h-36 mx-auto rounded-xl bg-white p-2 border border-gray-100"
+                />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant exact à envoyer</p>
+                  <p className="text-2xl font-black text-primary font-mono">${Number(payment.expectedAmount).toFixed(4)}</p>
+                  <p className="text-[11px] text-red-500 font-bold mt-1">Le montant doit être exact au centime près (delta anti-collision) — sinon le rapprochement manuel prendra plus de temps.</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Pay ID Binance</p>
+                  <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
+                    <code className="text-sm font-mono text-gray-700 flex-grow text-left">{payment.payId}</code>
+                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.payId)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+                  </div>
+                  {copied && <p className="text-xs text-primary font-bold mt-2">Copié !</p>}
+                </div>
+                <div className="text-sm font-black text-gray-900">
+                  Expire dans <span className={remainingMs < 60000 ? 'text-red-500' : 'text-primary'}>{remainingLabel}</span>
+                </div>
+              </div>
+            ) : payment.provider === 'cryptomus' ? (
               <button
                 onClick={() => window.open(payment.payUrl, '_blank', 'noopener,noreferrer')}
                 className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white hover:bg-primary transition-all flex items-center justify-center gap-2"
