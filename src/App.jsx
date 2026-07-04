@@ -2177,8 +2177,10 @@ const CRYPTO_CURRENCIES = [
 // les autres apparaissent en aperçu ("Bientôt") tant qu'elles ne sont pas
 // réellement intégrées, pour ne jamais laisser croire qu'un moyen de
 // paiement fonctionne alors qu'il ne le fait pas.
+// NOWPayments mis hors service (remplacé par Binance) — code gardé au cas où
+// on le réactive plus tard, juste retiré de la liste des moyens proposés.
 const PAYMENT_GATEWAYS = [
-  { id: 'nowpayments', name: 'NOWPayments', sub: 'BTC, ETH, USDT, LTC…', enabled: true, symbol: '⛓' },
+  { id: 'nowpayments', name: 'NOWPayments', sub: 'BTC, ETH, USDT, LTC…', enabled: false, symbol: '⛓' },
   { id: 'cryptomus', name: 'Cryptomus', sub: 'Crypto', enabled: false, symbol: '◆' },
 ];
 
