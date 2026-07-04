@@ -1973,7 +1973,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-              <th className="pb-4">Client</th><th className="pb-4">Note à chercher</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
+              <th className="pb-4">Client</th><th className="pb-4">Binance Order ID</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
               <th className="pb-4">Créé</th><th className="pb-4">Expire</th><th className="pb-4">Actions</th>
             </tr>
           </thead>
@@ -1983,7 +1983,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
               return (
                 <tr key={o.id} className="text-gray-700">
                   <td className="py-4 font-bold">{o.buyer_email}</td>
-                  <td className="py-4 font-mono font-black tracking-widest">{o.note_code || '—'}</td>
+                  <td className="py-4 font-mono font-black tracking-widest">{o.binance_tx_id || <span className="text-gray-300 font-normal italic">non soumis</span>}</td>
                   <td className="py-4 font-mono font-black text-primary">${Number(o.expected_amount).toFixed(4)}</td>
                   <td className="py-4 font-mono">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
                   <td className="py-4 text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</td>
@@ -2276,6 +2276,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const [payment, setPayment] = useState(null); // { orderId, payAddress, payAmount, payCurrency, bonusPct, creditAmount }
   const [copied, setCopied] = useState(false);
   const [minAmounts, setMinAmounts] = useState({}); // { btc: 18.78, eth: 18.78, ... }
+  const [binanceSubStep, setBinanceSubStep] = useState('pay'); // 'pay' | 'verify' — Binance Pay uniquement
+  const [binanceOrderIdInput, setBinanceOrderIdInput] = useState('');
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => () => setSuggestedAmount(null), []);
 
@@ -2552,7 +2555,134 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           </div>
         )}
 
-        {step === 'awaiting' && payment && (
+        {step === 'awaiting' && payment?.provider === 'binance_pay' && (
+          <div className="px-8 pb-8 pt-2 space-y-6">
+            {/* Indicateur d'étapes 1/2, comme les checkouts crypto habituels */}
+            <div className="flex items-center justify-center gap-3 py-2">
+              <div className="flex flex-col items-center gap-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black ${binanceSubStep === 'pay' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
+                  {binanceSubStep === 'verify' ? <CheckCircle size={16} /> : '1'}
+                </div>
+                <span className={`text-[10px] font-bold ${binanceSubStep === 'pay' ? 'text-gray-900' : 'text-gray-400'}`}>Effectuer le paiement</span>
+              </div>
+              <div className="w-16 h-px bg-gray-200 mb-5" />
+              <div className="flex flex-col items-center gap-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black ${binanceSubStep === 'verify' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>2</div>
+                <span className={`text-[10px] font-bold ${binanceSubStep === 'verify' ? 'text-gray-900' : 'text-gray-400'}`}>Vérifier le paiement</span>
+              </div>
+            </div>
+
+            {binanceSubStep === 'pay' ? (
+              <>
+                <div className="text-center">
+                  <p className="text-4xl font-black text-gray-900 font-mono">${Number(payment.expectedAmount).toFixed(4)}</p>
+                  <p className="text-[11px] text-red-500 font-bold mt-1">Montant exact obligatoire (quelques centimes de plus que ${amountUsd}, pour t'identifier).</p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Envoyer à l'ID Binance</label>
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+                    <code className="text-sm font-mono text-gray-700 flex-grow text-left">{payment.payId}</code>
+                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.payId)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-bold hover:bg-primary transition-all flex items-center gap-1"><Copy size={12} /> Copier</button>
+                  </div>
+                  {copied && <p className="text-xs text-primary font-bold mt-2">Copié !</p>}
+                </div>
+
+                <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center gap-3">
+                  <img src="/binance-pay-qr.jpeg" alt="QR Binance Pay" className="w-44 rounded-xl border border-gray-100 shadow-sm" />
+                </div>
+
+                <div className="text-xs text-gray-500 leading-relaxed space-y-1">
+                  <p>Tu peux utiliser <span className="font-bold text-primary">Binance Pay</span> ou envoyer directement à cet ID Binance.</p>
+                  <p>1. Ouvre l'app Binance → Wallets → Pay.</p>
+                  <p>2. Envoie le montant exact ci-dessus à cet ID.</p>
+                  <p>3. Une fois le paiement effectué, clique "Confirmer le paiement" pour passer à l'étape suivante.</p>
+                </div>
+
+                <button
+                  onClick={() => setBinanceSubStep('verify')}
+                  className="w-full py-4 rounded-2xl font-bold bg-primary text-white hover:bg-primaryDark transition-all"
+                >
+                  Confirmer le paiement
+                </button>
+                <div className="text-center text-xs font-bold text-gray-900">
+                  Expire dans <span className={remainingMs < 60000 ? 'text-red-500' : 'text-primary'}>{remainingLabel}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between text-sm">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</p>
+                    <p className="font-black text-primary font-mono">${Number(payment.expectedAmount).toFixed(4)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Envoyé à l'ID Binance</p>
+                    <p className="font-bold text-gray-700 font-mono">{payment.payId}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Ton Binance Order ID</label>
+                  <input
+                    type="text"
+                    value={binanceOrderIdInput}
+                    onChange={e => setBinanceOrderIdInput(e.target.value)}
+                    placeholder="Ex: 1234567890123456789"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-mono text-sm"
+                  />
+                </div>
+
+                <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed space-y-1">
+                  <p className="font-bold text-gray-700">Où trouver ton Order ID :</p>
+                  <p>1. Dans l'app Binance, ouvre le détail du paiement réussi.</p>
+                  <p>2. Copie l'"Order ID" affiché.</p>
+                  <p>3. Colle-le ci-dessus et touche "Vérifier le paiement".</p>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100">{error}</div>
+                )}
+
+                <button
+                  onClick={async () => {
+                    if (!binanceOrderIdInput.trim()) { setError('Order ID requis.'); return; }
+                    setVerifying(true);
+                    setError('');
+                    const { data: fnData, error: fnError } = await supabase.functions.invoke('binance-submit-tx', {
+                      body: { orderId: payment.orderId, binanceOrderId: binanceOrderIdInput.trim() },
+                    });
+                    if (fnError || fnData?.error) {
+                      setError(fnData?.error || (await extractFnErrorMessage(fnError)));
+                    } else {
+                      setBinanceSubStep('submitted');
+                    }
+                    setVerifying(false);
+                  }}
+                  disabled={verifying}
+                  className="w-full py-4 rounded-2xl font-bold bg-primary text-white hover:bg-primaryDark transition-all disabled:opacity-50"
+                >
+                  {verifying ? 'Vérification…' : 'Vérifier le paiement'}
+                </button>
+                <button onClick={() => setBinanceSubStep('pay')} className="w-full py-3 rounded-2xl font-bold text-gray-500 hover:text-gray-900 transition-all">
+                  Retour au paiement
+                </button>
+              </>
+            )}
+
+            {binanceSubStep === 'submitted' && (
+              <div className="text-center space-y-4 pt-2 border-t border-gray-100">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <RefreshCcw size={26} className="text-primary animate-spin" />
+                </div>
+                <p className="text-sm text-gray-600 font-bold">Order ID reçu — en attente de vérification par l'équipe.</p>
+                <p className="text-xs text-gray-400">Cette page se met à jour automatiquement une fois le paiement validé.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 'awaiting' && payment && payment.provider !== 'binance_pay' && (
           <div className="px-8 pb-8 pt-2 text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
               <RefreshCcw size={32} className="text-primary animate-spin" />
@@ -2561,48 +2691,11 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             <p className="text-gray-500 text-sm leading-relaxed">
               {payment.provider === 'cryptomus'
                 ? "Finalise ton paiement dans l'onglet Cryptomus ouvert. Ton solde sera crédité automatiquement après confirmation."
-                : payment.provider === 'binance_pay'
-                  ? "Envoie exactement ce montant vers ce Pay ID Binance. La confirmation est vérifiée manuellement, ton solde est crédité dès validation."
-                  : "Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation."}
+                : "Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation."}
               {payment.bonusPct > 0 && <> Avec le bonus, tu recevras <span className="font-black text-primary">${Number(payment.creditAmount).toFixed(2)}</span>.</>}
             </p>
 
-            {payment.provider === 'binance_pay' ? (
-              <div className="bg-gray-50 rounded-2xl p-6 space-y-5">
-                <img
-                  src="/binance-pay-qr.jpeg"
-                  alt="QR Binance Pay"
-                  className="w-40 mx-auto rounded-xl border border-gray-100 shadow-sm"
-                />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant exact à envoyer</p>
-                  <p className="text-2xl font-black text-primary font-mono">${Number(payment.expectedAmount).toFixed(4)}</p>
-                  <p className="text-[11px] text-red-500 font-bold mt-1">Le montant doit être exact au centime près (delta anti-collision) — sinon le rapprochement manuel prendra plus de temps.</p>
-                </div>
-
-                <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 text-left">
-                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">⚠️ Étape obligatoire</p>
-                  <p className="text-xs text-gray-700 leading-relaxed mb-3">
-                    Dans l'app Binance, avant d'envoyer, ajoute ce code dans le champ <span className="font-bold">"Note"</span> du paiement (note au bénéficiaire). C'est ce qui permet d'identifier ton paiement.
-                  </p>
-                  <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-4 py-3">
-                    <code className="text-lg font-black font-mono text-gray-900 flex-grow text-left tracking-widest">{payment.noteCode}</code>
-                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.noteCode)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
-                  </div>
-                  {copied && <p className="text-xs text-primary font-bold mt-2">Copié !</p>}
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Pay ID / Pseudo Binance</p>
-                  <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
-                    <code className="text-sm font-mono text-gray-700 flex-grow text-left">{payment.payId}</code>
-                  </div>
-                </div>
-                <div className="text-sm font-black text-gray-900">
-                  Expire dans <span className={remainingMs < 60000 ? 'text-red-500' : 'text-primary'}>{remainingLabel}</span>
-                </div>
-              </div>
-            ) : payment.provider === 'cryptomus' ? (
+            {payment.provider === 'cryptomus' ? (
               <button
                 onClick={() => window.open(payment.payUrl, '_blank', 'noopener,noreferrer')}
                 className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white hover:bg-primary transition-all flex items-center justify-center gap-2"
