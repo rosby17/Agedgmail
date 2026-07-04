@@ -9,7 +9,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyWebhookSignature } from '../_shared/cryptomus.ts'
-import { alertAdmin } from '../_shared/supplier-db.ts'
+import { alertAdmin, notifyTelegram } from '../_shared/supplier-db.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,7 +62,7 @@ serve(async (req) => {
     }).eq('payment_id', paymentId).eq('provider', 'cryptomus')
 
     const { data: order, error: orderErr } = await admin
-      .from('orders').select('id, user_id, total_price, credit_amount, status').eq('id', orderId).single()
+      .from('orders').select('id, user_id, buyer_email, total_price, credit_amount, status').eq('id', orderId).single()
     if (orderErr || !order) throw new Error('Commande introuvable: ' + orderId)
 
     if (order.status === 'confirmed' || order.status === 'cancelled') {
@@ -86,6 +86,13 @@ serve(async (req) => {
       await alertAdmin('💰 Recharge confirmée (Cryptomus)', {
         order_id: orderId, amount: `${creditedAmount} USD`,
       })
+      await notifyTelegram(
+        `✅ <b>Recharge Cryptomus confirmée</b>\n\n` +
+        `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
+        `• <b>Commande :</b> <code>#${orderId}</code>\n` +
+        `• <b>Montant crédité :</b> $${Number(creditedAmount).toFixed(2)}\n` +
+        `• <b>Statut :</b> ${status}`
+      )
 
     } else if (FINAL_FAILURE.has(status)) {
       await admin.from('orders').update({ status: 'cancelled' }).eq('id', orderId)

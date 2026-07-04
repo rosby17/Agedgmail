@@ -14,7 +14,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as ytseller from '../_shared/ytseller.ts'
 import * as smmshiba from '../_shared/smmshiba.ts'
-import { getAdmin, logSupplier, alertAdmin, refundOrder, corsHeaders } from '../_shared/supplier-db.ts'
+import { getAdmin, logSupplier, alertAdmin, refundOrder, notifyTelegram, corsHeaders } from '../_shared/supplier-db.ts'
 
 const ADAPTERS: Record<string, { getOrderStatus: typeof ytseller.getOrderStatus; getResult: typeof ytseller.getResult }> = {
   ytseller, smmshiba,
@@ -32,7 +32,7 @@ serve(async (req) => {
   try {
     const { data: orders, error } = await admin
       .from('orders')
-      .select('id, user_id, quantity, total_price, created_at, supplier, supplier_order_id, supplier_attempts')
+      .select('id, user_id, buyer_email, product_name, quantity, total_price, created_at, supplier, supplier_order_id, supplier_attempts')
       .eq('status', 'processing')
       .in('supplier', Object.keys(ADAPTERS))
       .order('created_at', { ascending: true })
@@ -103,6 +103,16 @@ serve(async (req) => {
           await alertAdmin('💰 Vente confirmée', {
             order_id: orderId, supplier, amount: `${order.total_price || 0} USD`, quantity: String(result.length),
           })
+          await notifyTelegram(
+            `💰 <b>Vente confirmée & Livrée !</b>\n\n` +
+            `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
+            `• <b>Produit :</b> ${order.product_name || '—'}\n` +
+            `• <b>Commande :</b> <code>#${orderId}</code>\n` +
+            `• <b>Quantité :</b> ${result.length}\n` +
+            `• <b>Montant :</b> $${Number(order.total_price).toFixed(2)}\n` +
+            `• <b>Fournisseur :</b> ${supplier.toUpperCase()}\n` +
+            `• <b>ID Fournisseur :</b> #${order.supplier_order_id}`
+          )
           continue
         }
 

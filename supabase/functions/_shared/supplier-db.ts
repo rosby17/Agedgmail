@@ -147,3 +147,29 @@ export async function refundOrder(
     reason,
   })
 }
+
+/** Envoie un message de notification Telegram si TELEGRAM_BOT_TOKEN et TELEGRAM_CHAT_ID sont configurés */
+export async function notifyTelegram(message: string) {
+  const token = Deno.env.get('TELEGRAM_BOT_TOKEN')
+  const chatId = Deno.env.get('TELEGRAM_CHAT_ID')
+  if (!token || !chatId) {
+    console.log('Notification Telegram non configurée (TELEGRAM_BOT_TOKEN ou TELEGRAM_CHAT_ID manquant)')
+    return
+  }
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'HTML',
+      }),
+    })
+    if (!res.ok) {
+      console.error(`Erreur Telegram (HTTP ${res.status}):`, await res.text())
+    }
+  } catch (err) {
+    console.error('notifyTelegram error:', (err as Error).message)
+  }
+}

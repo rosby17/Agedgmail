@@ -14,6 +14,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { findMatchingIncomingPayment } from '../_shared/binance.ts'
+import { notifyTelegram } from '../_shared/supplier-db.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,10 +60,16 @@ serve(async (req) => {
         if (profile) {
           const credit = order.credit_amount ?? order.total_price
           await admin.from('profiles').update({ balance: (profile.balance || 0) + credit }).eq('id', order.user_id)
-          await admin.from('orders').update({
+           await admin.from('orders').update({
             status: 'confirmed',
             confirmed_at: new Date().toISOString(),
           }).eq('id', orderId)
+          await notifyTelegram(
+            `✅ <b>Recharge Binance Pay auto-confirmée</b>\n\n` +
+            `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
+            `• <b>Montant crédité :</b> $${Number(credit).toFixed(2)}\n` +
+            `• <b>Transaction Binance :</b> <code>${submittedId}</code>`
+          )
           return json({ ok: true, autoConfirmed: true })
         }
       }
@@ -70,6 +77,14 @@ serve(async (req) => {
       console.error('Vérification auto Binance Pay indisponible (fallback manuel):', (verifyErr as Error).message)
     }
 
+    await notifyTelegram(
+      `🔔 <b>Nouveau dépôt Binance Pay (À Valider)</b>\n\n` +
+      `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
+      `• <b>Montant attendu :</b> $${Number(order.expected_amount).toFixed(2)}\n` +
+      `• <b>Code de note :</b> <code>${order.note_code || '—'}</code>\n` +
+      `• <b>Transaction Binance :</b> <code>${submittedId}</code>\n\n` +
+      `👉 <i>Veuillez vérifier votre compte Binance et valider le dépôt depuis le panel admin.</i>`
+    )
     return json({ ok: true, autoConfirmed: false })
   } catch (err) {
     console.error('Erreur binance-submit-tx:', (err as Error).message)

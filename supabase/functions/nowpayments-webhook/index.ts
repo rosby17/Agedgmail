@@ -11,7 +11,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyIPNSignature } from '../_shared/nowpayments.ts'
-import { alertAdmin } from '../_shared/supplier-db.ts'
+import { alertAdmin, notifyTelegram } from '../_shared/supplier-db.ts'
 
 const IPN_SECRET = Deno.env.get('NOWPAYMENTS_IPN_SECRET') ?? ''
 
@@ -69,7 +69,7 @@ serve(async (req) => {
     }).eq('payment_id', paymentId)
 
     const { data: order, error: orderErr } = await admin
-      .from('orders').select('id, user_id, total_price, credit_amount, status').eq('id', orderId).single()
+      .from('orders').select('id, user_id, buyer_email, total_price, credit_amount, status').eq('id', orderId).single()
     if (orderErr || !order) throw new Error('Commande introuvable: ' + orderId)
 
     // Idempotence : commande déjà finalisée (créditée ou annulée) -> ne rien refaire.
@@ -96,6 +96,14 @@ serve(async (req) => {
       await alertAdmin('💰 Recharge confirmée (NOWPayments)', {
         order_id: orderId, amount: `${creditedAmount} USD`,
       })
+      await notifyTelegram(
+        `✅ <b>Recharge NOWPayments confirmée</b>\n\n` +
+        `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
+        `• <b>Commande :</b> <code>#${orderId}</code>\n` +
+        `• <b>Montant crédité :</b> $${Number(creditedAmount).toFixed(2)}\n` +
+        `• <b>Moyen :</b> ${String(payload.pay_currency || '').toUpperCase() || 'Crypto'}\n` +
+        `• <b>Statut :</b> ${status}`
+      )
 
     } else if (FINAL_FAILURE.has(status)) {
       await admin.from('orders').update({ status: 'cancelled' }).eq('id', orderId)

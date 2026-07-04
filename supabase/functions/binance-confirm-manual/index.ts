@@ -7,6 +7,7 @@
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { notifyTelegram } from '../_shared/supplier-db.ts'
 
 const ADMIN_EMAIL = 'rooseveltmkr@gmail.com'
 
@@ -56,6 +57,13 @@ serve(async (req) => {
       binance_tx_id: txRef ? String(txRef) : 'manual-confirm',
       confirmed_at: new Date().toISOString(),
     }).eq('id', orderId)
+
+    await notifyTelegram(
+      `✅ <b>Recharge Binance Pay validée manuellement (Admin)</b>\n\n` +
+      `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
+      `• <b>Montant crédité :</b> $${Number(credit).toFixed(2)}\n` +
+      `• <b>Réf :</b> <code>${txRef || 'manual-confirm'}</code>`
+    )
 
     return json({ ok: true, credited: credit })
   } catch (err) {

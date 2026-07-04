@@ -15,7 +15,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as ytseller from '../_shared/ytseller.ts'
 import * as smmshiba from '../_shared/smmshiba.ts'
-import { getAdmin, logSupplier, alertAdmin, refundOrder, corsHeaders } from '../_shared/supplier-db.ts'
+import { getAdmin, logSupplier, alertAdmin, refundOrder, notifyTelegram, corsHeaders } from '../_shared/supplier-db.ts'
 
 const ADAPTERS: Record<string, { getBalance: typeof ytseller.getBalance; addProductOrder: typeof ytseller.addProductOrder }> = {
   ytseller, smmshiba,
@@ -94,6 +94,15 @@ serve(async (req) => {
         balance: `${balance} ${currency}`,
         cost: `${cost} ${currency}`,
       })
+
+      await notifyTelegram(
+        `⚠️ <b>Solde fournisseur insuffisant !</b>\n\n` +
+        `• <b>Fournisseur :</b> ${supplier.toUpperCase()}\n` +
+        `• <b>Commande :</b> <code>#${orderId}</code>\n` +
+        `• <b>Solde actuel :</b> ${balance} ${currency}\n` +
+        `• <b>Coût commande :</b> ${cost} ${currency}\n\n` +
+        `👉 <i>Veuillez recharger votre compte ${supplier.toUpperCase()} puis relancer la commande depuis le panel admin.</i>`
+      )
 
       return new Response(JSON.stringify({ ok: false, refunded: false, reason: 'insufficient_supplier_balance' }), {
         status: 402,
