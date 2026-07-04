@@ -2718,6 +2718,10 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                     });
                     if (fnError || fnData?.error) {
                       setError(fnData?.error || (await extractFnErrorMessage(fnError)));
+                    } else if (fnData?.autoConfirmed) {
+                      // Vérifié automatiquement contre l'historique Binance Pay — pas besoin d'attendre l'admin.
+                      if (fetchProfile) await fetchProfile(session.user.id);
+                      setStep('success');
                     } else {
                       setBinanceSubStep('submitted');
                     }
@@ -2737,7 +2741,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                   <RefreshCcw size={26} className="text-primary animate-spin" />
                 </div>
-                <p className="text-sm text-gray-600 font-bold">Order ID reçu — en attente de vérification par l'équipe.</p>
+                <p className="text-sm text-gray-600 font-bold">Order ID reçu — la vérification automatique n'a pas trouvé de correspondance immédiate, l'équipe va vérifier manuellement.</p>
                 <p className="text-xs text-gray-400">Cette page se met à jour automatiquement une fois le paiement validé.</p>
               </div>
             )}

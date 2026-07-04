@@ -2,14 +2,18 @@
 // binance-submit-tx
 // Étape 2 du paiement Binance Pay : le client colle l'Order ID de SA
 // transaction Binance (visible dans le détail de son paiement réussi côté
-// app Binance) — on l'attache à la commande pour que l'admin puisse la
-// retrouver facilement dans son propre historique avant de confirmer.
-// Ne crédite rien : ça reste une pièce à l'appui, pas une preuve en soi
-// (un ID collé ne prouve pas le paiement — seule la vérification manuelle
-// de l'admin, via binance-confirm-manual, crédite le solde).
+// app Binance). On l'attache à la commande, PUIS on tente immédiatement une
+// vérification automatique via l'historique Binance Pay (findMatchingIncomingPayment) :
+// si une transaction entrante correspond exactement (même orderId, montant
+// attendu, reçue sur notre compte), le solde est crédité tout de suite, sans
+// intervention humaine. Si l'API ne renvoie rien de concluant (endpoint
+// indisponible, décalage de synchro, montant légèrement différent...), la
+// commande reste 'pending' et passe par la confirmation manuelle admin
+// (binance-confirm-manual) — jamais bloquant, jamais de faux positif.
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { findMatchingIncomingPayment } from '../_shared/binance.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +31,7 @@ serve(async (req) => {
     if (!binanceOrderId || !String(binanceOrderId).trim()) {
       return json({ error: 'Order ID Binance requis' }, 400)
     }
+    const submittedId = String(binanceOrderId).trim()
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -34,17 +39,38 @@ serve(async (req) => {
     )
 
     const { data: order, error: orderErr } = await admin
-      .from('orders').select('id, status').eq('id', orderId).maybeSingle()
+      .from('orders').select('*').eq('id', orderId).maybeSingle()
     if (orderErr || !order) return json({ error: 'Commande introuvable' }, 404)
     if (order.status !== 'pending') return json({ error: `Commande déjà en statut "${order.status}"` }, 409)
 
     const { error: updErr } = await admin
       .from('orders')
-      .update({ binance_tx_id: String(binanceOrderId).trim() })
+      .update({ binance_tx_id: submittedId })
       .eq('id', orderId)
     if (updErr) throw updErr
 
-    return json({ ok: true })
+    // Tentative de vérification automatique (best-effort : ne bloque jamais
+    // la réponse au client, une erreur ici retombe simplement sur le fallback manuel).
+    try {
+      const match = await findMatchingIncomingPayment(submittedId, Number(order.expected_amount))
+      if (match) {
+        const { data: profile } = await admin
+          .from('profiles').select('balance').eq('id', order.user_id).maybeSingle()
+        if (profile) {
+          const credit = order.credit_amount ?? order.total_price
+          await admin.from('profiles').update({ balance: (profile.balance || 0) + credit }).eq('id', order.user_id)
+          await admin.from('orders').update({
+            status: 'confirmed',
+            confirmed_at: new Date().toISOString(),
+          }).eq('id', orderId)
+          return json({ ok: true, autoConfirmed: true })
+        }
+      }
+    } catch (verifyErr) {
+      console.error('Vérification auto Binance Pay indisponible (fallback manuel):', (verifyErr as Error).message)
+    }
+
+    return json({ ok: true, autoConfirmed: false })
   } catch (err) {
     console.error('Erreur binance-submit-tx:', (err as Error).message)
     return json({ error: (err as Error).message }, 500)
