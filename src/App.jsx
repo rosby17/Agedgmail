@@ -1604,6 +1604,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   const [editForm, setEditForm] = useState({ supplier_product_id: '', margin_percent: 30, active: true });
   const [newMap, setNewMap] = useState({ product_id: '', supplier: 'ytseller', supplier_product_id: '', margin_percent: 30 });
   const [marginInput, setMarginInput] = useState('');
+  const [busyRetryId, setBusyRetryId] = useState(null);
 
   const productName = (id) => products.find(p => p.id === id)?.name || `#${id}`;
 
@@ -1641,6 +1642,26 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
       setMsg(`Erreur sync ${SUPPLIER_LABEL[supplier]} : ` + e.message);
     }
     setSyncing(null);
+  };
+
+  const handleRetryDropship = async (orderId) => {
+    setBusyRetryId(orderId);
+    setMsg('');
+    try {
+      const { data, error } = await supabase.functions.invoke('dropship-place-order', {
+        body: { orderId }
+      });
+      if (error || data?.error) {
+        setMsg('Erreur relance : ' + (data?.error || error?.message));
+      } else {
+        setMsg(`Commande relancée avec succès ! (ID fournisseur : ${data.supplier_order_id || 'transmis'})`);
+        await fetchAll();
+      }
+    } catch (e) {
+      setMsg('Erreur relance : ' + e.message);
+    } finally {
+      setBusyRetryId(null);
+    }
   };
 
   const handleFullImport = async () => {
@@ -1851,7 +1872,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
             <thead>
               <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
                 <th className="pb-4">Order</th><th className="pb-4">Product</th><th className="pb-4">Supplier</th><th className="pb-4">Qty</th>
-                <th className="pb-4">Supplier #</th><th className="pb-4">Status</th><th className="pb-4">Last check</th>
+                <th className="pb-4">Supplier #</th><th className="pb-4">Status</th><th className="pb-4">Last check</th><th className="pb-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -1864,9 +1885,20 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                   <td className="py-4 font-mono">{o.supplier_order_id || '—'}</td>
                   <td className="py-4"><span className="px-2 py-1 rounded-lg bg-yellow-50 text-yellow-700 font-bold text-xs">{o.supplier_status || 'Pending'}</span></td>
                   <td className="py-4 text-xs text-gray-400">{o.supplier_last_checked_at ? new Date(o.supplier_last_checked_at).toLocaleString() : '—'}</td>
+                  <td className="py-4">
+                    {!o.supplier_order_id && (
+                      <button
+                        onClick={() => handleRetryDropship(o.id)}
+                        disabled={busyRetryId === o.id}
+                        className="px-3 py-1.5 rounded-lg bg-primary text-white font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50"
+                      >
+                        {busyRetryId === o.id ? 'Relance...' : 'Relancer'}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
-              {pending.length === 0 && <tr><td colSpan={7} className="py-8 text-center text-gray-400">No pending order.</td></tr>}
+              {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">No pending order.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1972,7 +2004,6 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
   }, [allOrders]);
 
   const handleConfirm = async (order) => {
-    if (!window.confirm(`Confirmer la réception de $${Number(order.expected_amount).toFixed(2)} pour ${order.buyer_email} ?`)) return;
     setBusyId(order.id);
     setMsg('');
     const { data, error } = await supabase.functions.invoke('binance-confirm-manual', { body: { orderId: order.id } });
@@ -1980,6 +2011,19 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
       setMsg('Erreur : ' + (data?.error || error?.message));
     } else {
       setMsg(`Confirmé — $${Number(data.credited).toFixed(2)} crédité(s).`);
+      await fetchAllOrders();
+    }
+    setBusyId(null);
+  };
+
+  const handleReject = async (order) => {
+    setBusyId(order.id);
+    setMsg('');
+    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id);
+    if (error) {
+      setMsg('Erreur : ' + error.message);
+    } else {
+      setMsg(`Paiement de ${order.buyer_email} rejeté (statut annulé).`);
       await fetchAllOrders();
     }
     setBusyId(null);
@@ -2010,10 +2054,14 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                   <td className="py-4 font-mono">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
                   <td className="py-4 text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</td>
                   <td className="py-4 text-xs">{expired ? <span className="text-red-500 font-bold">Expiré</span> : new Date(o.expires_at).toLocaleTimeString()}</td>
-                  <td className="py-4">
+                  <td className="py-4 flex gap-2">
                     <button onClick={() => handleConfirm(o)} disabled={busyId === o.id}
                       className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50">
                       {busyId === o.id ? 'Confirmation…' : 'Confirmer'}
+                    </button>
+                    <button onClick={() => handleReject(o)} disabled={busyId === o.id}
+                      className="px-4 py-2 rounded-xl bg-red-100 text-red-700 font-bold text-xs hover:bg-red-200 transition-all disabled:opacity-50">
+                      Rejeter
                     </button>
                   </td>
                 </tr>
@@ -2477,7 +2525,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
         setStep('success');
       } else if (data?.status === 'cancelled') {
         clearInterval(interval);
-        setError('Le paiement a échoué ou a expiré. Réessaie avec un nouveau paiement.');
+        setError('Le paiement a été rejeté, a échoué ou a expiré. Réessaie avec un nouveau paiement ou vérifie tes informations.');
         setStep('form');
       }
     }, 6000);
@@ -2762,7 +2810,17 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   <RefreshCcw size={26} className="text-primary animate-spin" />
                 </div>
                 <p className="text-sm text-gray-600 font-bold">Vérification en cours d'approbation…</p>
-                <p className="text-xs text-gray-400">Cette page se met à jour automatiquement une fois le paiement approuvé.</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 text-left space-y-1.5 leading-relaxed">
+                  <p className="font-bold">⚠️ Vérification automatique infructueuse</p>
+                  <p>L'Order ID soumis n'a pas pu être validé automatiquement par l'API Binance.</p>
+                  <p>Votre dépôt est en cours d'approbation par un administrateur. Si vous avez saisi un mauvais ID ou un mauvais mode de paiement, veuillez le corriger ci-dessous pour éviter que le dépôt ne soit rejeté.</p>
+                </div>
+                <button
+                  onClick={() => setBinanceSubStep('verify')}
+                  className="w-full py-3 text-xs font-bold text-gray-700 border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all"
+                >
+                  Corriger mon Order ID
+                </button>
               </div>
             )}
           </div>

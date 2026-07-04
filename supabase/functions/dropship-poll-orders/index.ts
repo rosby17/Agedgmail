@@ -35,7 +35,6 @@ serve(async (req) => {
       .select('id, user_id, quantity, total_price, created_at, supplier, supplier_order_id, supplier_attempts')
       .eq('status', 'processing')
       .in('supplier', Object.keys(ADAPTERS))
-      .not('supplier_order_id', 'is', null)
       .order('created_at', { ascending: true })
       .limit(BATCH)
     if (error) throw new Error(error.message)
@@ -47,6 +46,37 @@ serve(async (req) => {
       const adapter = ADAPTERS[supplier]
       try {
         if (!adapter) throw new Error(`Fournisseur inconnu sur la commande : ${supplier}`)
+
+        if (!order.supplier_order_id) {
+          // Commande non encore passée au fournisseur (ex. solde insuffisant).
+          // Tente une nouvelle transmission automatique.
+          try {
+            const { data: placeRes, error: placeErr } = await admin.functions.invoke('dropship-place-order', {
+              body: { orderId }
+            })
+            if (placeErr) throw placeErr
+            if (placeRes?.ok || placeRes?.supplier_order_id) {
+              summary.waiting++
+              continue
+            }
+          } catch (placeErr) {
+            console.error(`Tentative de transmission automatique échouée pour la commande ${orderId}:`, (placeErr as Error).message)
+          }
+
+          // Timeout après 48h (2880 minutes) pour les commandes en attente de solde fournisseur
+          const ageMin = (Date.now() - new Date(order.created_at).getTime()) / 60000
+          if (ageMin > 2880) {
+            await logSupplier(admin, {
+              order_id: orderId, action: 'timeout-restock', level: 'error', supplier,
+              message: `Timeout attente réapprovisionnement (48h). Commande remboursée.`,
+            })
+            await refundOrder(admin, orderId, `Timeout attente solde fournisseur`)
+            summary.timed_out++
+          } else {
+            summary.waiting++
+          }
+          continue
+        }
 
         const st = await adapter.getOrderStatus(order.supplier_order_id)
         const status = st.status.toLowerCase()

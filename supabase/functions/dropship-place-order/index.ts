@@ -78,11 +78,24 @@ serve(async (req) => {
     if (balance < cost) {
       await logSupplier(admin, {
         order_id: orderId, action: 'place-order', level: 'error', supplier,
-        message: `Solde ${supplier} insuffisant : ${balance} ${currency} < coût ${cost} ${currency}. Commande remboursée.`,
+        message: `Solde ${supplier} insuffisant : ${balance} ${currency} < coût ${cost} ${currency}. Commande mise en attente de réapprovisionnement.`,
         payload: { balance, cost, quantity },
       })
-      await refundOrder(admin, orderId, `Solde fournisseur (${supplier}) insuffisant`)
-      return new Response(JSON.stringify({ ok: false, refunded: true, reason: 'insufficient_supplier_balance' }), {
+      
+      await admin.from('orders').update({
+        supplier,
+        supplier_status: 'Solde insuffisant (Attente réapprovisionnement)',
+        supplier_last_checked_at: new Date().toISOString(),
+      }).eq('id', orderId)
+
+      await alertAdmin('⚠️ Solde fournisseur insuffisant', {
+        order_id: String(orderId),
+        supplier,
+        balance: `${balance} ${currency}`,
+        cost: `${cost} ${currency}`,
+      })
+
+      return new Response(JSON.stringify({ ok: false, refunded: false, reason: 'insufficient_supplier_balance' }), {
         status: 402,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
