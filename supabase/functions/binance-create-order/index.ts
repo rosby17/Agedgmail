@@ -107,6 +107,12 @@ serve(async (req) => {
 
     if (!order) throw new Error(lastError || 'Impossible de générer un montant unique, réessaie.')
 
+    // Code de référence à coller dans la note de paiement Binance Pay —
+    // dérivé de l'id de commande (déjà unique), donc jamais de collision
+    // possible même si deux commandes partagent un instant de création.
+    const noteCode = `AG${String(order.id).replace(/-/g, '').slice(0, 6).toUpperCase()}`
+    await admin.from('orders').update({ note_code: noteCode }).eq('id', order.id)
+
     return json({
       orderId: order.id,
       paymentMethod,
@@ -115,6 +121,7 @@ serve(async (req) => {
       creditAmount,
       bonusPct,
       expiresInMinutes: EXPIRY_MINUTES,
+      noteCode,
     })
   } catch (err) {
     console.error('Erreur binance-create-order:', (err as Error).message)

@@ -1973,7 +1973,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-              <th className="pb-4">Client</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
+              <th className="pb-4">Client</th><th className="pb-4">Note à chercher</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
               <th className="pb-4">Créé</th><th className="pb-4">Expire</th><th className="pb-4">Actions</th>
             </tr>
           </thead>
@@ -1983,6 +1983,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
               return (
                 <tr key={o.id} className="text-gray-700">
                   <td className="py-4 font-bold">{o.buyer_email}</td>
+                  <td className="py-4 font-mono font-black tracking-widest">{o.note_code || '—'}</td>
                   <td className="py-4 font-mono font-black text-primary">${Number(o.expected_amount).toFixed(4)}</td>
                   <td className="py-4 font-mono">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
                   <td className="py-4 text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</td>
@@ -1996,7 +1997,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                 </tr>
               );
             })}
-            {pending.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Aucun paiement Binance Pay en attente.</td></tr>}
+            {pending.length === 0 && <tr><td colSpan={7} className="py-8 text-center text-gray-400">Aucun paiement Binance Pay en attente.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -2567,24 +2568,35 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </p>
 
             {payment.provider === 'binance_pay' ? (
-              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+              <div className="bg-gray-50 rounded-2xl p-6 space-y-5">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`binancepay://pay?receiverId=${payment.payId}&amount=${payment.expectedAmount}`)}`}
+                  src="/binance-pay-qr.jpeg"
                   alt="QR Binance Pay"
-                  className="w-36 h-36 mx-auto rounded-xl bg-white p-2 border border-gray-100"
+                  className="w-40 mx-auto rounded-xl border border-gray-100 shadow-sm"
                 />
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant exact à envoyer</p>
                   <p className="text-2xl font-black text-primary font-mono">${Number(payment.expectedAmount).toFixed(4)}</p>
                   <p className="text-[11px] text-red-500 font-bold mt-1">Le montant doit être exact au centime près (delta anti-collision) — sinon le rapprochement manuel prendra plus de temps.</p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Pay ID Binance</p>
-                  <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
-                    <code className="text-sm font-mono text-gray-700 flex-grow text-left">{payment.payId}</code>
-                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.payId)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 text-left">
+                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">⚠️ Étape obligatoire</p>
+                  <p className="text-xs text-gray-700 leading-relaxed mb-3">
+                    Dans l'app Binance, avant d'envoyer, ajoute ce code dans le champ <span className="font-bold">"Note"</span> du paiement (note au bénéficiaire). C'est ce qui permet d'identifier ton paiement.
+                  </p>
+                  <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-4 py-3">
+                    <code className="text-lg font-black font-mono text-gray-900 flex-grow text-left tracking-widest">{payment.noteCode}</code>
+                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.noteCode)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
                   </div>
                   {copied && <p className="text-xs text-primary font-bold mt-2">Copié !</p>}
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Pay ID / Pseudo Binance</p>
+                  <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
+                    <code className="text-sm font-mono text-gray-700 flex-grow text-left">{payment.payId}</code>
+                  </div>
                 </div>
                 <div className="text-sm font-black text-gray-900">
                   Expire dans <span className={remainingMs < 60000 ? 'text-red-500' : 'text-primary'}>{remainingLabel}</span>
