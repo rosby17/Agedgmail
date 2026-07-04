@@ -3,15 +3,15 @@
 // Crée une commande de recharge "pending" payée via Binance (Pay ID pour
 // l'instant ; USDT-TRC20/LTC viendront ensuite avec le matching auto).
 //
-// LOGIQUE CRITIQUE — montant unique :
-// Plusieurs clients paient vers le même Pay ID / la même adresse. Pour
-// distinguer "qui a payé quoi" sans référence de commande dans le virement,
-// chaque commande reçoit un montant légèrement décalé (delta aléatoire entre
-// 0.0001 et 0.0099) par rapport au montant demandé. Deux commandes 'pending'
-// ne peuvent jamais partager le même expected_amount (contrainte unique
-// partielle en base, cf. migration binance_payments.sql) : si une collision
-// survient (très rare), on retire un nouveau delta jusqu'à obtenir un montant
-// libre, avec un nombre de tentatives borné pour ne jamais boucler à l'infini.
+// LOGIQUE CRITIQUE — identification du client :
+// Le montant reste EXACT et rond (ex. 50.00 $, jamais 50.0037 $) : ajouter
+// des centimes aléatoires pour distinguer les paiements donnait une image peu
+// professionnelle. À la place, chaque UTILISATEUR (pas chaque commande) a un
+// code de paiement PERMANENT (profiles.payment_code, généré une seule fois,
+// cf. migration profile_payment_code.sql) que le client colle dans la note
+// de son paiement Binance Pay. C'est ce code — pas le montant — qui permet
+// d'identifier qui a payé ; l'admin croise ensuite avec le montant exact et
+// la commande 'pending' correspondante pour créditer la bonne personne.
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -34,7 +34,6 @@ function bonusPercentFor(amountUsd: number): number {
 }
 
 const EXPIRY_MINUTES = 20
-const MAX_DELTA_ATTEMPTS = 15
 
 const METHOD_LABELS: Record<string, string> = {
   binance_pay: 'Binance Pay',
@@ -66,52 +65,45 @@ serve(async (req) => {
     const payId = Deno.env.get('BINANCE_PAY_ID') ?? ''
     if (!payId) throw new Error('BINANCE_PAY_ID non configuré côté serveur')
 
-    const bonusPct = bonusPercentFor(amountUsd)
-    const creditAmount = Math.round(amountUsd * (1 + bonusPct / 100) * 100) / 100
+    // Récupère (ou génère paresseusement, pour les comptes créés avant la
+    // migration ou sans trigger de génération) le code de paiement permanent.
+    const { data: profile, error: profileErr } = await admin
+      .from('profiles').select('payment_code').eq('id', userId).maybeSingle()
+    if (profileErr) throw profileErr
 
-    // Génère un montant unique parmi les commandes 'pending' : on retire le
-    // delta jusqu'à trouver un montant libre (la contrainte unique en base
-    // est le garde-fou final contre une éventuelle course entre requêtes).
-    let expectedAmount = amountUsd
-    let order: { id: string } | null = null
-    let lastError: string | null = null
-
-    for (let attempt = 0; attempt < MAX_DELTA_ATTEMPTS; attempt++) {
-      const delta = Math.round((0.0001 + Math.random() * (0.0099 - 0.0001)) * 10000) / 10000
-      expectedAmount = Math.round((amountUsd + delta) * 10000) / 10000
-
-      const expiresAt = new Date(Date.now() + EXPIRY_MINUTES * 60_000).toISOString()
-      const { data, error } = await admin
-        .from('orders')
-        .insert({
-          user_id: userId,
-          buyer_email: email,
-          product_id: 999,
-          product_name: `Recharge ${METHOD_LABELS[paymentMethod]}${bonusPct ? ` — bonus +${bonusPct}%` : ''}`,
-          quantity: 1,
-          total_price: amountUsd,
-          credit_amount: creditAmount,
-          status: 'pending',
-          payment_method: paymentMethod,
-          expected_amount: expectedAmount,
-          expires_at: expiresAt,
-        })
-        .select('id')
-        .single()
-
-      if (!error && data) { order = data; break }
-      // 23505 = violation de contrainte unique (montant déjà pris) -> on retente
-      lastError = error?.message ?? null
-      if (error?.code !== '23505') break
+    let paymentCode = profile?.payment_code || null
+    if (!paymentCode) {
+      paymentCode = `AG-${userId.replace(/-/g, '').slice(0, 8).toUpperCase()}`
+      const { error: updErr } = await admin.from('profiles').update({ payment_code: paymentCode }).eq('id', userId)
+      if (updErr) throw updErr
     }
 
-    if (!order) throw new Error(lastError || 'Impossible de générer un montant unique, réessaie.')
+    const bonusPct = bonusPercentFor(amountUsd)
+    const creditAmount = Math.round(amountUsd * (1 + bonusPct / 100) * 100) / 100
+    const expiresAt = new Date(Date.now() + EXPIRY_MINUTES * 60_000).toISOString()
 
-    // Code de référence à coller dans la note de paiement Binance Pay —
-    // dérivé de l'id de commande (déjà unique), donc jamais de collision
-    // possible même si deux commandes partagent un instant de création.
-    const noteCode = `AG${String(order.id).replace(/-/g, '').slice(0, 6).toUpperCase()}`
-    await admin.from('orders').update({ note_code: noteCode }).eq('id', order.id)
+    // Montant exact demandé, sans decimales cosmétiques ajoutées.
+    const expectedAmount = Math.round(amountUsd * 100) / 100
+
+    const { data: order, error: orderErr } = await admin
+      .from('orders')
+      .insert({
+        user_id: userId,
+        buyer_email: email,
+        product_id: 999,
+        product_name: `Recharge ${METHOD_LABELS[paymentMethod]}${bonusPct ? ` — bonus +${bonusPct}%` : ''}`,
+        quantity: 1,
+        total_price: amountUsd,
+        credit_amount: creditAmount,
+        status: 'pending',
+        payment_method: paymentMethod,
+        expected_amount: expectedAmount,
+        expires_at: expiresAt,
+      })
+      .select('id')
+      .single()
+
+    if (orderErr || !order) throw new Error(orderErr?.message || 'Création de commande échouée')
 
     return json({
       orderId: order.id,
@@ -121,7 +113,7 @@ serve(async (req) => {
       creditAmount,
       bonusPct,
       expiresInMinutes: EXPIRY_MINUTES,
-      noteCode,
+      paymentCode,
     })
   } catch (err) {
     console.error('Erreur binance-create-order:', (err as Error).message)
