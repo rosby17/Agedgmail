@@ -435,10 +435,16 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
         )}
         {session ? (
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex flex-col items-end border-r border-gray-100 dark:border-gray-700 pr-4">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">My Balance</span>
+            <button
+              onClick={() => navigate('recharge')}
+              className="hidden md:flex flex-col items-end border-r border-gray-100 dark:border-gray-700 pr-4 group/balance"
+              title="Recharger mon solde"
+            >
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover/balance:text-primary transition-colors flex items-center gap-1">
+                My Balance <Plus size={10} className="opacity-0 group-hover/balance:opacity-100 transition-opacity" />
+              </span>
               <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
-            </div>
+            </button>
             <div className="relative group">
               <button aria-label="Account menu" className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
                 <User size={18} />
