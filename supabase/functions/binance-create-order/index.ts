@@ -65,17 +65,17 @@ serve(async (req) => {
     const payId = Deno.env.get('BINANCE_PAY_ID') ?? ''
     if (!payId) throw new Error('BINANCE_PAY_ID non configuré côté serveur')
 
-    // Récupère (ou génère paresseusement, pour les comptes créés avant la
-    // migration ou sans trigger de génération) le code de paiement permanent.
+    // Identification par le pseudo choisi par le client (profiles.display_name)
+    // — plus simple à retenir/écrire qu'un code généré. Obligatoire avant de
+    // pouvoir recharger : on ne génère rien côté serveur, le client doit
+    // l'avoir configuré lui-même dans ses paramètres.
     const { data: profile, error: profileErr } = await admin
-      .from('profiles').select('payment_code').eq('id', userId).maybeSingle()
+      .from('profiles').select('display_name').eq('id', userId).maybeSingle()
     if (profileErr) throw profileErr
 
-    let paymentCode = profile?.payment_code || null
+    const paymentCode = profile?.display_name?.trim() || null
     if (!paymentCode) {
-      paymentCode = `AG-${userId.replace(/-/g, '').slice(0, 8).toUpperCase()}`
-      const { error: updErr } = await admin.from('profiles').update({ payment_code: paymentCode }).eq('id', userId)
-      if (updErr) throw updErr
+      return json({ error: 'username_required', needsUsername: true }, 400)
     }
 
     const bonusPct = bonusPercentFor(amountUsd)

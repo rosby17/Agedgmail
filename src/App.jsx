@@ -1964,9 +1964,9 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
   useEffect(() => {
     const userIds = [...new Set(pending.map(o => o.user_id))];
     if (userIds.length === 0) return;
-    supabase.from('profiles').select('id, payment_code').in('id', userIds).then(({ data }) => {
+    supabase.from('profiles').select('id, display_name').in('id', userIds).then(({ data }) => {
       const map = {};
-      (data || []).forEach(p => { map[p.id] = p.payment_code; });
+      (data || []).forEach(p => { map[p.id] = p.display_name; });
       setCodeByUser(map);
     });
   }, [allOrders]);
@@ -1994,7 +1994,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-              <th className="pb-4">Client</th><th className="pb-4">Code de paiement</th><th className="pb-4">Binance Order ID</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
+              <th className="pb-4">Client</th><th className="pb-4">Pseudo (note attendue)</th><th className="pb-4">Binance Order ID</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
               <th className="pb-4">Créé</th><th className="pb-4">Expire</th><th className="pb-4">Actions</th>
             </tr>
           </thead>
@@ -2315,7 +2315,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       payId: resumeOrder.pay_id,
       expectedAmount: resumeOrder.expected_amount,
       creditAmount: resumeOrder.credit_amount,
-      paymentCode: profile?.payment_code,
+      paymentCode: profile?.display_name,
       expiresAt: resumeOrder.expires_at ? new Date(resumeOrder.expires_at).getTime() : Date.now() + 20 * 60_000,
     });
     setBinanceSubStep(resumeOrder.binance_tx_id ? 'submitted' : 'pay');
@@ -2365,6 +2365,10 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           body: { userId: session.user.id, email: session.user.email, amountUsd, paymentMethod: 'binance_pay' },
         });
         if (fnError) throw new Error(await extractFnErrorMessage(fnError));
+        if (fnData?.error === 'username_required') {
+          setError('username_required');
+          return;
+        }
         if (fnData?.error) throw new Error(fnData.error);
         if (!fnData?.payId || !fnData?.expectedAmount) throw new Error('Réponse Binance invalide.');
 
@@ -2556,7 +2560,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
             {gateway === 'binance_pay' && (
               <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
-                Paiement via Binance Pay. Un montant légèrement décalé (quelques centimes) te sera indiqué pour identifier ton paiement — envoie ce montant exact. Confirmation vérifiée manuellement, généralement rapide.
+                Paiement via Binance Pay, montant exact demandé. Tu devras coller ton pseudo
+                ({profile?.display_name ? <span className="font-bold text-gray-700">{profile.display_name}</span> : <span className="font-bold text-amber-600">non configuré</span>})
+                {' '}dans la note du paiement pour t'identifier. Confirmation vérifiée manuellement, généralement rapide.
               </div>
             )}
 
@@ -2576,7 +2582,14 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             )}
 
-            {error && (
+            {error === 'username_required' ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                <p className="text-sm text-amber-800 font-bold">Configure d'abord un pseudo dans tes paramètres — c'est lui qui sert à identifier tes paiements Binance Pay.</p>
+                <button onClick={() => navigate('settings')} className="w-full py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-primary transition-all">
+                  Configurer mon pseudo
+                </button>
+              </div>
+            ) : error && (
               <div className="bg-red-50 text-red-500 p-4 rounded-xl text-sm font-bold border border-red-100">
                 {error}
               </div>
@@ -2631,7 +2644,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
                   <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">⚠️ Obligatoire — note du paiement</p>
                   <p className="text-xs text-gray-700 leading-relaxed mb-3">
-                    Dans Binance, avant d'envoyer, colle ce code dans le champ <span className="font-bold">"Note"</span> du paiement. C'est ton identifiant permanent — toujours le même, à chaque recharge.
+                    Dans Binance, avant d'envoyer, colle ton pseudo dans le champ <span className="font-bold">"Note"</span> du paiement. C'est ce qui permet de t'identifier — toujours le même, à chaque recharge.
                   </p>
                   <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-4 py-3">
                     <code className="text-lg font-black font-mono text-gray-900 flex-grow text-left tracking-widest">{payment.paymentCode}</code>
