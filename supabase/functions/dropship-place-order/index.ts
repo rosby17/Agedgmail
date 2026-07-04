@@ -15,7 +15,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as ytseller from '../_shared/ytseller.ts'
 import * as smmshiba from '../_shared/smmshiba.ts'
-import { getAdmin, logSupplier, refundOrder, corsHeaders } from '../_shared/supplier-db.ts'
+import { getAdmin, logSupplier, alertAdmin, refundOrder, corsHeaders } from '../_shared/supplier-db.ts'
 
 const ADAPTERS: Record<string, { getBalance: typeof ytseller.getBalance; addProductOrder: typeof ytseller.addProductOrder }> = {
   ytseller, smmshiba,
