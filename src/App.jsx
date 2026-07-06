@@ -1356,9 +1356,10 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
                     <td className="py-6">
                       <span className={`text-xs font-bold px-3 py-1 rounded-full border ${order.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' :
                         order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
-                          'bg-yellow-100 text-yellow-700 border-yellow-200'
+                          order.status === 'processing' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                            'bg-yellow-100 text-yellow-700 border-yellow-200'
                         }`}>
-                        {order.status === 'confirmed' ? 'Confirmed' : order.status === 'cancelled' ? 'Cancelled' : 'Pending'}
+                        {order.status === 'confirmed' ? 'Confirmed' : order.status === 'cancelled' ? 'Cancelled' : order.status === 'processing' ? 'Processing' : 'Pending'}
                       </span>
                     </td>
                     <td className="py-6">
