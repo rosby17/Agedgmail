@@ -2485,13 +2485,10 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   );
 };
 
-// ==========================================
-// ADMIN VIEW
-// ==========================================
-
-// Barre de revenu par jour (7 ou 30 derniers jours), sans dépendance externe.
+// Courbe de revenu par jour (7 ou 30 derniers jours), sous forme de ligne SVG avec dégradé.
 const RevenueChart = ({ confirmedOrders }) => {
   const [range, setRange] = useState(7);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   const days = [...Array(range)].map((_, i) => {
     const d = new Date();
@@ -2509,33 +2506,132 @@ const RevenueChart = ({ confirmedOrders }) => {
 
   const max = Math.max(...totals, 1);
 
+  // Configuration SVG
+  const width = 600;
+  const height = 160;
+  const paddingX = 25;
+  const paddingY = 25;
+
+  const points = totals.map((amount, i) => {
+    const x = paddingX + (i / (range - 1)) * (width - 2 * paddingX);
+    const y = height - paddingY - (amount / max) * (height - 2 * paddingY);
+    return { x, y, amount, date: days[i], index: i };
+  });
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  const areaPath = points.length > 0
+    ? `${linePath} L ${points[points.length - 1].x} ${height - 5} L ${points[0].x} ${height - 5} Z`
+    : '';
+
   return (
-    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+    <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative">
       <div className="flex items-center justify-between mb-8">
-        <h3 className="text-lg font-bold text-gray-900">Revenu confirmé</h3>
+        <div>
+          <h3 className="text-base font-bold text-white">Revenu confirmé</h3>
+          <p className="text-xs text-slate-500 mt-1">Évolution journalière des paiements reçus</p>
+        </div>
         <div className="flex gap-2">
           {[7, 30].map(r => (
-            <button key={r} onClick={() => setRange(r)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === r ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-100'}`}>
+            <button key={r} onClick={() => { setRange(r); setHoveredPoint(null); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === r ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-800'}`}>
               {r} jours
             </button>
           ))}
         </div>
       </div>
-      <div className="flex items-end gap-1 h-40">
-        {totals.map((amount, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-            <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold bg-gray-900 text-white px-2 py-1 rounded-lg whitespace-nowrap z-10">
-              ${amount.toFixed(2)} — {days[i].toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+
+      <div className="relative h-44 w-full">
+        {/* Tooltip flottant */}
+        {hoveredPoint && (
+          <div
+            className="absolute z-20 bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl shadow-xl text-center pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95"
+            style={{
+              left: `${(hoveredPoint.x / width) * 100}%`,
+              top: `${(hoveredPoint.y / height) * 100 - 45}%`,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <div className="text-[9px] text-slate-500 font-black uppercase">
+              {hoveredPoint.date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
             </div>
-            <div
-              className={`w-full rounded-t-md transition-all ${amount > 0 ? 'bg-primary hover:bg-primaryDark' : 'bg-gray-100'}`}
-              style={{ height: `${Math.max((amount / max) * 100, 2)}%` }}
-            />
+            <div className="text-xs font-black text-primary font-mono">
+              ${hoveredPoint.amount.toFixed(2)}
+            </div>
           </div>
-        ))}
+        )}
+
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+          <defs>
+            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {/* Grille horizontale en arrière-plan */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+            const y = paddingY + ratio * (height - 2 * paddingY);
+            return (
+              <line
+                key={idx}
+                x1={paddingX}
+                y1={y}
+                x2={width - paddingX}
+                y2={y}
+                stroke="#1e293b"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+              />
+            );
+          })}
+
+          {/* Remplissage dégradé sous la courbe */}
+          {areaPath && <path d={areaPath} fill="url(#chartGradient)" />}
+
+          {/* Ligne principale de la courbe */}
+          {linePath && (
+            <path
+              d={linePath}
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Points sur la courbe */}
+          {points.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r={hoveredPoint?.index === i ? "6" : "3.5"}
+              fill="#10B981"
+              stroke="#0f172a"
+              strokeWidth={hoveredPoint?.index === i ? "3" : "2"}
+              className="transition-all duration-150"
+            />
+          ))}
+
+          {/* Zones interactives transparentes pour le survol */}
+          {points.map((p, i) => (
+            <rect
+              key={i}
+              x={p.x - (width / range) / 2}
+              y={0}
+              width={width / range}
+              height={height}
+              fill="transparent"
+              className="cursor-pointer"
+              onMouseEnter={() => setHoveredPoint(p)}
+              onMouseLeave={() => setHoveredPoint(null)}
+            />
+          ))}
+        </svg>
       </div>
-      <div className="flex justify-between mt-3 text-[9px] text-gray-400 font-bold uppercase">
+
+      <div className="flex justify-between mt-4 text-[9px] text-slate-500 font-bold uppercase">
         <span>{days[0]?.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
         <span>{days[days.length - 1]?.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
       </div>
