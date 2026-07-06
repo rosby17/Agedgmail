@@ -2167,6 +2167,102 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
   );
 };
 
+// Carte de métrique compacte pour l'Overview admin — palette figée (pas de
+// classes Tailwind construites dynamiquement, elles doivent apparaître en
+// clair dans le code pour être incluses au build).
+const METRIC_COLORS = {
+  green: 'bg-green-50 text-green-600',
+  blue: 'bg-blue-50 text-blue-600',
+  yellow: 'bg-yellow-50 text-yellow-600',
+  red: 'bg-red-50 text-red-600',
+  purple: 'bg-purple-50 text-purple-600',
+  indigo: 'bg-indigo-50 text-indigo-600',
+  gray: 'bg-gray-100 text-gray-500',
+  primary: 'bg-primary/10 text-primary',
+};
+const MetricCard = ({ icon: Icon, color = 'gray', label, value }) => (
+  <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-soft">
+    <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${METRIC_COLORS[color] || METRIC_COLORS.gray}`}><Icon size={16} /></div>
+    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</div>
+    <div className="text-2xl font-black text-gray-900">{value}</div>
+  </div>
+);
+
+// Tableau d'activité récente sur l'Overview (façon "Historique des
+// Activations") : filtres par statut + recherche, sans avoir à changer
+// d'onglet — juste un aperçu rapide, la vue "Orders" garde la gestion complète.
+const RecentActivityTable = ({ allOrders }) => {
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const filtered = allOrders
+    .filter(o => filter === 'all' || (o.status || 'pending') === filter)
+    .filter(o => !search.trim() || (o.buyer_email || '').toLowerCase().includes(search.trim().toLowerCase()) || (o.product_name || '').toLowerCase().includes(search.trim().toLowerCase()))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 12);
+
+  const statusBadge = (status) => {
+    const s = status || 'pending';
+    const map = {
+      confirmed: { label: 'Confirmed', cls: 'bg-green-100 text-green-700' },
+      processing: { label: 'Processing', cls: 'bg-blue-100 text-blue-700' },
+      cancelled: { label: 'Cancelled', cls: 'bg-red-100 text-red-700' },
+      pending: { label: 'Pending', cls: 'bg-yellow-100 text-yellow-700' },
+    };
+    const { label, cls } = map[s] || map.pending;
+    return <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wide ${cls}`}>{label}</span>;
+  };
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <h3 className="text-lg font-bold text-gray-900">Activité récente</h3>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex gap-1 bg-gray-50 rounded-xl p-1">
+            {['all', 'confirmed', 'processing', 'pending', 'cancelled'].map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-700'}`}>
+                {f === 'all' ? 'Toutes' : f}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher par email, produit…"
+              className="pl-9 pr-3 py-2 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-primary/20 outline-none w-52"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+              <th className="pb-4">Client</th><th className="pb-4">Produit</th><th className="pb-4">Date</th><th className="pb-4">Statut</th><th className="pb-4 text-right">Montant</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {filtered.map(o => (
+              <tr key={o.id}>
+                <td className="py-4 font-bold text-gray-900">{o.buyer_email || '—'}</td>
+                <td className="py-4 text-gray-500">{o.product_name}</td>
+                <td className="py-4 text-xs text-gray-400">{new Date(o.created_at).toLocaleString('fr-FR')}</td>
+                <td className="py-4">{statusBadge(o.status)}</td>
+                <td className="py-4 text-right font-mono font-black text-gray-900">${Number(o.total_price || 0).toFixed(2)}</td>
+              </tr>
+            ))}
+            {filtered.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-gray-400">Aucune commande trouvée.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 const AdminView = ({
   navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
   actionStatus, setActionStatus,
@@ -2199,8 +2295,13 @@ const AdminView = ({
   // Les commandes 'pending'/'processing'/'cancelled' ne comptent jamais.
   const confirmedOrders = allOrders.filter(o => o.status === 'confirmed');
   const totalRevenue = confirmedOrders.reduce((s, o) => s + (o.total_price || 0), 0);
-  const pendingCount = allOrders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+  const processingCount = allOrders.filter(o => o.status === 'processing').length;
+  const pendingOnlyCount = allOrders.filter(o => (o.status || 'pending') === 'pending').length;
+  const pendingCount = processingCount + pendingOnlyCount;
+  const cancelledCount = allOrders.filter(o => o.status === 'cancelled').length;
   const avgOrderValue = confirmedOrders.length ? totalRevenue / confirmedOrders.length : 0;
+  const conversionRate = allOrders.length ? (confirmedOrders.length / allOrders.length) * 100 : 0;
+  const newClients7d = allUsers.filter(u => u.created_at && (Date.now() - new Date(u.created_at).getTime()) / 86400000 <= 7).length;
 
   // Commandes bloquées : en attente/en cours depuis plus de 15 min (au-delà,
   // le poll YTSeller aurait déjà dû rembourser — signal qu'il faut regarder).
@@ -2270,18 +2371,33 @@ const AdminView = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4"><DollarSign size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Revenu réel (payé)</div><div className="text-3xl font-black text-gray-900">${totalRevenue.toFixed(2)}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><CheckCircle size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Commandes payées</div><div className="text-3xl font-black text-gray-900">{confirmedOrders.length}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4"><Clock size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">En attente / en cours</div><div className="text-3xl font-black text-gray-900">{pendingCount}</div></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                <MetricCard icon={DollarSign} color="green" label="Revenu réel (payé)" value={`$${totalRevenue.toFixed(2)}`} />
+                <MetricCard icon={FileText} color="gray" label="Commandes totales" value={allOrders.length} />
+                <MetricCard icon={CheckCircle} color="blue" label="Confirmées" value={confirmedOrders.length} />
+                <MetricCard icon={X} color="red" label="Annulées" value={cancelledCount} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-4"><TrendingUp size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Panier moyen</div><div className="text-3xl font-black text-gray-900">${avgOrderValue.toFixed(2)}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4"><Users size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Clients inscrits</div><div className="text-3xl font-black text-gray-900">{allUsers.length}</div></div>
-                <div className="bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-soft"><div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4"><Package size={20} /></div><div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Produits en ligne</div><div className="text-3xl font-black text-gray-900">{products.length}</div></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                <MetricCard icon={RefreshCcw} color="indigo" label="En cours (fournisseur)" value={processingCount} />
+                <MetricCard icon={Clock} color="yellow" label="En attente" value={pendingOnlyCount} />
+                <MetricCard icon={TrendingUp} color="purple" label="Taux de confirmation" value={`${conversionRate.toFixed(0)}%`} />
+                <MetricCard icon={CircleDollarSign} color="primary" label="Panier moyen" value={`$${avgOrderValue.toFixed(2)}`} />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                <MetricCard icon={Users} color="indigo" label="Clients inscrits" value={allUsers.length} />
+                <MetricCard icon={Users} color="green" label="Nouveaux (7j)" value={newClients7d} />
+                <MetricCard icon={Package} color="primary" label="Produits en ligne" value={products.length} />
+                <MetricCard
+                  icon={Database}
+                  color={supplierBalance && Number(supplierBalance.balance) <= 0 ? 'red' : 'gray'}
+                  label="Solde fournisseur YTSeller"
+                  value={supplierBalance ? `$${Number(supplierBalance.balance).toFixed(2)}` : '—'}
+                />
               </div>
 
               <RevenueChart confirmedOrders={confirmedOrders} />
+
+              <RecentActivityTable allOrders={allOrders} />
 
               <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
                 <h3 className="text-lg font-bold text-gray-900 mb-8">Top produits vendus</h3>
