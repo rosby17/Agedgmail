@@ -326,30 +326,40 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
   };
 
   return (
-    <div className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-5 flex flex-col h-full font-sans transition-all duration-200 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/[0.06] hover:-translate-y-0.5">
+    <div className={`group border rounded-[2rem] p-5 flex flex-col h-full font-sans transition-all duration-200 ${
+      outOfStock
+        ? 'bg-gray-50 dark:bg-gray-900/60 border-gray-100 dark:border-gray-800'
+        : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/[0.06] hover:-translate-y-0.5'
+    }`}>
       {/* Logo Area */}
       <div
-        className="aspect-[1.5] bg-primarySoft dark:bg-gray-800/60 rounded-[1.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0"
+        className={`aspect-[1.5] rounded-[1.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0 ${outOfStock ? 'bg-gray-100 dark:bg-gray-800/40 grayscale opacity-60' : 'bg-primarySoft dark:bg-gray-800/60'}`}
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
-        <div className="w-full h-full p-8 flex items-center justify-center transition-transform duration-300 group-hover:scale-[1.04]">
+        <div className={`w-full h-full p-8 flex items-center justify-center transition-transform duration-300 ${outOfStock ? '' : 'group-hover:scale-[1.04]'}`}>
           <ProductVisual product={product} iconSize={48} />
         </div>
-        {isUS && product.category === 'email' && (
-          <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
+        {outOfStock ? (
+          <div className="absolute top-4 right-4 bg-red-500 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-full shadow-sm">Out of stock</div>
+        ) : (
+          <>
+            {isUS && product.category === 'email' && (
+              <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
+            )}
+            <div className="absolute top-4 right-4 bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1">
+              <Zap size={10} /> Instant
+            </div>
+          </>
         )}
-        <div className="absolute top-4 right-4 bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1">
-          <Zap size={10} /> Instant
-        </div>
       </div>
 
       {/* Content */}
       <div className="flex-grow flex flex-col">
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+        <div className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${outOfStock ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400'}`}>
           {displayCategoryLabel(product)}
         </div>
         <h3
-          className="text-[15px] font-bold text-gray-900 dark:text-white leading-snug cursor-pointer mb-4 hover:text-primary dark:hover:text-primaryLight transition-colors"
+          className={`text-[15px] font-bold leading-snug cursor-pointer mb-4 transition-colors ${outOfStock ? 'text-gray-400 dark:text-gray-500 hover:text-gray-500' : 'text-gray-900 dark:text-white hover:text-primary dark:hover:text-primaryLight'}`}
           onClick={() => { setSelectedProduct(product); navigate('product'); }}
         >
           {cleanProductName(product.name)}
@@ -366,7 +376,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
           </div>
           <div className="text-right">
             <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Price</div>
-            <div className="text-lg font-bold text-primaryDark dark:text-primaryLight">${product.price.toFixed(2)}</div>
+            <div className={`text-lg font-bold ${outOfStock ? 'text-gray-400 dark:text-gray-500' : 'text-primaryDark dark:text-primaryLight'}`}>${product.price.toFixed(2)}</div>
           </div>
         </div>
       </div>
