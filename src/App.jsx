@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
 import { parseAccountDelivery } from './lib/parseAccountDelivery';
@@ -533,6 +533,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
 
   const handlePay = async () => {
     if (!session || !profile) { onClose(); navigate('auth'); return; }
+    if (profile.is_suspended) { setErrorMessage("Ton compte est suspendu. Contacte le support."); return; }
     setIsProcessing(true);
     setErrorMessage('');
 
@@ -1785,6 +1786,15 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
+      {profile?.is_suspended && (
+        <div className="mb-8 bg-red-50 border border-red-200 rounded-[2rem] p-6 flex items-start gap-4">
+          <ShieldAlert size={24} className="text-red-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-red-700">Ton compte est actuellement suspendu.</p>
+            <p className="text-xs text-red-600/90 mt-1">Tu ne peux plus effectuer d'achat ni de recharge. Contacte le support pour régulariser ta situation.</p>
+          </div>
+        </div>
+      )}
       {viewOrder && <OrderCredentialsModal order={viewOrder} onClose={() => setViewOrder(null)} />}
       {showTransfer && (
         <TransferCreditsModal
@@ -3116,13 +3126,216 @@ const RecentActivityTable = ({ allOrders }) => {
   );
 };
 
+// ==========================================
+// CLIENT MANAGEMENT — recherche, statistiques, ban/déban, crédit, historique
+// ==========================================
+const ClientManagement = ({ allUsers, allOrders, fetchUsers }) => {
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all | active | suspended
+  const [viewingClient, setViewingClient] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+
+  // Stats par client, calculées une fois depuis toutes les commandes.
+  const statsByUser = (() => {
+    const map = new Map();
+    allOrders.forEach(o => {
+      const cur = map.get(o.user_id) || { orders: 0, spent: 0, deposited: 0, lastActivity: null };
+      if (o.status === 'confirmed') {
+        if (o.product_id === 999) cur.deposited += o.total_price || 0;
+        else { cur.orders += 1; cur.spent += o.total_price || 0; }
+      }
+      const t = new Date(o.created_at).getTime();
+      if (!cur.lastActivity || t > cur.lastActivity) cur.lastActivity = t;
+      map.set(o.user_id, cur);
+    });
+    return map;
+  })();
+
+  const filtered = allUsers
+    .filter(u => statusFilter === 'all' || (statusFilter === 'suspended' ? u.is_suspended : !u.is_suspended))
+    .filter(u => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      return (u.email || '').toLowerCase().includes(q) || (u.display_name || '').toLowerCase().includes(q);
+    });
+
+  const activeCount = allUsers.filter(u => !u.is_suspended).length;
+  const suspendedCount = allUsers.filter(u => u.is_suspended).length;
+
+  const toggleBan = async (user) => {
+    const next = !user.is_suspended;
+    if (!window.confirm(next
+      ? `Bannir ${user.email} ? Il ne pourra plus acheter ni recharger tant qu'il est suspendu.`
+      : `Réactiver ${user.email} ?`)) return;
+    setBusyId(user.id);
+    const { error } = await supabase.from('profiles').update({ is_suspended: next }).eq('id', user.id);
+    if (error) alert('Erreur : ' + error.message);
+    else await fetchUsers();
+    setBusyId(null);
+  };
+
+  const creditBalance = async (user) => {
+    const raw = prompt(`Créditer le solde de ${user.email} de ($) :`, '10');
+    if (raw == null) return;
+    const amount = parseFloat(raw);
+    if (isNaN(amount) || amount === 0) return;
+    setBusyId(user.id);
+    const { data } = await supabase.from('profiles').select('balance').eq('id', user.id).single();
+    const { error } = await supabase.from('profiles').update({ balance: (data?.balance || 0) + amount }).eq('id', user.id);
+    if (error) alert('Erreur : ' + error.message);
+    else await fetchUsers();
+    setBusyId(null);
+  };
+
+  const initial = (u) => (u.display_name || u.email || '?').trim().charAt(0).toUpperCase();
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 shadow-soft space-y-8">
+      {/* En-tête + compteurs */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des clients</h2>
+          <div className="flex items-center gap-4 mt-2 text-xs font-bold">
+            <span className="text-gray-400">{allUsers.length} au total</span>
+            <span className="text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> {activeCount} actifs</span>
+            <span className="text-red-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {suspendedCount} suspendus</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex gap-1 bg-gray-50 dark:bg-slate-800 rounded-xl p-1">
+            {['all', 'active', 'suspended'].map(f => (
+              <button key={f} onClick={() => setStatusFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${statusFilter === f ? 'bg-gray-900 dark:bg-primary text-white' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+                {f === 'all' ? 'Tous' : f === 'active' ? 'Actifs' : 'Suspendus'}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={15} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher email ou pseudo…"
+              className="pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-2 focus:ring-primary/20 outline-none w-64"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Table clients */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+              <th className="pb-4">Client</th><th className="pb-4">Solde</th><th className="pb-4">Achats</th><th className="pb-4">Dépensé</th><th className="pb-4">Inscrit</th><th className="pb-4">Statut</th><th className="pb-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+            {filtered.map(user => {
+              const s = statsByUser.get(user.id) || { orders: 0, spent: 0, deposited: 0 };
+              return (
+                <tr key={user.id} className={user.is_suspended ? 'opacity-60' : ''}>
+                  <td className="py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-black text-xs flex items-center justify-center shrink-0">{initial(user)}</div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-gray-900 dark:text-white truncate">{user.email}</div>
+                        <div className="text-xs text-gray-400 truncate">{user.display_name || '—'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 font-mono font-black text-primary">${Number(user.balance || 0).toFixed(2)}</td>
+                  <td className="py-4 text-gray-600 dark:text-gray-300">{s.orders}</td>
+                  <td className="py-4 font-mono text-gray-600 dark:text-gray-300">${s.spent.toFixed(2)}</td>
+                  <td className="py-4 text-xs text-gray-400">{user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : '—'}</td>
+                  <td className="py-4">
+                    {user.is_suspended
+                      ? <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-red-100 text-red-700 uppercase tracking-wide">Suspendu</span>
+                      : <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-green-100 text-green-700 uppercase tracking-wide">Actif</span>}
+                  </td>
+                  <td className="py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => setViewingClient(user)} title="Voir l'historique" className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"><Eye size={14} /></button>
+                      <button onClick={() => creditBalance(user)} disabled={busyId === user.id} title="Créditer le solde" className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all disabled:opacity-40"><DollarSign size={14} /></button>
+                      <button onClick={() => toggleBan(user)} disabled={busyId === user.id}
+                        title={user.is_suspended ? 'Réactiver' : 'Bannir'}
+                        className={`p-2 rounded-lg transition-all disabled:opacity-40 ${user.is_suspended ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
+                        {user.is_suspended ? <UserCheck size={14} /> : <Ban size={14} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-gray-400">Aucun client trouvé.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modale détail client */}
+      {viewingClient && (() => {
+        const s = statsByUser.get(viewingClient.id) || { orders: 0, spent: 0, deposited: 0 };
+        const clientOrders = allOrders.filter(o => o.user_id === viewingClient.id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewingClient(null)} />
+            <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl p-10 space-y-6 animate-in fade-in zoom-in duration-300 max-h-[85vh] overflow-y-auto">
+              <div className="flex justify-between items-start border-b border-gray-100 dark:border-slate-800 pb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary font-black text-lg flex items-center justify-center">{initial(viewingClient)}</div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{viewingClient.email}</h3>
+                    <p className="text-xs text-gray-400 font-bold mt-1">{viewingClient.display_name || '—'} · inscrit le {viewingClient.created_at ? new Date(viewingClient.created_at).toLocaleDateString('fr-FR') : '—'}</p>
+                  </div>
+                </div>
+                <button onClick={() => setViewingClient(null)} aria-label="Close" className="w-10 h-10 bg-gray-50 dark:bg-slate-800 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-all"><X size={18} /></button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-4"><div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Solde</div><div className="text-lg font-black text-primary font-mono">${Number(viewingClient.balance || 0).toFixed(2)}</div></div>
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-4"><div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Achats</div><div className="text-lg font-black text-gray-900 dark:text-white">{s.orders}</div></div>
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-4"><div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dépensé</div><div className="text-lg font-black text-gray-900 dark:text-white font-mono">${s.spent.toFixed(2)}</div></div>
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-4"><div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Rechargé</div><div className="text-lg font-black text-gray-900 dark:text-white font-mono">${s.deposited.toFixed(2)}</div></div>
+              </div>
+
+              {clientOrders.length === 0 ? (
+                <p className="text-gray-400 text-sm italic py-8 text-center">Aucune activité pour ce client.</p>
+              ) : (
+                <div className="space-y-3">
+                  {clientOrders.map(o => (
+                    <div key={o.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl">
+                      <div>
+                        <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                          {o.product_id === 999 ? <span className="text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Recharge</span> : <span className="text-[9px] font-black uppercase bg-primary/10 text-primary px-2 py-0.5 rounded-full">Achat</span>}
+                          {o.product_name}
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-bold mt-1">{new Date(o.created_at).toLocaleString('fr-FR')}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-black text-gray-900 dark:text-white font-mono">${o.total_price?.toFixed(2)}</div>
+                        <div className={`text-[10px] font-bold uppercase mt-1 ${o.status === 'confirmed' ? 'text-green-600' : o.status === 'cancelled' ? 'text-red-500' : o.status === 'processing' ? 'text-blue-600' : 'text-yellow-600'}`}>
+                          {o.status === 'confirmed' ? 'Payé' : o.status === 'cancelled' ? 'Annulé' : o.status === 'processing' ? 'En cours' : 'En attente'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+};
+
 const AdminView = ({
   session, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
   actionStatus, setActionStatus, theme, setTheme, lang, setLang, t,
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
   const [supplierBalance, setSupplierBalance] = useState(null);
-  const [viewingClient, setViewingClient] = useState(null);
   const [mappings, setMappings] = useState([]);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -3156,14 +3369,6 @@ const AdminView = ({
     setLoginLoading(false);
   };
 
-  const handleUpdateBalanceManual = async (userId, email, amount) => {
-    setActionStatus('loading');
-    const { data: userData } = await supabase.from('profiles').select('balance').eq('id', userId).single();
-    const { error } = await supabase.from('profiles').update({ balance: (userData?.balance || 0) + amount }).eq('id', userId);
-    if (error) alert("Erreur : " + error.message);
-    else fetchUsers();
-    setActionStatus(null);
-  };
 
   // Standalone Auth check inside AdminView
   if (!session) {
@@ -3523,85 +3728,7 @@ const AdminView = ({
           {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} lang={lang} />}
 
           {activeTab === 'users' && (
-            <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-              <div className="flex justify-between items-center mb-10">
-                <h2 className="text-2xl font-bold">Client Management</h2>
-                <div className="text-sm text-gray-400 font-bold uppercase tracking-widest">{allUsers.length} registered</div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                      <th className="pb-6">User</th>
-                      <th className="pb-6">Balance</th>
-                      <th className="pb-6">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {allUsers.map(user => (
-                      <tr key={user.id}>
-                        <td className="py-6">
-                          <div className="font-bold text-gray-900">{user.email}</div>
-                          <div className="text-xs text-gray-400">{user.display_name}</div>
-                        </td>
-                        <td className="py-6 font-mono font-black text-primary">${user.balance?.toFixed(2)}</td>
-                        <td className="py-6">
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => setViewingClient(user)} className="p-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-all" title="Voir recharges et achats">
-                              <Eye size={14} />
-                            </button>
-                            <button onClick={() => {
-                              const amount = prompt("Amount to add ($):", "10");
-                              if (amount) handleUpdateBalanceManual(user.id, user.email, parseFloat(amount));
-                            }} className="p-2 bg-primary/10 text-primary rounded-lg font-bold text-xs">Credit</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {viewingClient && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewingClient(null)} />
-                  <div className="relative w-full max-w-3xl bg-white rounded-[3rem] shadow-2xl p-10 space-y-6 animate-in fade-in zoom-in duration-300">
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-6">
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">{viewingClient.email}</h3>
-                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Solde actuel : ${viewingClient.balance?.toFixed(2)}</p>
-                      </div>
-                      <button onClick={() => setViewingClient(null)} aria-label="Close" className="w-10 h-10 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all"><X size={18} /></button>
-                    </div>
-                    {(() => {
-                      const clientOrders = allOrders.filter(o => o.user_id === viewingClient.id);
-                      if (clientOrders.length === 0) return <p className="text-gray-400 text-sm italic py-8 text-center">Aucune activité pour ce client.</p>;
-                      return (
-                        <div className="max-h-[50vh] overflow-y-auto space-y-3">
-                          {clientOrders.map(o => (
-                            <div key={o.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                              <div>
-                                <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                  {o.product_id === 999 ? <span className="text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Recharge</span> : <span className="text-[9px] font-black uppercase bg-primary/10 text-primary px-2 py-0.5 rounded-full">Achat</span>}
-                                  {o.product_name}
-                                </div>
-                                <div className="text-[10px] text-gray-400 font-bold mt-1">{new Date(o.created_at).toLocaleString('fr-FR')}</div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-black text-gray-900 font-mono">${o.total_price?.toFixed(2)}</div>
-                                <div className={`text-[10px] font-bold uppercase mt-1 ${o.status === 'confirmed' ? 'text-green-600' : o.status === 'cancelled' ? 'text-red-500' : 'text-yellow-600'}`}>
-                                  {o.status === 'confirmed' ? 'Payé' : o.status === 'cancelled' ? 'Annulé' : o.status === 'processing' ? 'En cours' : 'En attente'}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              )}
-            </div>
+            <ClientManagement allUsers={allUsers} allOrders={allOrders} fetchUsers={fetchUsers} />
           )}
 
           {activeTab === 'payments' && <BinancePaymentsAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />}
@@ -3725,6 +3852,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   };
 
   const handleSubmit = async () => {
+    if (profile?.is_suspended) { setError("Ton compte est suspendu. Contacte le support."); return; }
     if (!gateway) { setError('Choisis une passerelle de paiement.'); return; }
     if (amountUsd <= 0) { setError('Montant invalide.'); return; }
 
@@ -4389,6 +4517,7 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
 
   const handleBalancePayment = async () => {
     if (!session || !profile) return;
+    if (profile.is_suspended) { setErrorMessage("Ton compte est suspendu. Contacte le support."); return; }
     setIsProcessing(true);
     setErrorMessage('');
 
