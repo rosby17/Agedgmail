@@ -1424,6 +1424,81 @@ const OrderCredentialsModal = ({ order, onClose }) => {
 // retiré car redondant avec cette page elle-même.
 const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
   const [viewOrder, setViewOrder] = useState(null);
+  const [sendEmailAll, setSendEmailAll] = useState(false);
+
+  // Filtre uniquement les commandes d'achat (pas les recharges product_id=999)
+  const purchaseOrders = orders.filter(o => o.product_id !== 999);
+
+  // Parse les options d'un nom de produit YTSeller :
+  // "Gmail Accounts 2FA/ BACKUP CODE/ APP PASSWORD (3 Months)" → baseName + options
+  // "🟢Fresh gmail account 🔴Mix ip 🟢Random name and gender" → options séparées par les émojis
+  const parseProductOptions = (name = '') => {
+    if (!name) return { baseName: '', options: [] };
+
+    // Détecte les options avec émojis colorés (format YTSeller)
+    const emojiOptionRegex = /([🟢🔴🟡⚪🔵🟠🟤⚫]+[^🟢🔴🟡⚪🔵🟠🟤⚫\n]+)/g;
+    const emojiMatches = name.match(emojiOptionRegex);
+    if (emojiMatches && emojiMatches.length > 1) {
+      const cleanOptions = emojiMatches.map(o => o.trim().replace(/\s*-\s*$/, '').trim()).filter(Boolean);
+      const firstEmojiIdx = name.search(/[🟢🔴🟡⚪🔵🟠🟤⚫]/u);
+      const baseName = firstEmojiIdx > 0 ? name.slice(0, firstEmojiIdx).trim() : (cleanOptions[0] || name);
+      return { baseName: baseName || cleanOptions[0], options: cleanOptions.slice(baseName ? 0 : 1) };
+    }
+
+    // Détecte les options séparées par "/" (format "2FA/ BACKUP CODE/ APP PASSWORD")
+    const slashIdx = name.search(/\s*\/\s*/);
+    if (slashIdx > 3) {
+      const durationMatch = name.match(/\(([^)]+)\)\s*$/);
+      const duration = durationMatch ? durationMatch[1] : null;
+      const withoutDuration = duration ? name.slice(0, name.lastIndexOf('(')).trim() : name;
+      const parts = withoutDuration.split('/').map(p => p.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        const opts = parts.slice(1);
+        if (duration) opts.push(duration);
+        return { baseName: parts[0], options: opts };
+      }
+    }
+
+    return { baseName: name, options: [] };
+  };
+
+  // Couleur d'un badge d'option selon le contenu
+  const optionBadgeClass = (opt = '') => {
+    const o = opt.toLowerCase();
+    if (o.includes('2fa') || o.includes('backup')) return 'bg-purple-50 text-purple-700 border-purple-200';
+    if (o.includes('app password') || o.includes('app pass')) return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (o.includes('mix ip') || o.includes(' ip')) return 'bg-orange-50 text-orange-700 border-orange-200';
+    if (o.includes('random') || o.includes('name') || o.includes('gender')) return 'bg-teal-50 text-teal-700 border-teal-200';
+    if (o.includes('month') || o.includes('year') || o.includes('day')) return 'bg-gray-100 text-gray-600 border-gray-200';
+    if (o.includes('fresh') || o.includes('aged')) return 'bg-green-50 text-green-700 border-green-200';
+    return 'bg-gray-50 text-gray-600 border-gray-200';
+  };
+
+  // Télécharge les credentials d'une commande en .txt
+  const downloadCredentials = (order) => {
+    const raw = order.credentials || order.data || '';
+    if (!raw.trim()) return;
+    const blob = new Blob([raw], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `order-${order.id}-credentials.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const hasDelivery = (order) => !!(order.credentials || order.data);
+
+  const statusBadge = (status) => {
+    const map = {
+      confirmed: { label: 'Completed', cls: 'bg-green-100 text-green-700 border-green-200' },
+      cancelled:  { label: 'Failed',    cls: 'bg-red-100 text-red-600 border-red-200' },
+      processing: { label: 'Processing', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+      pending:    { label: 'Pending',   cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+    };
+    const { label, cls } = map[status] || map.pending;
+    return <span className={`text-xs font-bold px-3 py-1 rounded-full border ${cls}`}>{label}</span>;
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
@@ -1443,48 +1518,135 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
       </div>
 
       <div className="bg-white border border-gray-100 rounded-[3rem] p-8 md:p-10 shadow-soft">
-        {orders.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200"><p className="text-gray-400 font-bold">No order found.</p></div>
+        {/* Barre d'options */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={sendEmailAll}
+              onChange={e => setSendEmailAll(e.target.checked)}
+              className="rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <span>Envoyer aussi les comptes à mon e-mail à partir de maintenant.</span>
+          </label>
+          <button
+            onClick={() => navigate('dashboard')}
+            className="text-primary font-bold text-sm flex items-center gap-1 hover:underline"
+          >
+            Voir l'historique des transactions <ChevronRight size={14} />
+          </button>
+        </div>
+
+        {purchaseOrders.length === 0 ? (
+          <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
+            <p className="text-gray-400 font-bold">No order found.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead><tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"><th className="pb-6">Order</th><th className="pb-6">Date</th><th className="pb-6">Status</th><th className="pb-6">Actions</th><th className="pb-6 text-right">Total</th></tr></thead>
+              <thead>
+                <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  <th className="pb-5 pr-4 whitespace-nowrap">Code de commande</th>
+                  <th className="pb-5 pr-4">Produits</th>
+                  <th className="pb-5 pr-4">Status</th>
+                  <th className="pb-5 pr-4 text-right whitespace-nowrap">Total</th>
+                  <th className="pb-5 pr-4 whitespace-nowrap">Date</th>
+                  <th className="pb-5"></th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-gray-50">
-                {orders.map(order => (
-                  <tr key={order.id} className="group">
-                    <td className="py-6"><div className="font-bold text-gray-900">{order.product_name}</div><div className="text-[10px] text-gray-400 font-bold">Quantity: {order.quantity}</div></td>
-                    <td className="py-6 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
-                    <td className="py-6">
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${order.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' :
-                        order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
-                          order.status === 'processing' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                            'bg-yellow-100 text-yellow-700 border-yellow-200'
-                        }`}>
-                        {order.status === 'confirmed' ? 'Confirmed' : order.status === 'cancelled' ? 'Cancelled' : order.status === 'processing' ? 'Processing' : 'Pending'}
-                      </span>
-                    </td>
-                    <td className="py-6">
-                      {order.product_id === 999 ? (
-                        order.status === 'pending' && order.payment_method === 'binance_pay' ? (
-                          new Date(order.expires_at || 0).getTime() > Date.now() ? (
-                            <button onClick={() => onResume && onResume(order)} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/20 transition-all">
-                              <RefreshCcw size={14} /> Continuer le paiement
+                {purchaseOrders.map(order => {
+                  const { baseName, options } = parseProductOptions(order.product_name);
+                  const canDownload = hasDelivery(order);
+                  return (
+                    <tr key={order.id} className="group hover:bg-gray-50/50 transition-colors">
+                      {/* Code de commande */}
+                      <td className="py-5 pr-4">
+                        <span className="font-black text-gray-900 text-base">#{order.id}</span>
+                      </td>
+
+                      {/* Produits + options */}
+                      <td className="py-5 pr-4 max-w-xs">
+                        <div className="font-bold text-gray-900 text-sm leading-snug mb-1.5">
+                          {baseName || order.product_name}
+                          <span className="text-gray-400 font-medium ml-1">x{order.quantity}</span>
+                        </div>
+                        {options.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {options.map((opt, i) => (
+                              <span
+                                key={i}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${optionBadgeClass(opt)}`}
+                              >
+                                {opt.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-5 pr-4">{statusBadge(order.status)}</td>
+
+                      {/* Total */}
+                      <td className="py-5 pr-4 text-right font-black text-gray-900 whitespace-nowrap">
+                        ${order.total_price?.toFixed(2)}
+                      </td>
+
+                      {/* Date */}
+                      <td className="py-5 pr-4 text-sm text-gray-400 whitespace-nowrap">
+                        {new Date(order.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-5">
+                        {order.product_id === 999 ? (
+                          order.status === 'pending' && order.payment_method === 'binance_pay' ? (
+                            new Date(order.expires_at || 0).getTime() > Date.now() ? (
+                              <button onClick={() => onResume && onResume(order)} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/20 transition-all">
+                                <RefreshCcw size={14} /> Continuer
+                              </button>
+                            ) : (
+                              <span className="text-[10px] font-black uppercase tracking-tighter text-gray-400">Expiré</span>
+                            )
+                          ) : null
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setViewOrder(order)}
+                              title="Voir les identifiants"
+                              className="w-9 h-9 rounded-xl flex items-center justify-center border border-gray-200 text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                            >
+                              <Eye size={15} />
                             </button>
-                          ) : (
-                            <span className="text-[10px] font-black uppercase tracking-tighter text-gray-400">Paiement expiré</span>
-                          )
-                        ) : null
-                      ) : (
-                        <button onClick={() => setViewOrder(order)} className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary transition-all text-gray-500">
-                          <Eye size={14} /> View access
-                        </button>
-                      )}
-                    </td>
-                    <td className="py-6 text-right font-black text-gray-900">${order.total_price?.toFixed(2)}</td>
-                  </tr>
-                ))}
+                            <button
+                              onClick={() => canDownload && downloadCredentials(order)}
+                              disabled={!canDownload}
+                              title={canDownload ? "Télécharger les credentials" : "Pas encore livré"}
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${
+                                canDownload
+                                  ? 'border-primary/30 text-primary bg-primary/5 hover:bg-primary hover:text-white cursor-pointer'
+                                  : 'border-gray-100 text-gray-300 cursor-not-allowed'
+                              }`}
+                            >
+                              <Download size={15} />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Note livraison en cours */}
+        {purchaseOrders.some(o => o.status === 'processing') && (
+          <div className="mt-6 flex items-center gap-2 text-xs text-gray-400 font-medium">
+            <RefreshCcw size={12} className="animate-spin text-primary" />
+            Certains articles sont encore en cours de livraison — actualisation automatique…
           </div>
         )}
       </div>
@@ -4082,7 +4244,6 @@ function App() {
       if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
       return a.price - b.price;
     });
-
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const addToCart = (product, quantity = 1) => {
