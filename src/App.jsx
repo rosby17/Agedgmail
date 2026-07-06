@@ -2323,8 +2323,8 @@ const AdminView = ({
   })();
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      <div className="flex items-center justify-between mb-12">
+    <div className="w-full px-6 md:px-10 py-12 font-sans">
+      <div className="flex items-center justify-between mb-10">
         <div>
           <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Administration Console</h1>
           <p className="text-gray-400 text-sm mt-2">Suivi des ventes et des clients.</p>
@@ -2332,8 +2332,8 @@ const AdminView = ({
         <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><ArrowLeft size={16} /> Back to site</button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-        <aside className="lg:col-span-1 space-y-2">
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <aside className="w-full lg:w-64 shrink-0 space-y-2 lg:sticky lg:top-8">
           {[
             { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
             { id: 'orders', label: 'Orders', icon: FileText },
@@ -2348,7 +2348,7 @@ const AdminView = ({
           ))}
         </aside>
 
-        <main className="lg:col-span-3 space-y-8">
+        <main className="flex-1 min-w-0 space-y-8">
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
               {supplierBalance && Number(supplierBalance.balance) <= 0 && (
