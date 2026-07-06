@@ -5895,7 +5895,10 @@ function App() {
 
   const [products, setProducts] = useState([]);
 
-  const [currentView, setCurrentView] = useState(() => localStorage.getItem('agedgmail_view') || 'landing');
+  const [currentView, setCurrentView] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    return hash || 'landing';
+  });
   const [selectedProduct, setSelectedProduct] = useState(() => {
     const saved = localStorage.getItem('agedgmail_product');
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
@@ -6046,9 +6049,7 @@ function App() {
     };
   }, [session]);
 
-  useEffect(() => {
-    localStorage.setItem('agedgmail_view', currentView);
-  }, [currentView]);
+
 
   useEffect(() => {
     if (selectedProduct) localStorage.setItem('agedgmail_product', JSON.stringify(selectedProduct));
@@ -6241,8 +6242,6 @@ function App() {
       window.history.replaceState(null, '', `${window.location.pathname}#dashboard`);
     } else if (rawHash) {
       handleHashChange();
-    } else {
-      window.location.hash = currentView;
     }
 
     return () => window.removeEventListener('hashchange', handleHashChange);
