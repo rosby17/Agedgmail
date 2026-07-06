@@ -4,14 +4,12 @@
 // si profiles.send_email_on_delivery = true.
 // Utilise Brevo (https://brevo.com) — API key à configurer dans
 // Supabase > Project Settings > Edge Functions > Secrets : BREVO_API_KEY
-// Free tier : 300 emails/jour, 9 000/mois — pas de domaine requis.
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { getAdmin, corsHeaders } from '../_shared/supplier-db.ts'
 
 const SITE_NAME = 'AgedGmail'
 const FROM_EMAIL = Deno.env.get('BREVO_FROM_EMAIL') ?? 'noreply@agedgmail.com'
-const FROM_NAME  = Deno.env.get('BREVO_FROM_NAME')  ?? SITE_NAME
 
 /** Construit le HTML de l'email de livraison (style proche YTSeller). */
 function buildEmailHtml(opts: {
@@ -185,8 +183,8 @@ serve(async (req) => {
       })
     }
 
-    // 3. Envoyer via Brevo (Sendinblue) Transactional Email API
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    // 3. Envoyer via Brevo
+    const res = await fetch('https://api.brevo.com/v3/smtp/emails', {
       method: 'POST',
       headers: {
         'api-key': brevoKey,
@@ -194,7 +192,10 @@ serve(async (req) => {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: FROM_NAME, email: FROM_EMAIL },
+        sender: {
+          name: SITE_NAME,
+          email: FROM_EMAIL,
+        },
         to: [{ email: toEmail }],
         subject: `[${SITE_NAME}] Order #${shortId} — your products`,
         htmlContent: html,
@@ -206,7 +207,7 @@ serve(async (req) => {
 
     console.log(`[send-delivery-email] Email envoyé à ${toEmail} pour commande ${orderId} (Brevo messageId: ${resBody.messageId})`)
 
-    return new Response(JSON.stringify({ ok: true, email: toEmail, messageId: resBody.messageId }), {
+    return new Response(JSON.stringify({ ok: true, email: toEmail, message_id: resBody.messageId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
