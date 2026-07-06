@@ -333,10 +333,10 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
     }`}>
       {/* Logo Area */}
       <div
-        className={`aspect-[1.5] rounded-[1.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0 ${outOfStock ? 'bg-gray-100 dark:bg-gray-800/40 grayscale opacity-60' : 'bg-primarySoft dark:bg-gray-800/60'}`}
+        className={`aspect-[1.5] rounded-[1.5rem] flex items-center justify-center mb-5 overflow-hidden cursor-pointer relative shrink-0 ${outOfStock ? 'bg-gray-100 dark:bg-gray-800/40' : 'bg-primarySoft dark:bg-gray-800/60'}`}
         onClick={() => { setSelectedProduct(product); navigate('product'); }}
       >
-        <div className={`w-full h-full p-8 flex items-center justify-center transition-transform duration-300 ${outOfStock ? '' : 'group-hover:scale-[1.04]'}`}>
+        <div className={`w-full h-full p-8 flex items-center justify-center transition-transform duration-300 ${outOfStock ? 'grayscale opacity-60' : 'group-hover:scale-[1.04]'}`}>
           <ProductVisual product={product} iconSize={48} />
         </div>
         {outOfStock ? (
