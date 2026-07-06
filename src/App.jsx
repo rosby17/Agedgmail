@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
+import { parseAccountDelivery } from './lib/parseAccountDelivery';
 
 // ==========================================
 // CONFIGURATION ADMIN & SUPPORT
@@ -1263,59 +1264,149 @@ const SettingsTab = ({ profile, onUpdate }) => {
 // ==========================================
 
 // Modale de crédentiels réutilisée par MyOrdersView (extraite pour éviter la duplication).
-const OrderCredentialsModal = ({ order, onClose }) => (
-  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-    <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-      <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
-        <div><h3 className="text-xl font-bold">{order.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Your login credentials</p></div>
-        <button onClick={onClose} aria-label="Close" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
+// Une carte par compte livré (parsé), avec repli gracieux si une ligne ne
+// correspond pas au format attendu — jamais de texte brut/coupé affiché.
+const DeliveredAccountCard = ({ raw, index, total }) => {
+  let account = null;
+  let parseFailed = false;
+  try {
+    account = parseAccountDelivery(raw);
+  } catch {
+    parseFailed = true;
+  }
+
+  if (parseFailed || !account) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-sm text-amber-800">
+        <p className="font-bold mb-1">{total > 1 ? `Compte ${index + 1}/${total} — ` : ''}Vérification manuelle en cours</p>
+        <p className="text-xs leading-relaxed">Le format reçu du fournisseur est inhabituel pour ce compte. Contacte le support avec ton numéro de commande, un agent va te recontacter rapidement pour te livrer tes accès.</p>
       </div>
-      <div className="p-10 space-y-8">
-        <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <Info size={12} className="text-primary" /> Format: Email | Password | Recovery | 2FA
-            </div>
-            <button
-              onClick={() => navigator.clipboard.writeText(order.credentials || order.data || "")}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
-            >
-              <Copy size={12} /> Copy All
-            </button>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-3xl p-6 md:p-8 border border-gray-100 space-y-6">
+      {total > 1 && <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Compte {index + 1}/{total}</div>}
+
+      {/* Identifiants principaux */}
+      <div>
+        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Identifiants principaux</div>
+        <div className="space-y-2 font-mono text-sm">
+          <div className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3">
+            <span className="text-gray-700 break-all">{account.email}</span>
+            <button onClick={() => navigator.clipboard.writeText(account.email)} className="shrink-0 ml-3 text-gray-400 hover:text-primary"><Copy size={14} /></button>
           </div>
-          <div
-            className="font-mono text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-all max-h-[500px] overflow-y-auto custom-scrollbar pr-2 mt-6"
-            dangerouslySetInnerHTML={{
-              __html: (() => {
-                if (!order.credentials && !order.data) return "Waiting for delivery...";
-                const creds = order.credentials || order.data;
-                const highlighted = creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
-                return `<div class="space-y-4">
-                    <p>Thank you very much for your purchase.</p>
-                    <p>Here are your products:</p>
-                    <p class="font-black text-lg text-gray-900 border-b border-gray-100 pb-2">${order.product_name}</p>
-                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-inner">
-                      ${highlighted}
-                    </div>
-                    <div class="h-px bg-gray-100 my-8"></div>
-                    <div class="bg-primary/5 p-6 rounded-3xl border border-primary/10">
-                      <h4 class="text-gray-900 font-black mb-4 uppercase">How to connect (2FA)</h4>
-                      <p class="text-xs leading-relaxed text-gray-600 mb-4">Paste the 2FA string on <a href="https://2fa.live" target="_blank" class="text-primary underline font-bold">2fa.live</a> to get the 6-digit code.</p>
-                      <p class="text-xs font-bold">Tutorial: <a href="https://www.youtube.com/watch?v=JbjION2rdPA" target="_blank" class="text-primary underline">YouTube</a></p>
-                    </div>
-                    <div class="bg-red-50 p-6 rounded-3xl border border-red-100 mt-6">
-                      <p class="text-red-500 font-bold text-xs">Warranty period ends after successful login.</p>
-                    </div>
-                  </div>`;
-              })()
-            }}
-          />
+          <div className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3">
+            <span className="text-gray-700 break-all">{account.password}</span>
+            <button onClick={() => navigator.clipboard.writeText(account.password)} className="shrink-0 ml-3 text-gray-400 hover:text-primary"><Copy size={14} /></button>
+          </div>
         </div>
       </div>
-      <button onClick={onClose} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10">Close window</button>
+
+      {/* Email de récupération */}
+      {account.recoveryEmail && (
+        <div>
+          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Email de récupération</div>
+          <div className="space-y-2 font-mono text-sm">
+            <div className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3">
+              <span className="text-gray-700 break-all">{account.recoveryEmail}</span>
+              <button onClick={() => navigator.clipboard.writeText(account.recoveryEmail)} className="shrink-0 ml-3 text-gray-400 hover:text-primary"><Copy size={14} /></button>
+            </div>
+            {account.recoveryPassword && (
+              <div className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3">
+                <span className="text-gray-700 break-all">{account.recoveryPassword}</span>
+                <button onClick={() => navigator.clipboard.writeText(account.recoveryPassword)} className="shrink-0 ml-3 text-gray-400 hover:text-primary"><Copy size={14} /></button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mot de passe d'application */}
+      {account.appPassword && (
+        <div>
+          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Mot de passe d'application</div>
+          <p className="text-xs text-gray-400 mb-3">À utiliser pour une connexion via une app tierce, SMTP ou IMAP — pas pour te connecter directement sur gmail.com.</p>
+          <div className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3">
+            <span className="font-mono text-sm text-gray-700 tracking-widest">{account.appPassword}</span>
+            <button onClick={() => navigator.clipboard.writeText(account.appPassword)} className="shrink-0 ml-3 text-gray-400 hover:text-primary"><Copy size={14} /></button>
+          </div>
+        </div>
+      )}
+
+      {/* Clé 2FA */}
+      {account.totpSecret && (
+        <div className="bg-primary/5 rounded-2xl p-5 border border-primary/10">
+          <div className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Clé secrète 2FA</div>
+          <div className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3 mb-4">
+            <span className="font-mono text-sm text-gray-700 tracking-widest break-all">{account.totpSecret}</span>
+            <button onClick={() => navigator.clipboard.writeText(account.totpSecret)} className="shrink-0 ml-3 text-gray-400 hover:text-primary"><Copy size={14} /></button>
+          </div>
+          <ol className="text-xs text-gray-600 leading-relaxed space-y-1.5 list-decimal list-inside">
+            <li>Va sur <a href="https://2fa.live" target="_blank" rel="noopener noreferrer" className="text-primary underline font-bold">2fa.live</a> (ou ton app Authenticator).</li>
+            <li>Colle la clé <span className="font-bold">sans espace</span> (déjà nettoyée ci-dessus).</li>
+            <li>Utilise le code généré <span className="font-bold">immédiatement</span> — il expire vite.</li>
+            <li>Si Google répond "wrong code", attends le cycle de 30s suivant et réessaie avec le nouveau code.</li>
+          </ol>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
+
+const OrderCredentialsModal = ({ order, onClose }) => {
+  const raw = order.credentials || order.data || "";
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+      <div className="bg-white w-full max-w-3xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 flex flex-col">
+        <div className="bg-gray-900 p-8 text-white flex justify-between items-center shrink-0">
+          <div><h3 className="text-xl font-bold">{order.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Tes identifiants de connexion</p></div>
+          <button onClick={onClose} aria-label="Close" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
+        </div>
+
+        <div className="p-10 space-y-6 overflow-y-auto custom-scrollbar">
+          {lines.length === 0 ? (
+            <div className="bg-gray-50 rounded-3xl p-10 border border-gray-100 text-center text-gray-400 font-bold">En attente de livraison…</div>
+          ) : (
+            <>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => navigator.clipboard.writeText(raw)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                >
+                  <Copy size={12} /> Tout copier
+                </button>
+              </div>
+              {lines.map((line, i) => <DeliveredAccountCard key={i} raw={line} index={i} total={lines.length} />)}
+
+              {/* Avertissement sécurité */}
+              <div className="bg-red-50 border border-red-100 rounded-3xl p-6 space-y-2">
+                <div className="flex items-center gap-2 text-red-600 font-black text-xs uppercase tracking-widest"><ShieldAlert size={14} /> Sécurité</div>
+                <ul className="text-xs text-red-600/90 leading-relaxed space-y-1 list-disc list-inside">
+                  <li>Ne partage jamais ces identifiants.</li>
+                  <li>Change le mot de passe principal dès la première connexion.</li>
+                  <li>Ne désactive pas la 2FA sans savoir pourquoi elle est active.</li>
+                  <li>Si Google demande une vérification supplémentaire, contacte le support <span className="font-bold">avant</span> toute action.</li>
+                </ul>
+              </div>
+
+              <a
+                href={`mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(`Support commande #${order.id}`)}`}
+                className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl border border-gray-200 text-gray-700 font-bold text-sm hover:border-primary hover:text-primary transition-all"
+              >
+                <MessageCircle size={16} /> Contacter le support
+              </a>
+            </>
+          )}
+        </div>
+
+        <button onClick={onClose} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10 shrink-0">Fermer</button>
+      </div>
+    </div>
+  );
+};
 
 // Page "My orders" : solde + recharge en tête, liste des commandes en dessous.
 // Plus de sidebar à onglets (Dashboard/Orders/Settings) — Settings vit maintenant

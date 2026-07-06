@@ -15,6 +15,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as ytseller from '../_shared/ytseller.ts'
 import * as smmshiba from '../_shared/smmshiba.ts'
 import { getAdmin, logSupplier, alertAdmin, refundOrder, notifyTelegram, corsHeaders } from '../_shared/supplier-db.ts'
+import { parseAccountDelivery } from '../_shared/parseAccountDelivery.ts'
 
 const ADAPTERS: Record<string, { getOrderStatus: typeof ytseller.getOrderStatus; getResult: typeof ytseller.getResult }> = {
   ytseller, smmshiba,
@@ -92,14 +93,42 @@ serve(async (req) => {
           const result = await adapter.getResult(order.supplier_order_id)
           if (result.length === 0) throw new Error('result_product vide malgré status Completed')
           const creds = result.join('\n')
+
+          // Valide le format de chaque compte livré AVANT de considérer la
+          // livraison "propre" — ne bloque jamais le crédit du client (il a
+          // payé), mais alerte immédiatement l'admin si un format inattendu
+          // passe, pour rattraper manuellement plutôt que de laisser un
+          // affichage cassé. Jamais de credential en clair dans les logs.
+          const malformed: string[] = []
+          for (const line of result) {
+            try {
+              parseAccountDelivery(line)
+            } catch (parseErr) {
+              const [email] = line.split(':')
+              malformed.push(`${email || '(email illisible)'} — ${(parseErr as Error).message}`)
+            }
+          }
+
           await admin.from('orders').update({
             status: 'confirmed', credentials: creds, data: creds,
+            ...(malformed.length > 0 ? { admin_note: `Format de livraison inattendu sur ${malformed.length}/${result.length} compte(s) — vérification manuelle recommandée.` } : {}),
           }).eq('id', orderId)
           summary.completed++
           await logSupplier(admin, {
-            order_id: orderId, action: 'deliver', level: 'info', supplier,
-            message: `Livraison OK : ${result.length} compte(s) livré(s) (${supplier} #${order.supplier_order_id}).`,
+            order_id: orderId, action: 'deliver', level: malformed.length > 0 ? 'error' : 'info', supplier,
+            message: `Livraison ${malformed.length > 0 ? 'avec anomalie de format' : 'OK'} : ${result.length} compte(s) livré(s) (${supplier} #${order.supplier_order_id}).`,
+            payload: malformed.length > 0 ? { malformed } : undefined,
           })
+          if (malformed.length > 0) {
+            await notifyTelegram(
+              `⚠️ <b>Format de livraison inattendu</b>\n\n` +
+              `• <b>Commande :</b> <code>#${orderId}</code>\n` +
+              `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
+              `• <b>Comptes concernés :</b> ${malformed.length}/${result.length}\n` +
+              `• <b>Détail :</b> ${malformed.join(' ; ')}\n\n` +
+              `👉 <i>Le client a été livré, mais vérifiez manuellement le format — l'affichage in-app bascule sur un message de secours si le parsing échoue côté client.</i>`
+            )
+          }
           await alertAdmin('💰 Vente confirmée', {
             order_id: orderId, supplier, amount: `${order.total_price || 0} USD`, quantity: String(result.length),
           })
