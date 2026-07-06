@@ -87,7 +87,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
       <nav className="fixed top-0 w-full z-50 glass border-b border-white/5 backdrop-blur-xl">
         <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter flex justify-between items-center h-20">
           <div className="flex items-center gap-3">
-            <img alt="AgedGmailYT Icon" className="h-9 w-auto hover:scale-105 transition-transform duration-300 cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA2ZF5zZB5llhXjTZgvs64In3ytJg2FF_ek-KSm4bibJfw782IYaJSOV0Knvsmsuy_-PYMZlJp2iWO-tS2m2PBLuOiMGjhAV8_kzD9iQWOs6_dhwuhZCfBob0ZTq-oO131Htvb8G1tMAbz5fJlbqj4KbpEnBj0OIpWFUJmpCPQHQnv6k5fK9-FlMxX9UCNKVjE4jBej0HcFQB6je4WpnxANg0kP-0szIcnPZVSjDhlYnscIx5TNK88H1o1znlvXYZ7gV59gR7BNZDe" />
+            <img alt="AgedGmailYT Icon" className="h-9 w-auto hover:scale-105 transition-transform duration-300 cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA2ZF5zZB5llhXjTZgvs64In3ytJg2FF_ek-KSm4bibJfw782IYaJSOV0Knvsmsuy_-PYMZlJp2iWO-tS2m2PBLuOiMGjhAV8_kzD9iQWOs6_dhwuhZCfBob0ZTq-oO131Htvb8G1tMAbz5fJlbqj4KbpEnBj0OIpWFUJmpCPQHQnv6k5fK9-FlMxX9UCNKVjE4jBej0HcFQB6je4WpnxANg0kP-0szIcnPZVSjDhlYnscIx5TNK88H1o1znlvXYZ7gV59gR7BNZDe" onClick={() => navigate('')} />
             <span className="font-headline-lg font-bold text-l-primary text-xl tracking-tighter hidden md:block">AgedGmailYT</span>
           </div>
           <div className="hidden md:flex items-center gap-10">
@@ -119,11 +119,11 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
                 Accédez à des comptes Gmail et YouTube 'aged', vérifiés et optimisés pour percer à l'international sans blocages. Dominez le marché US dès aujourd'hui.
               </p>
               <div className="flex flex-col sm:flex-row gap-5">
-                <button onClick={() => navigate('home')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-on-primary px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
+                <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-on-primary px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
                   Acheter un compte
                   <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </button>
-                <button onClick={() => navigate('home')} className="btn-magnetic flex items-center justify-center gap-2 border border-white/10 glass text-on-surface hover:bg-white/5 px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300">
+                <button onClick={() => navigate('shop')} className="btn-magnetic flex items-center justify-center gap-2 border border-white/10 glass text-on-surface hover:bg-white/5 px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300">
                   Voir le catalogue
                 </button>
               </div>
@@ -279,7 +279,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
                 <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-8 font-extrabold">Nos Best-Sellers <br/>Livraison immédiate</h2>
                 <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">Payez par Crypto ou Orange Money / Mobile Money. Pas de frais cachés.</p>
               </div>
-              <button onClick={() => navigate('home')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary hover:border-l-primary transition-all duration-500">
+              <button onClick={() => navigate('shop')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary hover:border-l-primary transition-all duration-500">
                 Accéder au catalogue complet
               </button>
             </div>
@@ -377,7 +377,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
                 <h2 className="font-headline-lg text-4xl md:text-6xl text-on-surface mb-10 font-extrabold leading-tight">Aujourd'hui, les créateurs d'élite propulsent leur business digital et encaissent leurs premiers 100 000€.</h2>
                 <p className="font-body-md text-on-surface-variant text-xl mb-16 max-w-2xl mx-auto leading-relaxed">Profitez d'un RPM élevé et d'une croissance fulgurante. Vos comptes 'Aged' n'attendent que vous.</p>
                 <div className="flex flex-col items-center gap-10">
-                  <button onClick={() => navigate('home')} className="bg-l-primary text-on-primary px-16 py-7 rounded-2xl font-bold text-2xl hover:scale-110 transition-all duration-300 shadow-2xl shadow-l-primary/40 emerald-glow">
+                  <button onClick={() => navigate('shop')} className="bg-l-primary text-on-primary px-16 py-7 rounded-2xl font-bold text-2xl hover:scale-110 transition-all duration-300 shadow-2xl shadow-l-primary/40 emerald-glow">
                     Acheter maintenant
                   </button>
                   <div className="flex items-center gap-3 bg-white/5 px-6 py-3 rounded-full border border-white/5">
@@ -1596,7 +1596,7 @@ const PoliciesView = ({ navigate }) => {
       </div>
 
       <div className="text-center mt-12">
-        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline">Back to catalog</button>      </div>
+        <button onClick={() => navigate('shop')} className="text-sm font-bold text-primary hover:underline">Back to catalog</button>      </div>
     </div>
   );
 };
@@ -4026,7 +4026,7 @@ const AdminView = ({
     return (
       <div className="min-h-screen bg-canvas dark:bg-gray-950 flex flex-col items-center justify-center p-6 font-sans">
         <div className="w-full max-w-md bg-white dark:bg-slate-900/40 backdrop-blur-md border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-8 text-gray-900 dark:text-white relative">
-          <button onClick={() => navigate('home')} className="absolute top-8 left-8 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white font-bold flex items-center gap-1">
+          <button onClick={() => navigate('shop')} className="absolute top-8 left-8 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white font-bold flex items-center gap-1">
             <ArrowLeft size={14} /> {t('backToSite')}
           </button>
           <div className="text-center space-y-2 pt-4">
@@ -4093,7 +4093,7 @@ const AdminView = ({
             Votre compte n'est pas autorisé à accéder à la console d'administration.
           </p>
           <div className="flex gap-3 pt-4">
-            <button onClick={() => navigate('home')} className="flex-1 py-4 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all">
+            <button onClick={() => navigate('shop')} className="flex-1 py-4 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all">
               {t('backToSite')}
             </button>
             <button onClick={() => supabase.auth.signOut()} className="flex-1 py-4 bg-red-600 rounded-2xl text-sm font-bold hover:bg-red-700 transition-all">
@@ -4249,7 +4249,7 @@ const AdminView = ({
               <strong className="text-gray-800 dark:text-slate-300 font-bold">{session.user.email}</strong>
             </div>
             <button
-              onClick={() => navigate('home')}
+              onClick={() => navigate('shop')}
               className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gray-100 dark:bg-slate-800 text-gray-750 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-gray-205 dark:hover:bg-slate-700 hover:text-gray-950 dark:hover:text-white transition-all"
             >
               <ArrowLeft size={14} /> {t('backToSite')}
@@ -5036,7 +5036,7 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
 
         <div className="flex flex-col justify-center">
           <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-5">
-            <button onClick={() => navigate('home')} className="hover:text-primary">HOME</button>
+            <button onClick={() => navigate('')} className="hover:text-primary">HOME</button>
             <span>/</span>
             <span className="text-primary">{displayCategoryLabel(product)}</span>
           </nav>
@@ -5388,7 +5388,7 @@ const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, c
                   </div>
                 </div>
               ))}
-              <button onClick={() => { onClose(); navigate('home'); }} className="text-xs font-bold text-primary hover:underline uppercase tracking-widest">Continue shopping</button>
+              <button onClick={() => { onClose(); navigate('shop'); }} className="text-xs font-bold text-primary hover:underline uppercase tracking-widest">Continue shopping</button>
             </div>
           )}
         </div>
@@ -5453,7 +5453,7 @@ const AuthView = ({ navigate }) => {
         if (error) throw error;
         alert("Check your emails to confirm your registration!");
       }
-      navigate('home');
+      navigate('shop');
     } catch (err) {
       setErrorMessage(err.message);
     } finally {
@@ -5594,7 +5594,7 @@ const Footer = ({ navigate }) => (
         {/* Brand Section */}
         <div className="md:col-span-2">
           <div className="h-24 mb-8">
-            <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('home')} />
+            <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('')} />
           </div>
           <p className="text-gray-400 text-lg max-w-md leading-relaxed mb-10 font-medium">
             The #1 marketplace for acquiring certified accounts and premium digital services. Security, speed, and reliability guaranteed.
@@ -5613,8 +5613,8 @@ const Footer = ({ navigate }) => (
           <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Platform</h4>
           <ul className="space-y-4">
             <li><button onClick={() => navigate('dashboard')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Account</button></li>
-            <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Service</button></li>
-            <li><button onClick={() => navigate('home')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Resources</button></li>
+            <li><button onClick={() => navigate('shop')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Service</button></li>
+            <li><button onClick={() => navigate('shop')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Resources</button></li>
           </ul>
         </div>
 
@@ -5978,7 +5978,7 @@ function App() {
         fetchProfile(currentSession.user.id);
         // Only redirect to home if we are currently on the auth view and just signed in
         if (event === 'SIGNED_IN' && window.location.hash === '#auth') {
-          navigate('home');
+          navigate('shop');
         }
       } else {
         setProfile(null);
@@ -6241,7 +6241,11 @@ function App() {
 
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
+      let hash = window.location.hash.replace('#', '');
+      if (hash === 'home') {
+        window.history.replaceState(null, '', window.location.pathname);
+        hash = '';
+      }
       if (hash) {
         setCurrentView(hash);
       } else {
@@ -6313,7 +6317,7 @@ function App() {
       )}
       <div className="flex-grow">
         {currentView === 'landing' && <LandingView navigate={navigate} products={products} setSelectedProduct={setSelectedProduct} />}
-        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
+        {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
