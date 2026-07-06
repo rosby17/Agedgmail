@@ -23,7 +23,9 @@ export async function binanceSignedGet(path: string, params: Record<string, stri
   const apiSecret = Deno.env.get('BINANCE_API_SECRET') ?? ''
   if (!apiKey || !apiSecret) throw new Error('BINANCE_API_KEY / BINANCE_API_SECRET non configurés')
 
-  const query = new URLSearchParams({ ...params, timestamp: String(Date.now()), recvWindow: '10000' } as Record<string, string>)
+  const allParams: Record<string, string> = { timestamp: String(Date.now()), recvWindow: '10000' }
+  for (const [k, v] of Object.entries(params)) allParams[k] = String(v)
+  const query = new URLSearchParams(allParams)
   const signature = await hmacSha256Hex(apiSecret, query.toString())
   query.set('signature', signature)
 
@@ -73,7 +75,10 @@ export type PayTx = {
 export async function findMatchingIncomingPayment(submittedOrderId: string, expectedAmount: number) {
   const ourUid = Number(Deno.env.get('BINANCE_UID') ?? '0')
   const since = Date.now() - 48 * 60 * 60 * 1000
-  const txs = await getPayTradeHistory(since, Date.now(), 200) as PayTx[]
+  // 100 = maximum autorisé par l'endpoint Binance ; au-delà, l'API renvoie
+  // une erreur 400 trompeuse ("Mandatory parameter 'limit' ... malformed")
+  // qui ne mentionne jamais qu'il s'agit d'un dépassement de plafond.
+  const txs = await getPayTradeHistory(since, Date.now(), 100) as PayTx[]
 
   return txs.find((tx) => {
     if (String(tx.orderId) !== String(submittedOrderId)) return false
