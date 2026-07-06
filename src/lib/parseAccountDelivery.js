@@ -30,11 +30,9 @@ export function parseAccountDelivery(rawLine) {
     err.code = 'missing_required_fields';
     throw err;
   }
-  if (!emailPattern.test(email)) {
-    const err = new Error('Format d’email invalide.');
-    err.code = 'invalid_email_format';
-    throw err;
-  }
+  // On ne vérifie plus strictement si le premier champ est un email valide,
+  // car certains comptes (comme GitHub ou Facebook) peuvent utiliser un
+  // nom d'utilisateur (username) au lieu d'une adresse email.
 
   const result = { email, password };
   const leftovers = parts.slice(2).filter((p) => p.length > 0);
