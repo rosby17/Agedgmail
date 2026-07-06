@@ -2,14 +2,16 @@
 // send-delivery-email
 // Envoie les credentials d'une commande confirmée par email au client,
 // si profiles.send_email_on_delivery = true.
-// Utilise Resend (https://resend.com) — API key à configurer dans
-// Supabase > Project Settings > Edge Functions > Secrets : RESEND_API_KEY
+// Utilise Brevo (https://brevo.com) — API key à configurer dans
+// Supabase > Project Settings > Edge Functions > Secrets : BREVO_API_KEY
+// Free tier : 300 emails/jour, 9 000/mois — pas de domaine requis.
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { getAdmin, corsHeaders } from '../_shared/supplier-db.ts'
 
 const SITE_NAME = 'AgedGmail'
-const FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') ?? 'noreply@agedgmail.com'
+const FROM_EMAIL = Deno.env.get('BREVO_FROM_EMAIL') ?? 'noreply@agedgmail.com'
+const FROM_NAME  = Deno.env.get('BREVO_FROM_NAME')  ?? SITE_NAME
 
 /** Construit le HTML de l'email de livraison (style proche YTSeller). */
 function buildEmailHtml(opts: {
@@ -127,7 +129,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   const admin = getAdmin()
-  const resendKey = Deno.env.get('RESEND_API_KEY')
+  const brevoKey = Deno.env.get('BREVO_API_KEY')
 
   try {
     const { orderId } = await req.json()
@@ -175,35 +177,36 @@ serve(async (req) => {
       quantity: Number(order.quantity) || 1,
     })
 
-    if (!resendKey) {
-      // Pas de clé Resend configurée — log et retour OK (ne bloque pas la livraison)
-      console.warn(`[send-delivery-email] RESEND_API_KEY non configuré. Email non envoyé pour commande ${orderId}. Destinataire : ${toEmail}`)
-      return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'no_resend_key' }), {
+    if (!brevoKey) {
+      // Pas de clé Brevo configurée — log et retour OK (ne bloque pas la livraison)
+      console.warn(`[send-delivery-email] BREVO_API_KEY non configuré. Email non envoyé pour commande ${orderId}. Destinataire : ${toEmail}`)
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'no_brevo_key' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // 3. Envoyer via Resend
-    const res = await fetch('https://api.resend.com/emails', {
+    // 3. Envoyer via Brevo (Sendinblue) Transactional Email API
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendKey}`,
+        'api-key': brevoKey,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
-        from: `${SITE_NAME} <${FROM_EMAIL}>`,
-        to: [toEmail],
+        sender: { name: FROM_NAME, email: FROM_EMAIL },
+        to: [{ email: toEmail }],
         subject: `[${SITE_NAME}] Order #${shortId} — your products`,
-        html,
+        htmlContent: html,
       }),
     })
 
     const resBody = await res.json()
-    if (!res.ok) throw new Error(`Resend error: ${JSON.stringify(resBody)}`)
+    if (!res.ok) throw new Error(`Brevo error: ${JSON.stringify(resBody)}`)
 
-    console.log(`[send-delivery-email] Email envoyé à ${toEmail} pour commande ${orderId} (Resend id: ${resBody.id})`)
+    console.log(`[send-delivery-email] Email envoyé à ${toEmail} pour commande ${orderId} (Brevo messageId: ${resBody.messageId})`)
 
-    return new Response(JSON.stringify({ ok: true, email: toEmail, resend_id: resBody.id }), {
+    return new Response(JSON.stringify({ ok: true, email: toEmail, messageId: resBody.messageId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
