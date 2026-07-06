@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
 import { parseAccountDelivery } from './lib/parseAccountDelivery';
@@ -2063,7 +2063,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+              <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
                 <th className="pb-4">Produit / ID</th>
                 <th className="pb-4">Email</th>
                 <th className="pb-4">Montant</th>
@@ -2072,35 +2072,49 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
                 <th className="pb-4" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
               {filtered.map(order => (
-                <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr key={order.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/20 transition-colors">
                   <td className="py-5">
-                    <p className="font-bold text-gray-900 text-sm">{order.product_name}</p>
-                    <p className="text-gray-400 text-[10px] font-mono">#{String(order.id).slice(0, 8).toUpperCase()}</p>
+                    <p className="font-bold text-gray-900 dark:text-white text-sm">{order.product_name}</p>
+                    <p className="text-gray-400 dark:text-slate-500 text-[10px] font-mono">#{String(order.id).slice(0, 8).toUpperCase()}</p>
                   </td>
-                  <td className="py-5 text-sm text-gray-600">{order.buyer_email || '—'}</td>
-                  <td className="py-5 font-black text-primary font-mono">${order.total_price?.toFixed(2)}</td>
+                  <td className="py-5 text-sm text-gray-600 dark:text-slate-300">{order.buyer_email || '—'}</td>
+                  <td className="py-5 font-mono">
+                    <div className="font-bold text-gray-900 dark:text-white">
+                      ${order.total_price?.toFixed(2)}
+                    </div>
+                    {order.status === 'cancelled' && (
+                      <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                        <span>↩</span>
+                        <span>${order.total_price?.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </td>
                   <td className="py-5">{statusBadge(order.status)}</td>
-                  <td className="py-5 text-xs text-gray-400 whitespace-nowrap">
+                  <td className="py-5 text-xs text-gray-400 dark:text-slate-500 whitespace-nowrap">
                     {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="py-5">
                     <div className="flex gap-2">
                       {!isRecharge(order) && order.status === 'confirmed' && (
                         <button onClick={() => setSelectedOrder(order)}
-                          className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all" title="Voir les accès livrés" aria-label="Voir les accès livrés">
+                          className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-all" title="Voir les accès livrés" aria-label="Voir les accès livrés">
                           <Eye size={14} />
                         </button>
                       )}
-                      {(order.status === 'pending' || order.status === 'processing') && (
+                      {order.status !== 'cancelled' && (
                         <button onClick={() => cancelOrder(order.id)}
-                          className="p-2 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 transition-all" title="Annuler (commande bloquée)" aria-label="Annuler la commande">
-                          <X size={14} />
+                          className="p-2 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-100 dark:border-red-900/30 transition-all flex items-center gap-1 font-bold text-[10px]"
+                          title="Rembourser & Annuler"
+                          aria-label="Rembourser la commande"
+                        >
+                          <RotateCcw size={12} />
+                          <span>Refund</span>
                         </button>
                       )}
                       <button onClick={() => deleteOrder(order.id)}
-                        className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-all" title="Supprimer définitivement" aria-label="Supprimer la commande">
+                        className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-red-100 hover:text-red-500 transition-all" title="Supprimer définitivement" aria-label="Supprimer la commande">
                         <Trash size={14} />
                       </button>
                     </div>
