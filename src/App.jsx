@@ -436,6 +436,9 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
         <button onClick={() => go('home', 'all', 'all')} className={linkCls(currentView === 'home')}>Products</button>
         <button onClick={() => go('home', 'all', 'sms')} className={linkCls(false)}>SMS</button>
         <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>API</button>
+        {session && (
+          <button onClick={() => navigate('dashboard')} className={linkCls(currentView === 'dashboard')}>My orders</button>
+        )}
       </nav>
 
       <div className="flex items-center gap-4">
@@ -463,9 +466,6 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
               {/* Menu déroulant au survol : ponte entre le bouton et le menu pour éviter la coupure du hover */}
               <div className="absolute right-0 top-full pt-2 w-52 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
                 <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-2">
-                  <button onClick={() => navigate('dashboard')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-all">
-                    <History size={16} /> My orders
-                  </button>
                   <button onClick={() => navigate('settings')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-all">
                     <Settings size={16} /> Settings
                   </button>
