@@ -3127,6 +3127,152 @@ const RecentActivityTable = ({ allOrders }) => {
 };
 
 // ==========================================
+// SUPPORT ADMIN — chat temps réel côté admin (liste tickets + conversation)
+// ==========================================
+const SupportAdmin = ({ session }) => {
+  const [tickets, setTickets] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const scrollRef = React.useRef(null);
+
+  const active = tickets.find(t => t.id === activeId) || null;
+
+  const loadTickets = async () => {
+    const { data } = await supabase.from('support_tickets')
+      .select('*').order('last_message_at', { ascending: false });
+    setTickets(data || []);
+  };
+
+  useEffect(() => { loadTickets(); }, []);
+
+  // Temps réel : toute nouvelle activité (message ou ticket) rafraîchit la liste,
+  // et si le message concerne la conversation ouverte, on l'ajoute en direct.
+  useEffect(() => {
+    if (!supabase) return;
+    const channel = supabase.channel('support-admin')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => loadTickets())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, (payload) => {
+        setMessages(prev => (payload.new.ticket_id === activeIdRef.current && !prev.some(m => m.id === payload.new.id))
+          ? [...prev, payload.new] : prev);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Ref pour que le callback realtime lise toujours le ticket actif courant.
+  const activeIdRef = React.useRef(activeId);
+  useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
+
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
+
+  const openTicket = async (tk) => {
+    setActiveId(tk.id);
+    const { data: msgs } = await supabase.from('support_messages')
+      .select('*').eq('ticket_id', tk.id).order('created_at', { ascending: true });
+    setMessages(msgs || []);
+    if (tk.admin_unread) {
+      await supabase.from('support_tickets').update({ admin_unread: false }).eq('id', tk.id);
+      loadTickets();
+    }
+  };
+
+  const reply = async () => {
+    const body = input.trim();
+    if (!body || !active || sending) return;
+    setSending(true);
+    const { error } = await supabase.from('support_messages').insert({
+      ticket_id: active.id, user_id: active.user_id, sender: 'admin', body,
+    });
+    if (error) { setSending(false); alert('Erreur : ' + error.message); return; }
+    await supabase.from('support_tickets').update({
+      last_message_at: new Date().toISOString(), last_sender: 'admin', user_unread: true, admin_unread: false,
+    }).eq('id', active.id);
+    setInput('');
+    setSending(false);
+  };
+
+  const toggleResolved = async () => {
+    if (!active) return;
+    await supabase.from('support_tickets').update({ status: active.status === 'open' ? 'resolved' : 'open' }).eq('id', active.id);
+    loadTickets();
+  };
+
+  const openCount = tickets.filter(t => t.admin_unread).length;
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-6 md:p-8 shadow-soft">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Support / Chat</h2>
+          <p className="text-xs text-gray-400 mt-1">{tickets.length} conversation(s){openCount > 0 && <span className="text-red-500 font-bold"> · {openCount} non lue(s)</span>}</p>
+        </div>
+        <button onClick={loadTickets} className="p-2 rounded-xl border border-gray-100 dark:border-slate-700 text-gray-400 hover:text-primary transition-all"><RefreshCcw size={16} /></button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[65vh]">
+        {/* Liste des tickets */}
+        <div className="lg:col-span-1 border border-gray-100 dark:border-slate-800 rounded-2xl overflow-y-auto divide-y divide-gray-50 dark:divide-slate-800">
+          {tickets.length === 0 && <p className="p-6 text-center text-sm text-gray-400">Aucune conversation.</p>}
+          {tickets.map(tk => (
+            <button key={tk.id} onClick={() => openTicket(tk)}
+              className={`w-full text-left p-4 transition-all ${activeId === tk.id ? 'bg-primary/5' : 'hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-sm text-gray-900 dark:text-white truncate">{tk.user_email || 'Client'}</span>
+                {tk.admin_unread && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />}
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${tk.status === 'resolved' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-700'}`}>{tk.status === 'resolved' ? 'Résolu' : 'Ouvert'}</span>
+                <span className="text-[10px] text-gray-400">{new Date(tk.last_message_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Conversation */}
+        <div className="lg:col-span-2 border border-gray-100 dark:border-slate-800 rounded-2xl flex flex-col overflow-hidden">
+          {!active ? (
+            <div className="flex-grow flex items-center justify-center text-gray-400 text-sm">Sélectionne une conversation.</div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-800 shrink-0">
+                <div className="font-bold text-gray-900 dark:text-white text-sm">{active.user_email}</div>
+                <button onClick={toggleResolved} className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg ${active.status === 'open' ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} transition-all`}>
+                  {active.status === 'open' ? 'Marquer résolu' : 'Rouvrir'}
+                </button>
+              </div>
+              <div ref={scrollRef} className="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-slate-950">
+                {messages.map(m => (
+                  <div key={m.id} className={`flex ${m.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'admin' ? 'bg-primary text-white rounded-br-sm' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-slate-700 rounded-bl-sm'}`}>
+                      {m.body}
+                      <div className={`text-[9px] mt-1 ${m.sender === 'admin' ? 'text-white/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  </div>
+                ))}
+                {messages.length === 0 && <p className="text-center text-xs text-gray-400 py-8">Aucun message.</p>}
+              </div>
+              <div className="p-3 border-t border-gray-100 dark:border-slate-800 flex items-center gap-2 shrink-0">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') reply(); }}
+                  placeholder="Répondre…"
+                  className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <button onClick={reply} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40"><Send size={16} /></button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
 // CLIENT MANAGEMENT — recherche, statistiques, ban/déban, crédit, historique
 // ==========================================
 const ClientManagement = ({ allUsers, allOrders, fetchUsers }) => {
@@ -3554,6 +3700,7 @@ const AdminView = ({
               { id: 'orders', label: lang === 'fr' ? "Commandes" : "Orders", icon: FileText },
               { id: 'payments', label: 'Binance Pay', icon: Wallet },
               { id: 'users', label: lang === 'fr' ? "Clients" : "Client Management", icon: Users },
+              { id: 'support', label: 'Support / Chat', icon: MessageCircle },
               { id: 'supplier', label: lang === 'fr' ? "Fournisseur" : "Supplier", icon: Database },
             ].map(item => (
               <button
@@ -3732,6 +3879,8 @@ const AdminView = ({
           )}
 
           {activeTab === 'payments' && <BinancePaymentsAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />}
+
+          {activeTab === 'support' && <SupportAdmin session={session} />}
 
           {activeTab === 'supplier' && <SupplierAdmin products={products} fetchProducts={fetchProducts} />}
         </main>
@@ -5121,6 +5270,138 @@ const TRANSLATIONS = {
   }
 };
 
+// ==========================================
+// SUPPORT CHAT — widget client (bouton flottant + panneau temps réel)
+// ==========================================
+const SupportChatWidget = ({ session, profile }) => {
+  const [open, setOpen] = useState(false);
+  const [ticket, setTicket] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
+  const scrollRef = React.useRef(null);
+
+  const userId = session?.user?.id;
+
+  // Charge le ticket existant + ses messages, et l'état "non lu".
+  const loadTicket = async () => {
+    if (!userId) return;
+    const { data: tk } = await supabase.from('support_tickets')
+      .select('*').eq('user_id', userId).order('last_message_at', { ascending: false }).limit(1).maybeSingle();
+    if (tk) {
+      setTicket(tk);
+      setHasUnread(!!tk.user_unread);
+      const { data: msgs } = await supabase.from('support_messages')
+        .select('*').eq('ticket_id', tk.id).order('created_at', { ascending: true });
+      setMessages(msgs || []);
+    }
+  };
+
+  useEffect(() => { if (userId) loadTicket(); }, [userId]);
+
+  // Abonnement temps réel aux nouveaux messages de ce client.
+  useEffect(() => {
+    if (!userId || !supabase) return;
+    const channel = supabase.channel(`support-user-${userId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setMessages(prev => prev.some(m => m.id === payload.new.id) ? prev : [...prev, payload.new]);
+          if (payload.new.sender === 'admin' && !open) setHasUnread(true);
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, open]);
+
+  // Auto-scroll en bas à chaque nouveau message / ouverture.
+  useEffect(() => { if (open && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages, open]);
+
+  // À l'ouverture : marque comme lu côté client.
+  const openPanel = async () => {
+    setOpen(true);
+    setHasUnread(false);
+    if (ticket?.user_unread) {
+      await supabase.from('support_tickets').update({ user_unread: false }).eq('id', ticket.id);
+    }
+  };
+
+  const send = async () => {
+    const body = input.trim();
+    if (!body || sending) return;
+    setSending(true);
+    let tk = ticket;
+    if (!tk) {
+      const { data: created, error } = await supabase.from('support_tickets').insert({
+        user_id: userId, user_email: session.user.email, subject: 'Support', status: 'open',
+        last_sender: 'user', admin_unread: true, user_unread: false, last_message_at: new Date().toISOString(),
+      }).select().single();
+      if (error) { setSending(false); alert('Erreur : ' + error.message); return; }
+      tk = created; setTicket(created);
+    }
+    const { error: msgErr } = await supabase.from('support_messages').insert({
+      ticket_id: tk.id, user_id: userId, sender: 'user', body,
+    });
+    if (msgErr) { setSending(false); alert('Erreur : ' + msgErr.message); return; }
+    await supabase.from('support_tickets').update({
+      last_message_at: new Date().toISOString(), last_sender: 'user', admin_unread: true, status: 'open',
+    }).eq('id', tk.id);
+    setInput('');
+    setSending(false);
+  };
+
+  if (!session) return null;
+
+  return (
+    <>
+      <button
+        onClick={() => (open ? setOpen(false) : openPanel())}
+        className="fixed bottom-6 right-6 z-[250] w-14 h-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/30 flex items-center justify-center hover:bg-primaryDark transition-all"
+        aria-label="Support"
+      >
+        {open ? <X size={22} /> : <MessageCircle size={24} />}
+        {!open && hasUnread && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />}
+      </button>
+
+      {open && (
+        <div className="fixed bottom-24 right-6 z-[250] w-[92vw] max-w-sm h-[70vh] max-h-[560px] bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
+          <div className="bg-gray-900 text-white p-5 shrink-0">
+            <h3 className="font-bold flex items-center gap-2"><Headphones size={18} /> Support AgedGmailYT</h3>
+            <p className="text-[11px] text-gray-400 mt-0.5">On te répond au plus vite. Explique ton souci ici.</p>
+          </div>
+
+          <div ref={scrollRef} className="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-950">
+            {messages.length === 0 && (
+              <p className="text-center text-xs text-gray-400 py-8">Aucun message pour l'instant. Écris-nous ci-dessous !</p>
+            )}
+            {messages.map(m => (
+              <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'user' ? 'bg-primary text-white rounded-br-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-sm'}`}>
+                  {m.body}
+                  <div className={`text-[9px] mt-1 ${m.sender === 'user' ? 'text-white/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-3 border-t border-gray-100 dark:border-gray-800 flex items-center gap-2 shrink-0">
+            <input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') send(); }}
+              placeholder="Écris ton message…"
+              className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-gray-800 dark:text-white border border-gray-200 dark:border-gray-700 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <button onClick={send} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40">
+              <Send size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('agedgmail_lang') || 'fr');
   const [theme, setTheme] = useState(() => localStorage.getItem('agedgmail_theme') || 'dark');
@@ -5548,6 +5829,7 @@ function App() {
         )}
       </div>
 
+      {!isAdmin && session && <SupportChatWidget session={session} profile={profile} />}
       {!isAdmin && <Footer navigate={navigate} />}
     </div>
   );
