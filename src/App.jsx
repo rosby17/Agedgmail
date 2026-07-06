@@ -5522,6 +5522,67 @@ const friendlyAuthError = (raw = '') => {
   return raw || "Une erreur est survenue. Réessaie.";
 };
 
+// Écran de définition d'un nouveau mot de passe, atteint via le lien de
+// réinitialisation reçu par email (Supabase a créé une session temporaire).
+const ResetPasswordView = ({ navigate }) => {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (newPassword.length < 6) { setError('Le mot de passe doit contenir au moins 6 caractères.'); return; }
+    if (newPassword !== confirm) { setError('Les deux mots de passe ne correspondent pas.'); return; }
+    setLoading(true);
+    try {
+      const { error: err } = await supabase.auth.updateUser({ password: newPassword });
+      if (err) throw err;
+      setDone(true);
+      // Nettoie les jetons de récupération de l'URL et bascule sur le catalogue.
+      window.history.replaceState(null, '', window.location.pathname);
+      setTimeout(() => navigate('shop'), 1800);
+    } catch (err) {
+      setError(friendlyAuthError(err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-[90vh] flex items-center justify-center py-20 px-6 font-sans bg-[#F9FAFB]">
+      <div className="w-full max-w-[480px] bg-white p-10 md:p-14 rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.06)] border border-gray-50">
+        <div className="w-16 h-16 mx-auto mb-8 flex items-center justify-center">
+          <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+        </div>
+        {done ? (
+          <div className="text-center animate-in fade-in zoom-in duration-300">
+            <CheckCircle size={56} className="text-green-500 mx-auto mb-5" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Mot de passe mis à jour</h2>
+            <p className="text-gray-400 text-sm">Redirection en cours…</p>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Nouveau mot de passe</h2>
+            <p className="text-gray-400 text-sm text-center mb-8">Choisis un nouveau mot de passe pour ton compte.</p>
+            <form onSubmit={submit} className="space-y-5">
+              <input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+              <input type="password" required value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirme le mot de passe" className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+              {error && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {error}</div>}
+              <button type="submit" disabled={loading} className="w-full h-14 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                {loading && <RefreshCcw size={16} className="animate-spin" />} Mettre à jour
+              </button>
+            </form>
+            <button onClick={() => navigate('auth')} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-6">← Retour à la connexion</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const AuthView = ({ navigate }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -6443,7 +6504,12 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const rawHash = window.location.hash;
 
-    if (rawHash.includes('access_token=') || rawHash.includes('error_description=') || rawHash.includes('error=')) {
+    if (rawHash.includes('type=recovery')) {
+      // Lien de réinitialisation de mot de passe reçu par email : on affiche
+      // directement l'écran de saisie du nouveau mot de passe (l'event
+      // PASSWORD_RECOVERY confirme ensuite via onAuthStateChange).
+      setCurrentView('reset-password');
+    } else if (rawHash.includes('access_token=') || rawHash.includes('error_description=') || rawHash.includes('error=')) {
       // Retour de connexion OAuth (Google) : le hash contient les jetons de
       // session que le client Supabase doit lire et nettoyer lui-même
       // (detectSessionInUrl). On NE TOUCHE PAS à window.location.hash ici —
@@ -6504,6 +6570,7 @@ function App() {
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
+        {currentView === 'reset-password' && <ResetPasswordView navigate={navigate} />}
         {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} />}
         {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} />}
