@@ -66,7 +66,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
         btn.removeEventListener('mouseleave', handleMouseLeave);
       });
     };
-  }, []);
+  }, [products]);
 
   const scrollToSection = (e, targetId) => {
     e.preventDefault();
