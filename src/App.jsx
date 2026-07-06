@@ -11,7 +11,10 @@ const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 
 
 const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
-  const topProductsRaw = [...products].sort((a, b) => (b.sales || 0) - (a.sales || 0)).slice(0, 3);
+  const topProductsRaw = [...products]
+    .sort((a, b) => (b.sales || 0) - (a.sales || 0))
+    .slice(0, 3)
+    .sort((a, b) => b.price - a.price);
   const topProducts = [];
   if (topProductsRaw.length > 0) {
     if (topProductsRaw.length === 1) topProducts.push(topProductsRaw[0]);
