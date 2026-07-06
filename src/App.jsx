@@ -2590,6 +2590,30 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   );
 };
 
+// SOURCE UNIQUE DE VÉRITÉ pour le coût fournisseur d'une commande — utilisée
+// à la fois par la carte "Bénéfice Net" et par le graphique, pour qu'ils ne
+// puissent jamais afficher deux chiffres différents (bug précédent : le
+// graphique ne recevait pas `mappings` et retombait sur une estimation
+// arbitraire, d'où un bénéfice net incohérent avec la carte).
+// Ordre de priorité : coût réel figé sur la commande (supplier_cost, si la
+// colonne existe) → tarif du mapping fournisseur actuel → 0. Plus d'invention
+// de coût à 70 % : une commande dropship sans mapping ni coût enregistré est
+// comptée à coût 0 (bénéfice = prix) plutôt qu'avec un chiffre fabriqué.
+const orderSupplierCost = (order, mappings = []) => {
+  if (order.supplier_cost != null) return Number(order.supplier_cost) || 0;
+  const map = mappings.find(m => m.product_id === order.product_id && (order.supplier ? m.supplier === order.supplier : m.active));
+  if (map) return (Number(map.supplier_rate) || 0) * (order.quantity || 1);
+  return 0;
+};
+
+// Bénéfice net sur une liste de commandes confirmées (hors recharges 999).
+const netProfitOf = (ordersList, mappings = []) => {
+  const purchases = ordersList.filter(o => o.product_id !== 999);
+  const revenue = purchases.reduce((s, o) => s + (o.total_price || 0), 0);
+  const cost = purchases.reduce((s, o) => s + orderSupplierCost(o, mappings), 0);
+  return revenue - cost;
+};
+
 // Courbe de revenu par jour (7 ou 30 derniers jours), sous forme de ligne SVG avec dégradé.
 // Graphique de statistiques interactif inspiré de YouTube Studio Analytics (Revenu estimé vs Clients inscrits).
 const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'fr' }) => {
@@ -2597,19 +2621,7 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
   const [activeMetric, setActiveMetric] = useState('revenue'); // 'revenue' | 'users'
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
-  const calculateNetProfit = (ordersList) => {
-    const confirmedPurchases = ordersList.filter(o => o.product_id !== 999);
-    const revenue = confirmedPurchases.reduce((sum, o) => sum + (o.total_price || 0), 0);
-    const cost = confirmedPurchases.reduce((sum, o) => {
-      const map = mappings.find(m => m.product_id === o.product_id && (o.supplier ? m.supplier === o.supplier : m.active));
-      if (map) {
-        return sum + (Number(map.supplier_rate) || 0) * (o.quantity || 1);
-      }
-      const fallbackCost = o.supplier ? (o.total_price * 0.7) : 0;
-      return sum + fallbackCost;
-    }, 0);
-    return revenue - cost;
-  };
+  const calculateNetProfit = (ordersList) => netProfitOf(ordersList, mappings);
 
   const getChartData = () => {
     if (range === 7 || range === 30) {
@@ -3244,17 +3256,9 @@ const AdminView = ({
   const confirmedPurchases = confirmedOrders.filter(o => o.product_id !== 999);
   const totalSold = confirmedPurchases.reduce((s, o) => s + (o.total_price || 0), 0);
 
-  // Coût total d'achat fournisseur estimé
-  const totalCost = confirmedPurchases.reduce((sum, o) => {
-    // Trouve le mapping correspondant
-    const map = mappings.find(m => m.product_id === o.product_id && (o.supplier ? m.supplier === o.supplier : m.active));
-    if (map) {
-      return sum + (Number(map.supplier_rate) || 0) * (o.quantity || 1);
-    }
-    // Estimation s'il n'y a pas de mapping en ligne (ex: produit dropship supprimé ou stock local sans mapping)
-    const fallbackCost = o.supplier ? (o.total_price * 0.7) : 0;
-    return sum + fallbackCost;
-  }, 0);
+  // Coût total d'achat fournisseur — même fonction partagée que le graphique
+  // (orderSupplierCost), donc carte et courbe affichent TOUJOURS le même chiffre.
+  const totalCost = confirmedPurchases.reduce((sum, o) => sum + orderSupplierCost(o, mappings), 0);
 
   // Bénéfice Net & Marge
   const netProfit = totalSold - totalCost;
@@ -3480,7 +3484,7 @@ const AdminView = ({
               </div>
             </div>
 
-            <RevenueChart confirmedOrders={confirmedOrders} allUsers={allUsers} lang={lang} />
+            <RevenueChart confirmedOrders={confirmedOrders} allUsers={allUsers} mappings={mappings} lang={lang} />
 
             {/* Top products & Activity side-by-side */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
