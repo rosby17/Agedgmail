@@ -9,6 +9,408 @@ import { parseAccountDelivery } from './lib/parseAccountDelivery';
 // ==========================================
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 
+
+const LandingView = ({ navigate }) => {
+  useEffect(() => {
+    const observerOptions = { threshold: 0.1 };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('reveal');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    const revealElements = document.querySelectorAll('.reveal-target');
+    revealElements.forEach(el => observer.observe(el));
+
+    const btns = document.querySelectorAll('.btn-magnetic');
+    const handleMouseMove = (e) => {
+      const btn = e.currentTarget;
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      btn.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px) scale(1.02)`;
+    };
+    const handleMouseLeave = (e) => {
+      e.currentTarget.style.transform = 'translate(0px, 0px) scale(1)';
+    };
+
+    btns.forEach(btn => {
+      btn.addEventListener('mousemove', handleMouseMove);
+      btn.addEventListener('mouseleave', handleMouseLeave);
+    });
+
+    return () => {
+      revealElements.forEach(el => observer.unobserve(el));
+      btns.forEach(btn => {
+        btn.removeEventListener('mousemove', handleMouseMove);
+        btn.removeEventListener('mouseleave', handleMouseLeave);
+      });
+    };
+  }, []);
+
+  const scrollToSection = (e, targetId) => {
+    e.preventDefault();
+    const target = document.querySelector(targetId);
+    if (target) {
+      window.scrollTo({
+        top: target.offsetTop - 80,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  return (
+    <div className="font-body-md bg-l-background text-on-surface grid-bg">
+      <nav className="fixed top-0 w-full z-50 glass border-b border-white/5 backdrop-blur-xl">
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter flex justify-between items-center h-20">
+          <div className="flex items-center gap-3">
+            <img alt="AgedGmailYT Icon" className="h-9 w-auto hover:scale-105 transition-transform duration-300 cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA2ZF5zZB5llhXjTZgvs64In3ytJg2FF_ek-KSm4bibJfw782IYaJSOV0Knvsmsuy_-PYMZlJp2iWO-tS2m2PBLuOiMGjhAV8_kzD9iQWOs6_dhwuhZCfBob0ZTq-oO131Htvb8G1tMAbz5fJlbqj4KbpEnBj0OIpWFUJmpCPQHQnv6k5fK9-FlMxX9UCNKVjE4jBej0HcFQB6je4WpnxANg0kP-0szIcnPZVSjDhlYnscIx5TNK88H1o1znlvXYZ7gV59gR7BNZDe" />
+            <span className="font-headline-lg font-bold text-l-primary text-xl tracking-tighter hidden md:block">AgedGmailYT</span>
+          </div>
+          <div className="hidden md:flex items-center gap-10">
+            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#catalogue" onClick={(e) => scrollToSection(e, '#catalogue')}>Catalogue</a>
+            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#features" onClick={(e) => scrollToSection(e, '#features')}>Fonctionnalités</a>
+            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#faq" onClick={(e) => scrollToSection(e, '#faq')}>FAQ</a>
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('auth')} className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors px-4 py-2 cursor-pointer active:scale-95">Se connecter</button>
+            <button onClick={() => navigate('auth')} className="bg-l-primary text-on-primary px-6 py-2.5 rounded-full text-sm font-bold hover:scale-105 transition-all duration-300 emerald-glow shadow-lg cursor-pointer active:scale-95">Commencer</button>
+          </div>
+        </div>
+      </nav>
+
+      <main>
+        <section className="relative pt-52 pb-32 overflow-hidden min-h-screen flex items-center">
+          <div className="ambient-glow -top-40 -left-40"></div>
+          <div className="ambient-glow bottom-0 -right-40 opacity-60"></div>
+          <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter grid grid-cols-1 lg:grid-cols-2 gap-24 items-center relative z-10">
+            <div className="reveal-target opacity-0" style={{ animationDelay: '0.2s' }}>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-l-primary/20 bg-l-primary/5 mb-8">
+                <span className="w-2 h-2 rounded-full bg-l-primary animate-pulse"></span>
+                <span className="font-label-sm text-[10px] text-l-primary uppercase tracking-[0.2em]">FOURNISSEUR DE COMPTES GMAIL PREMIUM</span>
+              </div>
+              <h1 className="font-headline-lg text-5xl md:text-7xl text-on-surface leading-[1.1] mb-8 font-extrabold">
+                Dites adieu au <br/><span className="curved-underline text-l-primary">shadowban.</span>
+              </h1>
+              <p className="font-body-md text-on-surface-variant text-lg md:text-xl mb-12 max-w-xl leading-relaxed">
+                Accédez à des comptes Gmail et YouTube 'aged', vérifiés et optimisés pour percer à l'international sans blocages. Dominez le marché US dès aujourd'hui.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-5">
+                <button onClick={() => navigate('home')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-on-primary px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
+                  Acheter un compte
+                  <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </button>
+                <button onClick={() => navigate('home')} className="btn-magnetic flex items-center justify-center gap-2 border border-white/10 glass text-on-surface hover:bg-white/5 px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300">
+                  Voir le catalogue
+                </button>
+              </div>
+            </div>
+            <div className="reveal-target opacity-0 relative" style={{ animationDelay: '0.4s' }}>
+              <div className="glass glass-glow rounded-[40px] p-6 border-white/10 shadow-2xl transform lg:rotate-3 hover:rotate-0 transition-transform duration-1000">
+                <div className="bg-surface-container rounded-3xl overflow-hidden border border-white/5">
+                  <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                    <div className="flex gap-2">
+                      <div className="w-3 h-3 rounded-full bg-error/40"></div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500/40"></div>
+                      <div className="w-3 h-3 rounded-full bg-l-primary/40"></div>
+                    </div>
+                    <div className="text-[10px] font-label-sm text-on-surface-variant">VÉRIFICATION SYSTÈME</div>
+                  </div>
+                  <div className="p-6 space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-headline-lg font-bold text-lg">Tableau de bord</h4>
+                      <span className="text-l-primary text-xs font-bold px-3 py-1 bg-l-primary/10 rounded-lg">Actif</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Trust Score</p>
+                        <p className="text-xl font-bold text-l-primary">98%</p>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Consistency</p>
+                        <p className="text-xl font-bold text-on-surface">Good</p>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Consistent Score</p>
+                        <p className="text-xl font-bold text-l-primary">100%</p>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Fingerprint Scan</p>
+                        <p className="text-xl font-bold text-on-surface">Clean</p>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Geo-Location</p>
+                        <p className="text-xl font-bold text-on-surface">US</p>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">NoMask Detect</p>
+                        <p className="text-xl font-bold text-l-primary">Passed</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 bg-l-primary/5 rounded-xl border border-l-primary/20">
+                        <div className="w-8 h-8 rounded-lg bg-l-primary/20 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-l-primary text-sm">verified</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-2 w-24 bg-l-primary/30 rounded-full mb-1"></div>
+                          <div className="h-1.5 w-16 bg-white/10 rounded-full"></div>
+                        </div>
+                        <span className="text-[10px] font-bold text-l-primary">VÉRIFIÉ</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -bottom-10 -left-12 glass p-8 rounded-3xl border-l-primary/20 shadow-2xl hidden md:block reveal-target opacity-0" style={{ animationDelay: '0.6s' }}>
+                <div className="flex items-center gap-8">
+                  <div>
+                    <p className="text-4xl font-extrabold text-l-primary leading-none mb-1">99.9%</p>
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Taux de succès</p>
+                  </div>
+                  <div className="h-12 w-px bg-white/10"></div>
+                  <div>
+                    <p className="text-4xl font-extrabold text-on-surface leading-none mb-1">5k+</p>
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Utilisateurs</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-section-gap relative">
+          <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
+            <div className="text-center mb-24 reveal-target opacity-0">
+              <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-6 font-extrabold">Pourquoi les créateurs africains stagnent</h2>
+              <p className="font-body-md text-on-surface-variant text-lg max-w-2xl mx-auto leading-relaxed">Le marché digital actuel est impitoyable. Ne laissez pas des algorithmes obsolètes freiner votre croissance.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.1s' }}>
+                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
+                  <span className="material-symbols-outlined text-l-primary text-4xl">block</span>
+                </div>
+                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">Shadowbans systématiques</h4>
+                <p className="text-on-surface-variant leading-relaxed">Les nouveaux comptes sont scrutés par l'IA. Un mauvais pas et votre visibilité disparaît instantanément.</p>
+              </div>
+              <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.2s' }}>
+                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
+                  <span className="material-symbols-outlined text-l-primary text-4xl">new_releases</span>
+                </div>
+                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">Manque de crédibilité chez Google</h4>
+                <p className="text-on-surface-variant leading-relaxed">Sans historique, les plateformes ne vous font pas confiance pour diffuser votre contenu à grande échelle.</p>
+              </div>
+              <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.3s' }}>
+                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
+                  <span className="material-symbols-outlined text-l-primary text-4xl">warning</span>
+                </div>
+                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">Création manuelle risquée</h4>
+                <p className="text-on-surface-variant leading-relaxed">Le "farming" manuel est lent et souvent détecté comme du spam par les algorithmes de sécurité.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-section-gap relative overflow-hidden" id="features">
+          <div className="ambient-glow -right-40 top-1/4 opacity-40"></div>
+          <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+              <div className="reveal-target opacity-0">
+                <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-10 leading-tight font-extrabold">La puissance d'un compte établi entre vos mains.</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
+                  <div className="group">
+                    <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">verified_user</span>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Historique Propre</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">Comptes sans aucune infraction passée, prêts pour l'usage pro.</p>
+                  </div>
+                  <div className="group">
+                    <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">bolt</span>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Livraison Instantanée</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">Vos accès sont envoyés automatiquement après validation du paiement.</p>
+                  </div>
+                  <div className="group">
+                    <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">payments</span>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Paiement Flexible</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">Acceptés : Crypto/Binance, Orange Money et Mobile Money.</p>
+                  </div>
+                  <div className="group">
+                    <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">headset_mic</span>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Support 24/7</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">Une équipe technique à votre écoute pour toute intégration.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="relative reveal-target opacity-0" style={{ animationDelay: '0.3s' }}>
+                <div className="aspect-square rounded-[60px] glass overflow-hidden border-white/5 p-4">
+                  <div className="w-full h-full rounded-[48px] bg-cover bg-center" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuArwkWS172r2mUOeWqgkejQ-AjQ1fBXElbZrWbMbIg4HMafRrNF43p7AqxNpsYZjwI2YXeqv_nC65s08oqNq5-gILgnkaqV_kB8xWOaI7xc2omwIFz7GMFlHwQFWNdv-_ItVu_UL6ZVduPUDEn1ycMozhlS5960bY7r2LWNS2l2cas8-deonsGyJg0L83-ITPEBK_LmxtODl-TN7A1O7vIOXiJf3awaqW6gBsPiPI8a4cBZwaml-4TkurT76FnG9p2sn6aNMoGW1lcs')" }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-section-gap relative" id="catalogue">
+          <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
+            <div className="flex flex-col lg:flex-row justify-between items-end mb-24 gap-10 reveal-target opacity-0">
+              <div className="max-w-2xl">
+                <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-8 font-extrabold">Nos Best-Sellers <br/>Livraison immédiate</h2>
+                <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">Payez par Crypto ou Orange Money / Mobile Money. Pas de frais cachés.</p>
+              </div>
+              <button onClick={() => navigate('home')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary hover:border-l-primary transition-all duration-500">
+                Accéder au catalogue complet
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              <div className="glass glass-glow rounded-[48px] p-12 flex flex-col hover:-translate-y-3 transition-all duration-700 reveal-target opacity-0" style={{ animationDelay: '0.1s' }}>
+                <div className="mb-10">
+                  <span className="bg-white/5 border border-white/10 text-on-surface-variant px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">Entrée de Gamme</span>
+                </div>
+                <h3 className="font-headline-lg text-3xl mb-3 font-bold">Compte Gmail Simple</h3>
+                <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">Starter Pack</p>
+                <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"Prêt pour le marketing". Idéal pour les outils de prospection et tests de niches rapides.</p>
+                <div className="text-5xl font-extrabold text-on-surface mb-12">25€</div>
+                <button onClick={() => navigate('home')} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary transition-all duration-300">Sélectionner</button>
+              </div>
+              <div className="glass glass-glow rounded-[48px] p-12 flex flex-col border-l-primary/40 relative overflow-hidden transform md:scale-105 shadow-[0_0_80px_rgba(78,223,159,0.1)] reveal-target opacity-0" style={{ animationDelay: '0.2s' }}>
+                <div className="absolute top-12 right-[-45px] bg-l-primary text-on-primary px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">Meilleur Choix</div>
+                <div className="mb-10">
+                  <span className="bg-l-primary text-on-primary px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">Le plus populaire</span>
+                </div>
+                <h3 className="font-headline-lg text-3xl mb-3 font-bold">Compte YouTube Aged</h3>
+                <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">Recommandé</p>
+                <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"Optimisé Marché US". Compte avec historique vidéo prêt pour le reach américain massif.</p>
+                <div className="text-5xl font-extrabold text-on-surface mb-12">75€</div>
+                <button onClick={() => navigate('home')} className="w-full bg-l-primary text-on-primary py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">Acheter maintenant</button>
+              </div>
+              <div className="glass glass-glow rounded-[48px] p-12 flex flex-col hover:-translate-y-3 transition-all duration-700 reveal-target opacity-0" style={{ animationDelay: '0.3s' }}>
+                <div className="mb-10">
+                  <span className="bg-white/5 border border-white/10 text-on-surface-variant px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">Entreprise</span>
+                </div>
+                <h3 className="font-headline-lg text-3xl mb-3 font-bold">Compte Elite US</h3>
+                <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">Autorité Maximale</p>
+                <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"Ancienneté 10+ ans". La crème de la crème pour une autorité maximale immédiate et RPM élevé.</p>
+                <div className="text-5xl font-extrabold text-on-surface mb-12">150€</div>
+                <button onClick={() => navigate('home')} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary transition-all duration-300">Sélectionner</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-section-gap relative">
+          <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
+            <div className="text-center mb-24 reveal-target opacity-0">
+              <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-6 font-extrabold">Ils dominent déjà le marché</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="glass p-10 rounded-[32px] reveal-target opacity-0 hover:border-white/20 transition-all duration-500" style={{ animationDelay: '0.1s' }}>
+                <div className="flex items-center gap-5 mb-8">
+                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCL0VvxK1X06MF22qWfq-vP9rtZwfioQ0Ydbm4H3OcxgH6BiYs9SsVsuJbTtuSMmXjNBkGMN7aHFLcxdGnXFRUp0pPpu8qpJWA263A491hjv51ofWRl7hw81Booo4aiVFD2ACAGkHf2bPQu6hIkY-F348-Q0yPiK-wbIYrsLMqDgE9a37WKeHD79WUFWrNHMRypq1o3VmJucc3hG6U_-hwRFnLiANCFmtPRU_BimeTLpC1J-ILsGTRhxSjqU8IQOKLQiMwKxQgbryE9')" }}></div>
+                  <div>
+                    <h6 className="font-headline-lg font-bold text-on-surface text-lg">Moussa K.</h6>
+                    <p className="text-[11px] text-l-primary font-label-sm uppercase tracking-widest font-bold">Créateur YouTube</p>
+                  </div>
+                </div>
+                <p className="text-on-surface-variant italic leading-relaxed text-lg">"Grâce à AgedGmailYT, j'ai pu lancer ma chaîne US depuis Dakar sans aucun blocage. Le reach est incroyable dès la première vidéo."</p>
+              </div>
+              <div className="glass p-10 rounded-[32px] reveal-target opacity-0 hover:border-white/20 transition-all duration-500" style={{ animationDelay: '0.2s' }}>
+                <div className="flex items-center gap-5 mb-8">
+                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCbufmGF-b-ZEtuXoze7XAPx1CcrUsW1Z4lgVPQsVs8iF0upBnDa6QrFIESL9Ck4-EPEOQY-hDh8clPQMyq1OFDWldpLpTXIBRc5H3JAaaDchnFCDX8xPHxRrb-N4nMKdLIvJMfzmnyK4U02hNBFTpqlaeGCGTC0hjYT7u2NxCnHXndeWIczbSjbYUJzjcgu2tbMmXow-ZTdAnwlaxncGESFZIqL88LVUUhRUuAe_cBQcs1XjDPZUJIMOVX5f4EvGftgHqg5-J3p750')" }}></div>
+                  <div>
+                    <h6 className="font-headline-lg font-bold text-on-surface text-lg">Aisha B.</h6>
+                    <p className="text-[11px] text-l-primary font-label-sm uppercase tracking-widest font-bold">Agence Marketing</p>
+                  </div>
+                </div>
+                <p className="text-on-surface-variant italic leading-relaxed text-lg">"Le support est exceptionnel. La livraison a pris littéralement 30 secondes. Un outil indispensable pour nos clients en Afrique."</p>
+              </div>
+              <div className="glass p-10 rounded-[32px] reveal-target opacity-0 hover:border-white/20 transition-all duration-500" style={{ animationDelay: '0.3s' }}>
+                <div className="flex items-center gap-5 mb-8">
+                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAww_eXzI5lSCoxmRlq6hLpdnTN7Xwf_LGyX-v3z6PHQ_pahXPIv0njytPrT7drLMPrlGWZJ2BWYhIo9fvZ3TT-lLTvPE-e0aQDgxVoeMmbnZIzw7dO99f0r-WuSAQ20bu8yilBTIEI_cs7qBbOIgOBmvh1obDi25J1vtYLCUU3aJNIHDWKIyHwRO-Q5GrNrmdV5IoxgjlcBQoZv5Co4zLY4fMo7PqF-PuZVBGGjQ8JnmBo8PYAIaedMb9uXuNbRRGoLdeUw-c20k-i')" }}></div>
+                  <div>
+                    <h6 className="font-headline-lg font-bold text-on-surface text-lg">Koffi D.</h6>
+                    <p className="text-[11px] text-l-primary font-label-sm uppercase tracking-widest font-bold">Expert Automation</p>
+                  </div>
+                </div>
+                <p className="text-on-surface-variant italic leading-relaxed text-lg">"L'historique des comptes est bluffant. On sent que ce ne sont pas des comptes farmés par des robots. Qualité premium garantie."</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-section-gap relative overflow-hidden">
+          <div className="ambient-glow bottom-0 left-1/2 -translate-x-1/2 opacity-30"></div>
+          <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter relative z-10">
+            <div className="glass rounded-[60px] p-16 md:p-32 text-center border-l-primary/20 reveal-target opacity-0 relative overflow-hidden">
+              <div className="relative z-10">
+                <h2 className="font-headline-lg text-4xl md:text-6xl text-on-surface mb-10 font-extrabold leading-tight">Aujourd'hui, les créateurs d'élite propulsent leur business digital et encaissent leurs premiers 100 000€.</h2>
+                <p className="font-body-md text-on-surface-variant text-xl mb-16 max-w-2xl mx-auto leading-relaxed">Profitez d'un RPM élevé et d'une croissance fulgurante. Vos comptes 'Aged' n'attendent que vous.</p>
+                <div className="flex flex-col items-center gap-10">
+                  <button onClick={() => navigate('home')} className="bg-l-primary text-on-primary px-16 py-7 rounded-2xl font-bold text-2xl hover:scale-110 transition-all duration-300 shadow-2xl shadow-l-primary/40 emerald-glow">
+                    Acheter maintenant
+                  </button>
+                  <div className="flex items-center gap-3 bg-white/5 px-6 py-3 rounded-full border border-white/5">
+                    <span className="material-symbols-outlined text-l-primary text-xl">verified</span>
+                    <p className="font-label-sm text-on-surface-variant text-[11px] uppercase tracking-[0.15em] font-bold">Garantie de remplacement de 48h incluse</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-white/5 py-32 relative bg-[#050f18]">
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-20">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center gap-3 mb-10">
+                <img alt="AgedGmailYT Icon" className="h-10 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA2ZF5zZB5llhXjTZgvs64In3ytJg2FF_ek-KSm4bibJfw782IYaJSOV0Knvsmsuy_-PYMZlJp2iWO-tS2m2PBLuOiMGjhAV8_kzD9iQWOs6_dhwuhZCfBob0ZTq-oO131Htvb8G1tMAbz5fJlbqj4KbpEnBj0OIpWFUJmpCPQHQnv6k5fK9-FlMxX9UCNKVjE4jBej0HcFQB6je4WpnxANg0kP-0szIcnPZVSjDhlYnscIx5TNK88H1o1znlvXYZ7gV59gR7BNZDe" />
+                <span className="font-headline-lg font-bold text-xl text-on-surface">AgedGmailYT</span>
+              </div>
+              <p className="text-on-surface-variant max-w-sm mb-12 text-sm leading-relaxed">Solution Premium pour Créateurs Ambitieux. Nous fournissons l'infrastructure nécessaire à votre domination digitale globale.</p>
+              <div className="flex gap-6 items-center">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10 opacity-60">
+                  <span className="material-symbols-outlined text-[14px] text-l-primary">smartphone</span>
+                  <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Orange/Mobile Money</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10 opacity-60">
+                  <span className="material-symbols-outlined text-[14px] text-l-primary">currency_bitcoin</span>
+                  <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Crypto / Binance</span>
+                </div>
+                <div className="flex items-center gap-3 opacity-40">
+                  <span className="material-symbols-outlined text-l-primary text-lg">verified</span>
+                  <span className="font-label-sm uppercase tracking-widest text-[9px] font-bold">SÉCURISÉ SSL</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">Navigation</h6>
+              <ul className="space-y-6">
+                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#catalogue" onClick={(e) => scrollToSection(e, '#catalogue')}>Catalogue</a></li>
+                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#features" onClick={(e) => scrollToSection(e, '#features')}>Fonctionnalités</a></li>
+                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#faq" onClick={(e) => scrollToSection(e, '#faq')}>FAQ</a></li>
+              </ul>
+            </div>
+            <div>
+              <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">Légal &amp; Support</h6>
+              <ul className="space-y-6">
+                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#">Conditions Générales</a></li>
+                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#">Confidentialité</a></li>
+                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#">Contact Support</a></li>
+                <li className="pt-8">
+                  <p className="text-[10px] text-on-surface-variant/40 leading-relaxed uppercase tracking-tighter">© 2024 AgedGmailYT. Tous droits réservés.</p>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
 // ==========================================
 // COMPOSANTS UI STYLÉS
 // ==========================================
@@ -1371,9 +1773,15 @@ const DeliveredAccountCard = ({ raw, index, total }) => {
 
   if (parseFailed || !account) {
     return (
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-sm text-amber-800">
-        <p className="font-bold mb-1">{total > 1 ? `Compte ${index + 1}/${total} — ` : ''}Vérification manuelle en cours</p>
-        <p className="text-xs leading-relaxed">Le format reçu du fournisseur est inhabituel pour ce compte. Contacte le support avec ton numéro de commande, un agent va te recontacter rapidement pour te livrer tes accès.</p>
+      <div className="bg-gray-50 rounded-3xl p-6 md:p-8 border border-gray-100 space-y-6">
+        {total > 1 && <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Compte {index + 1}/{total}</div>}
+        <div>
+          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Données Brutes du Fournisseur</div>
+          <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
+            <pre className="text-gray-700 text-sm whitespace-pre-wrap font-mono break-all">{raw}</pre>
+          </div>
+          <p className="text-xs text-amber-600 mt-3 font-bold">Le format reçu est inhabituel, mais voici les identifiants bruts tels que livrés par le fournisseur.</p>
+        </div>
       </div>
     );
   }
@@ -3983,11 +4391,14 @@ const CRYPTO_CURRENCIES = [
 // "NOWPayments" avec un sous-sélecteur de devise). `payCurrency` = la devise
 // envoyée au backend NOWPayments. Mobile Money reste affiché mais désactivé
 // (grisé, non cliquable) tant que la méthode n'est pas prête.
+// `min` = dépôt minimum autorisé (USD), affiché directement sur la tuile pour
+// que le client le sache AVANT de cliquer. Binance Pay est le seul à $10 ;
+// les cryptos (via NOWPayments) sont à $18 à cause des frais de réseau.
 const PAYMENT_GATEWAYS = [
-  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑' },
-  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc' },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20' },
-  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc' },
+  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 10 },
+  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 18 },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 18 },
+  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 18 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
@@ -5484,7 +5895,7 @@ function App() {
 
   const [products, setProducts] = useState([]);
 
-  const [currentView, setCurrentView] = useState(() => localStorage.getItem('agedgmail_view') || 'home');
+  const [currentView, setCurrentView] = useState(() => localStorage.getItem('agedgmail_view') || 'landing');
   const [selectedProduct, setSelectedProduct] = useState(() => {
     const saved = localStorage.getItem('agedgmail_product');
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
@@ -5803,7 +6214,7 @@ function App() {
       if (hash) {
         setCurrentView(hash);
       } else {
-        setCurrentView('home');
+        setCurrentView('landing');
       }
     };
 
@@ -5841,7 +6252,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans flex flex-col">
-      {!isAdmin && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} t={t} />}
+      {!isAdmin && currentView !== 'landing' && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} t={t} />}
       {!isAdmin && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />}
       {!isAdmin && (
         <CartCheckoutModal
@@ -5872,6 +6283,7 @@ function App() {
         />
       )}
       <div className="flex-grow">
+        {currentView === 'landing' && <LandingView navigate={navigate} />}
         {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
