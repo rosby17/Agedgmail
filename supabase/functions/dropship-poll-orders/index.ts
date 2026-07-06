@@ -114,6 +114,11 @@ serve(async (req) => {
             ...(malformed.length > 0 ? { admin_note: `Format de livraison inattendu sur ${malformed.length}/${result.length} compte(s) — vérification manuelle recommandée.` } : {}),
           }).eq('id', orderId)
           summary.completed++
+
+          // Envoyer les credentials par email si le client a opté pour cette option
+          admin.functions.invoke('send-delivery-email', { body: { orderId } })
+            .catch(e => console.error('[poll] send-delivery-email failed:', (e as Error).message))
+
           await logSupplier(admin, {
             order_id: orderId, action: 'deliver', level: malformed.length > 0 ? 'error' : 'info', supplier,
             message: `Livraison ${malformed.length > 0 ? 'avec anomalie de format' : 'OK'} : ${result.length} compte(s) livré(s) (${supplier} #${order.supplier_order_id}).`,

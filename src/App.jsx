@@ -577,6 +577,12 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
           order_id: String(orderData.id),
           delivered_to: session.user.id,
         }).in('id', stockIds);
+
+        // Envoyer les credentials par email si le client a opté pour cette option
+        if (profile?.send_email_on_delivery) {
+          supabase.functions.invoke('send-delivery-email', { body: { orderId: orderData.id } })
+            .catch(e => console.error('send-delivery-email error:', e));
+        }
       }
 
       const { error: balanceErr } = await supabase
@@ -1418,6 +1424,242 @@ const OrderCredentialsModal = ({ order, onClose }) => {
   );
 };
 
+
+// ==========================================
+// TRANSFER CREDITS MODAL
+// Permet d'envoyer des crédits à un autre utilisateur via son email.
+// ==========================================
+const TransferCreditsModal = ({ profile, session, fetchProfile, onClose }) => {
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [amount, setAmount] = useState('');
+  const [step, setStep] = useState('form'); // 'form' | 'confirm' | 'success' | 'error'
+  const [errorMsg, setErrorMsg] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const balance = profile?.balance || 0;
+  const amountNum = parseFloat(amount) || 0;
+
+  const handleLookup = async () => {
+    setErrorMsg('');
+    if (!recipientEmail.trim()) return;
+    if (recipientEmail.trim().toLowerCase() === session?.user?.email?.toLowerCase()) {
+      setErrorMsg("Vous ne pouvez pas vous transférer des crédits à vous-même.");
+      return;
+    }
+    if (amountNum <= 0) { setErrorMsg("Montant invalide."); return; }
+    if (amountNum > balance) { setErrorMsg(`Solde insuffisant. Vous avez $${balance.toFixed(2)}.`); return; }
+    if (amountNum < 0.01) { setErrorMsg("Montant minimum : $0.01."); return; }
+
+    setIsLoading(true);
+    const { data: recipient, error } = await supabase
+      .from('profiles')
+      .select('id, display_name, email')
+      .eq('email', recipientEmail.trim().toLowerCase())
+      .maybeSingle();
+    setIsLoading(false);
+
+    if (error || !recipient) {
+      setErrorMsg("Aucun compte trouvé avec cet email. Vérifiez l'adresse.");
+      return;
+    }
+    setRecipientName(recipient.display_name || recipient.email);
+    setStep('confirm');
+  };
+
+  const handleTransfer = async () => {
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      // 1. Vérification solde en temps réel (anti race-condition)
+      const { data: freshProfile } = await supabase
+        .from('profiles').select('balance').eq('id', session.user.id).single();
+      if (!freshProfile || (freshProfile.balance || 0) < amountNum) {
+        throw new Error('Solde insuffisant au moment du transfert.');
+      }
+
+      // 2. Récupérer le destinataire
+      const { data: recipient } = await supabase
+        .from('profiles').select('id, balance').eq('email', recipientEmail.trim().toLowerCase()).single();
+      if (!recipient) throw new Error('Destinataire introuvable.');
+
+      // 3. Débiter l'expéditeur
+      const { error: debitErr } = await supabase
+        .from('profiles')
+        .update({ balance: Math.round((freshProfile.balance - amountNum) * 100) / 100 })
+        .eq('id', session.user.id);
+      if (debitErr) throw debitErr;
+
+      // 4. Créditer le destinataire (rollback si ça échoue)
+      const { error: creditErr } = await supabase
+        .from('profiles')
+        .update({ balance: Math.round(((recipient.balance || 0) + amountNum) * 100) / 100 })
+        .eq('id', recipient.id);
+      if (creditErr) {
+        // Rollback : recréditer l'expéditeur
+        await supabase.from('profiles')
+          .update({ balance: Math.round((freshProfile.balance) * 100) / 100 })
+          .eq('id', session.user.id);
+        throw creditErr;
+      }
+
+      // 5. Logger le transfert dans orders (product_id=998 = code transfert)
+      await supabase.from('orders').insert({
+        user_id: session.user.id,
+        buyer_email: session.user.email,
+        product_id: 998,
+        product_name: `Transfert → ${recipientEmail.trim()}`,
+        quantity: 1,
+        total_price: amountNum,
+        status: 'confirmed',
+        created_at: new Date().toISOString(),
+      });
+
+      setStep('success');
+      if (fetchProfile) fetchProfile(session.user.id);
+    } catch (err) {
+      setErrorMsg(err.message || 'Une erreur est survenue.');
+      setStep('error');
+    }
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="bg-gray-900 px-8 py-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-black text-white flex items-center gap-2"><Send size={18} /> Transfer Credits</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Envoyer des crédits à un autre utilisateur</p>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-8 py-8 space-y-6">
+          {/* Solde dispo */}
+          <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between">
+            <span className="text-sm text-gray-500 font-medium">Votre solde disponible</span>
+            <span className="text-lg font-black text-gray-900 font-mono">${balance.toFixed(2)}</span>
+          </div>
+
+          {step === 'form' && (
+            <>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email du destinataire</label>
+                <input
+                  type="email"
+                  value={recipientEmail}
+                  onChange={e => setRecipientEmail(e.target.value)}
+                  placeholder="ami@example.com"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant ($)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    max={balance}
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full pl-8 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium font-mono"
+                  />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  {[1, 5, 10].map(v => (
+                    <button key={v} onClick={() => setAmount(String(Math.min(v, balance)))}
+                      className="px-3 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-primary/10 hover:text-primary transition-all">
+                      ${v}
+                    </button>
+                  ))}
+                  <button onClick={() => setAmount(String(balance))}
+                    className="px-3 py-1 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-primary/10 hover:text-primary transition-all">
+                    Max
+                  </button>
+                </div>
+              </div>
+              {errorMsg && <div className="bg-red-50 text-red-600 text-sm font-bold p-4 rounded-xl border border-red-100">{errorMsg}</div>}
+              <button
+                onClick={handleLookup}
+                disabled={isLoading || !recipientEmail.trim() || amountNum <= 0}
+                className="w-full py-4 rounded-2xl bg-gray-900 text-white font-bold text-base hover:bg-primary transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {isLoading ? <RefreshCcw size={18} className="animate-spin" /> : <ChevronRight size={18} />}
+                Continuer
+              </button>
+            </>
+          )}
+
+          {step === 'confirm' && (
+            <>
+              <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 space-y-3">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Récapitulatif du transfert</div>
+                <div className="flex justify-between"><span className="text-sm text-gray-500">Destinataire</span><span className="text-sm font-bold text-gray-900">{recipientName}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-gray-500">Email</span><span className="text-sm font-bold text-gray-900">{recipientEmail}</span></div>
+                <div className="h-px bg-primary/10 my-2" />
+                <div className="flex justify-between"><span className="text-base font-black text-gray-900">Montant</span><span className="text-xl font-black text-primary">${amountNum.toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm text-gray-400"><span>Votre solde après</span><span className="font-mono font-bold">${(balance - amountNum).toFixed(2)}</span></div>
+              </div>
+              {errorMsg && <div className="bg-red-50 text-red-600 text-sm font-bold p-4 rounded-xl border border-red-100">{errorMsg}</div>}
+              <div className="flex gap-3">
+                <button onClick={() => setStep('form')} className="flex-1 py-4 rounded-2xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all">
+                  Modifier
+                </button>
+                <button
+                  onClick={handleTransfer}
+                  disabled={isLoading}
+                  className="flex-1 py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {isLoading ? <RefreshCcw size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+                  Confirmer
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 'success' && (
+            <div className="text-center py-4 space-y-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle size={32} className="text-green-600" />
+              </div>
+              <div>
+                <div className="text-xl font-black text-gray-900">Transfert effectué !</div>
+                <div className="text-sm text-gray-500 mt-1">${amountNum.toFixed(2)} envoyés à <strong>{recipientEmail}</strong></div>
+              </div>
+              <button onClick={onClose} className="w-full py-4 rounded-2xl bg-gray-900 text-white font-bold hover:bg-primary transition-all">
+                Fermer
+              </button>
+            </div>
+          )}
+
+          {step === 'error' && (
+            <div className="text-center py-4 space-y-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                <X size={32} className="text-red-600" />
+              </div>
+              <div>
+                <div className="text-xl font-black text-gray-900">Transfert échoué</div>
+                <div className="text-sm text-red-500 mt-1">{errorMsg}</div>
+              </div>
+              <button onClick={() => { setStep('form'); setErrorMsg(''); }} className="w-full py-4 rounded-2xl bg-gray-900 text-white font-bold hover:bg-primary transition-all">
+                Réessayer
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Transforme un UUID Supabase en code commande court à 6 chiffres.
 // Déterministe : même UUID → même code. Toujours exactement 6 chiffres (000000–999999).
 const shortOrderId = (uuid = '') => {
@@ -1430,9 +1672,24 @@ const shortOrderId = (uuid = '') => {
 // Plus de sidebar à onglets (Dashboard/Orders/Settings) — Settings vit maintenant
 // dans sa propre page (menu déroulant du profil), et l'onglet "Dashboard" a été
 // retiré car redondant avec cette page elle-même.
-const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
+const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile }) => {
   const [viewOrder, setViewOrder] = useState(null);
-  const [sendEmailAll, setSendEmailAll] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
+  // Initialise la checkbox depuis le profil
+  const [sendEmailAll, setSendEmailAll] = useState(profile?.send_email_on_delivery ?? false);
+
+  // Synchronise la checkbox si le profil change (ex: rechargement)
+  React.useEffect(() => {
+    setSendEmailAll(profile?.send_email_on_delivery ?? false);
+  }, [profile?.send_email_on_delivery]);
+
+  // Sauvegarde la préférence email en base dès que la case est cochée/décochée
+  const handleEmailToggle = async (checked) => {
+    setSendEmailAll(checked);
+    if (!session) return;
+    await supabase.from('profiles').update({ send_email_on_delivery: checked }).eq('id', session.user.id);
+    if (fetchProfile) fetchProfile(session.user.id);
+  };
 
   // Filtre uniquement les commandes d'achat (pas les recharges product_id=999)
   const purchaseOrders = orders.filter(o => o.product_id !== 999);
@@ -1511,6 +1768,14 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
   return (
     <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
       {viewOrder && <OrderCredentialsModal order={viewOrder} onClose={() => setViewOrder(null)} />}
+      {showTransfer && (
+        <TransferCreditsModal
+          profile={profile}
+          session={session}
+          fetchProfile={fetchProfile}
+          onClose={() => setShowTransfer(false)}
+        />
+      )}
 
       <div className="flex items-center justify-between mb-10">
         <h1 className="text-3xl font-black text-gray-900 tracking-tight">My orders</h1>
@@ -1521,7 +1786,15 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
           <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Current Balance</div>
           <div className="text-4xl font-black font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
         </div>
-        <button onClick={() => navigate('recharge')} className="relative z-10 bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 shrink-0"><Plus size={18} /> Top up account</button>
+        <div className="relative z-10 flex items-center gap-3">
+          <button
+            onClick={() => setShowTransfer(true)}
+            className="bg-white/10 border border-white/20 text-white px-5 py-3 rounded-full font-bold text-sm hover:bg-white/20 transition-all flex items-center gap-2"
+          >
+            <Send size={16} /> Transfer
+          </button>
+          <button onClick={() => navigate('recharge')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 shrink-0"><Plus size={18} /> Top up account</button>
+        </div>
         <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5" />
       </div>
 
@@ -1532,7 +1805,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
             <input
               type="checkbox"
               checked={sendEmailAll}
-              onChange={e => setSendEmailAll(e.target.checked)}
+              onChange={e => handleEmailToggle(e.target.checked)}
               className="rounded border-gray-300 text-primary focus:ring-primary"
             />
             <span>Envoyer aussi les comptes à mon e-mail à partir de maintenant.</span>
@@ -3554,6 +3827,12 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
         }).in('id', stockIds);
 
         if (stockUpdateErr) console.error("Error updating stock_account:", stockUpdateErr);
+
+        // Envoyer les credentials par email si le client a opté pour cette option
+        if (profile?.send_email_on_delivery) {
+          supabase.functions.invoke('send-delivery-email', { body: { orderId: orderData.id } })
+            .catch(e => console.error('send-delivery-email error:', e));
+        }
       }
 
       const { error: balanceErr } = await supabase
@@ -4346,7 +4625,7 @@ function App() {
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} />}
+        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} />}
         {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} />}
         {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
