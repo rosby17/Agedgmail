@@ -2590,10 +2590,24 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
 
 // Courbe de revenu par jour (7 ou 30 derniers jours), sous forme de ligne SVG avec dégradé.
 // Graphique de statistiques interactif inspiré de YouTube Studio Analytics (Revenu estimé vs Clients inscrits).
-const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
+const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'fr' }) => {
   const [range, setRange] = useState(7);
   const [activeMetric, setActiveMetric] = useState('revenue'); // 'revenue' | 'users'
   const [hoveredPoint, setHoveredPoint] = useState(null);
+
+  const calculateNetProfit = (ordersList) => {
+    const confirmedPurchases = ordersList.filter(o => o.product_id !== 999);
+    const revenue = confirmedPurchases.reduce((sum, o) => sum + (o.total_price || 0), 0);
+    const cost = confirmedPurchases.reduce((sum, o) => {
+      const map = mappings.find(m => m.product_id === o.product_id && (o.supplier ? m.supplier === o.supplier : m.active));
+      if (map) {
+        return sum + (Number(map.supplier_rate) || 0) * (o.quantity || 1);
+      }
+      const fallbackCost = o.supplier ? (o.total_price * 0.7) : 0;
+      return sum + fallbackCost;
+    }, 0);
+    return revenue - cost;
+  };
 
   const getChartData = () => {
     if (range === 7 || range === 30) {
@@ -2607,10 +2621,10 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
 
       return days.map((day, index) => {
         const next = new Date(day); next.setDate(next.getDate() + 1);
-        const revenue = confirmedOrders
-          .filter(o => o.product_id !== 999)
-          .filter(o => { const t = new Date(o.created_at); return t >= day && t < next; })
-          .reduce((s, o) => s + (o.total_price || 0), 0);
+        const dayOrders = confirmedOrders
+          .filter(o => { const t = new Date(o.created_at); return t >= day && t < next; });
+
+        const netProfit = calculateNetProfit(dayOrders);
 
         const users = allUsers
           .filter(u => { const t = new Date(u.created_at); return t >= day && t < next; })
@@ -2619,7 +2633,7 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
         return {
           date: day,
           label: day.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: '2-digit' }),
-          revenue,
+          revenue: netProfit,
           users,
           index
         };
@@ -2638,10 +2652,10 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
         const monthEnd = new Date(monthStart);
         monthEnd.setMonth(monthEnd.getMonth() + 1);
 
-        const revenue = confirmedOrders
-          .filter(o => o.product_id !== 999)
-          .filter(o => { const t = new Date(o.created_at); return t >= monthStart && t < monthEnd; })
-          .reduce((s, o) => s + (o.total_price || 0), 0);
+        const monthOrders = confirmedOrders
+          .filter(o => { const t = new Date(o.created_at); return t >= monthStart && t < monthEnd; });
+
+        const netProfit = calculateNetProfit(monthOrders);
 
         const users = allUsers
           .filter(u => { const t = new Date(u.created_at); return t >= monthStart && t < monthEnd; })
@@ -2650,7 +2664,7 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
         return {
           date: monthStart,
           label: monthStart.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: '2-digit' }),
-          revenue,
+          revenue: netProfit,
           users,
           index
         };
@@ -2683,10 +2697,10 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
         const monthEnd = new Date(monthStart);
         monthEnd.setMonth(monthEnd.getMonth() + 1);
 
-        const revenue = confirmedOrders
-          .filter(o => o.product_id !== 999)
-          .filter(o => { const t = new Date(o.created_at); return t >= monthStart && t < monthEnd; })
-          .reduce((s, o) => s + (o.total_price || 0), 0);
+        const monthOrders = confirmedOrders
+          .filter(o => { const t = new Date(o.created_at); return t >= monthStart && t < monthEnd; });
+
+        const netProfit = calculateNetProfit(monthOrders);
 
         const users = allUsers
           .filter(u => { const t = new Date(u.created_at); return t >= monthStart && t < monthEnd; })
@@ -2695,7 +2709,7 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
         return {
           date: monthStart,
           label: monthStart.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: '2-digit' }),
-          revenue,
+          revenue: netProfit,
           users,
           index
         };
@@ -2769,7 +2783,7 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
           }`}
         >
           <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-            {lang === 'fr' ? 'Revenu Estimé (Ventes)' : 'Estimated Revenue (Sales)'}
+            {lang === 'fr' ? 'Bénéfice Net' : 'Net Profit'}
           </div>
           <div className="text-2xl font-black font-mono mt-1 text-white">${rangeRevenue.toFixed(2)}</div>
           <div className="text-[10px] text-emerald-400 font-semibold mt-1">
