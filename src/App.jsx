@@ -4497,13 +4497,13 @@ const CRYPTO_CURRENCIES = [
 // envoyée au backend NOWPayments. Mobile Money reste affiché mais désactivé
 // (grisé, non cliquable) tant que la méthode n'est pas prête.
 // `min` = dépôt minimum autorisé (USD), affiché directement sur la tuile pour
-// que le client le sache AVANT de cliquer. Binance Pay est le seul à $10 ;
-// les cryptos (via NOWPayments) sont à $18 à cause des frais de réseau.
+// que le client le sache AVANT de cliquer. Les minimums artificiels ont été 
+// baissés à 0.5$ (laissés à 18$ pour BTC en raison des frais de réseau).
 const PAYMENT_GATEWAYS = [
-  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 10 },
+  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5 },
   { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 18 },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 18 },
-  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 18 },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 0.5 },
+  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 0.5 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
@@ -4610,7 +4610,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     if (profile?.is_suspended) { setError("Ton compte est suspendu. Contacte le support."); return; }
     if (!gateway) { setError('Choisis une passerelle de paiement.'); return; }
     if (amountUsd <= 0) { setError('Montant invalide.'); return; }
-    // Minimum par méthode (Binance Pay $10, crypto $18) — bloqué dès ici.
+    // Minimum par méthode bloqué dès ici (0.5$ minimum général sauf BTC).
     if (selectedGateway?.min && amountUsd < selectedGateway.min) {
       setError(`Montant minimum pour ${selectedGateway.name} : $${selectedGateway.min}.`);
       return;
@@ -6141,6 +6141,13 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       setSession(currentSession);
+      // Clic sur le lien de réinitialisation reçu par email : Supabase crée une
+      // session temporaire et émet PASSWORD_RECOVERY — on ouvre l'écran dédié
+      // pour saisir le nouveau mot de passe (et pas le catalogue).
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('reset-password');
+        return;
+      }
       if (currentSession) {
         fetchProfile(currentSession.user.id);
         // Only redirect to home if we are currently on the auth view and just signed in
