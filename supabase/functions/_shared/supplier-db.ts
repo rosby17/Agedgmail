@@ -65,9 +65,26 @@ export async function resolveCheapestSupplier(
 
   if (!mappings || mappings.length === 0) return
 
-  // Ne considère que les mappings avec du stock dispo ; à défaut, tous.
-  const inStock = mappings.filter((m) => Number(m.supplier_available) > 0)
-  const pool = inStock.length > 0 ? inStock : mappings
+  // Solde actuel de chaque fournisseur concerné par ce produit : un
+  // fournisseur à 0 USD ne peut honorer AUCUNE commande (dropship-place-order
+  // la mettrait en attente de réapprovisionnement), donc on l'exclut du choix
+  // du "moins cher" comme s'il était en rupture de stock. Ça se rétablit
+  // tout seul dès que le solde repasse au-dessus de 0 (relu à chaque appel,
+  // donc à chaque synchro catalogue) — aucune bascule manuelle nécessaire.
+  const suppliers = [...new Set(mappings.map((m) => m.supplier))]
+  const { data: settings } = await admin
+    .from('supplier_settings')
+    .select('supplier, balance')
+    .in('supplier', suppliers)
+  const balanceBySupplier = new Map((settings ?? []).map((s) => [s.supplier, Number(s.balance) || 0]))
+  const hasFunds = (m: { supplier: string }) => (balanceBySupplier.get(m.supplier) ?? 0) > 0
+
+  // Ne considère que les mappings avec du stock dispo ET un fournisseur
+  // solvable ; à défaut (aucun candidat solvable), retombe sur tous pour ne
+  // jamais planter — mais un fournisseur à 0 USD ne sera alors plus jamais
+  // choisi comme "actif" (cf. filtre ci-dessous avant la sélection finale).
+  const inStock = mappings.filter((m) => Number(m.supplier_available) > 0 && hasFunds(m))
+  const pool = inStock.length > 0 ? inStock : mappings.filter(hasFunds).length > 0 ? mappings.filter(hasFunds) : mappings
 
   const cheapest = pool.reduce((best, m) =>
     Number(m.supplier_rate) < Number(best.supplier_rate) ? m : best
@@ -75,9 +92,13 @@ export async function resolveCheapestSupplier(
 
   const margin = cheapest.margin_percent != null ? Number(cheapest.margin_percent) : defaultMargin
   const price = Math.round(Number(cheapest.supplier_rate) * (1 + margin / 100) * 100) / 100
+  // Stock affiché à 0 si même le "moins cher" retenu n'a en fait aucun
+  // fournisseur solvable (tous à 0 USD) — le produit devient non achetable
+  // plutôt que d'accepter un paiement qu'on ne pourra pas honorer.
+  const effectiveStock = hasFunds(cheapest) ? (Number(cheapest.supplier_available) || 0) : 0
 
   await admin.from('products').update({
-    price, is_dropship: true, supplier_stock: Number(cheapest.supplier_available) || 0,
+    price, is_dropship: true, supplier_stock: effectiveStock,
   }).eq('id', productId)
 
   for (const m of mappings) {
