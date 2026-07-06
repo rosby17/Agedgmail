@@ -1403,7 +1403,7 @@ const OrderCredentialsModal = ({ order, onClose }) => {
               </div>
 
               <a
-                href={`mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(`Support commande #${order.id}`)}`}
+                href={`mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(`Support commande #${shortOrderId(order.id)}`)}`}
                 className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl border border-gray-200 text-gray-700 font-bold text-sm hover:border-primary hover:text-primary transition-all"
               >
                 <MessageCircle size={16} /> Contacter le support
@@ -1416,6 +1416,14 @@ const OrderCredentialsModal = ({ order, onClose }) => {
       </div>
     </div>
   );
+};
+
+// Transforme un UUID Supabase en code commande court à 6 chiffres.
+// Déterministe : même UUID → même code. Toujours exactement 6 chiffres (000000–999999).
+const shortOrderId = (uuid = '') => {
+  const hex = String(uuid).replace(/-/g, '').slice(0, 8);
+  const num = parseInt(hex, 16) || 0;
+  return String(num % 1000000).padStart(6, '0');
 };
 
 // Page "My orders" : solde + recharge en tête, liste des commandes en dessous.
@@ -1482,7 +1490,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `order-${order.id}-credentials.txt`;
+    a.download = `order-${shortOrderId(order.id)}-credentials.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1562,7 +1570,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume }) => {
                     <tr key={order.id} className="group hover:bg-gray-50/50 transition-colors">
                       {/* Code de commande */}
                       <td className="py-5 pr-4">
-                        <span className="font-black text-gray-900 text-base">#{order.id}</span>
+                        <span className="font-black text-gray-900 text-base font-mono tracking-widest">#{shortOrderId(order.id)}</span>
                       </td>
 
                       {/* Produits + options */}
