@@ -314,7 +314,7 @@ const PRODUCTS = PRODUCTS_RAW.map(p => ({ ...p, details: getProductDetails(p) })
 // PRODUCT CARD
 // ==========================================
 
-const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNow }) => {
+const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNow, lang, t }) => {
   const [added, setAdded] = useState(false);
   const isUS = product.name.toUpperCase().includes('US') || product.name.toUpperCase().includes('USA');
   const outOfStock = product.stock <= 0;
@@ -340,7 +340,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
           <ProductVisual product={product} iconSize={48} />
         </div>
         {outOfStock ? (
-          <div className="absolute top-4 right-4 bg-red-500 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-full shadow-sm">Out of stock</div>
+          <div className="absolute top-4 right-4 bg-red-500 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-full shadow-sm">{t('outOfStock')}</div>
         ) : (
           <>
             {isUS && product.category === 'email' && (
@@ -369,7 +369,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
           <div>
             <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Stock</div>
             {outOfStock ? (
-              <div className="text-xs font-bold text-red-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Out of stock</div>
+              <div className="text-xs font-bold text-red-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {t('outOfStock')}</div>
             ) : (
               <div className="text-xs font-bold text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> {product.stock} left</div>
             )}
@@ -388,7 +388,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
           disabled={outOfStock}
           className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${outOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primaryDark shadow-lg shadow-primary/20'}`}
         >
-          {outOfStock ? 'Sold out' : 'Buy now'}
+          {outOfStock ? t('outOfStock') : t('buyNow')}
         </button>
         <button
           onClick={handleAdd}
@@ -728,7 +728,7 @@ const HomeView = ({
   activeGroup, setActiveGroup, activeCategory, setActiveCategory,
   sortBy, setSortBy, searchTerm, setSearchTerm,
   filteredProducts, addToCart, navigate, setSelectedProduct, onBuyNow,
-  groups = [], subCategories = [], groupOf,
+  groups = [], subCategories = [], groupOf, lang, t
 }) => {
   const activeGroupLabel = activeGroup === 'all' ? 'All products' : (GROUP_LABELS[activeGroup] || 'Others');
 
@@ -796,7 +796,7 @@ const HomeView = ({
             <input
               type="text"
               value={searchTerm}
-              placeholder="Rechercher…"
+              placeholder={t('searchPlaceholder')}
               className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -806,9 +806,9 @@ const HomeView = ({
             onChange={(e) => setSortBy(e.target.value)}
             className="px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-white text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           >
-            <option value="price_asc">Prix croissant</option>
-            <option value="price_desc">Prix décroissant</option>
-            <option value="name_asc">Nom (A-Z)</option>
+            <option value="price_asc">{t('priceAsc')}</option>
+            <option value="price_desc">{t('priceDesc')}</option>
+            <option value="name_asc">{t('nameAsc')}</option>
           </select>
         </div>
       </div>
@@ -823,24 +823,24 @@ const HomeView = ({
                 <span className="bg-primary/10 text-primaryDark dark:text-primary text-xs font-black px-3 py-1 rounded-full">{section.items.length}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {section.items.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={onBuyNow} />))}
+                {section.items.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={onBuyNow} lang={lang} t={t} />))}
               </div>
             </div>
           ))}
           {sections.length === 0 && (
             <div className="py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-800">
               <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Aucun produit trouvé</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('noProducts')}</h3>
             </div>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={onBuyNow} />))}
+          {filteredProducts.map(product => (<ProductCard key={product.id} product={product} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={onBuyNow} lang={lang} t={t} />))}
           {filteredProducts.length === 0 && (
             <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-800">
               <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Search size={30} className="text-gray-300" /></div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Aucun produit trouvé</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('noProducts')}</h3>
               <p className="text-gray-400 text-sm">Essayez de modifier votre recherche ou de changer de catégorie.</p>
             </div>
           )}
@@ -1109,7 +1109,7 @@ const PoliciesView = ({ navigate }) => {
   );
 };
 
-const SettingsTab = ({ profile, onUpdate }) => {
+const SettingsTab = ({ profile, onUpdate, lang, t }) => {
   const [firstName, setFirstName] = useState(profile?.first_name || "");
   const [lastName, setLastName] = useState(profile?.last_name || "");
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
@@ -1221,13 +1221,13 @@ const SettingsTab = ({ profile, onUpdate }) => {
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">Profile Settings</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight">{t('profileSettings')}</h2>
         <form className="space-y-8" onSubmit={handleSave}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">First Name</label><input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: John" /></div>
-            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Last Name</label><input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: Doe" /></div>
+            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('firstName')}</label><input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: John" /></div>
+            <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('lastName')}</label><input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Ex: Doe" /></div>
           </div>
-          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Username (Public) *</label><input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /><p className="text-[10px] text-gray-400 italic mt-2">This is the name that will appear on your dashboard and your reviews.</p></div>
+          <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('displayName')} *</label><input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" /><p className="text-[10px] text-gray-400 italic mt-2">This is the name that will appear on your dashboard and your reviews.</p></div>
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Profile Picture</label>
             <div className="flex items-center gap-6">
@@ -1247,7 +1247,7 @@ const SettingsTab = ({ profile, onUpdate }) => {
           <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address *</label><input type="email" value={email} readOnly className="w-full px-6 py-4 rounded-2xl bg-gray-100 border-none text-gray-400 font-bold text-sm cursor-not-allowed" /></div>
           {errorMessage && <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
           <button type="submit" disabled={loading} className={`px-12 py-5 rounded-full font-bold text-sm transition-all shadow-xl shadow-black/10 flex items-center gap-2 ${success ? 'bg-green-500 text-white' : 'bg-gray-900 text-white hover:bg-black'}`}>
-            {loading ? <RefreshCcw size={16} className="animate-spin" /> : success ? <><CheckCircle size={16} /> Successfully modified</> : 'Save changes'}
+            {loading ? <RefreshCcw size={16} className="animate-spin" /> : success ? <><CheckCircle size={16} /> Successfully modified</> : t('saveBtn')}
           </button>
         </form>
       </div>
@@ -1447,7 +1447,7 @@ const OrderCredentialsModal = ({ order, onClose }) => {
 // TRANSFER CREDITS MODAL
 // Permet d'envoyer des crédits à un autre utilisateur via son email.
 // ==========================================
-const TransferCreditsModal = ({ profile, session, fetchProfile, onClose }) => {
+const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t }) => {
   const [recipientEmail, setRecipientEmail] = useState('');
   const [amount, setAmount] = useState('');
   const [step, setStep] = useState('form'); // 'form' | 'confirm' | 'success' | 'error'
@@ -1549,8 +1549,8 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose }) => {
         {/* Header */}
         <div className="bg-gray-900 px-8 py-6 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-black text-white flex items-center gap-2"><Send size={18} /> Transfer Credits</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Envoyer des crédits à un autre utilisateur</p>
+            <h2 className="text-xl font-black text-white flex items-center gap-2"><Send size={18} /> {t('transferBtn') || 'Transfer'}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{lang === 'fr' ? "Envoyer des crédits à un autre utilisateur" : "Send credits to another user"}</p>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all">
             <X size={18} />
@@ -1560,14 +1560,14 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose }) => {
         <div className="px-8 py-8 space-y-6">
           {/* Solde dispo */}
           <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between">
-            <span className="text-sm text-gray-500 font-medium">Votre solde disponible</span>
+            <span className="text-sm text-gray-500 font-medium">{lang === 'fr' ? "Votre solde disponible" : "Your available balance"}</span>
             <span className="text-lg font-black text-gray-900 font-mono">${balance.toFixed(2)}</span>
           </div>
 
           {step === 'form' && (
             <>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email du destinataire</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{lang === 'fr' ? "Email du destinataire" : "Recipient Email"}</label>
                 <input
                   type="email"
                   value={recipientEmail}
@@ -1577,7 +1577,7 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose }) => {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant ($)</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('amountToRecharge')}</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
                   <input
@@ -1611,7 +1611,7 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose }) => {
                 className="w-full py-4 rounded-2xl bg-gray-900 text-white font-bold text-base hover:bg-primary transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {isLoading ? <RefreshCcw size={18} className="animate-spin" /> : <ChevronRight size={18} />}
-                Continuer
+                {lang === 'fr' ? "Continuer" : "Continue"}
               </button>
             </>
           )}
@@ -1619,17 +1619,17 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose }) => {
           {step === 'confirm' && (
             <>
               <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 space-y-3">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Récapitulatif du transfert</div>
-                <div className="flex justify-between"><span className="text-sm text-gray-500">Destinataire</span><span className="text-sm font-bold text-gray-900">{recipientName}</span></div>
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">{lang === 'fr' ? "Récapitulatif du transfert" : "Transfer Summary"}</div>
+                <div className="flex justify-between"><span className="text-sm text-gray-500">{lang === 'fr' ? "Destinataire" : "Recipient"}</span><span className="text-sm font-bold text-gray-900">{recipientName}</span></div>
                 <div className="flex justify-between"><span className="text-sm text-gray-500">Email</span><span className="text-sm font-bold text-gray-900">{recipientEmail}</span></div>
                 <div className="h-px bg-primary/10 my-2" />
-                <div className="flex justify-between"><span className="text-base font-black text-gray-900">Montant</span><span className="text-xl font-black text-primary">${amountNum.toFixed(2)}</span></div>
-                <div className="flex justify-between text-sm text-gray-400"><span>Votre solde après</span><span className="font-mono font-bold">${(balance - amountNum).toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-base font-black text-gray-900">{lang === 'fr' ? "Montant" : "Amount"}</span><span className="text-xl font-black text-primary">${amountNum.toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm text-gray-400"><span>{lang === 'fr' ? "Votre solde après" : "Your balance after"}</span><span className="font-mono font-bold">${(balance - amountNum).toFixed(2)}</span></div>
               </div>
               {errorMsg && <div className="bg-red-50 text-red-600 text-sm font-bold p-4 rounded-xl border border-red-100">{errorMsg}</div>}
               <div className="flex gap-3">
                 <button onClick={() => setStep('form')} className="flex-1 py-4 rounded-2xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all">
-                  Modifier
+                  {lang === 'fr' ? "Modifier" : "Edit"}
                 </button>
                 <button
                   onClick={handleTransfer}
@@ -1637,7 +1637,7 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose }) => {
                   className="flex-1 py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {isLoading ? <RefreshCcw size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-                  Confirmer
+                  {lang === 'fr' ? "Confirmer" : "Confirm"}
                 </button>
               </div>
             </>
@@ -1690,7 +1690,7 @@ const shortOrderId = (uuid = '') => {
 // Plus de sidebar à onglets (Dashboard/Orders/Settings) — Settings vit maintenant
 // dans sa propre page (menu déroulant du profil), et l'onglet "Dashboard" a été
 // retiré car redondant avec cette page elle-même.
-const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile }) => {
+const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile, lang, t }) => {
   const [viewOrder, setViewOrder] = useState(null);
   const [showTransfer, setShowTransfer] = useState(false);
   // Initialise la checkbox depuis le profil
@@ -1774,10 +1774,10 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
 
   const statusBadge = (status) => {
     const map = {
-      confirmed: { label: 'Completed', cls: 'bg-green-100 text-green-700 border-green-200' },
-      cancelled:  { label: 'Failed',    cls: 'bg-red-100 text-red-600 border-red-200' },
-      processing: { label: 'Processing', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
-      pending:    { label: 'Pending',   cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+      confirmed: { label: t('completed'), cls: 'bg-green-100 text-green-700 border-green-200' },
+      cancelled:  { label: t('failed'),    cls: 'bg-red-100 text-red-600 border-red-200' },
+      processing: { label: t('processing'), cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+      pending:    { label: t('pending'),   cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
     };
     const { label, cls } = map[status] || map.pending;
     return <span className={`text-xs font-bold px-3 py-1 rounded-full border ${cls}`}>{label}</span>;
@@ -1792,16 +1792,18 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
           session={session}
           fetchProfile={fetchProfile}
           onClose={() => setShowTransfer(false)}
+          lang={lang}
+          t={t}
         />
       )}
 
       <div className="flex items-center justify-between mb-10">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">My orders</h1>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('myOrders')}</h1>
       </div>
 
       <div className="bg-gray-900 rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="relative z-10">
-          <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Current Balance</div>
+          <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">{t('currentBalance')}</div>
           <div className="text-4xl font-black font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
         </div>
         <div className="relative z-10 flex items-center gap-3">
@@ -1809,9 +1811,9 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
             onClick={() => setShowTransfer(true)}
             className="bg-white/10 border border-white/20 text-white px-5 py-3 rounded-full font-bold text-sm hover:bg-white/20 transition-all flex items-center gap-2"
           >
-            <Send size={16} /> Transfer
+            <Send size={16} /> {t('transferBtn')}
           </button>
-          <button onClick={() => navigate('recharge')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 shrink-0"><Plus size={18} /> Top up account</button>
+          <button onClick={() => navigate('recharge')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 shrink-0"><Plus size={18} /> {t('topUpBtn')}</button>
         </div>
         <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5" />
       </div>
@@ -1826,29 +1828,29 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
               onChange={e => handleEmailToggle(e.target.checked)}
               className="rounded border-gray-300 text-primary focus:ring-primary"
             />
-            <span>Envoyer aussi les comptes à mon e-mail à partir de maintenant.</span>
+            <span>{t('emailDeliveryOptIn')}</span>
           </label>
           <button
             onClick={() => navigate('dashboard')}
             className="text-primary font-bold text-sm flex items-center gap-1 hover:underline"
           >
-            Voir l'historique des transactions <ChevronRight size={14} />
+            {t('viewTransactions')} <ChevronRight size={14} />
           </button>
         </div>
 
         {purchaseOrders.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
-            <p className="text-gray-400 font-bold">No order found.</p>
+            <p className="text-gray-400 font-bold">{t('noOrders')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                  <th className="pb-5 pr-4 whitespace-nowrap">Code de commande</th>
-                  <th className="pb-5 pr-4">Produits</th>
-                  <th className="pb-5 pr-4">Status</th>
-                  <th className="pb-5 pr-4 text-right whitespace-nowrap">Total</th>
+                  <th className="pb-5 pr-4 whitespace-nowrap">{t('orderCode')}</th>
+                  <th className="pb-5 pr-4">{t('productsBought')}</th>
+                  <th className="pb-5 pr-4">{t('status')}</th>
+                  <th className="pb-5 pr-4 text-right whitespace-nowrap">{t('total')}</th>
                   <th className="pb-5 pr-4 whitespace-nowrap">Date</th>
                   <th className="pb-5"></th>
                 </tr>
@@ -1913,7 +1915,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setViewOrder(order)}
-                              title="Voir les identifiants"
+                              title={t('view')}
                               className="w-9 h-9 rounded-xl flex items-center justify-center border border-gray-200 text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
                             >
                               <Eye size={15} />
@@ -1921,7 +1923,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
                             <button
                               onClick={() => canDownload && downloadCredentials(order)}
                               disabled={!canDownload}
-                              title={canDownload ? "Télécharger les credentials" : "Pas encore livré"}
+                              title={canDownload ? t('download') : ""}
                               className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${
                                 canDownload
                                   ? 'border-primary/30 text-primary bg-primary/5 hover:bg-primary hover:text-white cursor-pointer'
@@ -1955,13 +1957,13 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
 
 // Page Paramètres dédiée (accessible via le menu déroulant du profil, plus
 // via un onglet noyé dans un dashboard).
-const SettingsView = ({ profile, navigate, fetchProfile, session }) => (
+const SettingsView = ({ profile, navigate, fetchProfile, session, lang, t }) => (
   <div className="max-w-3xl mx-auto px-6 py-16 font-sans">
     <div className="flex items-center gap-4 mb-10">
       <button onClick={() => navigate('dashboard')} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all border border-gray-100"><ArrowLeft size={18} /></button>
-      <h1 className="text-3xl font-black text-gray-900 tracking-tight">Settings</h1>
+      <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('settings')}</h1>
     </div>
-    <SettingsTab profile={profile} onUpdate={() => fetchProfile && session && fetchProfile(session.user.id)} />
+    <SettingsTab profile={profile} onUpdate={() => fetchProfile && session && fetchProfile(session.user.id)} lang={lang} t={t} />
   </div>
 );
 
@@ -2397,28 +2399,28 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   const unmappedProducts = products.filter(p => !mappings.some(m => m.product_id === p.id));
 
   return (
-    <div className="space-y-8 text-gray-900 dark:text-white">
+    <div className="space-y-8">
       {/* Soldes + synchro par fournisseur */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {SUPPLIERS.map(supplier => {
           const settings = settingsBySupplier[supplier];
           return (
-            <div key={supplier} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 shadow-soft">
-              <div className="text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">{SUPPLIER_LABEL[supplier]} Balance</div>
-              <div className="text-3xl font-black font-mono text-gray-900 dark:text-white mb-1">
+            <div key={supplier} className="bg-white border border-gray-100 rounded-[3rem] p-8 shadow-soft">
+              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{SUPPLIER_LABEL[supplier]} Balance</div>
+              <div className="text-3xl font-black font-mono text-gray-900 mb-1">
                 {settings ? `${Number(settings.balance).toFixed(2)} ${settings.currency}` : '—'}
               </div>
-              <div className="text-xs text-gray-400 dark:text-slate-500 mb-6">
+              <div className="text-xs text-gray-400 mb-6">
                 {settings?.last_catalog_sync ? `Last sync: ${new Date(settings.last_catalog_sync).toLocaleString()}` : 'Never synced'}
               </div>
               {settings && Number(settings.balance) <= 0 && (
-                <div className="mb-4 text-xs font-bold text-red-650 dark:text-red-400 bg-red-50 dark:bg-red-950/20 rounded-xl px-4 py-2 flex items-center gap-2">
+                <div className="mb-4 text-xs font-bold text-red-600 bg-red-50 rounded-xl px-4 py-2 flex items-center gap-2">
                   <AlertTriangle size={14} /> Balance is 0 — top up to deliver via this supplier.
                 </div>
               )}
               <div className="flex gap-3 flex-wrap">
                 <button onClick={() => handleSync(supplier)} disabled={syncing === supplier}
-                  className="h-11 px-5 rounded-xl bg-gray-900 dark:bg-slate-800 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary dark:hover:bg-primary transition-all disabled:opacity-50 border border-transparent dark:border-slate-700">
+                  className="h-11 px-5 rounded-xl bg-gray-900 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
                   <RefreshCcw size={14} className={syncing === supplier ? 'animate-spin' : ''} /> {syncing === supplier ? 'Syncing…' : 'Sync'}
                 </button>
                 {supplier === 'ytseller' && (
@@ -2433,120 +2435,120 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
         })}
       </div>
 
-      {msg && <div className="text-sm font-bold text-gray-700 dark:text-slate-350 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl px-5 py-3">{msg}</div>}
+      {msg && <div className="text-sm font-bold text-gray-600 bg-white border border-gray-100 rounded-2xl px-5 py-3">{msg}</div>}
 
       {/* Marge globale */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
-        <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Global margin % (tous fournisseurs)</label>
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Global margin % (tous fournisseurs)</label>
         <div className="flex gap-2">
-          <input type="number" value={marginInput} onChange={e => setMarginInput(e.target.value)} className="w-24 h-12 px-4 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-mono" />
-          <button onClick={handleSaveMargin} className="h-12 px-4 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-750 dark:text-slate-300 border border-transparent dark:border-slate-700 font-bold text-sm hover:bg-gray-200 dark:hover:bg-slate-700"><Save size={16} /></button>
+          <input type="number" value={marginInput} onChange={e => setMarginInput(e.target.value)} className="w-24 h-12 px-4 rounded-xl border border-gray-200 font-mono" />
+          <button onClick={handleSaveMargin} className="h-12 px-4 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200"><Save size={16} /></button>
         </div>
       </div>
 
       {/* Mapping produits */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">Product mapping</h2>
-        <p className="text-xs text-gray-400 dark:text-slate-500 -mt-6 mb-8">Un produit peut avoir un mapping par fournisseur ; celui marqué "Active" (le moins cher, en stock) fixe le prix/stock affichés en boutique.</p>
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold mb-8">Product mapping</h2>
+        <p className="text-xs text-gray-400 -mt-6 mb-8">Un produit peut avoir un mapping par fournisseur ; celui marqué "Active" (le moins cher, en stock) fixe le prix/stock affichés en boutique.</p>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-700 dark:text-slate-300">
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr className="text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
                 <th className="pb-4">My product</th><th className="pb-4">Supplier</th><th className="pb-4">Supplier ID</th><th className="pb-4">Cost</th>
                 <th className="pb-4">Margin %</th><th className="pb-4">Sell price</th><th className="pb-4">Avail</th>
-                <th className="pb-4">Active</th><th className="pb-4" />
+                <th className="pb-4">Active</th><th className="pb-4">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
+            <tbody className="divide-y divide-gray-50">
               {mappings.map(m => (
-                <tr key={m.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                  <td className="py-4 font-bold text-gray-900 dark:text-white">{productName(m.product_id)}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 font-bold text-xs">{SUPPLIER_LABEL[m.supplier] || m.supplier}</span></td>
+                <tr key={m.id} className="text-gray-700">
+                  <td className="py-4 font-bold">{productName(m.product_id)}</td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 font-bold text-xs">{SUPPLIER_LABEL[m.supplier] || m.supplier}</span></td>
                   {editing === m.id ? (
                     <>
-                      <td className="py-4"><input value={editForm.supplier_product_id} onChange={e => setEditForm({ ...editForm, supplier_product_id: e.target.value })} className="w-24 px-2 py-1 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 font-mono text-gray-900 dark:text-white" /></td>
-                      <td className="py-4 font-mono text-gray-900 dark:text-white">${Number(m.supplier_rate).toFixed(2)}</td>
-                      <td className="py-4"><input type="number" value={editForm.margin_percent} onChange={e => setEditForm({ ...editForm, margin_percent: e.target.value })} className="w-20 px-2 py-1 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 font-mono text-gray-900 dark:text-white" /></td>
+                      <td className="py-4"><input value={editForm.supplier_product_id} onChange={e => setEditForm({ ...editForm, supplier_product_id: e.target.value })} className="w-24 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
+                      <td className="py-4 font-mono">${Number(m.supplier_rate).toFixed(2)}</td>
+                      <td className="py-4"><input type="number" value={editForm.margin_percent} onChange={e => setEditForm({ ...editForm, margin_percent: e.target.value })} className="w-20 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
                       <td className="py-4 font-mono text-gray-400">—</td>
-                      <td className="py-4 font-bold text-gray-900 dark:text-white">{m.supplier_available}</td>
-                      <td className="py-4"><input type="checkbox" checked={editForm.active} onChange={e => setEditForm({ ...editForm, active: e.target.checked })} className="rounded dark:bg-slate-800 dark:border-slate-750" /></td>
+                      <td className="py-4">{m.supplier_available}</td>
+                      <td className="py-4"><input type="checkbox" checked={editForm.active} onChange={e => setEditForm({ ...editForm, active: e.target.checked })} /></td>
                       <td className="py-4 flex gap-2">
                         <button onClick={() => saveEdit(m.id)} className="p-2 rounded-lg bg-green-500 text-white"><Save size={14} /></button>
-                        <button onClick={() => setEditing(null)} aria-label="Cancel edit" className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400"><X size={14} /></button>
+                        <button onClick={() => setEditing(null)} aria-label="Cancel edit" className="p-2 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
                       </td>
                     </>
                   ) : (
                     <>
-                      <td className="py-4 font-mono text-gray-900 dark:text-white">{m.supplier_product_id}</td>
-                      <td className="py-4 font-mono text-gray-900 dark:text-white">${Number(m.supplier_rate).toFixed(2)}</td>
-                      <td className="py-4 font-mono text-gray-900 dark:text-white">{Number(m.margin_percent).toFixed(0)}%</td>
-                      <td className="py-4 font-mono font-bold text-gray-900 dark:text-white">${sellPrice(m).toFixed(2)}</td>
+                      <td className="py-4 font-mono">{m.supplier_product_id}</td>
+                      <td className="py-4 font-mono">${Number(m.supplier_rate).toFixed(2)}</td>
+                      <td className="py-4 font-mono">{Number(m.margin_percent).toFixed(0)}%</td>
+                      <td className="py-4 font-mono font-bold text-gray-900">${sellPrice(m).toFixed(2)}</td>
                       <td className="py-4">
-                        <span className={m.supplier_available > 0 ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-500 dark:text-red-400 font-bold'}>{m.supplier_available}</span>
-                        <span className="text-[10px] text-gray-400 dark:text-slate-500 ml-1">{m.supplier_status || ''}</span>
+                        <span className={m.supplier_available > 0 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{m.supplier_available}</span>
+                        <span className="text-[10px] text-gray-400 ml-1">{m.supplier_status || ''}</span>
                       </td>
-                      <td className="py-4">{m.active ? <span className="text-green-600 dark:text-green-400 font-bold">Yes</span> : <span className="text-gray-400 dark:text-slate-500">No</span>}</td>
+                      <td className="py-4">{m.active ? <span className="text-green-600 font-bold">Yes</span> : <span className="text-gray-400">No</span>}</td>
                       <td className="py-4 flex gap-2">
-                        <button onClick={() => startEdit(m)} className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700" title="Modifier"><Edit size={14} /></button>
-                        <button onClick={() => handleDelete(m)} className="p-2 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30" title="Supprimer"><Trash size={14} /></button>
+                        <button onClick={() => startEdit(m)} className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"><Edit size={14} /></button>
+                        <button onClick={() => handleDelete(m)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><Trash size={14} /></button>
                       </td>
                     </>
                   )}
                 </tr>
               ))}
-              {mappings.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-400 dark:text-slate-500">No mapped product.</td></tr>}
+              {mappings.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-400">No mapped product.</td></tr>}
             </tbody>
           </table>
         </div>
 
         {/* Ajout mapping */}
-        <div className="mt-8 pt-8 border-t border-gray-150 dark:border-slate-800 flex flex-wrap items-end gap-4">
+        <div className="mt-8 pt-8 border-t border-gray-100 flex flex-wrap items-end gap-4">
           <div>
-            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Product</label>
-            <select value={newMap.product_id} onChange={e => setNewMap({ ...newMap, product_id: e.target.value })} className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-bold min-w-[220px]">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Product</label>
+            <select value={newMap.product_id} onChange={e => setNewMap({ ...newMap, product_id: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-bold min-w-[220px]">
               <option value="">— Choose —</option>
               {unmappedProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Supplier</label>
-            <select value={newMap.supplier} onChange={e => setNewMap({ ...newMap, supplier: e.target.value })} className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-bold">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Supplier</label>
+            <select value={newMap.supplier} onChange={e => setNewMap({ ...newMap, supplier: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-bold">
               {SUPPLIERS.map(s => <option key={s} value={s}>{SUPPLIER_LABEL[s]}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Supplier ID</label>
-            <input value={newMap.supplier_product_id} onChange={e => setNewMap({ ...newMap, supplier_product_id: e.target.value })} placeholder="ex: 11" className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-mono w-28" />
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Supplier ID</label>
+            <input value={newMap.supplier_product_id} onChange={e => setNewMap({ ...newMap, supplier_product_id: e.target.value })} placeholder="ex: 11" className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-28" />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Margin %</label>
-            <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-mono w-24" />
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Margin %</label>
+            <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-24" />
           </div>
-          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2 hover:bg-primaryDark transition-all"><Plus size={16} /> Map</button>
+          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2"><Plus size={16} /> Map</button>
         </div>
       </div>
 
       {/* Commandes en attente fournisseur */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">Pending supplier orders ({pending.length})</h2>
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold mb-8">Pending supplier orders ({pending.length})</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-700 dark:text-slate-300">
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr className="text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
                 <th className="pb-4">Order</th><th className="pb-4">Product</th><th className="pb-4">Supplier</th><th className="pb-4">Qty</th>
-                <th className="pb-4">Supplier #</th><th className="pb-4">Status</th><th className="pb-4">Last check</th><th className="pb-4" />
+                <th className="pb-4">Supplier #</th><th className="pb-4">Status</th><th className="pb-4">Last check</th><th className="pb-4">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
+            <tbody className="divide-y divide-gray-50">
               {pending.map(o => (
-                <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                  <td className="py-4 font-mono text-gray-900 dark:text-white">#{o.id}</td>
-                  <td className="py-4 font-bold text-gray-900 dark:text-white">{o.product_name}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-655 dark:text-gray-400 font-bold text-xs">{SUPPLIER_LABEL[o.supplier] || o.supplier}</span></td>
-                  <td className="py-4 text-gray-900 dark:text-white">{o.quantity}</td>
-                  <td className="py-4 font-mono text-gray-900 dark:text-white">{o.supplier_order_id || '—'}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 text-yellow-750 dark:text-yellow-400 font-bold text-xs">{o.supplier_status || 'Pending'}</span></td>
-                  <td className="py-4 text-xs text-gray-400 dark:text-slate-500">{o.supplier_last_checked_at ? new Date(o.supplier_last_checked_at).toLocaleString() : '—'}</td>
+                <tr key={o.id} className="text-gray-700">
+                  <td className="py-4 font-mono">#{o.id}</td>
+                  <td className="py-4 font-bold">{o.product_name}</td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 font-bold text-xs">{SUPPLIER_LABEL[o.supplier] || o.supplier}</span></td>
+                  <td className="py-4">{o.quantity}</td>
+                  <td className="py-4 font-mono">{o.supplier_order_id || '—'}</td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-yellow-50 text-yellow-700 font-bold text-xs">{o.supplier_status || 'Pending'}</span></td>
+                  <td className="py-4 text-xs text-gray-400">{o.supplier_last_checked_at ? new Date(o.supplier_last_checked_at).toLocaleString() : '—'}</td>
                   <td className="py-4">
                     {!o.supplier_order_id && (
                       <button
@@ -2560,32 +2562,28 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                   </td>
                 </tr>
               ))}
-              {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400 dark:text-slate-500">No pending order.</td></tr>}
+              {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">No pending order.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* Logs */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
+      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Supplier log</h2>
+          <h2 className="text-2xl font-bold">Supplier log</h2>
           <button onClick={fetchAll} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><RefreshCcw size={14} /> Refresh</button>
         </div>
-        <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+        <div className="space-y-2 max-h-96 overflow-y-auto">
           {logs.map(l => (
-            <div key={l.id} className={`text-xs rounded-xl px-4 py-3 flex items-start gap-3 border ${
-              l.level === 'error'
-                ? 'bg-red-50 dark:bg-red-950/15 text-red-700 dark:text-red-400 border-red-100 dark:border-red-950/30'
-                : 'bg-gray-50 dark:bg-slate-800/40 text-gray-600 dark:text-slate-350 border-gray-100 dark:border-slate-800'
-            }`}>
-              <span className="font-mono text-gray-400 dark:text-slate-500 shrink-0">{new Date(l.created_at).toLocaleTimeString()}</span>
-              <span className="font-bold shrink-0 uppercase tracking-wide text-gray-900 dark:text-white">{SUPPLIER_LABEL[l.supplier] || l.supplier}</span>
-              <span className="font-bold shrink-0 uppercase tracking-wide text-gray-900 dark:text-white">{l.action}</span>
-              <span className="text-gray-700 dark:text-slate-300">{l.message}{l.order_id ? ` (cmd #${l.order_id})` : ''}</span>
+            <div key={l.id} className={`text-xs rounded-xl px-4 py-3 flex items-start gap-3 ${l.level === 'error' ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'}`}>
+              <span className="font-mono text-gray-400 shrink-0">{new Date(l.created_at).toLocaleTimeString()}</span>
+              <span className="font-bold shrink-0 uppercase tracking-wide">{SUPPLIER_LABEL[l.supplier] || l.supplier}</span>
+              <span className="font-bold shrink-0 uppercase tracking-wide">{l.action}</span>
+              <span>{l.message}{l.order_id ? ` (cmd #${l.order_id})` : ''}</span>
             </div>
           ))}
-          {logs.length === 0 && <div className="py-8 text-center text-gray-450 dark:text-slate-500 text-sm">No log.</div>}
+          {logs.length === 0 && <div className="py-8 text-center text-gray-400 text-sm">No log.</div>}
         </div>
       </div>
     </div>
@@ -2757,22 +2755,18 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
   ];
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative space-y-6 text-gray-900 dark:text-white">
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative space-y-6">
       {/* Sélecteurs de Période */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">
+          <h3 className="text-sm font-black text-gray-500 dark:text-slate-500 uppercase tracking-widest">
             {lang === 'fr' ? 'Performances générales' : 'General metrics'}
           </h3>
         </div>
         <div className="flex gap-2">
           {rangeOptions.map(opt => (
             <button key={opt.value} onClick={() => { setRange(opt.value); setHoveredPoint(null); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                range === opt.value
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-100 dark:border-slate-800'
-              }`}>
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === opt.value ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-800'}`}>
               {opt.label}
             </button>
           ))}
@@ -2780,21 +2774,21 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
       </div>
 
       {/* Onglets style YouTube Studio */}
-      <div className="grid grid-cols-2 gap-4 border-b border-gray-150 dark:border-slate-800 pb-2">
-        {/* Onglet Bénéfice Net */}
+      <div className="grid grid-cols-2 gap-4 border-b border-gray-100 dark:border-slate-800 pb-2">
+        {/* Onglet Revenu Estimé */}
         <button
           onClick={() => { setActiveMetric('revenue'); setHoveredPoint(null); }}
           className={`text-left p-4 rounded-2xl transition-all relative border flex flex-col justify-between ${
             activeMetric === 'revenue'
-              ? 'bg-gray-50 dark:bg-slate-800/40 border-gray-250 dark:border-slate-700/80 text-gray-900 dark:text-white'
-              : 'bg-transparent border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
+              ? 'bg-gray-50 dark:bg-slate-800/40 border-gray-200 dark:border-slate-700/80 text-gray-900 dark:text-white'
+              : 'bg-transparent border-transparent text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300'
           }`}
         >
-          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">
+          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-slate-400">
             {lang === 'fr' ? 'Bénéfice Net' : 'Net Profit'}
           </div>
           <div className="text-2xl font-black font-mono mt-1 text-gray-900 dark:text-white">${rangeRevenue.toFixed(2)}</div>
-          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+          <div className="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold mt-1">
             {lang === 'fr' ? `Total sur ${rangeOptions.find(o => o.value === range)?.label.toLowerCase()}` : `Total for ${rangeOptions.find(o => o.value === range)?.label.toLowerCase()}`}
           </div>
           {activeMetric === 'revenue' && (
@@ -2807,15 +2801,15 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
           onClick={() => { setActiveMetric('users'); setHoveredPoint(null); }}
           className={`text-left p-4 rounded-2xl transition-all relative border flex flex-col justify-between ${
             activeMetric === 'users'
-              ? 'bg-gray-50 dark:bg-slate-800/40 border-gray-250 dark:border-slate-700/80 text-gray-900 dark:text-white'
-              : 'bg-transparent border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
+              ? 'bg-gray-50 dark:bg-slate-800/40 border-gray-200 dark:border-slate-700/80 text-gray-900 dark:text-white'
+              : 'bg-transparent border-transparent text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300'
           }`}
         >
-          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">
+          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-slate-400">
             {lang === 'fr' ? 'Clients Inscrits' : 'Registered Clients'}
           </div>
           <div className="text-2xl font-black font-mono mt-1 text-gray-900 dark:text-white">{rangeUsers}</div>
-          <div className="text-[10px] text-emerald-650 dark:text-emerald-400 font-semibold mt-1">
+          <div className="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold mt-1">
             {lang === 'fr' ? `Inscriptions sur la période` : `Registrations in period`}
           </div>
           {activeMetric === 'users' && (
@@ -2829,17 +2823,17 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
         {/* Tooltip flottant */}
         {hoveredPoint && (
           <div
-            className="absolute z-20 bg-white dark:bg-slate-950 border border-gray-150 dark:border-slate-800 px-3 py-2 rounded-xl shadow-xl text-center pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95"
+            className="absolute z-20 bg-white dark:bg-slate-950 border border-gray-100 dark:border-slate-800 px-3 py-2 rounded-xl shadow-xl text-center pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95"
             style={{
               left: `${(hoveredPoint.x / width) * 100}%`,
               top: `${(hoveredPoint.y / height) * 100 - 45}%`,
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="text-[9px] text-gray-400 dark:text-slate-500 font-black uppercase">
+            <div className="text-[9px] text-gray-500 dark:text-slate-500 font-black uppercase">
               {hoveredPoint.label}
             </div>
-            <div className="text-xs font-black text-emerald-600 dark:text-emerald-450 font-mono">
+            <div className="text-xs font-black text-primary font-mono">
               {activeMetric === 'revenue' ? `$${hoveredPoint.amount.toFixed(2)}` : `${hoveredPoint.amount} client(s)`}
             </div>
           </div>
@@ -2863,9 +2857,9 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
                 y1={y}
                 x2={width - paddingX}
                 y2={y}
-                className="stroke-gray-100 dark:stroke-slate-800/60"
                 strokeWidth="1"
                 strokeDasharray="4 4"
+                className="stroke-gray-100 dark:stroke-slate-800"
               />
             );
           })}
@@ -2893,8 +2887,8 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
               cy={p.y}
               r={hoveredPoint?.index === i ? "6" : "3.5"}
               fill="#10B981"
-              className="stroke-white dark:stroke-slate-900 transition-all duration-150"
               strokeWidth={hoveredPoint?.index === i ? "3" : "2"}
+              className="stroke-white dark:stroke-slate-900 transition-all duration-150"
             />
           ))}
 
@@ -2969,29 +2963,29 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft text-gray-900 dark:text-white">
-      <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Binance Pay — confirmations manuelles</h2>
-      <p className="text-xs text-gray-400 dark:text-slate-400 mb-8">Vérifie sur ton app Binance qu'un paiement du montant exact est bien arrivé avant de confirmer — l'opération crédite immédiatement le solde client.</p>
-      {msg && <div className="mb-6 text-sm font-bold text-gray-700 dark:text-slate-350 bg-gray-50 dark:bg-slate-800 rounded-2xl px-5 py-3 border border-gray-100 dark:border-slate-800">{msg}</div>}
+    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+      <h2 className="text-2xl font-bold mb-2">Binance Pay — confirmations manuelles</h2>
+      <p className="text-xs text-gray-400 mb-8">Vérifie sur ton app Binance qu'un paiement du montant exact est bien arrivé avant de confirmer — l'opération crédite immédiatement le solde client.</p>
+      {msg && <div className="mb-6 text-sm font-bold text-gray-600 bg-gray-50 rounded-2xl px-5 py-3">{msg}</div>}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-gray-700 dark:text-slate-300">
+        <table className="w-full text-left text-sm">
           <thead>
-            <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
               <th className="pb-4">Client</th><th className="pb-4">Pseudo (note attendue)</th><th className="pb-4">Binance Order ID</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
-              <th className="pb-4">Créé</th><th className="pb-4">Expire</th><th className="pb-4" />
+              <th className="pb-4">Créé</th><th className="pb-4">Expire</th><th className="pb-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
+          <tbody className="divide-y divide-gray-50">
             {pending.map(o => {
               const expired = o.expires_at && new Date(o.expires_at).getTime() < Date.now();
               return (
-                <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                  <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email}</td>
+                <tr key={o.id} className="text-gray-700">
+                  <td className="py-4 font-bold">{o.buyer_email}</td>
                   <td className="py-4 font-mono font-black text-primary tracking-widest">{codeByUser[o.user_id] || '—'}</td>
-                  <td className="py-4 font-mono font-black tracking-widest text-gray-700 dark:text-slate-300">{o.binance_tx_id || <span className="text-gray-300 dark:text-slate-650 font-normal italic">non soumis</span>}</td>
-                  <td className="py-4 font-mono font-black text-gray-900 dark:text-white">${Number(o.expected_amount).toFixed(2)}</td>
-                  <td className="py-4 font-mono text-gray-900 dark:text-white">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
-                  <td className="py-4 text-xs text-gray-400 dark:text-slate-500">{new Date(o.created_at).toLocaleString()}</td>
+                  <td className="py-4 font-mono font-black tracking-widest">{o.binance_tx_id || <span className="text-gray-300 font-normal italic">non soumis</span>}</td>
+                  <td className="py-4 font-mono font-black">${Number(o.expected_amount).toFixed(2)}</td>
+                  <td className="py-4 font-mono">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
+                  <td className="py-4 text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</td>
                   <td className="py-4 text-xs">{expired ? <span className="text-red-500 font-bold">Expiré</span> : new Date(o.expires_at).toLocaleTimeString()}</td>
                   <td className="py-4 flex gap-2">
                     <button onClick={() => handleConfirm(o)} disabled={busyId === o.id}
@@ -3006,7 +3000,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                 </tr>
               );
             })}
-            {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400 dark:text-slate-500">Aucun paiement Binance Pay en attente.</td></tr>}
+            {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">Aucun paiement Binance Pay en attente.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3018,20 +3012,20 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
 // classes Tailwind construites dynamiquement, elles doivent apparaître en
 // clair dans le code pour être incluses au build).
 const METRIC_COLORS = {
-  green: 'bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400',
-  blue: 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400',
-  yellow: 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400',
-  red: 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400',
-  purple: 'bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400',
-  indigo: 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400',
-  gray: 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400',
+  green: 'bg-green-50 text-green-600',
+  blue: 'bg-blue-50 text-blue-600',
+  yellow: 'bg-yellow-50 text-yellow-600',
+  red: 'bg-red-50 text-red-600',
+  purple: 'bg-purple-50 text-purple-600',
+  indigo: 'bg-indigo-50 text-indigo-600',
+  gray: 'bg-gray-100 text-gray-500',
   primary: 'bg-primary/10 text-primary',
 };
 const MetricCard = ({ icon: Icon, color = 'gray', label, value }) => (
-  <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-soft text-gray-900 dark:text-white">
+  <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-soft">
     <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${METRIC_COLORS[color] || METRIC_COLORS.gray}`}><Icon size={16} /></div>
-    <div className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">{label}</div>
-    <div className="text-2xl font-black text-gray-900 dark:text-white font-mono">{value}</div>
+    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</div>
+    <div className="text-2xl font-black text-gray-900">{value}</div>
   </div>
 );
 
@@ -3051,28 +3045,24 @@ const RecentActivityTable = ({ allOrders }) => {
   const statusBadge = (status) => {
     const s = status || 'pending';
     const map = {
-      confirmed: { label: 'Confirmed', cls: 'bg-green-100 text-green-700' },
-      processing: { label: 'Processing', cls: 'bg-blue-100 text-blue-700' },
-      cancelled: { label: 'Cancelled', cls: 'bg-red-100 text-red-700' },
-      pending: { label: 'Pending', cls: 'bg-yellow-100 text-yellow-700' },
+      confirmed: { label: 'Confirmed', cls: 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400' },
+      processing: { label: 'Processing', cls: 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400' },
+      cancelled: { label: 'Cancelled', cls: 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400' },
+      pending: { label: 'Pending', cls: 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400' },
     };
     const { label, cls } = map[s] || map.pending;
     return <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wide ${cls}`}>{label}</span>;
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-2xl text-gray-900 dark:text-white">
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-2xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activité récente</h3>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-xl p-1">
             {['all', 'confirmed', 'processing', 'pending', 'cancelled'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${
-                  filter === f
-                    ? 'bg-primary text-white'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-                }`}>
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-primary text-white' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'}`}>
                 {f === 'all' ? 'Toutes' : f}
               </button>
             ))}
@@ -3090,13 +3080,13 @@ const RecentActivityTable = ({ allOrders }) => {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-gray-700 dark:text-slate-300">
+        <table className="w-full text-left text-sm text-gray-600 dark:text-slate-300">
           <thead>
             <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
               <th className="pb-4">Client</th><th className="pb-4">Produit</th><th className="pb-4">Date</th><th className="pb-4">Statut</th><th className="pb-4 text-right">Montant</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
             {filtered.map(o => (
               <tr key={o.id}>
                 <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email || '—'}</td>
@@ -3106,7 +3096,7 @@ const RecentActivityTable = ({ allOrders }) => {
                 <td className="py-4 text-right font-mono font-black text-gray-900 dark:text-white">${Number(o.total_price || 0).toFixed(2)}</td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-gray-500">Aucune commande trouvée.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-gray-400 dark:text-slate-500">Aucune commande trouvée.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3169,7 +3159,7 @@ const AdminView = ({
       <div className="min-h-screen bg-canvas dark:bg-gray-950 flex flex-col items-center justify-center p-6 font-sans">
         <div className="w-full max-w-md bg-white dark:bg-slate-900/40 backdrop-blur-md border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-8 text-gray-900 dark:text-white relative">
           <button onClick={() => navigate('home')} className="absolute top-8 left-8 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white font-bold flex items-center gap-1">
-            <ArrowLeft size={14} /> Back to site
+            <ArrowLeft size={14} /> {t('backToSite')}
           </button>
           <div className="text-center space-y-2 pt-4">
             <div className="w-16 h-16 bg-primary/10 border border-primary/20 text-primary rounded-3xl flex items-center justify-center mx-auto mb-4 animate-pulse">
@@ -3236,10 +3226,10 @@ const AdminView = ({
           </p>
           <div className="flex gap-3 pt-4">
             <button onClick={() => navigate('home')} className="flex-1 py-4 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all">
-              Retour au site
+              {t('backToSite')}
             </button>
             <button onClick={() => supabase.auth.signOut()} className="flex-1 py-4 bg-red-600 rounded-2xl text-sm font-bold hover:bg-red-700 transition-all">
-              Se déconnecter
+              {t('logout')}
             </button>
           </div>
         </div>
@@ -3351,11 +3341,11 @@ const AdminView = ({
           {/* Nav list */}
           <nav className="space-y-2">
             {[
-              { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-              { id: 'orders', label: 'Orders', icon: FileText },
+              { id: 'dashboard', label: lang === 'fr' ? "Vue d'ensemble" : "Overview", icon: LayoutDashboard },
+              { id: 'orders', label: lang === 'fr' ? "Commandes" : "Orders", icon: FileText },
               { id: 'payments', label: 'Binance Pay', icon: Wallet },
-              { id: 'users', label: 'Client Management', icon: Users },
-              { id: 'supplier', label: 'Supplier', icon: Database },
+              { id: 'users', label: lang === 'fr' ? "Clients" : "Client Management", icon: Users },
+              { id: 'supplier', label: lang === 'fr' ? "Fournisseur" : "Supplier", icon: Database },
             ].map(item => (
               <button
                 key={item.id}
@@ -3394,14 +3384,14 @@ const AdminView = ({
           {/* Back to site */}
           <div className="pt-6 border-t border-gray-100 dark:border-slate-800 mt-4 space-y-4">
             <div className="text-xs text-gray-500 dark:text-slate-500 font-semibold px-2">
-              Connecté en tant que :<br/>
+              {lang === 'fr' ? "Connecté en tant que :" : "Logged in as:"}<br/>
               <strong className="text-gray-800 dark:text-slate-300 font-bold">{session.user.email}</strong>
             </div>
             <button
               onClick={() => navigate('home')}
               className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gray-100 dark:bg-slate-800 text-gray-750 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-gray-205 dark:hover:bg-slate-700 hover:text-gray-950 dark:hover:text-white transition-all"
             >
-              <ArrowLeft size={14} /> Back to site
+              <ArrowLeft size={14} /> {t('backToSite')}
             </button>
           </div>
         </div>
@@ -3468,24 +3458,24 @@ const AdminView = ({
             </div>
 
             {/* Operational stats row (clean & secondary) */}
-            <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 space-y-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Operational Metrics</h3>
+            <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-8 space-y-4">
+              <h3 className="text-xs font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">Operational Metrics</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div>
-                  <div className="text-[10px] text-slate-500 font-bold uppercase">Dépôts Clients (Recharges)</div>
-                  <div className="text-xl font-bold text-slate-300 font-mono mt-1">${totalDeposited.toFixed(2)}</div>
+                  <div className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase">Dépôts Clients (Recharges)</div>
+                  <div className="text-xl font-bold text-gray-900 dark:text-slate-300 font-mono mt-1">${totalDeposited.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-slate-500 font-bold uppercase">En cours fournisseur</div>
-                  <div className="text-xl font-bold text-slate-300 font-mono mt-1">{processingCount}</div>
+                  <div className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase">En cours fournisseur</div>
+                  <div className="text-xl font-bold text-gray-900 dark:text-slate-300 font-mono mt-1">{processingCount}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-slate-500 font-bold uppercase">En attente / Binance</div>
-                  <div className="text-xl font-bold text-slate-300 font-mono mt-1">{pendingOnlyCount}</div>
+                  <div className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase">En attente / Binance</div>
+                  <div className="text-xl font-bold text-gray-900 dark:text-slate-300 font-mono mt-1">{pendingOnlyCount}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-slate-500 font-bold uppercase">Commandes annulées</div>
-                  <div className="text-xl font-bold text-slate-300 font-mono mt-1">{cancelledCount}</div>
+                  <div className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase">Commandes annulées</div>
+                  <div className="text-xl font-bold text-gray-900 dark:text-slate-300 font-mono mt-1">{cancelledCount}</div>
                 </div>
               </div>
             </div>
@@ -3500,22 +3490,24 @@ const AdminView = ({
               </div>
 
               {/* Top Products */}
-              <div className="bg-slate-900 border border-slate-800 rounded-[3rem] p-8 shadow-2xl h-fit">
-                <h3 className="text-base font-bold text-white mb-6">Top produits vendus</h3>
+              <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 shadow-2xl h-fit">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-6">Top produits vendus</h3>
                 {topProducts.length === 0 ? (
-                  <p className="text-slate-500 text-sm italic">Aucune vente confirmée pour l'instant.</p>
+                  <p className="text-gray-500 dark:text-slate-500 text-sm italic">Aucune vente confirmée pour l'instant.</p>
                 ) : (
                   <div className="space-y-4">
                     {topProducts.map(([name, stats], i) => (
-                      <div key={name} className="flex items-center justify-between py-3 border-b border-slate-800 last:border-0">
+                      <div key={name} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-800 last:border-0">
                         <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">{i + 1}</span>
+                          <div className="w-8 h-8 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 font-bold flex items-center justify-center text-xs shrink-0">
+                            {i + 1}
+                          </div>
                           <div>
-                            <div className="text-xs font-bold text-white truncate max-w-[150px]" title={name}>{name}</div>
-                            <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{stats.count} vendu(s)</div>
+                            <div className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug">{name}</div>
+                            <div className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase mt-1 tracking-widest">{stats.count} vendu(s)</div>
                           </div>
                         </div>
-                        <div className="text-xs font-black text-primary font-mono">${stats.revenue.toFixed(2)}</div>
+                        <div className="text-sm font-black text-primary font-mono shrink-0 pl-4">${stats.revenue.toFixed(2)}</div>
                       </div>
                     ))}
                   </div>
@@ -3644,7 +3636,7 @@ const BONUS_TIERS = [
 ];
 const bonusPercentFor = (amountUsd) => [...BONUS_TIERS].reverse().find(t => amountUsd >= t.amount)?.pct || 0;
 
-const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile, resumeOrder, clearResumeOrder }) => {
+const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile, resumeOrder, clearResumeOrder, lang, t }) => {
   const [amountUsd, setAmountUsd] = useState(suggestedAmount || 50);
   const [gateway, setGateway] = useState(null); // null tant que le client n'a pas choisi de passerelle
   const [payCurrency, setPayCurrency] = useState('usdttrc20');
@@ -3844,7 +3836,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between px-8 pt-8 pb-2">
-          <h2 className="text-2xl font-black text-gray-900">Recharger</h2>
+          <h2 className="text-2xl font-black text-gray-900">{t('topUpAccount')}</h2>
           <button onClick={close} aria-label="Close" className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"><X size={18} /></button>
         </div>
 
@@ -3872,7 +3864,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Montant ($)</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('amountToRecharge')}</label>
               <input
                 type="number"
                 min="0.01"
@@ -3887,7 +3879,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Passerelle</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('choosePayment')}</label>
               <div className="grid grid-cols-2 gap-3">
                 {PAYMENT_GATEWAYS.map(g => (
                   <button
@@ -5394,14 +5386,14 @@ function App() {
         />
       )}
       <div className="flex-grow">
-        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} />}
+        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} />}
-        {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} />}
-        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} />}
+        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} />}
+        {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} />}
+        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} />}
         {currentView === 'admin' && (
           <AdminView
             session={session}
