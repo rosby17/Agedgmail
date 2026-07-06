@@ -1750,7 +1750,7 @@ const shortOrderId = (uuid = '') => {
 // Plus de sidebar à onglets (Dashboard/Orders/Settings) — Settings vit maintenant
 // dans sa propre page (menu déroulant du profil), et l'onglet "Dashboard" a été
 // retiré car redondant avec cette page elle-même.
-const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile, lang, t }) => {
+const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile, lang, t, loading = false }) => {
   const [viewOrder, setViewOrder] = useState(null);
   const [showTransfer, setShowTransfer] = useState(false);
   // Initialise la checkbox depuis le profil
@@ -1907,7 +1907,9 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
           </button>
         </div>
 
-        {purchaseOrders.length === 0 ? (
+        {loading ? (
+          <div className="py-4"><SkeletonRows rows={5} cols={6} /></div>
+        ) : purchaseOrders.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
             <p className="text-gray-400 font-bold">{t('noOrders')}</p>
           </div>
@@ -2046,7 +2048,7 @@ const SettingsView = ({ profile, navigate, fetchProfile, session, lang, t }) => 
 // confirme et se livre tout seul via les webhooks. Cet écran sert juste à
 // suivre l'état des commandes, avec une action d'annulation pour les cas
 // bloqués et une suppression pour le nettoyage de test.
-const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr' }) => {
+const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }) => {
   const [filter, setFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [cancelPromptOrder, setCancelPromptOrder] = useState(null);
@@ -2144,7 +2146,9 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr' }) => {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="py-4"><SkeletonRows rows={6} cols={6} /></div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-gray-50 dark:bg-slate-800/40 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-800">
           <p className="text-gray-400 dark:text-slate-500 font-bold">Aucune commande</p>
         </div>
@@ -3334,7 +3338,7 @@ const SupportAdmin = ({ session }) => {
 // ==========================================
 // CLIENT MANAGEMENT — recherche, statistiques, ban/déban, crédit, historique
 // ==========================================
-const ClientManagement = ({ allUsers, allOrders, fetchUsers }) => {
+const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // all | active | suspended
   const [viewingClient, setViewingClient] = useState(null);
@@ -3429,6 +3433,9 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers }) => {
       </div>
 
       {/* Table clients */}
+      {loading ? (
+        <div className="py-4"><SkeletonRows rows={6} cols={7} /></div>
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
@@ -3477,6 +3484,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers }) => {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Modale détail client */}
       {viewingClient && (() => {
@@ -3537,7 +3545,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers }) => {
 
 const AdminView = ({
   session, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
-  actionStatus, setActionStatus, theme, setTheme, lang, setLang, t,
+  actionStatus, setActionStatus, theme, setTheme, lang, setLang, t, dataLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
   const [supplierBalance, setSupplierBalance] = useState(null);
@@ -3814,7 +3822,17 @@ const AdminView = ({
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 p-8 lg:p-12 space-y-8 overflow-y-auto max-h-screen">
-        {activeTab === 'dashboard' && (
+        {activeTab === 'dashboard' && dataLoading && (
+          <div className="space-y-8">
+            <SkeletonMetricCards count={4} />
+            <SkeletonMetricCards count={4} />
+            <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-8">
+              <SkeletonRows rows={6} cols={5} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'dashboard' && !dataLoading && (
           <div className="space-y-8 animate-in fade-in duration-300">
             {/* Warnings */}
             {supplierBalance && Number(supplierBalance.balance) <= 0 && (
@@ -3931,10 +3949,10 @@ const AdminView = ({
             </div>
           </div>
         )}
-          {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} lang={lang} />}
+          {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} lang={lang} loading={dataLoading} />}
 
           {activeTab === 'users' && (
-            <ClientManagement allUsers={allUsers} allOrders={allOrders} fetchUsers={fetchUsers} />
+            <ClientManagement allUsers={allUsers} allOrders={allOrders} fetchUsers={fetchUsers} loading={dataLoading} />
           )}
 
           {activeTab === 'payments' && <BinancePaymentsAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />}
@@ -5859,7 +5877,7 @@ function App() {
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} />}
+        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} />}
         {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} />}
         {currentView === 'admin' && (
@@ -5879,6 +5897,7 @@ function App() {
             lang={lang}
             setLang={setLang}
             t={t}
+            dataLoading={adminDataLoading}
           />
         )}
       </div>
