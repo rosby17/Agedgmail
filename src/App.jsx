@@ -285,14 +285,12 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
                 const isCenter = topProducts.length >= 3 ? idx === 1 : idx === 0;
                 const delay = `${0.1 * (idx + 1)}s`;
                 
-                let badgeText = "Entrée de Gamme";
-                let subtitle = "Starter Pack";
-                if (topProductsRaw.indexOf(product) === 0) {
-                  badgeText = "Le plus populaire";
-                  subtitle = "Recommandé";
-                } else if (topProductsRaw.indexOf(product) === 2) {
-                  badgeText = "Entreprise";
-                  subtitle = "Autorité Maximale";
+                const rank = topProductsRaw.indexOf(product) + 1;
+                let badgeText = `Top Vente #${rank}`;
+                let subtitle = "Très demandé";
+                if (rank === 1) {
+                  badgeText = "Top 1 des ventes";
+                  subtitle = "Choix N°1 des créateurs";
                 }
 
                 if (isCenter) {
