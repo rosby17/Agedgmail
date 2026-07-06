@@ -2681,48 +2681,48 @@ const RecentActivityTable = ({ allOrders }) => {
   };
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+    <div className="bg-slate-900 border border-slate-800 rounded-[3rem] p-10 shadow-2xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <h3 className="text-lg font-bold text-gray-900">Activité récente</h3>
+        <h3 className="text-lg font-bold text-white">Activité récente</h3>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex gap-1 bg-gray-50 rounded-xl p-1">
+          <div className="flex gap-1 bg-slate-800 rounded-xl p-1">
             {['all', 'confirmed', 'processing', 'pending', 'cancelled'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-700'}`}>
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-primary text-white' : 'text-slate-400 hover:text-white'}`}>
                 {f === 'all' ? 'Toutes' : f}
               </button>
             ))}
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher par email, produit…"
-              className="pl-9 pr-3 py-2 rounded-xl border border-gray-200 text-xs focus:ring-2 focus:ring-primary/20 outline-none w-52"
+              className="pl-9 pr-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-primary/20 outline-none w-52"
             />
           </div>
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-sm text-slate-300">
           <thead>
-            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+            <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800">
               <th className="pb-4">Client</th><th className="pb-4">Produit</th><th className="pb-4">Date</th><th className="pb-4">Statut</th><th className="pb-4 text-right">Montant</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-slate-800">
             {filtered.map(o => (
               <tr key={o.id}>
-                <td className="py-4 font-bold text-gray-900">{o.buyer_email || '—'}</td>
-                <td className="py-4 text-gray-500">{o.product_name}</td>
-                <td className="py-4 text-xs text-gray-400">{new Date(o.created_at).toLocaleString('fr-FR')}</td>
+                <td className="py-4 font-bold text-white">{o.buyer_email || '—'}</td>
+                <td className="py-4 text-slate-400">{o.product_name}</td>
+                <td className="py-4 text-xs text-slate-500">{new Date(o.created_at).toLocaleString('fr-FR')}</td>
                 <td className="py-4">{statusBadge(o.status)}</td>
-                <td className="py-4 text-right font-mono font-black text-gray-900">${Number(o.total_price || 0).toFixed(2)}</td>
+                <td className="py-4 text-right font-mono font-black text-white">${Number(o.total_price || 0).toFixed(2)}</td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-gray-400">Aucune commande trouvée.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-slate-500">Aucune commande trouvée.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -2731,12 +2731,17 @@ const RecentActivityTable = ({ allOrders }) => {
 };
 
 const AdminView = ({
-  navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
+  session, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
   actionStatus, setActionStatus,
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
   const [supplierBalance, setSupplierBalance] = useState(null);
   const [viewingClient, setViewingClient] = useState(null);
+  const [mappings, setMappings] = useState([]);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     localStorage.setItem('agedgmail_admin_tab', activeTab);
@@ -2746,7 +2751,24 @@ const AdminView = ({
     if (!supabase) return;
     supabase.from('supplier_settings').select('balance, currency').eq('supplier', 'ytseller').maybeSingle()
       .then(({ data }) => setSupplierBalance(data || null));
+
+    // Fetch mappings for purchase cost calculation
+    supabase.from('product_supplier_mapping').select('*')
+      .then(({ data }) => setMappings(data || []));
   }, []);
+
+  const handleAdminLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError('');
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+      if (error) throw error;
+    } catch (err) {
+      setLoginError(err.message || 'Identifiants admin invalides.');
+    }
+    setLoginLoading(false);
+  };
 
   const handleUpdateBalanceManual = async (userId, email, amount) => {
     setActionStatus('loading');
@@ -2757,31 +2779,134 @@ const AdminView = ({
     setActionStatus(null);
   };
 
-  // Revenu réel = uniquement les commandes 'confirmed' (paiement effectivement
-  // reçu — recharge crypto confirmée par webhook, ou compte dropship livré).
-  // Les commandes 'pending'/'processing'/'cancelled' ne comptent jamais.
+  // Standalone Auth check inside AdminView
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-8 text-white relative">
+          <button onClick={() => navigate('home')} className="absolute top-8 left-8 text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1">
+            <ArrowLeft size={14} /> Back to site
+          </button>
+          <div className="text-center space-y-2 pt-4">
+            <div className="w-16 h-16 bg-primary/10 border border-primary/20 text-primary rounded-3xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <Shield size={32} />
+            </div>
+            <h1 className="text-2xl font-black tracking-tight">Admin Console</h1>
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">AgedGmail Security Area</p>
+          </div>
+
+          <form onSubmit={handleAdminLoginSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Email</label>
+              <input
+                type="email"
+                required
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                placeholder="admin@example.com"
+                className="w-full h-14 px-5 rounded-2xl bg-slate-800 border-none text-white placeholder-slate-500 focus:ring-2 focus:ring-primary/20 text-sm font-bold"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
+              <input
+                type="password"
+                required
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full h-14 px-5 rounded-2xl bg-slate-800 border-none text-white placeholder-slate-500 focus:ring-2 focus:ring-primary/20 text-sm font-bold"
+              />
+            </div>
+
+            {loginError && (
+              <div className="bg-red-500/10 text-red-400 p-4 rounded-xl text-xs font-bold border border-red-500/20 flex items-center gap-2 animate-bounce">
+                <AlertTriangle size={14} /> {loginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full h-14 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
+            >
+              {loginLoading && <RefreshCcw size={16} className="animate-spin" />}
+              Accéder à la console
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (session.user.email !== ADMIN_EMAIL) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-6 text-center text-white">
+          <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert size={32} />
+          </div>
+          <h1 className="text-2xl font-black tracking-tight text-red-500">Accès Refusé</h1>
+          <p className="text-slate-400 text-sm leading-relaxed">
+            Votre compte n'est pas autorisé à accéder à la console d'administration.
+          </p>
+          <div className="flex gap-3 pt-4">
+            <button onClick={() => navigate('home')} className="flex-1 py-4 bg-slate-800 rounded-2xl text-sm font-bold hover:bg-slate-700 transition-all">
+              Retour au site
+            </button>
+            <button onClick={() => supabase.auth.signOut()} className="flex-1 py-4 bg-red-600 rounded-2xl text-sm font-bold hover:bg-red-700 transition-all">
+              Se déconnecter
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- CALCULS DES METRIQUES FINANCIERES ---
   const confirmedOrders = allOrders.filter(o => o.status === 'confirmed');
-  const totalRevenue = confirmedOrders.reduce((s, o) => s + (o.total_price || 0), 0);
+  
+  // Ventes de produits réelles (exclure product_id=999 qui sont les recharges de solde)
+  const confirmedPurchases = confirmedOrders.filter(o => o.product_id !== 999);
+  const totalSold = confirmedPurchases.reduce((s, o) => s + (o.total_price || 0), 0);
+
+  // Coût total d'achat fournisseur estimé
+  const totalCost = confirmedPurchases.reduce((sum, o) => {
+    // Trouve le mapping correspondant
+    const map = mappings.find(m => m.product_id === o.product_id && (o.supplier ? m.supplier === o.supplier : m.active));
+    if (map) {
+      return sum + (Number(map.supplier_rate) || 0) * (o.quantity || 1);
+    }
+    // Estimation s'il n'y a pas de mapping en ligne (ex: produit dropship supprimé ou stock local sans mapping)
+    const fallbackCost = o.supplier ? (o.total_price * 0.7) : 0;
+    return sum + fallbackCost;
+  }, 0);
+
+  // Bénéfice Net & Marge
+  const netProfit = totalSold - totalCost;
+  const realMarginPercent = totalSold > 0 ? (netProfit / totalSold) * 100 : 0;
+
+  // Dépôts réels (recharges de solde confirmées)
+  const totalDeposited = confirmedOrders
+    .filter(o => o.product_id === 999)
+    .reduce((s, o) => s + (o.total_price || 0), 0);
+
+  // Compteurs opérationnels secondaires
   const processingCount = allOrders.filter(o => o.status === 'processing').length;
   const pendingOnlyCount = allOrders.filter(o => (o.status || 'pending') === 'pending').length;
-  const pendingCount = processingCount + pendingOnlyCount;
   const cancelledCount = allOrders.filter(o => o.status === 'cancelled').length;
-  const avgOrderValue = confirmedOrders.length ? totalRevenue / confirmedOrders.length : 0;
-  const conversionRate = allOrders.length ? (confirmedOrders.length / allOrders.length) * 100 : 0;
-  const newClients7d = allUsers.filter(u => u.created_at && (Date.now() - new Date(u.created_at).getTime()) / 86400000 <= 7).length;
 
-  // Commandes bloquées : en attente/en cours depuis plus de 15 min (au-delà,
-  // le poll YTSeller aurait déjà dû rembourser — signal qu'il faut regarder).
+  // Commandes bloquées : en attente/en cours depuis plus de 15 min
   const STUCK_MIN = 15;
   const stuckOrders = allOrders.filter(o =>
     (o.status === 'pending' || o.status === 'processing') &&
     (Date.now() - new Date(o.created_at).getTime()) / 60000 > STUCK_MIN
   );
 
-  // Top produits vendus (hors recharges, product_id 999).
+  // Top produits vendus (hors recharges)
   const topProducts = (() => {
     const counts = new Map();
-    confirmedOrders.filter(o => o.product_id !== 999).forEach(o => {
+    confirmedPurchases.forEach(o => {
       const key = o.product_name || 'Produit';
       const cur = counts.get(key) || { count: 0, revenue: 0 };
       counts.set(key, { count: cur.count + (o.quantity || 1), revenue: cur.revenue + (o.total_price || 0) });
@@ -2789,107 +2914,201 @@ const AdminView = ({
     return [...counts.entries()].sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 5);
   })();
 
-  return (
-    <div className="w-full px-6 md:px-10 py-12 font-sans">
-      <div className="flex items-center justify-between mb-10">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-4"><Shield className="text-primary" /> Administration Console</h1>
-          <p className="text-gray-400 text-sm mt-2">Suivi des ventes et des clients.</p>
+  const FinanceCard = ({ label, value, subtext, color = 'emerald', icon: Icon }) => {
+    const colors = {
+      emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+      violet: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+      amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    };
+    return (
+      <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden group hover:border-slate-700 transition-all duration-200">
+        <div className="flex justify-between items-start">
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+            <div className="text-3xl font-black text-white font-mono">{value}</div>
+            {subtext && <div className="text-xs font-semibold text-slate-500">{subtext}</div>}
+          </div>
+          <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center ${colors[color]}`}>
+            <Icon size={18} />
+          </div>
         </div>
-        <button onClick={() => navigate('home')} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><ArrowLeft size={16} /> Back to site</button>
       </div>
+    );
+  };
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        <aside className="w-full lg:w-64 shrink-0 space-y-2 lg:sticky lg:top-8">
-          {[
-            { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-            { id: 'orders', label: 'Orders', icon: FileText },
-            { id: 'payments', label: 'Binance Pay', icon: Wallet },
-            { id: 'users', label: 'Client Management', icon: Users },
-            { id: 'supplier', label: 'Supplier', icon: Database },
-          ].map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-gray-900 text-white shadow-xl' : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'}`}>
-              <item.icon size={18} /> {item.label}
-            </button>
-          ))}
-        </aside>
+  return (
+    <div className="min-h-screen bg-slate-950 text-white font-sans flex flex-col lg:flex-row">
+      {/* Sidebar Standalone */}
+      <aside className="w-full lg:w-72 shrink-0 bg-slate-900 border-b lg:border-b-0 lg:border-r border-slate-800 p-8 flex flex-col justify-between">
+        <div className="space-y-10">
+          {/* Logo / Title */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 border border-primary/20 text-primary rounded-2xl flex items-center justify-center">
+              <Shield size={20} />
+            </div>
+            <div>
+              <div className="text-lg font-black tracking-tight text-white">Console</div>
+              <div className="text-[9px] font-black uppercase text-slate-500 tracking-wider">AgedGmail Admin</div>
+            </div>
+          </div>
 
-        <main className="flex-1 min-w-0 space-y-8">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-8">
-              {supplierBalance && Number(supplierBalance.balance) <= 0 && (
-                <div className="bg-red-50 border border-red-100 rounded-[2rem] p-6 flex items-center gap-4">
-                  <AlertTriangle size={24} className="text-red-500 shrink-0" />
-                  <div>
-                    <p className="text-sm font-bold text-red-700">Solde fournisseur YTSeller à 0 — aucune commande dropship ne peut être livrée.</p>
-                    <button onClick={() => setActiveTab('supplier')} className="text-xs font-black text-red-600 hover:underline uppercase tracking-widest mt-1">Voir l'onglet Supplier</button>
-                  </div>
+          {/* Nav list */}
+          <nav className="space-y-2">
+            {[
+              { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+              { id: 'orders', label: 'Orders', icon: FileText },
+              { id: 'payments', label: 'Binance Pay', icon: Wallet },
+              { id: 'users', label: 'Client Management', icon: Users },
+              { id: 'supplier', label: 'Supplier', icon: Database },
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${
+                  activeTab === item.id
+                    ? 'bg-primary text-white shadow-xl shadow-primary/20'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                }`}
+              >
+                <item.icon size={18} /> {item.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Back to site */}
+        <div className="pt-6 border-t border-slate-800 mt-10 space-y-4">
+          <div className="text-xs text-slate-500 font-semibold px-2">
+            Connecté en tant que :<br/>
+            <strong className="text-slate-300 font-bold">{session.user.email}</strong>
+          </div>
+          <button
+            onClick={() => navigate('home')}
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-700 hover:text-white transition-all"
+          >
+            <ArrowLeft size={14} /> Back to site
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 min-w-0 p-8 lg:p-12 space-y-8 overflow-y-auto max-h-screen">
+        {activeTab === 'dashboard' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Warnings */}
+            {supplierBalance && Number(supplierBalance.balance) <= 0 && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-[2rem] p-6 flex items-center gap-4">
+                <AlertTriangle size={24} className="text-red-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-red-300">Solde fournisseur YTSeller à 0 — aucune commande dropship ne peut être livrée.</p>
+                  <button onClick={() => setActiveTab('supplier')} className="text-xs font-black text-red-400 hover:underline uppercase tracking-widest mt-1">Voir l'onglet Supplier</button>
                 </div>
-              )}
+              </div>
+            )}
 
-              {stuckOrders.length > 0 && (
-                <div className="bg-yellow-50 border border-yellow-100 rounded-[2rem] p-6 flex items-center gap-4">
-                  <Clock size={24} className="text-yellow-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-bold text-yellow-800">{stuckOrders.length} commande(s) en attente depuis plus de {STUCK_MIN} min — à vérifier.</p>
-                    <button onClick={() => setActiveTab('orders')} className="text-xs font-black text-yellow-700 hover:underline uppercase tracking-widest mt-1">Voir les commandes</button>
-                  </div>
+            {stuckOrders.length > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-[2rem] p-6 flex items-center gap-4">
+                <Clock size={24} className="text-amber-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-amber-300">{stuckOrders.length} commande(s) en attente depuis plus de {STUCK_MIN} min — à vérifier.</p>
+                  <button onClick={() => setActiveTab('orders')} className="text-xs font-black text-amber-400 hover:underline uppercase tracking-widest mt-1">Voir les commandes</button>
                 </div>
-              )}
+              </div>
+            )}
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                <MetricCard icon={DollarSign} color="green" label="Revenu réel (payé)" value={`$${totalRevenue.toFixed(2)}`} />
-                <MetricCard icon={FileText} color="gray" label="Commandes totales" value={allOrders.length} />
-                <MetricCard icon={CheckCircle} color="blue" label="Confirmées" value={confirmedOrders.length} />
-                <MetricCard icon={X} color="red" label="Annulées" value={cancelledCount} />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                <MetricCard icon={RefreshCcw} color="indigo" label="En cours (fournisseur)" value={processingCount} />
-                <MetricCard icon={Clock} color="yellow" label="En attente" value={pendingOnlyCount} />
-                <MetricCard icon={TrendingUp} color="purple" label="Taux de confirmation" value={`${conversionRate.toFixed(0)}%`} />
-                <MetricCard icon={CircleDollarSign} color="primary" label="Panier moyen" value={`$${avgOrderValue.toFixed(2)}`} />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                <MetricCard icon={Users} color="indigo" label="Clients inscrits" value={allUsers.length} />
-                <MetricCard icon={Users} color="green" label="Nouveaux (7j)" value={newClients7d} />
-                <MetricCard icon={Package} color="primary" label="Produits en ligne" value={products.length} />
-                <MetricCard
+            {/* Financial Highlights */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">Financial Highlights</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <FinanceCard
+                  label="Chiffre d'Affaires (Ventes)"
+                  value={`$${totalSold.toFixed(2)}`}
+                  subtext={`${confirmedPurchases.length} ventes de produits`}
+                  color="blue"
+                  icon={DollarSign}
+                />
+                <FinanceCard
+                  label="Coût d'Achat Fournisseur"
+                  value={`$${totalCost.toFixed(2)}`}
+                  subtext="Estimé sur le mapping actif"
+                  color="amber"
                   icon={Database}
-                  color={supplierBalance && Number(supplierBalance.balance) <= 0 ? 'red' : 'gray'}
-                  label="Solde fournisseur YTSeller"
-                  value={supplierBalance ? `$${Number(supplierBalance.balance).toFixed(2)}` : '—'}
+                />
+                <FinanceCard
+                  label="Bénéfice Net"
+                  value={`$${netProfit.toFixed(2)}`}
+                  subtext="Marge réelle en dollar"
+                  color="emerald"
+                  icon={TrendingUp}
+                />
+                <FinanceCard
+                  label="Marge Réelle (%)"
+                  value={`${realMarginPercent.toFixed(1)}%`}
+                  subtext="CA / Coût Fournisseur"
+                  color="violet"
+                  icon={CircleDollarSign}
                 />
               </div>
+            </div>
 
-              <RevenueChart confirmedOrders={confirmedOrders} />
+            {/* Operational stats row (clean & secondary) */}
+            <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Operational Metrics</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase">Dépôts Clients (Recharges)</div>
+                  <div className="text-xl font-bold text-slate-300 font-mono mt-1">${totalDeposited.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase">En cours fournisseur</div>
+                  <div className="text-xl font-bold text-slate-300 font-mono mt-1">{processingCount}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase">En attente / Binance</div>
+                  <div className="text-xl font-bold text-slate-300 font-mono mt-1">{pendingOnlyCount}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase">Commandes annulées</div>
+                  <div className="text-xl font-bold text-slate-300 font-mono mt-1">{cancelledCount}</div>
+                </div>
+              </div>
+            </div>
 
-              <RecentActivityTable allOrders={allOrders} />
+            <RevenueChart confirmedOrders={confirmedOrders} />
 
-              <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-                <h3 className="text-lg font-bold text-gray-900 mb-8">Top produits vendus</h3>
+            {/* Top products & Activity side-by-side */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* Recent Activity (takes 2 cols) */}
+              <div className="xl:col-span-2">
+                <RecentActivityTable allOrders={allOrders} />
+              </div>
+
+              {/* Top Products */}
+              <div className="bg-slate-900 border border-slate-800 rounded-[3rem] p-8 shadow-2xl h-fit">
+                <h3 className="text-base font-bold text-white mb-6">Top produits vendus</h3>
                 {topProducts.length === 0 ? (
-                  <p className="text-gray-400 text-sm italic">Aucune vente confirmée pour l'instant.</p>
+                  <p className="text-slate-500 text-sm italic">Aucune vente confirmée pour l'instant.</p>
                 ) : (
                   <div className="space-y-4">
                     {topProducts.map(([name, stats], i) => (
-                      <div key={name} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                        <div className="flex items-center gap-4">
-                          <span className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 font-black text-xs flex items-center justify-center">{i + 1}</span>
+                      <div key={name} className="flex items-center justify-between py-3 border-b border-slate-800 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">{i + 1}</span>
                           <div>
-                            <div className="text-sm font-bold text-gray-900">{name}</div>
-                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{stats.count} vendu(s)</div>
+                            <div className="text-xs font-bold text-white truncate max-w-[150px]" title={name}>{name}</div>
+                            <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{stats.count} vendu(s)</div>
                           </div>
                         </div>
-                        <div className="text-sm font-black text-primary font-mono">${stats.revenue.toFixed(2)}</div>
+                        <div className="text-xs font-black text-primary font-mono">${stats.revenue.toFixed(2)}</div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
-          )}
-
+          </div>
+        )}
           {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />}
 
           {activeTab === 'users' && (
@@ -2979,9 +3198,8 @@ const AdminView = ({
           {activeTab === 'supplier' && <SupplierAdmin products={products} fetchProducts={fetchProducts} />}
         </main>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 const CRYPTO_CURRENCIES = [
   { id: 'btc', label: 'Bitcoin', ticker: 'BTC', symbol: '₿', color: 'bg-orange-100 text-orange-600' },
@@ -4589,25 +4807,29 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  const isAdmin = currentView === 'admin';
+
   return (
     <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans flex flex-col">
-      <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} />
-      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />
-      <CartCheckoutModal
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        cart={cart}
-        cartTotal={cartTotal}
-        session={session}
-        profile={profile}
-        navigate={navigate}
-        clearCart={clearCart}
-        fetchProfile={fetchProfile}
-        fetchProducts={fetchProducts}
-        fetchAllOrders={fetchAllOrders}
-        setRechargeSuggestedAmount={setRechargeSuggestedAmount}
-      />
-      {quickOrderProduct && (
+      {!isAdmin && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} />}
+      {!isAdmin && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />}
+      {!isAdmin && (
+        <CartCheckoutModal
+          open={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          cart={cart}
+          cartTotal={cartTotal}
+          session={session}
+          profile={profile}
+          navigate={navigate}
+          clearCart={clearCart}
+          fetchProfile={fetchProfile}
+          fetchProducts={fetchProducts}
+          fetchAllOrders={fetchAllOrders}
+          setRechargeSuggestedAmount={setRechargeSuggestedAmount}
+        />
+      )}
+      {!isAdmin && quickOrderProduct && (
         <QuickOrderModal
           product={quickOrderProduct}
           session={session}
@@ -4628,8 +4850,9 @@ function App() {
         {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} />}
         {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} />}
         {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} />}
-        {currentView === 'admin' && session && session.user.email === ADMIN_EMAIL && (
+        {currentView === 'admin' && (
           <AdminView
+            session={session}
             navigate={navigate}
             products={products}
             fetchProducts={fetchProducts}
@@ -4643,7 +4866,7 @@ function App() {
         )}
       </div>
 
-      <Footer navigate={navigate} />
+      {!isAdmin && <Footer navigate={navigate} />}
     </div>
   );
 }
