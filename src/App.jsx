@@ -311,6 +311,63 @@ const getProductDetails = (product) => {
 const PRODUCTS = PRODUCTS_RAW.map(p => ({ ...p, details: getProductDetails(p) }));
 
 // ==========================================
+// SKELETONS — chargement (on n'affiche jamais un composant vide en attendant
+// la base : on montre un squelette animé tant que les données ne sont pas là)
+// ==========================================
+const Skeleton = ({ className = '' }) => (
+  <div className={`animate-pulse bg-gray-200/70 dark:bg-slate-700/50 rounded-lg ${className}`} />
+);
+
+const SkeletonProductCard = () => (
+  <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-5 flex flex-col h-full">
+    <div className="aspect-[1.5] rounded-[1.5rem] mb-5 animate-pulse bg-gray-200/70 dark:bg-slate-700/50" />
+    <Skeleton className="h-2.5 w-20 mb-2" />
+    <Skeleton className="h-4 w-full mb-1.5" />
+    <Skeleton className="h-4 w-2/3 mb-5" />
+    <div className="flex items-center justify-between mb-6">
+      <Skeleton className="h-6 w-16" />
+      <Skeleton className="h-6 w-14" />
+    </div>
+    <div className="flex items-center gap-2 mt-auto">
+      <Skeleton className="h-12 flex-grow rounded-xl" />
+      <Skeleton className="h-12 w-12 rounded-xl" />
+    </div>
+  </div>
+);
+
+const SkeletonProductGrid = ({ count = 8 }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+    {[...Array(count)].map((_, i) => <SkeletonProductCard key={i} />)}
+  </div>
+);
+
+// Ligne de tableau générique (admin, commandes…).
+const SkeletonRows = ({ rows = 6, cols = 5 }) => (
+  <div className="space-y-4">
+    {[...Array(rows)].map((_, i) => (
+      <div key={i} className="flex items-center gap-4">
+        {[...Array(cols)].map((_, j) => (
+          <Skeleton key={j} className={`h-4 ${j === 0 ? 'w-40' : 'flex-1'}`} />
+        ))}
+      </div>
+    ))}
+  </div>
+);
+
+// Carte de métrique (dashboard admin).
+const SkeletonMetricCards = ({ count = 4 }) => (
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+    {[...Array(count)].map((_, i) => (
+      <div key={i} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-6 rounded-[2rem]">
+        <Skeleton className="w-9 h-9 rounded-xl mb-3" />
+        <Skeleton className="h-2 w-16 mb-2" />
+        <Skeleton className="h-6 w-20" />
+      </div>
+    ))}
+  </div>
+);
+
+// ==========================================
 // PRODUCT CARD
 // ==========================================
 
@@ -729,7 +786,7 @@ const HomeView = ({
   activeGroup, setActiveGroup, activeCategory, setActiveCategory,
   sortBy, setSortBy, searchTerm, setSearchTerm,
   filteredProducts, addToCart, navigate, setSelectedProduct, onBuyNow,
-  groups = [], subCategories = [], groupOf, lang, t
+  groups = [], subCategories = [], groupOf, lang, t, loading = false
 }) => {
   const activeGroupLabel = activeGroup === 'all' ? 'All products' : (GROUP_LABELS[activeGroup] || 'Others');
 
@@ -789,7 +846,7 @@ const HomeView = ({
         <div className="flex items-center gap-3">
           <span className="w-1.5 h-6 rounded-full bg-primary" />
           <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{activeGroupLabel}</h2>
-          <span className="bg-primary/10 text-primaryDark dark:text-primary text-xs font-black px-3 py-1 rounded-full">{filteredProducts.length} produits</span>
+          <span className="bg-primary/10 text-primaryDark dark:text-primary text-xs font-black px-3 py-1 rounded-full">{loading ? '…' : `${filteredProducts.length} produits`}</span>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-grow md:w-64">
@@ -814,7 +871,9 @@ const HomeView = ({
         </div>
       </div>
 
-      {showGrouped ? (
+      {loading ? (
+        <SkeletonProductGrid count={8} />
+      ) : showGrouped ? (
         <div className="space-y-14">
           {sections.map(section => (
             <div key={section.id}>
@@ -5446,6 +5505,11 @@ function App() {
   const [allOrders, setAllOrders] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [actionStatus, setActionStatus] = useState(null);
+  // États de chargement : on affiche des squelettes tant que la base n'a pas
+  // répondu (init à true, passés à false à la fin de chaque fetch).
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [adminDataLoading, setAdminDataLoading] = useState(true);
 
   useEffect(() => {
     if (!supabase) {
@@ -5590,11 +5654,12 @@ function App() {
     if (!supabase) {
       // Fallback local pour la consultation sans .env
       setProducts(PRODUCTS_RAW.map(p => ({ ...p, stock: 10, details: getProductDetails(p) })));
+      setProductsLoading(false);
       return;
     }
     // 1. Fetch products
     const { data: productsData, error: pErr } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (pErr || !productsData) return;
+    if (pErr || !productsData) { setProductsLoading(false); return; }
 
     // 2. Compter le stock local disponible en UNE seule requête (au lieu d'une
     // requête par produit) : on récupère les product_id non livrés, puis on
@@ -5619,12 +5684,14 @@ function App() {
     }));
 
     setProducts(updatedProducts);
+    setProductsLoading(false);
   };
 
   const fetchAllOrders = async () => {
     if (!supabase) return;
     const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
     if (data) setAllOrders(data);
+    setAdminDataLoading(false);
   };
 
   const fetchUsers = async () => {
@@ -5644,6 +5711,7 @@ function App() {
       setProfile(profileData);
       const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
       if (orderData) setOrders(orderData);
+      setOrdersLoading(false);
     } else if (session) {
       // Create new profile with Google metadata if it's the first login
       const newProfile = {
@@ -5668,7 +5736,9 @@ function App() {
         // Fallback if insert fails (RLS or other)
         setProfile(newProfile);
       }
+      setOrdersLoading(false);
     }
+    setOrdersLoading(false);
   };
 
   // Groupes de premier niveau (barre du haut), dérivés des produits réellement
@@ -5800,7 +5870,7 @@ function App() {
         />
       )}
       <div className="flex-grow">
-        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} />}
+        {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
