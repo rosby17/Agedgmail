@@ -3961,10 +3961,16 @@ const CRYPTO_CURRENCIES = [
 // alors qu'il ne le fait pas.
 // NOWPayments mis hors service (remplacé par Binance) — code gardé au cas où
 // on le réactive plus tard, juste retiré de la liste des moyens proposés.
+// Chaque crypto est proposée comme un choix distinct (au lieu d'un unique
+// "NOWPayments" avec un sous-sélecteur de devise). `payCurrency` = la devise
+// envoyée au backend NOWPayments. Mobile Money reste affiché mais désactivé
+// (grisé, non cliquable) tant que la méthode n'est pas prête.
 const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑' },
-  { id: 'nowpayments', name: 'NOWPayments', sub: 'BTC, ETH, USDT, LTC…', enabled: true, symbol: '⛓' },
-  { id: 'mobile_money', name: 'Mobile Money', sub: 'Orange, MTN, Moov...', enabled: true, symbol: '📱' },
+  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc' },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20' },
+  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc' },
+  { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
 const BONUS_TIERS = [
@@ -4042,7 +4048,11 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
   const close = () => navigate('dashboard');
   const bonusPct = bonusPercentFor(amountUsd);
-  const selectedMin = minAmounts[payCurrency];
+  // Devise crypto déduite de la passerelle choisie (btc / usdt_trc20 / ltc).
+  const selectedGateway = PAYMENT_GATEWAYS.find(g => g.id === gateway);
+  const activePayCurrency = selectedGateway?.payCurrency || null;
+  const isCrypto = !!activePayCurrency;
+  const selectedMin = activePayCurrency ? minAmounts[activePayCurrency] : undefined;
   const belowMin = typeof selectedMin === 'number' && amountUsd < selectedMin;
   const remainingMs = payment?.expiresAt ? Math.max(0, payment.expiresAt - now) : 0;
   const remainingLabel = `${Math.floor(remainingMs / 60000)}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0')}`;
@@ -4093,20 +4103,20 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       return;
     }
 
-    if (gateway === 'nowpayments') {
-      if (belowMin) { setError(`Montant minimum pour ${payCurrency.toUpperCase()} : $${selectedMin.toFixed(2)}`); return; }
+    if (isCrypto) {
+      if (belowMin) { setError(`Montant minimum pour ${selectedGateway.name} : $${selectedMin.toFixed(2)}`); return; }
 
       setLoading(true);
       setError('');
       try {
         const { data: fnData, error: fnError } = await supabase.functions.invoke('nowpayments-create', {
-          body: { userId: session.user.id, email: session.user.email, amountUsd, payCurrency },
+          body: { userId: session.user.id, email: session.user.email, amountUsd, payCurrency: activePayCurrency },
         });
 
         if (fnError) {
           let realMessage = await extractFnErrorMessage(fnError);
           if (/less than minimal/i.test(realMessage)) {
-            realMessage = `Ce montant est en dessous du minimum accepté pour ${payCurrency.toUpperCase()}. Essaie un montant plus élevé ou une autre cryptomonnaie.`;
+            realMessage = `Ce montant est en dessous du minimum accepté pour ${selectedGateway.name}. Essaie un montant plus élevé ou une autre cryptomonnaie.`;
           }
           throw new Error(realMessage);
         }
@@ -4245,30 +4255,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             </div>
 
-            {gateway === 'nowpayments' && (
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Cryptomonnaie</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {CRYPTO_CURRENCIES.map(c => {
-                    const min = minAmounts[c.id];
-                    return (
-                      <button
-                        key={c.id}
-                        onClick={() => setPayCurrency(c.id)}
-                        className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${payCurrency === c.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
-                      >
-                        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${c.color}`}>{c.symbol}</span>
-                        <span>
-                          <span className="block text-sm font-bold text-gray-900">{c.label}</span>
-                          <span className="block text-[10px] text-gray-400 font-medium">{min ? `Min. $${min.toFixed(2)}` : '…'}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {gateway === 'binance_pay' && (
               <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
                 Paiement via Binance Pay, montant exact demandé. Tu devras coller ton pseudo
@@ -4277,19 +4263,13 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             )}
 
-            {gateway === 'nowpayments' && (
+            {isCrypto && (
               <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
-                Dépôt en cryptomonnaie via NOWPayments.
+                Dépôt en {selectedGateway.name} ({selectedGateway.sub}). Une adresse de dépôt et le montant exact te seront indiqués.
                 {typeof selectedMin === 'number' && (
-                  <> <span className="font-bold text-gray-700">Montant minimum pour {payCurrency.toUpperCase()} : ${selectedMin.toFixed(2)}.</span></>
+                  <> <span className="font-bold text-gray-700">Montant minimum : ${selectedMin.toFixed(2)}.</span></>
                 )}
                 {' '}D'éventuels frais de réseau sont à ta charge.
-              </div>
-            )}
-
-            {gateway === 'mobile_money' && (
-              <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
-                Paiement par Mobile Money (Orange, MTN, Moov). Après avoir validé, contacte le support avec ton numéro de commande pour finaliser le dépôt.
               </div>
             )}
 
@@ -4309,7 +4289,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             {gateway && (
               <button
                 onClick={handleSubmit}
-                disabled={loading || (gateway === 'nowpayments' && belowMin)}
+                disabled={loading || (isCrypto && belowMin)}
                 className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
               >
                 {loading
