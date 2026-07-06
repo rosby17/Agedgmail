@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
 import { parseAccountDelivery } from './lib/parseAccountDelivery';
@@ -407,7 +407,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
 // NAVBAR
 // ==========================================
 
-const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView, setActiveCategory, setActiveGroup, onCartClick }) => {
+const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView, setActiveCategory, setActiveGroup, onCartClick, lang, setLang, theme, setTheme, t }) => {
   const go = (view, cat, group) => {
     if (cat !== undefined && setActiveCategory) setActiveCategory(cat);
     if (group !== undefined && setActiveGroup) setActiveGroup(group);
@@ -433,18 +433,36 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
 
       {/* Menu central */}
       <nav className="hidden lg:flex items-center gap-8">
-        <button onClick={() => go('home', 'all', 'all')} className={linkCls(currentView === 'home')}>Products</button>
-        <button onClick={() => go('home', 'all', 'sms')} className={linkCls(false)}>SMS</button>
-        <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>API</button>
+        <button onClick={() => go('home', 'all', 'all')} className={linkCls(currentView === 'home')}>{t('products')}</button>
+        <button onClick={() => go('home', 'all', 'sms')} className={linkCls(false)}>{t('sms')}</button>
+        <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>{t('api')}</button>
         {session && (
-          <button onClick={() => navigate('dashboard')} className={linkCls(currentView === 'dashboard')}>My orders</button>
+          <button onClick={() => navigate('dashboard')} className={linkCls(currentView === 'dashboard')}>{t('myOrders')}</button>
         )}
       </nav>
 
       <div className="flex items-center gap-4">
+        {/* Language selector */}
+        <button
+          onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
+          className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center font-bold text-xs text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700"
+          title="Change Language / Changer de langue"
+        >
+          {lang.toUpperCase()}
+        </button>
+
+        {/* Theme switcher */}
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700"
+          title={theme === 'dark' ? 'Mode Clair' : 'Mode Sombre'}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
         {session && session.user.email === ADMIN_EMAIL && (
           <button onClick={() => navigate('admin')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
-            <Shield size={14} /> Admin
+            <Shield size={14} /> {t('admin')}
           </button>
         )}
         {session ? (
@@ -455,7 +473,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
               title="Recharger mon solde"
             >
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover/balance:text-primary transition-colors flex items-center gap-1">
-                My Balance <Plus size={10} className="opacity-0 group-hover/balance:opacity-100 transition-opacity" />
+                {t('balance')} <Plus size={10} className="opacity-0 group-hover/balance:opacity-100 transition-opacity" />
               </span>
               <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </button>
@@ -463,15 +481,15 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
               <button aria-label="Account menu" className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
                 <User size={18} />
               </button>
-              {/* Menu déroulant au survol : ponte entre le bouton et le menu pour éviter la coupure du hover */}
+              {/* Menu déroulant au survol */}
               <div className="absolute right-0 top-full pt-2 w-52 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
                 <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-2">
                   <button onClick={() => navigate('settings')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-all">
-                    <Settings size={16} /> Settings
+                    <Settings size={16} /> {t('settings')}
                   </button>
                   <div className="h-px bg-gray-100 dark:bg-gray-800 my-2" />
                   <button onClick={() => supabase.auth.signOut()} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
-                    <LogOut size={16} /> Log out
+                    <LogOut size={16} /> {t('logout')}
                   </button>
                 </div>
               </div>
@@ -2486,8 +2504,10 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
 };
 
 // Courbe de revenu par jour (7 ou 30 derniers jours), sous forme de ligne SVG avec dégradé.
-const RevenueChart = ({ confirmedOrders }) => {
+// Graphique de statistiques interactif inspiré de YouTube Studio Analytics (Revenu estimé vs Clients inscrits).
+const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
   const [range, setRange] = useState(7);
+  const [activeMetric, setActiveMetric] = useState('revenue'); // 'revenue' | 'users'
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
   const days = [...Array(range)].map((_, i) => {
@@ -2497,14 +2517,30 @@ const RevenueChart = ({ confirmedOrders }) => {
     return d;
   });
 
-  const totals = days.map(day => {
+  // 1. Calculs des revenus de ventes (exclut product_id=999) par jour
+  const revenueTotals = days.map(day => {
     const next = new Date(day); next.setDate(next.getDate() + 1);
     return confirmedOrders
+      .filter(o => o.product_id !== 999)
       .filter(o => { const t = new Date(o.created_at); return t >= day && t < next; })
       .reduce((s, o) => s + (o.total_price || 0), 0);
   });
 
-  const max = Math.max(...totals, 1);
+  // 2. Calculs des inscriptions utilisateurs par jour
+  const userTotals = days.map(day => {
+    const next = new Date(day); next.setDate(next.getDate() + 1);
+    return allUsers
+      .filter(u => { const t = new Date(u.created_at); return t >= day && t < next; })
+      .length;
+  });
+
+  // Totaux cumulés sur la période sélectionnée (pour l'en-tête des onglets)
+  const rangeRevenue = revenueTotals.reduce((s, v) => s + v, 0);
+  const rangeUsers = userTotals.reduce((s, v) => s + v, 0);
+
+  // Données actives pour le tracé du graphique
+  const activeTotals = activeMetric === 'revenue' ? revenueTotals : userTotals;
+  const max = Math.max(...activeTotals, 1);
 
   // Configuration SVG
   const width = 600;
@@ -2512,7 +2548,7 @@ const RevenueChart = ({ confirmedOrders }) => {
   const paddingX = 25;
   const paddingY = 25;
 
-  const points = totals.map((amount, i) => {
+  const points = activeTotals.map((amount, i) => {
     const x = paddingX + (i / (range - 1)) * (width - 2 * paddingX);
     const y = height - paddingY - (amount / max) * (height - 2 * paddingY);
     return { x, y, amount, date: days[i], index: i };
@@ -2524,11 +2560,11 @@ const RevenueChart = ({ confirmedOrders }) => {
     : '';
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative">
-      <div className="flex items-center justify-between mb-8">
+    <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative space-y-6">
+      {/* Sélecteurs de Période */}
+      <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold text-white">Revenu confirmé</h3>
-          <p className="text-xs text-slate-500 mt-1">Évolution journalière des paiements reçus</p>
+          <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Performances générales</h3>
         </div>
         <div className="flex gap-2">
           {[7, 30].map(r => (
@@ -2540,6 +2576,44 @@ const RevenueChart = ({ confirmedOrders }) => {
         </div>
       </div>
 
+      {/* Onglets style YouTube Studio */}
+      <div className="grid grid-cols-2 gap-4 border-b border-slate-800 pb-2">
+        {/* Onglet Revenu Estimé */}
+        <button
+          onClick={() => { setActiveMetric('revenue'); setHoveredPoint(null); }}
+          className={`text-left p-4 rounded-2xl transition-all relative border flex flex-col justify-between ${
+            activeMetric === 'revenue'
+              ? 'bg-slate-800/40 border-slate-700/80 text-white'
+              : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">Revenu Estimé (Ventes)</div>
+          <div className="text-2xl font-black font-mono mt-1 text-white">${rangeRevenue.toFixed(2)}</div>
+          <div className="text-[10px] text-emerald-400 font-semibold mt-1">+{rangeRevenue > 0 ? '100' : '0'}% sur la période</div>
+          {activeMetric === 'revenue' && (
+            <div className="absolute bottom-[-10px] left-0 right-0 h-1 bg-primary rounded-full" />
+          )}
+        </button>
+
+        {/* Onglet Clients Inscrits */}
+        <button
+          onClick={() => { setActiveMetric('users'); setHoveredPoint(null); }}
+          className={`text-left p-4 rounded-2xl transition-all relative border flex flex-col justify-between ${
+            activeMetric === 'users'
+              ? 'bg-slate-800/40 border-slate-700/80 text-white'
+              : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">Clients Inscrits</div>
+          <div className="text-2xl font-black font-mono mt-1 text-white">{rangeUsers}</div>
+          <div className="text-[10px] text-emerald-400 font-semibold mt-1">+{rangeUsers} nouvel/nouveaux</div>
+          {activeMetric === 'users' && (
+            <div className="absolute bottom-[-10px] left-0 right-0 h-1 bg-primary rounded-full" />
+          )}
+        </button>
+      </div>
+
+      {/* Zone Graphique */}
       <div className="relative h-44 w-full">
         {/* Tooltip flottant */}
         {hoveredPoint && (
@@ -2555,7 +2629,7 @@ const RevenueChart = ({ confirmedOrders }) => {
               {hoveredPoint.date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
             </div>
             <div className="text-xs font-black text-primary font-mono">
-              ${hoveredPoint.amount.toFixed(2)}
+              {activeMetric === 'revenue' ? `$${hoveredPoint.amount.toFixed(2)}` : `${hoveredPoint.amount} client(s)`}
             </div>
           </div>
         )}
@@ -2631,7 +2705,7 @@ const RevenueChart = ({ confirmedOrders }) => {
         </svg>
       </div>
 
-      <div className="flex justify-between mt-4 text-[9px] text-slate-500 font-bold uppercase">
+      <div className="flex justify-between text-[9px] text-slate-500 font-bold uppercase pt-2">
         <span>{days[0]?.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
         <span>{days[days.length - 1]?.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
       </div>
@@ -2828,7 +2902,7 @@ const RecentActivityTable = ({ allOrders }) => {
 
 const AdminView = ({
   session, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
-  actionStatus, setActionStatus,
+  actionStatus, setActionStatus, theme, setTheme, lang, setLang, t,
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
   const [supplierBalance, setSupplierBalance] = useState(null);
@@ -2878,9 +2952,9 @@ const AdminView = ({
   // Standalone Auth check inside AdminView
   if (!session) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans">
-        <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-8 text-white relative">
-          <button onClick={() => navigate('home')} className="absolute top-8 left-8 text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1">
+      <div className="min-h-screen bg-canvas dark:bg-gray-950 flex flex-col items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-md bg-white dark:bg-slate-900/40 backdrop-blur-md border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-8 text-gray-900 dark:text-white relative">
+          <button onClick={() => navigate('home')} className="absolute top-8 left-8 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white font-bold flex items-center gap-1">
             <ArrowLeft size={14} /> Back to site
           </button>
           <div className="text-center space-y-2 pt-4">
@@ -2888,35 +2962,35 @@ const AdminView = ({
               <Shield size={32} />
             </div>
             <h1 className="text-2xl font-black tracking-tight">Admin Console</h1>
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">AgedGmail Security Area</p>
+            <p className="text-gray-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest">AgedGmail Security Area</p>
           </div>
 
           <form onSubmit={handleAdminLoginSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Email</label>
+              <label className="block text-[10px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest ml-1">Admin Email</label>
               <input
                 type="email"
                 required
                 value={loginEmail}
                 onChange={e => setLoginEmail(e.target.value)}
                 placeholder="admin@example.com"
-                className="w-full h-14 px-5 rounded-2xl bg-slate-800 border-none text-white placeholder-slate-500 focus:ring-2 focus:ring-primary/20 text-sm font-bold"
+                className="w-full h-14 px-5 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-primary/20 text-sm font-bold"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
+              <label className="block text-[10px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest ml-1">Password</label>
               <input
                 type="password"
                 required
                 value={loginPassword}
                 onChange={e => setLoginPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-14 px-5 rounded-2xl bg-slate-800 border-none text-white placeholder-slate-500 focus:ring-2 focus:ring-primary/20 text-sm font-bold"
+                className="w-full h-14 px-5 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-primary/20 text-sm font-bold"
               />
             </div>
 
             {loginError && (
-              <div className="bg-red-500/10 text-red-400 p-4 rounded-xl text-xs font-bold border border-red-500/20 flex items-center gap-2 animate-bounce">
+              <div className="bg-red-500/10 text-red-500 dark:text-red-400 p-4 rounded-xl text-xs font-bold border border-red-500/20 flex items-center gap-2 animate-bounce">
                 <AlertTriangle size={14} /> {loginError}
               </div>
             )}
@@ -2937,17 +3011,17 @@ const AdminView = ({
 
   if (session.user.email !== ADMIN_EMAIL) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans">
-        <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-6 text-center text-white">
+      <div className="min-h-screen bg-canvas dark:bg-gray-950 flex flex-col items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-md bg-white dark:bg-slate-900/40 backdrop-blur-md border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-6 text-center text-gray-900 dark:text-white">
           <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-4">
             <ShieldAlert size={32} />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-red-500">Accès Refusé</h1>
-          <p className="text-slate-400 text-sm leading-relaxed">
+          <p className="text-gray-500 dark:text-slate-400 text-sm leading-relaxed">
             Votre compte n'est pas autorisé à accéder à la console d'administration.
           </p>
           <div className="flex gap-3 pt-4">
-            <button onClick={() => navigate('home')} className="flex-1 py-4 bg-slate-800 rounded-2xl text-sm font-bold hover:bg-slate-700 transition-all">
+            <button onClick={() => navigate('home')} className="flex-1 py-4 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all">
               Retour au site
             </button>
             <button onClick={() => supabase.auth.signOut()} className="flex-1 py-4 bg-red-600 rounded-2xl text-sm font-bold hover:bg-red-700 transition-all">
@@ -3018,12 +3092,12 @@ const AdminView = ({
       amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     };
     return (
-      <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden group hover:border-slate-700 transition-all duration-200">
+      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden group hover:border-gray-200 dark:hover:border-slate-700 transition-all duration-200">
         <div className="flex justify-between items-start">
           <div className="space-y-2">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
-            <div className="text-3xl font-black text-white font-mono">{value}</div>
-            {subtext && <div className="text-xs font-semibold text-slate-500">{subtext}</div>}
+            <span className="text-[10px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">{label}</span>
+            <div className="text-3xl font-black text-gray-900 dark:text-white font-mono">{value}</div>
+            {subtext && <div className="text-xs font-semibold text-gray-500 dark:text-slate-500">{subtext}</div>}
           </div>
           <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center ${colors[color]}`}>
             <Icon size={18} />
@@ -3034,9 +3108,9 @@ const AdminView = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-canvas dark:bg-gray-950 text-gray-900 dark:text-white font-sans flex flex-col lg:flex-row">
       {/* Sidebar Standalone */}
-      <aside className="w-full lg:w-72 shrink-0 bg-slate-900 border-b lg:border-b-0 lg:border-r border-slate-800 p-8 flex flex-col justify-between">
+      <aside className="w-full lg:w-72 shrink-0 bg-white dark:bg-slate-900 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-slate-800 p-8 flex flex-col justify-between">
         <div className="space-y-10">
           {/* Logo / Title */}
           <div className="flex items-center gap-3">
@@ -3044,8 +3118,8 @@ const AdminView = ({
               <Shield size={20} />
             </div>
             <div>
-              <div className="text-lg font-black tracking-tight text-white">Console</div>
-              <div className="text-[9px] font-black uppercase text-slate-500 tracking-wider">AgedGmail Admin</div>
+              <div className="text-lg font-black tracking-tight text-gray-900 dark:text-white">Console</div>
+              <div className="text-[9px] font-black uppercase text-gray-400 dark:text-slate-500 tracking-wider">AgedGmail Admin</div>
             </div>
           </div>
 
@@ -3064,7 +3138,7 @@ const AdminView = ({
                 className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${
                   activeTab === item.id
                     ? 'bg-primary text-white shadow-xl shadow-primary/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <item.icon size={18} /> {item.label}
@@ -3073,18 +3147,38 @@ const AdminView = ({
           </nav>
         </div>
 
-        {/* Back to site */}
-        <div className="pt-6 border-t border-slate-800 mt-10 space-y-4">
-          <div className="text-xs text-slate-500 font-semibold px-2">
-            Connecté en tant que :<br/>
-            <strong className="text-slate-300 font-bold">{session.user.email}</strong>
+        <div>
+          {/* Theme and Language Switchers */}
+          <div className="flex gap-3 justify-center items-center py-4 border-t border-gray-100 dark:border-slate-800 mt-6">
+            <button
+              onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
+              className="flex-1 h-10 rounded-xl bg-gray-50 dark:bg-slate-800 flex items-center justify-center font-bold text-xs text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-slate-700"
+              title="Change Language"
+            >
+              {lang.toUpperCase()}
+            </button>
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="flex-1 h-10 rounded-xl bg-gray-50 dark:bg-slate-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-slate-700"
+              title={theme === 'dark' ? 'Mode Clair' : 'Mode Sombre'}
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
           </div>
-          <button
-            onClick={() => navigate('home')}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-700 hover:text-white transition-all"
-          >
-            <ArrowLeft size={14} /> Back to site
-          </button>
+
+          {/* Back to site */}
+          <div className="pt-6 border-t border-gray-100 dark:border-slate-800 mt-4 space-y-4">
+            <div className="text-xs text-gray-500 dark:text-slate-500 font-semibold px-2">
+              Connecté en tant que :<br/>
+              <strong className="text-gray-800 dark:text-slate-300 font-bold">{session.user.email}</strong>
+            </div>
+            <button
+              onClick={() => navigate('home')}
+              className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gray-100 dark:bg-slate-800 text-gray-750 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-gray-205 dark:hover:bg-slate-700 hover:text-gray-950 dark:hover:text-white transition-all"
+            >
+              <ArrowLeft size={14} /> Back to site
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -3171,7 +3265,7 @@ const AdminView = ({
               </div>
             </div>
 
-            <RevenueChart confirmedOrders={confirmedOrders} />
+            <RevenueChart confirmedOrders={confirmedOrders} allUsers={allUsers} />
 
             {/* Top products & Activity side-by-side */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -4554,11 +4648,148 @@ const Footer = ({ navigate }) => (
   </footer>
 );
 
-// ==========================================
-// APP COMPONENT
-// ==========================================
+const TRANSLATIONS = {
+  fr: {
+    // Navbar
+    products: "Produits",
+    sms: "SMS",
+    api: "API",
+    myOrders: "Mes commandes",
+    balance: "Mon Solde",
+    settings: "Paramètres",
+    logout: "Se déconnecter",
+    login: "Connexion",
+    admin: "Admin",
+    
+    // Auth / General
+    backToSite: "Retour au site",
+    
+    // Home View
+    noProducts: "Aucun produit trouvé.",
+    sortBy: "Trier par",
+    searchPlaceholder: "Rechercher un produit...",
+    priceAsc: "Prix : Croissant",
+    priceDesc: "Prix : Décroissant",
+    nameAsc: "Nom : A-Z",
+    buyNow: "Acheter",
+    addToCart: "Ajouter au panier",
+    inStock: "En stock",
+    outOfStock: "Rupture",
+    
+    // My Orders View
+    orderCode: "Code de commande",
+    productsBought: "Produits",
+    status: "Statut",
+    total: "Total",
+    actions: "Actions",
+    noOrders: "Aucune commande trouvée.",
+    completed: "Livré",
+    processing: "En cours",
+    pending: "En attente",
+    failed: "Échoué",
+    download: "Télécharger",
+    view: "Afficher",
+    emailDeliveryOptIn: "Envoyer aussi les comptes à mon e-mail à partir de maintenant.",
+    viewTransactions: "Voir l'historique des transactions",
+    transferBtn: "Transférer",
+    topUpBtn: "Recharger",
+    currentBalance: "Solde actuel",
+    
+    // Recharge View
+    topUpAccount: "Recharger le compte",
+    choosePayment: "Choisissez un moyen de paiement",
+    payWithCrypto: "Payer en Crypto",
+    amountToRecharge: "Montant à recharger ($)",
+    cryptoAmountNotice: "Le montant exact doit être envoyé pour valider le crédit.",
+    
+    // Settings
+    profileSettings: "Paramètres du profil",
+    displayName: "Nom d'affichage",
+    firstName: "Prénom",
+    lastName: "Nom",
+    saveBtn: "Sauvegarder",
+  },
+  en: {
+    // Navbar
+    products: "Products",
+    sms: "SMS",
+    api: "API",
+    myOrders: "My orders",
+    balance: "My Balance",
+    settings: "Settings",
+    logout: "Log out",
+    login: "Log In",
+    admin: "Admin",
+    
+    // Auth / General
+    backToSite: "Back to site",
+    
+    // Home View
+    noProducts: "No products found.",
+    sortBy: "Sort by",
+    searchPlaceholder: "Search products...",
+    priceAsc: "Price: Low to High",
+    priceDesc: "Price: High to Low",
+    nameAsc: "Name: A-Z",
+    buyNow: "Buy now",
+    addToCart: "Add to cart",
+    inStock: "In stock",
+    outOfStock: "Out of stock",
+    
+    // My Orders View
+    orderCode: "Order Code",
+    productsBought: "Products",
+    status: "Status",
+    total: "Total",
+    actions: "Actions",
+    noOrders: "No orders found.",
+    completed: "Completed",
+    processing: "Processing",
+    pending: "Pending",
+    failed: "Failed",
+    download: "Download",
+    view: "View",
+    emailDeliveryOptIn: "Also send accounts to my email from now on.",
+    viewTransactions: "View transaction history",
+    transferBtn: "Transfer",
+    topUpBtn: "Top up",
+    currentBalance: "Current Balance",
+    
+    // Recharge View
+    topUpAccount: "Top up account",
+    choosePayment: "Choose a payment method",
+    payWithCrypto: "Pay with Crypto",
+    amountToRecharge: "Amount to top up ($)",
+    cryptoAmountNotice: "The exact amount must be sent to validate credit.",
+    
+    // Settings
+    profileSettings: "Profile Settings",
+    displayName: "Display Name",
+    firstName: "First Name",
+    lastName: "Last Name",
+    saveBtn: "Save Settings",
+  }
+};
 
 function App() {
+  const [lang, setLang] = useState(() => localStorage.getItem('agedgmail_lang') || 'fr');
+  const [theme, setTheme] = useState(() => localStorage.getItem('agedgmail_theme') || 'dark');
+
+  useEffect(() => {
+    localStorage.setItem('agedgmail_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('agedgmail_lang', lang);
+  }, [lang]);
+
+  const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS['en']?.[key] || key;
+
   const [products, setProducts] = useState([]);
 
   const [currentView, setCurrentView] = useState(() => localStorage.getItem('agedgmail_view') || 'home');
@@ -4907,7 +5138,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans flex flex-col">
-      {!isAdmin && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} />}
+      {!isAdmin && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} t={t} />}
       {!isAdmin && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />}
       {!isAdmin && (
         <CartCheckoutModal
@@ -4958,6 +5189,11 @@ function App() {
             fetchUsers={fetchUsers}
             actionStatus={actionStatus}
             setActionStatus={setActionStatus}
+            theme={theme}
+            setTheme={setTheme}
+            lang={lang}
+            setLang={setLang}
+            t={t}
           />
         )}
       </div>
