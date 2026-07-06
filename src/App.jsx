@@ -10,7 +10,24 @@ import { parseAccountDelivery } from './lib/parseAccountDelivery';
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 
 
-const LandingView = ({ navigate }) => {
+const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
+  const topProductsRaw = [...products].sort((a, b) => (b.sales || 0) - (a.sales || 0)).slice(0, 3);
+  const topProducts = [];
+  if (topProductsRaw.length > 0) {
+    if (topProductsRaw.length === 1) topProducts.push(topProductsRaw[0]);
+    if (topProductsRaw.length === 2) { topProducts.push(topProductsRaw[1]); topProducts.push(topProductsRaw[0]); }
+    if (topProductsRaw.length >= 3) {
+      topProducts.push(topProductsRaw[1]); // #2 seller
+      topProducts.push(topProductsRaw[0]); // #1 seller
+      topProducts.push(topProductsRaw[2]); // #3 seller
+    }
+  }
+
+  const handleProductSelect = (product) => {
+    if (setSelectedProduct) setSelectedProduct(product);
+    navigate('product');
+  };
+
   useEffect(() => {
     const observerOptions = { threshold: 0.1 };
     const observer = new IntersectionObserver((entries) => {
@@ -264,37 +281,49 @@ const LandingView = ({ navigate }) => {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              <div className="glass glass-glow rounded-[48px] p-12 flex flex-col hover:-translate-y-3 transition-all duration-700 reveal-target opacity-0" style={{ animationDelay: '0.1s' }}>
-                <div className="mb-10">
-                  <span className="bg-white/5 border border-white/10 text-on-surface-variant px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">Entrée de Gamme</span>
-                </div>
-                <h3 className="font-headline-lg text-3xl mb-3 font-bold">Compte Gmail Simple</h3>
-                <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">Starter Pack</p>
-                <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"Prêt pour le marketing". Idéal pour les outils de prospection et tests de niches rapides.</p>
-                <div className="text-5xl font-extrabold text-on-surface mb-12">25€</div>
-                <button onClick={() => navigate('home')} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary transition-all duration-300">Sélectionner</button>
-              </div>
-              <div className="glass glass-glow rounded-[48px] p-12 flex flex-col border-l-primary/40 relative overflow-hidden transform md:scale-105 shadow-[0_0_80px_rgba(78,223,159,0.1)] reveal-target opacity-0" style={{ animationDelay: '0.2s' }}>
-                <div className="absolute top-12 right-[-45px] bg-l-primary text-on-primary px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">Meilleur Choix</div>
-                <div className="mb-10">
-                  <span className="bg-l-primary text-on-primary px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">Le plus populaire</span>
-                </div>
-                <h3 className="font-headline-lg text-3xl mb-3 font-bold">Compte YouTube Aged</h3>
-                <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">Recommandé</p>
-                <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"Optimisé Marché US". Compte avec historique vidéo prêt pour le reach américain massif.</p>
-                <div className="text-5xl font-extrabold text-on-surface mb-12">75€</div>
-                <button onClick={() => navigate('home')} className="w-full bg-l-primary text-on-primary py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">Acheter maintenant</button>
-              </div>
-              <div className="glass glass-glow rounded-[48px] p-12 flex flex-col hover:-translate-y-3 transition-all duration-700 reveal-target opacity-0" style={{ animationDelay: '0.3s' }}>
-                <div className="mb-10">
-                  <span className="bg-white/5 border border-white/10 text-on-surface-variant px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">Entreprise</span>
-                </div>
-                <h3 className="font-headline-lg text-3xl mb-3 font-bold">Compte Elite US</h3>
-                <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">Autorité Maximale</p>
-                <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"Ancienneté 10+ ans". La crème de la crème pour une autorité maximale immédiate et RPM élevé.</p>
-                <div className="text-5xl font-extrabold text-on-surface mb-12">150€</div>
-                <button onClick={() => navigate('home')} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary transition-all duration-300">Sélectionner</button>
-              </div>
+              {topProducts.map((product, idx) => {
+                const isCenter = topProducts.length >= 3 ? idx === 1 : idx === 0;
+                const delay = `${0.1 * (idx + 1)}s`;
+                
+                let badgeText = "Entrée de Gamme";
+                let subtitle = "Starter Pack";
+                if (topProductsRaw.indexOf(product) === 0) {
+                  badgeText = "Le plus populaire";
+                  subtitle = "Recommandé";
+                } else if (topProductsRaw.indexOf(product) === 2) {
+                  badgeText = "Entreprise";
+                  subtitle = "Autorité Maximale";
+                }
+
+                if (isCenter) {
+                  return (
+                    <div key={product.id} className="glass glass-glow rounded-[48px] p-12 flex flex-col border-l-primary/40 relative overflow-hidden transform md:scale-105 shadow-[0_0_80px_rgba(78,223,159,0.1)] reveal-target opacity-0" style={{ animationDelay: delay }}>
+                      <div className="absolute top-12 right-[-45px] bg-l-primary text-on-primary px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">Meilleur Choix</div>
+                      <div className="mb-10">
+                        <span className="bg-l-primary text-on-primary px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
+                      </div>
+                      <h3 className="font-headline-lg text-3xl mb-3 font-bold">{product.name}</h3>
+                      <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
+                      <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Prêt pour le marketing'}". {product.details?.info}</p>
+                      <div className="text-5xl font-extrabold text-on-surface mb-12">{product.price}€</div>
+                      <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-on-primary py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">Acheter maintenant</button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={product.id} className="glass glass-glow rounded-[48px] p-12 flex flex-col hover:-translate-y-3 transition-all duration-700 reveal-target opacity-0" style={{ animationDelay: delay }}>
+                    <div className="mb-10">
+                      <span className="bg-white/5 border border-white/10 text-on-surface-variant px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
+                    </div>
+                    <h3 className="font-headline-lg text-3xl mb-3 font-bold">{product.name}</h3>
+                    <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
+                    <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Prêt pour le marketing'}". {product.details?.info}</p>
+                    <div className="text-5xl font-extrabold text-on-surface mb-12">{product.price}€</div>
+                    <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary transition-all duration-300">Sélectionner</button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -6282,7 +6311,7 @@ function App() {
         />
       )}
       <div className="flex-grow">
-        {currentView === 'landing' && <LandingView navigate={navigate} />}
+        {currentView === 'landing' && <LandingView navigate={navigate} products={products} setSelectedProduct={setSelectedProduct} />}
         {currentView === 'home' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
