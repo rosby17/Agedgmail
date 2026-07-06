@@ -2397,28 +2397,28 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   const unmappedProducts = products.filter(p => !mappings.some(m => m.product_id === p.id));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-gray-900 dark:text-white">
       {/* Soldes + synchro par fournisseur */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {SUPPLIERS.map(supplier => {
           const settings = settingsBySupplier[supplier];
           return (
-            <div key={supplier} className="bg-white border border-gray-100 rounded-[3rem] p-8 shadow-soft">
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{SUPPLIER_LABEL[supplier]} Balance</div>
-              <div className="text-3xl font-black font-mono text-gray-900 mb-1">
+            <div key={supplier} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 shadow-soft">
+              <div className="text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">{SUPPLIER_LABEL[supplier]} Balance</div>
+              <div className="text-3xl font-black font-mono text-gray-900 dark:text-white mb-1">
                 {settings ? `${Number(settings.balance).toFixed(2)} ${settings.currency}` : '—'}
               </div>
-              <div className="text-xs text-gray-400 mb-6">
+              <div className="text-xs text-gray-400 dark:text-slate-500 mb-6">
                 {settings?.last_catalog_sync ? `Last sync: ${new Date(settings.last_catalog_sync).toLocaleString()}` : 'Never synced'}
               </div>
               {settings && Number(settings.balance) <= 0 && (
-                <div className="mb-4 text-xs font-bold text-red-600 bg-red-50 rounded-xl px-4 py-2 flex items-center gap-2">
+                <div className="mb-4 text-xs font-bold text-red-650 dark:text-red-400 bg-red-50 dark:bg-red-950/20 rounded-xl px-4 py-2 flex items-center gap-2">
                   <AlertTriangle size={14} /> Balance is 0 — top up to deliver via this supplier.
                 </div>
               )}
               <div className="flex gap-3 flex-wrap">
                 <button onClick={() => handleSync(supplier)} disabled={syncing === supplier}
-                  className="h-11 px-5 rounded-xl bg-gray-900 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
+                  className="h-11 px-5 rounded-xl bg-gray-900 dark:bg-slate-800 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary dark:hover:bg-primary transition-all disabled:opacity-50 border border-transparent dark:border-slate-700">
                   <RefreshCcw size={14} className={syncing === supplier ? 'animate-spin' : ''} /> {syncing === supplier ? 'Syncing…' : 'Sync'}
                 </button>
                 {supplier === 'ytseller' && (
@@ -2433,120 +2433,120 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
         })}
       </div>
 
-      {msg && <div className="text-sm font-bold text-gray-600 bg-white border border-gray-100 rounded-2xl px-5 py-3">{msg}</div>}
+      {msg && <div className="text-sm font-bold text-gray-700 dark:text-slate-350 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl px-5 py-3">{msg}</div>}
 
       {/* Marge globale */}
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Global margin % (tous fournisseurs)</label>
+      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
+        <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Global margin % (tous fournisseurs)</label>
         <div className="flex gap-2">
-          <input type="number" value={marginInput} onChange={e => setMarginInput(e.target.value)} className="w-24 h-12 px-4 rounded-xl border border-gray-200 font-mono" />
-          <button onClick={handleSaveMargin} className="h-12 px-4 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200"><Save size={16} /></button>
+          <input type="number" value={marginInput} onChange={e => setMarginInput(e.target.value)} className="w-24 h-12 px-4 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-mono" />
+          <button onClick={handleSaveMargin} className="h-12 px-4 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-750 dark:text-slate-300 border border-transparent dark:border-slate-700 font-bold text-sm hover:bg-gray-200 dark:hover:bg-slate-700"><Save size={16} /></button>
         </div>
       </div>
 
       {/* Mapping produits */}
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8">Product mapping</h2>
-        <p className="text-xs text-gray-400 -mt-6 mb-8">Un produit peut avoir un mapping par fournisseur ; celui marqué "Active" (le moins cher, en stock) fixe le prix/stock affichés en boutique.</p>
+      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">Product mapping</h2>
+        <p className="text-xs text-gray-400 dark:text-slate-500 -mt-6 mb-8">Un produit peut avoir un mapping par fournisseur ; celui marqué "Active" (le moins cher, en stock) fixe le prix/stock affichés en boutique.</p>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm text-gray-700 dark:text-slate-300">
             <thead>
-              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+              <tr className="text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
                 <th className="pb-4">My product</th><th className="pb-4">Supplier</th><th className="pb-4">Supplier ID</th><th className="pb-4">Cost</th>
                 <th className="pb-4">Margin %</th><th className="pb-4">Sell price</th><th className="pb-4">Avail</th>
-                <th className="pb-4">Active</th><th className="pb-4">Actions</th>
+                <th className="pb-4">Active</th><th className="pb-4" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
               {mappings.map(m => (
-                <tr key={m.id} className="text-gray-700">
-                  <td className="py-4 font-bold">{productName(m.product_id)}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 font-bold text-xs">{SUPPLIER_LABEL[m.supplier] || m.supplier}</span></td>
+                <tr key={m.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                  <td className="py-4 font-bold text-gray-900 dark:text-white">{productName(m.product_id)}</td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 font-bold text-xs">{SUPPLIER_LABEL[m.supplier] || m.supplier}</span></td>
                   {editing === m.id ? (
                     <>
-                      <td className="py-4"><input value={editForm.supplier_product_id} onChange={e => setEditForm({ ...editForm, supplier_product_id: e.target.value })} className="w-24 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
-                      <td className="py-4 font-mono">${Number(m.supplier_rate).toFixed(2)}</td>
-                      <td className="py-4"><input type="number" value={editForm.margin_percent} onChange={e => setEditForm({ ...editForm, margin_percent: e.target.value })} className="w-20 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
+                      <td className="py-4"><input value={editForm.supplier_product_id} onChange={e => setEditForm({ ...editForm, supplier_product_id: e.target.value })} className="w-24 px-2 py-1 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 font-mono text-gray-900 dark:text-white" /></td>
+                      <td className="py-4 font-mono text-gray-900 dark:text-white">${Number(m.supplier_rate).toFixed(2)}</td>
+                      <td className="py-4"><input type="number" value={editForm.margin_percent} onChange={e => setEditForm({ ...editForm, margin_percent: e.target.value })} className="w-20 px-2 py-1 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 font-mono text-gray-900 dark:text-white" /></td>
                       <td className="py-4 font-mono text-gray-400">—</td>
-                      <td className="py-4">{m.supplier_available}</td>
-                      <td className="py-4"><input type="checkbox" checked={editForm.active} onChange={e => setEditForm({ ...editForm, active: e.target.checked })} /></td>
+                      <td className="py-4 font-bold text-gray-900 dark:text-white">{m.supplier_available}</td>
+                      <td className="py-4"><input type="checkbox" checked={editForm.active} onChange={e => setEditForm({ ...editForm, active: e.target.checked })} className="rounded dark:bg-slate-800 dark:border-slate-750" /></td>
                       <td className="py-4 flex gap-2">
                         <button onClick={() => saveEdit(m.id)} className="p-2 rounded-lg bg-green-500 text-white"><Save size={14} /></button>
-                        <button onClick={() => setEditing(null)} aria-label="Cancel edit" className="p-2 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
+                        <button onClick={() => setEditing(null)} aria-label="Cancel edit" className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400"><X size={14} /></button>
                       </td>
                     </>
                   ) : (
                     <>
-                      <td className="py-4 font-mono">{m.supplier_product_id}</td>
-                      <td className="py-4 font-mono">${Number(m.supplier_rate).toFixed(2)}</td>
-                      <td className="py-4 font-mono">{Number(m.margin_percent).toFixed(0)}%</td>
-                      <td className="py-4 font-mono font-bold text-gray-900">${sellPrice(m).toFixed(2)}</td>
+                      <td className="py-4 font-mono text-gray-900 dark:text-white">{m.supplier_product_id}</td>
+                      <td className="py-4 font-mono text-gray-900 dark:text-white">${Number(m.supplier_rate).toFixed(2)}</td>
+                      <td className="py-4 font-mono text-gray-900 dark:text-white">{Number(m.margin_percent).toFixed(0)}%</td>
+                      <td className="py-4 font-mono font-bold text-gray-900 dark:text-white">${sellPrice(m).toFixed(2)}</td>
                       <td className="py-4">
-                        <span className={m.supplier_available > 0 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{m.supplier_available}</span>
-                        <span className="text-[10px] text-gray-400 ml-1">{m.supplier_status || ''}</span>
+                        <span className={m.supplier_available > 0 ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-500 dark:text-red-400 font-bold'}>{m.supplier_available}</span>
+                        <span className="text-[10px] text-gray-400 dark:text-slate-500 ml-1">{m.supplier_status || ''}</span>
                       </td>
-                      <td className="py-4">{m.active ? <span className="text-green-600 font-bold">Yes</span> : <span className="text-gray-400">No</span>}</td>
+                      <td className="py-4">{m.active ? <span className="text-green-600 dark:text-green-400 font-bold">Yes</span> : <span className="text-gray-400 dark:text-slate-500">No</span>}</td>
                       <td className="py-4 flex gap-2">
-                        <button onClick={() => startEdit(m)} className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"><Edit size={14} /></button>
-                        <button onClick={() => handleDelete(m)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><Trash size={14} /></button>
+                        <button onClick={() => startEdit(m)} className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700" title="Modifier"><Edit size={14} /></button>
+                        <button onClick={() => handleDelete(m)} className="p-2 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30" title="Supprimer"><Trash size={14} /></button>
                       </td>
                     </>
                   )}
                 </tr>
               ))}
-              {mappings.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-400">No mapped product.</td></tr>}
+              {mappings.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-400 dark:text-slate-500">No mapped product.</td></tr>}
             </tbody>
           </table>
         </div>
 
         {/* Ajout mapping */}
-        <div className="mt-8 pt-8 border-t border-gray-100 flex flex-wrap items-end gap-4">
+        <div className="mt-8 pt-8 border-t border-gray-150 dark:border-slate-800 flex flex-wrap items-end gap-4">
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Product</label>
-            <select value={newMap.product_id} onChange={e => setNewMap({ ...newMap, product_id: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-bold min-w-[220px]">
+            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Product</label>
+            <select value={newMap.product_id} onChange={e => setNewMap({ ...newMap, product_id: e.target.value })} className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-bold min-w-[220px]">
               <option value="">— Choose —</option>
               {unmappedProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Supplier</label>
-            <select value={newMap.supplier} onChange={e => setNewMap({ ...newMap, supplier: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-bold">
+            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Supplier</label>
+            <select value={newMap.supplier} onChange={e => setNewMap({ ...newMap, supplier: e.target.value })} className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-bold">
               {SUPPLIERS.map(s => <option key={s} value={s}>{SUPPLIER_LABEL[s]}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Supplier ID</label>
-            <input value={newMap.supplier_product_id} onChange={e => setNewMap({ ...newMap, supplier_product_id: e.target.value })} placeholder="ex: 11" className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-28" />
+            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Supplier ID</label>
+            <input value={newMap.supplier_product_id} onChange={e => setNewMap({ ...newMap, supplier_product_id: e.target.value })} placeholder="ex: 11" className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-mono w-28" />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Margin %</label>
-            <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-24" />
+            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest mb-2">Margin %</label>
+            <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white font-mono w-24" />
           </div>
-          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2"><Plus size={16} /> Map</button>
+          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2 hover:bg-primaryDark transition-all"><Plus size={16} /> Map</button>
         </div>
       </div>
 
       {/* Commandes en attente fournisseur */}
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8">Pending supplier orders ({pending.length})</h2>
+      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">Pending supplier orders ({pending.length})</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm text-gray-700 dark:text-slate-300">
             <thead>
-              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+              <tr className="text-[10px] font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
                 <th className="pb-4">Order</th><th className="pb-4">Product</th><th className="pb-4">Supplier</th><th className="pb-4">Qty</th>
-                <th className="pb-4">Supplier #</th><th className="pb-4">Status</th><th className="pb-4">Last check</th><th className="pb-4">Actions</th>
+                <th className="pb-4">Supplier #</th><th className="pb-4">Status</th><th className="pb-4">Last check</th><th className="pb-4" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
               {pending.map(o => (
-                <tr key={o.id} className="text-gray-700">
-                  <td className="py-4 font-mono">#{o.id}</td>
-                  <td className="py-4 font-bold">{o.product_name}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 font-bold text-xs">{SUPPLIER_LABEL[o.supplier] || o.supplier}</span></td>
-                  <td className="py-4">{o.quantity}</td>
-                  <td className="py-4 font-mono">{o.supplier_order_id || '—'}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-yellow-50 text-yellow-700 font-bold text-xs">{o.supplier_status || 'Pending'}</span></td>
-                  <td className="py-4 text-xs text-gray-400">{o.supplier_last_checked_at ? new Date(o.supplier_last_checked_at).toLocaleString() : '—'}</td>
+                <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                  <td className="py-4 font-mono text-gray-900 dark:text-white">#{o.id}</td>
+                  <td className="py-4 font-bold text-gray-900 dark:text-white">{o.product_name}</td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-655 dark:text-gray-400 font-bold text-xs">{SUPPLIER_LABEL[o.supplier] || o.supplier}</span></td>
+                  <td className="py-4 text-gray-900 dark:text-white">{o.quantity}</td>
+                  <td className="py-4 font-mono text-gray-900 dark:text-white">{o.supplier_order_id || '—'}</td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 text-yellow-750 dark:text-yellow-400 font-bold text-xs">{o.supplier_status || 'Pending'}</span></td>
+                  <td className="py-4 text-xs text-gray-400 dark:text-slate-500">{o.supplier_last_checked_at ? new Date(o.supplier_last_checked_at).toLocaleString() : '—'}</td>
                   <td className="py-4">
                     {!o.supplier_order_id && (
                       <button
@@ -2560,28 +2560,32 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                   </td>
                 </tr>
               ))}
-              {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">No pending order.</td></tr>}
+              {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400 dark:text-slate-500">No pending order.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* Logs */}
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold">Supplier log</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Supplier log</h2>
           <button onClick={fetchAll} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><RefreshCcw size={14} /> Refresh</button>
         </div>
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
           {logs.map(l => (
-            <div key={l.id} className={`text-xs rounded-xl px-4 py-3 flex items-start gap-3 ${l.level === 'error' ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'}`}>
-              <span className="font-mono text-gray-400 shrink-0">{new Date(l.created_at).toLocaleTimeString()}</span>
-              <span className="font-bold shrink-0 uppercase tracking-wide">{SUPPLIER_LABEL[l.supplier] || l.supplier}</span>
-              <span className="font-bold shrink-0 uppercase tracking-wide">{l.action}</span>
-              <span>{l.message}{l.order_id ? ` (cmd #${l.order_id})` : ''}</span>
+            <div key={l.id} className={`text-xs rounded-xl px-4 py-3 flex items-start gap-3 border ${
+              l.level === 'error'
+                ? 'bg-red-50 dark:bg-red-950/15 text-red-700 dark:text-red-400 border-red-100 dark:border-red-950/30'
+                : 'bg-gray-50 dark:bg-slate-800/40 text-gray-600 dark:text-slate-350 border-gray-100 dark:border-slate-800'
+            }`}>
+              <span className="font-mono text-gray-400 dark:text-slate-500 shrink-0">{new Date(l.created_at).toLocaleTimeString()}</span>
+              <span className="font-bold shrink-0 uppercase tracking-wide text-gray-900 dark:text-white">{SUPPLIER_LABEL[l.supplier] || l.supplier}</span>
+              <span className="font-bold shrink-0 uppercase tracking-wide text-gray-900 dark:text-white">{l.action}</span>
+              <span className="text-gray-700 dark:text-slate-300">{l.message}{l.order_id ? ` (cmd #${l.order_id})` : ''}</span>
             </div>
           ))}
-          {logs.length === 0 && <div className="py-8 text-center text-gray-400 text-sm">No log.</div>}
+          {logs.length === 0 && <div className="py-8 text-center text-gray-450 dark:text-slate-500 text-sm">No log.</div>}
         </div>
       </div>
     </div>
@@ -2753,18 +2757,22 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
   ];
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative space-y-6">
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative space-y-6 text-gray-900 dark:text-white">
       {/* Sélecteurs de Période */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">
+          <h3 className="text-sm font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">
             {lang === 'fr' ? 'Performances générales' : 'General metrics'}
           </h3>
         </div>
         <div className="flex gap-2">
           {rangeOptions.map(opt => (
             <button key={opt.value} onClick={() => { setRange(opt.value); setHoveredPoint(null); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === opt.value ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-800'}`}>
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                range === opt.value
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-100 dark:border-slate-800'
+              }`}>
               {opt.label}
             </button>
           ))}
@@ -2772,21 +2780,21 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
       </div>
 
       {/* Onglets style YouTube Studio */}
-      <div className="grid grid-cols-2 gap-4 border-b border-slate-800 pb-2">
-        {/* Onglet Revenu Estimé */}
+      <div className="grid grid-cols-2 gap-4 border-b border-gray-150 dark:border-slate-800 pb-2">
+        {/* Onglet Bénéfice Net */}
         <button
           onClick={() => { setActiveMetric('revenue'); setHoveredPoint(null); }}
           className={`text-left p-4 rounded-2xl transition-all relative border flex flex-col justify-between ${
             activeMetric === 'revenue'
-              ? 'bg-slate-800/40 border-slate-700/80 text-white'
-              : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300'
+              ? 'bg-gray-50 dark:bg-slate-800/40 border-gray-250 dark:border-slate-700/80 text-gray-900 dark:text-white'
+              : 'bg-transparent border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
           }`}
         >
-          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">
             {lang === 'fr' ? 'Bénéfice Net' : 'Net Profit'}
           </div>
-          <div className="text-2xl font-black font-mono mt-1 text-white">${rangeRevenue.toFixed(2)}</div>
-          <div className="text-[10px] text-emerald-400 font-semibold mt-1">
+          <div className="text-2xl font-black font-mono mt-1 text-gray-900 dark:text-white">${rangeRevenue.toFixed(2)}</div>
+          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
             {lang === 'fr' ? `Total sur ${rangeOptions.find(o => o.value === range)?.label.toLowerCase()}` : `Total for ${rangeOptions.find(o => o.value === range)?.label.toLowerCase()}`}
           </div>
           {activeMetric === 'revenue' && (
@@ -2799,15 +2807,15 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
           onClick={() => { setActiveMetric('users'); setHoveredPoint(null); }}
           className={`text-left p-4 rounded-2xl transition-all relative border flex flex-col justify-between ${
             activeMetric === 'users'
-              ? 'bg-slate-800/40 border-slate-700/80 text-white'
-              : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300'
+              ? 'bg-gray-50 dark:bg-slate-800/40 border-gray-250 dark:border-slate-700/80 text-gray-900 dark:text-white'
+              : 'bg-transparent border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
           }`}
         >
-          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">
             {lang === 'fr' ? 'Clients Inscrits' : 'Registered Clients'}
           </div>
-          <div className="text-2xl font-black font-mono mt-1 text-white">{rangeUsers}</div>
-          <div className="text-[10px] text-emerald-400 font-semibold mt-1">
+          <div className="text-2xl font-black font-mono mt-1 text-gray-900 dark:text-white">{rangeUsers}</div>
+          <div className="text-[10px] text-emerald-650 dark:text-emerald-400 font-semibold mt-1">
             {lang === 'fr' ? `Inscriptions sur la période` : `Registrations in period`}
           </div>
           {activeMetric === 'users' && (
@@ -2821,17 +2829,17 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
         {/* Tooltip flottant */}
         {hoveredPoint && (
           <div
-            className="absolute z-20 bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl shadow-xl text-center pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95"
+            className="absolute z-20 bg-white dark:bg-slate-950 border border-gray-150 dark:border-slate-800 px-3 py-2 rounded-xl shadow-xl text-center pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95"
             style={{
               left: `${(hoveredPoint.x / width) * 100}%`,
               top: `${(hoveredPoint.y / height) * 100 - 45}%`,
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="text-[9px] text-slate-500 font-black uppercase">
+            <div className="text-[9px] text-gray-400 dark:text-slate-500 font-black uppercase">
               {hoveredPoint.label}
             </div>
-            <div className="text-xs font-black text-primary font-mono">
+            <div className="text-xs font-black text-emerald-600 dark:text-emerald-450 font-mono">
               {activeMetric === 'revenue' ? `$${hoveredPoint.amount.toFixed(2)}` : `${hoveredPoint.amount} client(s)`}
             </div>
           </div>
@@ -2855,7 +2863,7 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
                 y1={y}
                 x2={width - paddingX}
                 y2={y}
-                stroke="#1e293b"
+                className="stroke-gray-100 dark:stroke-slate-800/60"
                 strokeWidth="1"
                 strokeDasharray="4 4"
               />
@@ -2885,9 +2893,8 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
               cy={p.y}
               r={hoveredPoint?.index === i ? "6" : "3.5"}
               fill="#10B981"
-              stroke="#0f172a"
+              className="stroke-white dark:stroke-slate-900 transition-all duration-150"
               strokeWidth={hoveredPoint?.index === i ? "3" : "2"}
-              className="transition-all duration-150"
             />
           ))}
 
@@ -2962,29 +2969,29 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
   };
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-      <h2 className="text-2xl font-bold mb-2">Binance Pay — confirmations manuelles</h2>
-      <p className="text-xs text-gray-400 mb-8">Vérifie sur ton app Binance qu'un paiement du montant exact est bien arrivé avant de confirmer — l'opération crédite immédiatement le solde client.</p>
-      {msg && <div className="mb-6 text-sm font-bold text-gray-600 bg-gray-50 rounded-2xl px-5 py-3">{msg}</div>}
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft text-gray-900 dark:text-white">
+      <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Binance Pay — confirmations manuelles</h2>
+      <p className="text-xs text-gray-400 dark:text-slate-400 mb-8">Vérifie sur ton app Binance qu'un paiement du montant exact est bien arrivé avant de confirmer — l'opération crédite immédiatement le solde client.</p>
+      {msg && <div className="mb-6 text-sm font-bold text-gray-700 dark:text-slate-350 bg-gray-50 dark:bg-slate-800 rounded-2xl px-5 py-3 border border-gray-100 dark:border-slate-800">{msg}</div>}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-sm text-gray-700 dark:text-slate-300">
           <thead>
-            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+            <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
               <th className="pb-4">Client</th><th className="pb-4">Pseudo (note attendue)</th><th className="pb-4">Binance Order ID</th><th className="pb-4">Montant exact</th><th className="pb-4">Crédit</th>
-              <th className="pb-4">Créé</th><th className="pb-4">Expire</th><th className="pb-4">Actions</th>
+              <th className="pb-4">Créé</th><th className="pb-4">Expire</th><th className="pb-4" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
             {pending.map(o => {
               const expired = o.expires_at && new Date(o.expires_at).getTime() < Date.now();
               return (
-                <tr key={o.id} className="text-gray-700">
-                  <td className="py-4 font-bold">{o.buyer_email}</td>
+                <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                  <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email}</td>
                   <td className="py-4 font-mono font-black text-primary tracking-widest">{codeByUser[o.user_id] || '—'}</td>
-                  <td className="py-4 font-mono font-black tracking-widest">{o.binance_tx_id || <span className="text-gray-300 font-normal italic">non soumis</span>}</td>
-                  <td className="py-4 font-mono font-black">${Number(o.expected_amount).toFixed(2)}</td>
-                  <td className="py-4 font-mono">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
-                  <td className="py-4 text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</td>
+                  <td className="py-4 font-mono font-black tracking-widest text-gray-700 dark:text-slate-300">{o.binance_tx_id || <span className="text-gray-300 dark:text-slate-650 font-normal italic">non soumis</span>}</td>
+                  <td className="py-4 font-mono font-black text-gray-900 dark:text-white">${Number(o.expected_amount).toFixed(2)}</td>
+                  <td className="py-4 font-mono text-gray-900 dark:text-white">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
+                  <td className="py-4 text-xs text-gray-400 dark:text-slate-500">{new Date(o.created_at).toLocaleString()}</td>
                   <td className="py-4 text-xs">{expired ? <span className="text-red-500 font-bold">Expiré</span> : new Date(o.expires_at).toLocaleTimeString()}</td>
                   <td className="py-4 flex gap-2">
                     <button onClick={() => handleConfirm(o)} disabled={busyId === o.id}
@@ -2999,7 +3006,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                 </tr>
               );
             })}
-            {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">Aucun paiement Binance Pay en attente.</td></tr>}
+            {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400 dark:text-slate-500">Aucun paiement Binance Pay en attente.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3011,20 +3018,20 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
 // classes Tailwind construites dynamiquement, elles doivent apparaître en
 // clair dans le code pour être incluses au build).
 const METRIC_COLORS = {
-  green: 'bg-green-50 text-green-600',
-  blue: 'bg-blue-50 text-blue-600',
-  yellow: 'bg-yellow-50 text-yellow-600',
-  red: 'bg-red-50 text-red-600',
-  purple: 'bg-purple-50 text-purple-600',
-  indigo: 'bg-indigo-50 text-indigo-600',
-  gray: 'bg-gray-100 text-gray-500',
+  green: 'bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400',
+  blue: 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400',
+  yellow: 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400',
+  red: 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400',
+  purple: 'bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400',
+  indigo: 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400',
+  gray: 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400',
   primary: 'bg-primary/10 text-primary',
 };
 const MetricCard = ({ icon: Icon, color = 'gray', label, value }) => (
-  <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-soft">
+  <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-soft text-gray-900 dark:text-white">
     <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${METRIC_COLORS[color] || METRIC_COLORS.gray}`}><Icon size={16} /></div>
-    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</div>
-    <div className="text-2xl font-black text-gray-900">{value}</div>
+    <div className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">{label}</div>
+    <div className="text-2xl font-black text-gray-900 dark:text-white font-mono">{value}</div>
   </div>
 );
 
@@ -3054,48 +3061,52 @@ const RecentActivityTable = ({ allOrders }) => {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-[3rem] p-10 shadow-2xl">
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-2xl text-gray-900 dark:text-white">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <h3 className="text-lg font-bold text-white">Activité récente</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activité récente</h3>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex gap-1 bg-slate-800 rounded-xl p-1">
+          <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-xl p-1">
             {['all', 'confirmed', 'processing', 'pending', 'cancelled'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-primary text-white' : 'text-slate-400 hover:text-white'}`}>
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${
+                  filter === f
+                    ? 'bg-primary text-white'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                }`}>
                 {f === 'all' ? 'Toutes' : f}
               </button>
             ))}
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={14} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher par email, produit…"
-              className="pl-9 pr-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-primary/20 outline-none w-52"
+              className="pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-primary/20 outline-none w-52"
             />
           </div>
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-300">
+        <table className="w-full text-left text-sm text-gray-700 dark:text-slate-300">
           <thead>
-            <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800">
+            <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
               <th className="pb-4">Client</th><th className="pb-4">Produit</th><th className="pb-4">Date</th><th className="pb-4">Statut</th><th className="pb-4 text-right">Montant</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
             {filtered.map(o => (
               <tr key={o.id}>
-                <td className="py-4 font-bold text-white">{o.buyer_email || '—'}</td>
-                <td className="py-4 text-slate-400">{o.product_name}</td>
-                <td className="py-4 text-xs text-slate-500">{new Date(o.created_at).toLocaleString('fr-FR')}</td>
+                <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email || '—'}</td>
+                <td className="py-4 text-gray-500 dark:text-slate-400">{o.product_name}</td>
+                <td className="py-4 text-xs text-gray-400 dark:text-slate-500">{new Date(o.created_at).toLocaleString('fr-FR')}</td>
                 <td className="py-4">{statusBadge(o.status)}</td>
-                <td className="py-4 text-right font-mono font-black text-white">${Number(o.total_price || 0).toFixed(2)}</td>
+                <td className="py-4 text-right font-mono font-black text-gray-900 dark:text-white">${Number(o.total_price || 0).toFixed(2)}</td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-slate-500">Aucune commande trouvée.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-gray-500">Aucune commande trouvée.</td></tr>}
           </tbody>
         </table>
       </div>
