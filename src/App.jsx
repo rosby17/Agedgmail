@@ -4511,7 +4511,10 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const selectedGateway = PAYMENT_GATEWAYS.find(g => g.id === gateway);
   const activePayCurrency = selectedGateway?.payCurrency || null;
   const isCrypto = !!activePayCurrency;
-  const selectedMin = activePayCurrency ? minAmounts[activePayCurrency] : undefined;
+  // Minimum affiché/appliqué : le min statique de la méthode (Binance Pay $10,
+  // crypto $18), affiné par le min dynamique NOWPayments s'il est plus élevé.
+  const dynamicMin = activePayCurrency ? minAmounts[activePayCurrency] : undefined;
+  const selectedMin = Math.max(selectedGateway?.min || 0, typeof dynamicMin === 'number' ? dynamicMin : 0) || undefined;
   const belowMin = typeof selectedMin === 'number' && amountUsd < selectedMin;
   const remainingMs = payment?.expiresAt ? Math.max(0, payment.expiresAt - now) : 0;
   const remainingLabel = `${Math.floor(remainingMs / 60000)}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0')}`;
@@ -4532,6 +4535,11 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     if (profile?.is_suspended) { setError("Ton compte est suspendu. Contacte le support."); return; }
     if (!gateway) { setError('Choisis une passerelle de paiement.'); return; }
     if (amountUsd <= 0) { setError('Montant invalide.'); return; }
+    // Minimum par méthode (Binance Pay $10, crypto $18) — bloqué dès ici.
+    if (selectedGateway?.min && amountUsd < selectedGateway.min) {
+      setError(`Montant minimum pour ${selectedGateway.name} : $${selectedGateway.min}.`);
+      return;
+    }
 
     if (gateway === 'binance_pay') {
       setLoading(true);
@@ -4686,6 +4694,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 onChange={e => setAmountUsd(Number(e.target.value))}
                 className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary"
               />
+              {belowMin && (
+                <p className="text-xs text-red-500 font-bold mt-2 flex items-center gap-1"><AlertTriangle size={12} /> Minimum autorisé pour {selectedGateway.name} : ${selectedMin}.</p>
+              )}
               {bonusPct > 0 && (
                 <p className="text-xs text-primary font-bold mt-2">Bonus +{bonusPct}% → tu recevras ${(amountUsd * (1 + bonusPct / 100)).toFixed(2)} sur ton solde.</p>
               )}
@@ -4708,6 +4719,11 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                     <span>
                       <span className="block text-sm font-bold text-gray-900">{g.name}</span>
                       <span className="block text-[10px] text-gray-400 font-medium">{g.sub}</span>
+                      {g.enabled && g.min && (
+                        <span className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-primary">
+                          <Info size={9} /> Min. ${g.min}
+                        </span>
+                      )}
                     </span>
                   </button>
                 ))}
@@ -4748,7 +4764,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             {gateway && (
               <button
                 onClick={handleSubmit}
-                disabled={loading || (isCrypto && belowMin)}
+                disabled={loading || belowMin}
                 className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
               >
                 {loading
