@@ -2505,41 +2505,127 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
 
 // Courbe de revenu par jour (7 ou 30 derniers jours), sous forme de ligne SVG avec dégradé.
 // Graphique de statistiques interactif inspiré de YouTube Studio Analytics (Revenu estimé vs Clients inscrits).
-const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
+const RevenueChart = ({ confirmedOrders, allUsers = [], lang = 'fr' }) => {
   const [range, setRange] = useState(7);
   const [activeMetric, setActiveMetric] = useState('revenue'); // 'revenue' | 'users'
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
-  const days = [...Array(range)].map((_, i) => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - (range - 1 - i));
-    return d;
-  });
+  const getChartData = () => {
+    if (range === 7 || range === 30) {
+      // Daily grouping
+      const days = [...Array(range)].map((_, i) => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - (range - 1 - i));
+        return d;
+      });
 
-  // 1. Calculs des revenus de ventes (exclut product_id=999) par jour
-  const revenueTotals = days.map(day => {
-    const next = new Date(day); next.setDate(next.getDate() + 1);
-    return confirmedOrders
-      .filter(o => o.product_id !== 999)
-      .filter(o => { const t = new Date(o.created_at); return t >= day && t < next; })
-      .reduce((s, o) => s + (o.total_price || 0), 0);
-  });
+      return days.map((day, index) => {
+        const next = new Date(day); next.setDate(next.getDate() + 1);
+        const revenue = confirmedOrders
+          .filter(o => o.product_id !== 999)
+          .filter(o => { const t = new Date(o.created_at); return t >= day && t < next; })
+          .reduce((s, o) => s + (o.total_price || 0), 0);
 
-  // 2. Calculs des inscriptions utilisateurs par jour
-  const userTotals = days.map(day => {
-    const next = new Date(day); next.setDate(next.getDate() + 1);
-    return allUsers
-      .filter(u => { const t = new Date(u.created_at); return t >= day && t < next; })
-      .length;
-  });
+        const users = allUsers
+          .filter(u => { const t = new Date(u.created_at); return t >= day && t < next; })
+          .length;
+
+        return {
+          date: day,
+          label: day.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: '2-digit' }),
+          revenue,
+          users,
+          index
+        };
+      });
+    } else if (range === 365) {
+      // Monthly grouping (last 12 months)
+      const months = [...Array(12)].map((_, i) => {
+        const d = new Date();
+        d.setDate(1);
+        d.setHours(0, 0, 0, 0);
+        d.setMonth(d.getMonth() - (11 - i));
+        return d;
+      });
+
+      return months.map((monthStart, index) => {
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthEnd.getMonth() + 1);
+
+        const revenue = confirmedOrders
+          .filter(o => o.product_id !== 999)
+          .filter(o => { const t = new Date(o.created_at); return t >= monthStart && t < monthEnd; })
+          .reduce((s, o) => s + (o.total_price || 0), 0);
+
+        const users = allUsers
+          .filter(u => { const t = new Date(u.created_at); return t >= monthStart && t < monthEnd; })
+          .length;
+
+        return {
+          date: monthStart,
+          label: monthStart.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: '2-digit' }),
+          revenue,
+          users,
+          index
+        };
+      });
+    } else {
+      // Lifetime grouping (Monthly from oldest to now)
+      const oldestOrderTime = confirmedOrders.length > 0
+        ? Math.min(...confirmedOrders.map(o => new Date(o.created_at).getTime()))
+        : Date.now();
+      const oldestUserTime = allUsers.length > 0
+        ? Math.min(...allUsers.map(u => new Date(u.created_at).getTime()))
+        : Date.now();
+
+      const oldestTime = Math.min(oldestOrderTime, oldestUserTime, Date.now());
+      const start = new Date(oldestTime);
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+
+      const current = new Date();
+      const diffMonths = (current.getFullYear() - start.getFullYear()) * 12 + (current.getMonth() - start.getMonth()) + 1;
+      const numMonths = Math.max(diffMonths, 6); // at least 6 months
+
+      const months = [...Array(numMonths)].map((_, i) => {
+        const d = new Date(start);
+        d.setMonth(d.getMonth() + i);
+        return d;
+      });
+
+      return months.map((monthStart, index) => {
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthEnd.getMonth() + 1);
+
+        const revenue = confirmedOrders
+          .filter(o => o.product_id !== 999)
+          .filter(o => { const t = new Date(o.created_at); return t >= monthStart && t < monthEnd; })
+          .reduce((s, o) => s + (o.total_price || 0), 0);
+
+        const users = allUsers
+          .filter(u => { const t = new Date(u.created_at); return t >= monthStart && t < monthEnd; })
+          .length;
+
+        return {
+          date: monthStart,
+          label: monthStart.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: '2-digit' }),
+          revenue,
+          users,
+          index
+        };
+      });
+    }
+  };
+
+  const dataPoints = getChartData();
 
   // Totaux cumulés sur la période sélectionnée (pour l'en-tête des onglets)
-  const rangeRevenue = revenueTotals.reduce((s, v) => s + v, 0);
-  const rangeUsers = userTotals.reduce((s, v) => s + v, 0);
+  const rangeRevenue = dataPoints.reduce((s, p) => s + p.revenue, 0);
+  const rangeUsers = dataPoints.reduce((s, p) => s + p.users, 0);
 
   // Données actives pour le tracé du graphique
-  const activeTotals = activeMetric === 'revenue' ? revenueTotals : userTotals;
+  const activeTotals = dataPoints.map(p => activeMetric === 'revenue' ? p.revenue : p.users);
   const max = Math.max(...activeTotals, 1);
 
   // Configuration SVG
@@ -2548,10 +2634,11 @@ const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
   const paddingX = 25;
   const paddingY = 25;
 
-  const points = activeTotals.map((amount, i) => {
-    const x = paddingX + (i / (range - 1)) * (width - 2 * paddingX);
-    const y = height - paddingY - (amount / max) * (height - 2 * paddingY);
-    return { x, y, amount, date: days[i], index: i };
+  const points = dataPoints.map((p, i) => {
+    const val = activeMetric === 'revenue' ? p.revenue : p.users;
+    const x = paddingX + (i / (dataPoints.length - 1)) * (width - 2 * paddingX);
+    const y = height - paddingY - (val / max) * (height - 2 * paddingY);
+    return { x, y, amount: val, date: p.date, label: p.label, index: i };
   });
 
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
@@ -2559,18 +2646,27 @@ const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
     ? `${linePath} L ${points[points.length - 1].x} ${height - 5} L ${points[0].x} ${height - 5} Z`
     : '';
 
+  const rangeOptions = [
+    { value: 7, label: lang === 'fr' ? '7 jours' : '7 days' },
+    { value: 30, label: lang === 'fr' ? '30 jours' : '30 days' },
+    { value: 365, label: lang === 'fr' ? '1 an' : '1 year' },
+    { value: 'lifetime', label: lang === 'fr' ? 'À vie' : 'Lifetime' }
+  ];
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative space-y-6">
       {/* Sélecteurs de Période */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Performances générales</h3>
+          <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">
+            {lang === 'fr' ? 'Performances générales' : 'General metrics'}
+          </h3>
         </div>
         <div className="flex gap-2">
-          {[7, 30].map(r => (
-            <button key={r} onClick={() => { setRange(r); setHoveredPoint(null); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === r ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-800'}`}>
-              {r} jours
+          {rangeOptions.map(opt => (
+            <button key={opt.value} onClick={() => { setRange(opt.value); setHoveredPoint(null); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === opt.value ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-800'}`}>
+              {opt.label}
             </button>
           ))}
         </div>
@@ -2587,9 +2683,13 @@ const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
               : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
-          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">Revenu Estimé (Ventes)</div>
+          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            {lang === 'fr' ? 'Revenu Estimé (Ventes)' : 'Estimated Revenue (Sales)'}
+          </div>
           <div className="text-2xl font-black font-mono mt-1 text-white">${rangeRevenue.toFixed(2)}</div>
-          <div className="text-[10px] text-emerald-400 font-semibold mt-1">+{rangeRevenue > 0 ? '100' : '0'}% sur la période</div>
+          <div className="text-[10px] text-emerald-400 font-semibold mt-1">
+            {lang === 'fr' ? `Total sur ${rangeOptions.find(o => o.value === range)?.label.toLowerCase()}` : `Total for ${rangeOptions.find(o => o.value === range)?.label.toLowerCase()}`}
+          </div>
           {activeMetric === 'revenue' && (
             <div className="absolute bottom-[-10px] left-0 right-0 h-1 bg-primary rounded-full" />
           )}
@@ -2604,9 +2704,13 @@ const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
               : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
-          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">Clients Inscrits</div>
+          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            {lang === 'fr' ? 'Clients Inscrits' : 'Registered Clients'}
+          </div>
           <div className="text-2xl font-black font-mono mt-1 text-white">{rangeUsers}</div>
-          <div className="text-[10px] text-emerald-400 font-semibold mt-1">+{rangeUsers} nouvel/nouveaux</div>
+          <div className="text-[10px] text-emerald-400 font-semibold mt-1">
+            {lang === 'fr' ? `Inscriptions sur la période` : `Registrations in period`}
+          </div>
           {activeMetric === 'users' && (
             <div className="absolute bottom-[-10px] left-0 right-0 h-1 bg-primary rounded-full" />
           )}
@@ -2626,7 +2730,7 @@ const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
             }}
           >
             <div className="text-[9px] text-slate-500 font-black uppercase">
-              {hoveredPoint.date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+              {hoveredPoint.label}
             </div>
             <div className="text-xs font-black text-primary font-mono">
               {activeMetric === 'revenue' ? `$${hoveredPoint.amount.toFixed(2)}` : `${hoveredPoint.amount} client(s)`}
@@ -2692,9 +2796,9 @@ const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
           {points.map((p, i) => (
             <rect
               key={i}
-              x={p.x - (width / range) / 2}
+              x={p.x - (width / points.length) / 2}
               y={0}
-              width={width / range}
+              width={width / points.length}
               height={height}
               fill="transparent"
               className="cursor-pointer"
@@ -2706,8 +2810,8 @@ const RevenueChart = ({ confirmedOrders, allUsers = [] }) => {
       </div>
 
       <div className="flex justify-between text-[9px] text-slate-500 font-bold uppercase pt-2">
-        <span>{days[0]?.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
-        <span>{days[days.length - 1]?.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+        <span>{points[0]?.label || ''}</span>
+        <span>{points[points.length - 1]?.label || ''}</span>
       </div>
     </div>
   );
@@ -3265,7 +3369,7 @@ const AdminView = ({
               </div>
             </div>
 
-            <RevenueChart confirmedOrders={confirmedOrders} allUsers={allUsers} />
+            <RevenueChart confirmedOrders={confirmedOrders} allUsers={allUsers} lang={lang} />
 
             {/* Top products & Activity side-by-side */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
