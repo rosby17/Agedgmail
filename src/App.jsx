@@ -484,12 +484,11 @@ const FAQSection = () => {
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 reveal-target opacity-0">
           {faqs.map((faq, idx) => (
             <div 
               key={idx} 
-              className={`glass rounded-2xl overflow-hidden transition-all duration-300 reveal-target opacity-0 border ${openIndex === idx ? 'border-l-primary/30' : 'border-white/5 hover:border-white/20'}`}
-              style={{ animationDelay: `${0.1 * idx}s` }}
+              className={`glass rounded-2xl overflow-hidden transition-all duration-300 border ${openIndex === idx ? 'border-l-primary/30' : 'border-white/5 hover:border-white/20'}`}
             >
               <button 
                 onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
