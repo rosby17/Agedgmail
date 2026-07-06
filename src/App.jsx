@@ -1527,7 +1527,21 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders }) => {
     : purchaseOrders.filter(o => (o.status || 'pending') === filter);
 
   const cancelOrder = async (id) => {
-    if (!window.confirm("Annuler cette commande ? Si elle correspond à une recharge crypto déjà payée, le client ne sera pas recrédité automatiquement.")) return;
+    if (!window.confirm("Annuler cette commande ? Le client sera automatiquement recrédité du montant payé.")) return;
+
+    const { data: order, error: orderErr } = await supabase
+      .from('orders').select('id, user_id, status, total_price').eq('id', id).single();
+    if (orderErr || !order) { alert("Commande introuvable."); return; }
+    if (order.status === 'cancelled') { fetchAllOrders(); return; } // déjà annulée, jamais recréditer deux fois
+
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles').select('balance').eq('id', order.user_id).single();
+    if (profileErr || !profile) { alert("Profil client introuvable, remboursement impossible."); return; }
+
+    const { error: creditErr } = await supabase
+      .from('profiles').update({ balance: (profile.balance || 0) + (order.total_price || 0) }).eq('id', order.user_id);
+    if (creditErr) { alert("Erreur lors du remboursement : " + creditErr.message); return; }
+
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', id);
     fetchAllOrders();
   };
