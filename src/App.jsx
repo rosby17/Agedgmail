@@ -1882,10 +1882,11 @@ const DeliveredAccountCard = ({ raw, index, total }) => {
         {total > 1 && <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Compte {index + 1}/{total}</div>}
         <div>
           <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Données Brutes du Fournisseur</div>
-          <div className="bg-white border border-gray-100 rounded-xl px-4 py-3">
-            <pre className="text-gray-700 text-sm whitespace-pre-wrap font-mono break-all">{raw}</pre>
-          </div>
-          <p className="text-xs text-amber-600 mt-3 font-bold">Le format reçu est inhabituel, mais voici les identifiants bruts tels que livrés par le fournisseur.</p>
+          {raw && (
+            <div className="bg-white border border-gray-100 rounded-3xl p-6 font-mono text-sm break-all text-gray-700 leading-relaxed shadow-sm">
+              {raw}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1999,12 +2000,15 @@ const OrderCredentialsModal = ({ order, onClose }) => {
                 </ul>
               </div>
 
-              <a
-                href={`mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(`Support commande #${shortOrderId(order.id)}`)}`}
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-support-chat'));
+                  onClose();
+                }}
                 className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl border border-gray-200 text-gray-700 font-bold text-sm hover:border-primary hover:text-primary transition-all"
               >
                 <MessageCircle size={16} /> Contacter le support
-              </a>
+              </button>
             </>
           )}
         </div>
@@ -6054,6 +6058,12 @@ const SupportChatWidget = ({ session, profile }) => {
       await supabase.from('support_tickets').update({ user_unread: false }).eq('id', ticket.id);
     }
   };
+
+  useEffect(() => {
+    const handleOpen = () => openPanel();
+    window.addEventListener('open-support-chat', handleOpen);
+    return () => window.removeEventListener('open-support-chat', handleOpen);
+  }, [ticket]);
 
   const send = async () => {
     const body = input.trim();
