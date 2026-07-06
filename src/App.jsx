@@ -3963,8 +3963,8 @@ const CRYPTO_CURRENCIES = [
 // on le réactive plus tard, juste retiré de la liste des moyens proposés.
 const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑' },
-  { id: 'nowpayments', name: 'NOWPayments', sub: 'BTC, ETH, USDT, LTC…', enabled: false, symbol: '⛓' },
-  { id: 'cryptomus', name: 'Cryptomus', sub: 'Crypto', enabled: false, symbol: '◆' },
+  { id: 'nowpayments', name: 'NOWPayments', sub: 'BTC, ETH, USDT, LTC…', enabled: true, symbol: '⛓' },
+  { id: 'mobile_money', name: 'Mobile Money', sub: 'Orange, MTN, Moov...', enabled: true, symbol: '📱' },
 ];
 
 const BONUS_TIERS = [
@@ -4123,26 +4123,30 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       return;
     }
 
-    if (gateway === 'cryptomus') {
+    if (gateway === 'mobile_money') {
       setLoading(true);
       setError('');
       try {
-        const { data: fnData, error: fnError } = await supabase.functions.invoke('cryptomus-create', {
-          body: { userId: session.user.id, email: session.user.email, amountUsd },
-        });
+        const { data: orderData, error: orderErr } = await supabase.from('orders').insert({
+          user_id: session.user.id,
+          buyer_email: session.user.email,
+          product_id: 999,
+          product_name: 'Recharge Mobile Money',
+          quantity: 1,
+          total_price: amountUsd,
+          status: 'pending'
+        }).select().single();
 
-        if (fnError) throw new Error(await extractFnErrorMessage(fnError));
-        if (fnData?.error) throw new Error(fnData.error);
-        if (!fnData?.payUrl) throw new Error('Réponse Cryptomus invalide.');
+        if (orderErr) throw orderErr;
 
-        setPayment({ provider: 'cryptomus', ...fnData });
+        setPayment({ provider: 'mobile_money', orderId: orderData.id, expectedAmount: amountUsd, creditAmount: amountUsd * (1 + bonusPct / 100), bonusPct });
         setStep('awaiting');
-        window.open(fnData.payUrl, '_blank', 'noopener,noreferrer');
       } catch (err) {
         setError(err.message || 'Une erreur est survenue.');
       } finally {
         setLoading(false);
       }
+      return;
     }
   };
 
@@ -4283,9 +4287,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             )}
 
-            {gateway === 'cryptomus' && (
+            {gateway === 'mobile_money' && (
               <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
-                Dépôt via Cryptomus : une page de paiement sécurisée s'ouvre dans un nouvel onglet pour choisir ta crypto et finaliser le règlement.
+                Paiement par Mobile Money (Orange, MTN, Moov). Après avoir validé, contacte le support avec ton numéro de commande pour finaliser le dépôt.
               </div>
             )}
 
@@ -4473,18 +4477,18 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </div>
             <h3 className="text-2xl font-black text-gray-900">En attente de paiement</h3>
             <p className="text-gray-500 text-sm leading-relaxed">
-              {payment.provider === 'cryptomus'
-                ? "Finalise ton paiement dans l'onglet Cryptomus ouvert. Ton solde sera crédité automatiquement après confirmation."
+              {payment.provider === 'mobile_money'
+                ? "Contacte le support client via le widget en bas à droite pour finaliser ton dépôt par Mobile Money. Ton solde sera crédité manuellement par un administrateur."
                 : "Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation."}
               {payment.bonusPct > 0 && <> Avec le bonus, tu recevras <span className="font-black text-primary">${Number(payment.creditAmount).toFixed(2)}</span>.</>}
             </p>
 
-            {payment.provider === 'cryptomus' ? (
+            {payment.provider === 'mobile_money' ? (
               <button
-                onClick={() => window.open(payment.payUrl, '_blank', 'noopener,noreferrer')}
+                onClick={() => setStep('form')}
                 className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white hover:bg-primary transition-all flex items-center justify-center gap-2"
               >
-                <ExternalLink size={18} /> Rouvrir la page de paiement
+                <ArrowLeft size={18} /> Retour aux options
               </button>
             ) : (
               <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
