@@ -265,7 +265,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
               </div>
               <div className="relative reveal-target opacity-0" style={{ animationDelay: '0.3s' }}>
                 <div className="aspect-square rounded-[60px] glass overflow-hidden border-white/5 p-4">
-                  <div className="w-full h-full rounded-[48px] bg-cover bg-center" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuArwkWS172r2mUOeWqgkejQ-AjQ1fBXElbZrWbMbIg4HMafRrNF43p7AqxNpsYZjwI2YXeqv_nC65s08oqNq5-gILgnkaqV_kB8xWOaI7xc2omwIFz7GMFlHwQFWNdv-_ItVu_UL6ZVduPUDEn1ycMozhlS5960bY7r2LWNS2l2cas8-deonsGyJg0L83-ITPEBK_LmxtODl-TN7A1O7vIOXiJf3awaqW6gBsPiPI8a4cBZwaml-4TkurT76FnG9p2sn6aNMoGW1lcs')" }}></div>
+                  <div className="w-full h-full rounded-[48px] bg-cover bg-center" style={{ backgroundImage: "url('/images/features_dashboard.png')" }}></div>
                 </div>
               </div>
             </div>
@@ -337,7 +337,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="glass p-10 rounded-[32px] reveal-target opacity-0 hover:border-white/20 transition-all duration-500" style={{ animationDelay: '0.1s' }}>
                 <div className="flex items-center gap-5 mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCL0VvxK1X06MF22qWfq-vP9rtZwfioQ0Ydbm4H3OcxgH6BiYs9SsVsuJbTtuSMmXjNBkGMN7aHFLcxdGnXFRUp0pPpu8qpJWA263A491hjv51ofWRl7hw81Booo4aiVFD2ACAGkHf2bPQu6hIkY-F348-Q0yPiK-wbIYrsLMqDgE9a37WKeHD79WUFWrNHMRypq1o3VmJucc3hG6U_-hwRFnLiANCFmtPRU_BimeTLpC1J-ILsGTRhxSjqU8IQOKLQiMwKxQgbryE9')" }}></div>
+                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('/images/testimonial_1.png')" }}></div>
                   <div>
                     <h6 className="font-headline-lg font-bold text-on-surface text-lg">Moussa K.</h6>
                     <p className="text-[11px] text-l-primary font-label-sm uppercase tracking-widest font-bold">Créateur YouTube</p>
@@ -347,7 +347,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
               </div>
               <div className="glass p-10 rounded-[32px] reveal-target opacity-0 hover:border-white/20 transition-all duration-500" style={{ animationDelay: '0.2s' }}>
                 <div className="flex items-center gap-5 mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCbufmGF-b-ZEtuXoze7XAPx1CcrUsW1Z4lgVPQsVs8iF0upBnDa6QrFIESL9Ck4-EPEOQY-hDh8clPQMyq1OFDWldpLpTXIBRc5H3JAaaDchnFCDX8xPHxRrb-N4nMKdLIvJMfzmnyK4U02hNBFTpqlaeGCGTC0hjYT7u2NxCnHXndeWIczbSjbYUJzjcgu2tbMmXow-ZTdAnwlaxncGESFZIqL88LVUUhRUuAe_cBQcs1XjDPZUJIMOVX5f4EvGftgHqg5-J3p750')" }}></div>
+                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('/images/testimonial_2.png')" }}></div>
                   <div>
                     <h6 className="font-headline-lg font-bold text-on-surface text-lg">Aisha B.</h6>
                     <p className="text-[11px] text-l-primary font-label-sm uppercase tracking-widest font-bold">Agence Marketing</p>
@@ -357,7 +357,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
               </div>
               <div className="glass p-10 rounded-[32px] reveal-target opacity-0 hover:border-white/20 transition-all duration-500" style={{ animationDelay: '0.3s' }}>
                 <div className="flex items-center gap-5 mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAww_eXzI5lSCoxmRlq6hLpdnTN7Xwf_LGyX-v3z6PHQ_pahXPIv0njytPrT7drLMPrlGWZJ2BWYhIo9fvZ3TT-lLTvPE-e0aQDgxVoeMmbnZIzw7dO99f0r-WuSAQ20bu8yilBTIEI_cs7qBbOIgOBmvh1obDi25J1vtYLCUU3aJNIHDWKIyHwRO-Q5GrNrmdV5IoxgjlcBQoZv5Co4zLY4fMo7PqF-PuZVBGGjQ8JnmBo8PYAIaedMb9uXuNbRRGoLdeUw-c20k-i')" }}></div>
+                  <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-white/10 shadow-lg" style={{ backgroundImage: "url('/images/testimonial_3.png')" }}></div>
                   <div>
                     <h6 className="font-headline-lg font-bold text-on-surface text-lg">Koffi D.</h6>
                     <p className="text-[11px] text-l-primary font-label-sm uppercase tracking-widest font-bold">Expert Automation</p>
