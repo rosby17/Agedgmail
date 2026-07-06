@@ -52,26 +52,18 @@ serve(async (req) => {
     if (!paymentMethod || !METHOD_LABELS[paymentMethod]) {
       return json({ error: 'Méthode de paiement invalide' }, 400)
     }
-    // Accepter binance_pay, usdt_trc20, ltc, et btc
+    // Seul Binance Pay est branché pour l'instant (confirmation manuelle en
+    // attendant l'accès à l'historique de dépôts USDT-TRC20/LTC).
+    if (paymentMethod !== 'binance_pay') {
+      return json({ error: 'Cette méthode arrive bientôt, utilise Binance Pay pour le moment.' }, 400)
+    }
+
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
-    
-    let payId = '';
-    if (paymentMethod === 'binance_pay') {
-      payId = Deno.env.get('BINANCE_PAY_ID') ?? '';
-      if (!payId) throw new Error('BINANCE_PAY_ID non configuré');
-    } else if (paymentMethod === 'usdt_trc20') {
-      payId = Deno.env.get('USDT_TRC20_ADDRESS') ?? '';
-      if (!payId) throw new Error('USDT_TRC20_ADDRESS non configuré');
-    } else if (paymentMethod === 'ltc') {
-      payId = Deno.env.get('LTC_ADDRESS') ?? '';
-      if (!payId) throw new Error('LTC_ADDRESS non configuré');
-    } else if (paymentMethod === 'btc') {
-      payId = Deno.env.get('BTC_ADDRESS') ?? '';
-      if (!payId) throw new Error('BTC_ADDRESS non configuré');
-    }
+    const payId = Deno.env.get('BINANCE_PAY_ID') ?? ''
+    if (!payId) throw new Error('BINANCE_PAY_ID non configuré côté serveur')
 
     // Identification par le pseudo choisi par le client (profiles.display_name)
     // — plus simple à retenir/écrire qu'un code généré. Obligatoire avant de

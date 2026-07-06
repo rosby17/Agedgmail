@@ -4501,9 +4501,9 @@ const CRYPTO_CURRENCIES = [
 // baissés à 0.5$ (laissés à 18$ pour BTC en raison des frais de réseau).
 const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5 },
-  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', min: 18 },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', min: 0.5 },
-  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', min: 0.5 },
+  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 18 },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 0.5 },
+  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 0.5 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
@@ -4616,12 +4616,12 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       return;
     }
 
-    if (['binance_pay', 'usdt_trc20', 'ltc', 'btc'].includes(gateway)) {
+    if (gateway === 'binance_pay') {
       setLoading(true);
       setError('');
       try {
         const { data: fnData, error: fnError } = await supabase.functions.invoke('binance-create-order', {
-          body: { userId: session.user.id, email: session.user.email, amountUsd, paymentMethod: gateway },
+          body: { userId: session.user.id, email: session.user.email, amountUsd, paymentMethod: 'binance_pay' },
         });
         if (fnError) throw new Error(await extractFnErrorMessage(fnError));
         if (fnData?.error === 'username_required') {
@@ -4629,10 +4629,10 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           return;
         }
         if (fnData?.error) throw new Error(fnData.error);
-        if (!fnData?.payId || !fnData?.expectedAmount) throw new Error('Réponse de paiement invalide.');
+        if (!fnData?.payId || !fnData?.expectedAmount) throw new Error('Réponse Binance invalide.');
 
         setPayment({
-          provider: gateway,
+          provider: 'binance_pay',
           ...fnData,
           expiresAt: Date.now() + fnData.expiresInMinutes * 60_000,
         });
@@ -4645,6 +4645,35 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       return;
     }
 
+    if (isCrypto) {
+      if (belowMin) { setError(`Montant minimum pour ${selectedGateway.name} : $${selectedMin.toFixed(2)}`); return; }
+
+      setLoading(true);
+      setError('');
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('nowpayments-create', {
+          body: { userId: session.user.id, email: session.user.email, amountUsd, payCurrency: activePayCurrency },
+        });
+
+        if (fnError) {
+          let realMessage = await extractFnErrorMessage(fnError);
+          if (/less than minimal/i.test(realMessage)) {
+            realMessage = `Ce montant est en dessous du minimum accepté pour ${selectedGateway.name}. Essaie un montant plus élevé ou une autre cryptomonnaie.`;
+          }
+          throw new Error(realMessage);
+        }
+        if (fnData?.error) throw new Error(fnData.error);
+        if (!fnData?.payAddress) throw new Error('Réponse NOWPayments invalide.');
+
+        setPayment({ provider: 'nowpayments', ...fnData });
+        setStep('awaiting');
+      } catch (err) {
+        setError(err.message || 'Une erreur est survenue.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     if (gateway === 'mobile_money') {
       setLoading(true);
@@ -4845,12 +4874,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                    {payment.provider === 'binance_pay' ? "Envoyer à l'ID Binance" : 
-                     payment.provider === 'usdt_trc20' ? "Adresse USDT (TRC20)" : 
-                     payment.provider === 'ltc' ? "Adresse Litecoin (LTC)" : 
-                     "Adresse de paiement"}
-                  </label>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Envoyer à l'ID Binance</label>
                   <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
                     <code className="text-sm font-mono text-gray-700 flex-grow text-left">{payment.payId}</code>
                     <button onClick={() => { navigator.clipboard?.writeText(String(payment.payId)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-bold hover:bg-primary transition-all flex items-center gap-1"><Copy size={12} /> Copier</button>
@@ -4859,9 +4883,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 </div>
 
                 <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
-                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">⚠️ Obligatoire — note/mémo du paiement</p>
+                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">⚠️ Obligatoire — note du paiement</p>
                   <p className="text-xs text-gray-700 leading-relaxed mb-3">
-                    Si votre portefeuille le permet, ajoutez ce pseudo dans le champ <span className="font-bold">"Note"</span> ou <span className="font-bold">"Mémo"</span> du paiement. Sinon, conservez ce code, il vous sera demandé juste après pour confirmer.
+                    Dans Binance, avant d'envoyer, colle ton pseudo dans le champ <span className="font-bold">"Note"</span> du paiement. C'est ce qui permet de t'identifier — toujours le même, à chaque recharge.
                   </p>
                   <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-4 py-3">
                     <code className="text-lg font-black font-mono text-gray-900 flex-grow text-left tracking-widest">{payment.paymentCode}</code>
@@ -4869,27 +4893,15 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   </div>
                 </div>
 
-                {payment.provider === 'binance_pay' && (
-                  <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center gap-3">
-                    <img src="/binance-pay-qr.jpeg" alt="QR Binance Pay" className="w-44 rounded-xl border border-gray-100 shadow-sm" />
-                  </div>
-                )}
+                <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center gap-3">
+                  <img src="/binance-pay-qr.jpeg" alt="QR Binance Pay" className="w-44 rounded-xl border border-gray-100 shadow-sm" />
+                </div>
 
                 <div className="text-xs text-gray-500 leading-relaxed space-y-1">
-                  {payment.provider === 'binance_pay' ? (
-                    <>
-                      <p>Tu peux utiliser <span className="font-bold text-primary">Binance Pay</span> ou envoyer directement à cet ID Binance.</p>
-                      <p>1. Ouvre l'app Binance → Wallets → Pay.</p>
-                      <p>2. Envoie le montant exact ci-dessus, avec ton code en note de paiement.</p>
-                      <p>3. Une fois le paiement effectué, clique "Confirmer le paiement".</p>
-                    </>
-                  ) : (
-                    <>
-                      <p>1. Ouvre ton portefeuille crypto.</p>
-                      <p>2. Envoie <span className="font-bold text-primary">le montant exact</span> à l'adresse indiquée.</p>
-                      <p>3. Une fois la transaction effectuée, clique "Confirmer le paiement".</p>
-                    </>
-                  )}
+                  <p>Tu peux utiliser <span className="font-bold text-primary">Binance Pay</span> ou envoyer directement à cet ID Binance.</p>
+                  <p>1. Ouvre l'app Binance → Wallets → Pay.</p>
+                  <p>2. Envoie le montant exact ci-dessus, avec ton code en note de paiement.</p>
+                  <p>3. Une fois le paiement effectué, clique "Confirmer le paiement" pour passer à l'étape suivante.</p>
                 </div>
 
                 <button
