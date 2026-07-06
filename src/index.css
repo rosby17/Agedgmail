@@ -3,6 +3,28 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-primary: #0D7A52;
+    --color-primary-dark: #0A5F40;
+    --color-primary-light: #189464;
+    --color-primary-soft: #EAF7F1;
+    --color-primary-mist: #DCF0E6;
+    --color-dark: #10241B;
+    --color-canvas: #F4FAF7;
+    --color-background: #FFFFFF;
+  }
+
+  .dark {
+    --color-primary: #6ffcba;
+    --color-primary-dark: #4edf9f;
+    --color-primary-light: #b4fce2;
+    --color-primary-soft: rgba(111, 252, 186, 0.15);
+    --color-primary-mist: rgba(111, 252, 186, 0.05);
+    --color-dark: #d9e4f1;
+    --color-canvas: #050f18;
+    --color-background: #0a141d;
+  }
+
   html {
     scroll-behavior: smooth;
     background-color: theme('colors.background');

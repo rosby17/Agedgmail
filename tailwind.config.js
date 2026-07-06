@@ -8,15 +8,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Dashboard colors
-        primary: "#0D7A52",       // boutons, prix, liens — texte/CTA
-        primaryDark: "#0A5F40",   // hover/active des boutons
-        primaryLight: "#189464",  // variante plus claire (icônes, accents larges)
-        primarySoft: "#EAF7F1",   // fond très pâle (hover de carte, badges alternatifs)
-        primaryMist: "#DCF0E6",   // un cran plus soutenu que primarySoft (contours au survol)
-        dark: "#10241B",
-        canvas: "#F4FAF7",
-        background: "#FFFFFF",
+        // Dashboard colors (Adaptive)
+        primary: "var(--color-primary)",
+        primaryDark: "var(--color-primary-dark)",
+        primaryLight: "var(--color-primary-light)",
+        primarySoft: "var(--color-primary-soft)",
+        primaryMist: "var(--color-primary-mist)",
+        dark: "var(--color-dark)",
+        canvas: "var(--color-canvas)",
+        background: "var(--color-background)",
         // Landing Page colors
         "l-primary": "#6ffcba",
         "l-background": "#0a141d",

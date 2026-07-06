@@ -389,6 +389,8 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
             </div>
           </div>
         </section>
+
+        <FAQSection />
       </main>
 
       <footer className="border-t border-white/5 py-32 relative bg-[#050f18]">
@@ -438,6 +440,80 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
         </div>
       </footer>
     </div>
+  );
+};
+
+const FAQSection = () => {
+  const [openIndex, setOpenIndex] = useState(null);
+  
+  const faqs = [
+    {
+      q: "Qu'est-ce qu'un compte Aged ?",
+      a: "Un compte 'Aged' est un compte créé il y a plusieurs mois ou années. Les algorithmes (comme YouTube ou Google) accordent naturellement plus de confiance à ces comptes par rapport aux comptes fraîchement créés, ce qui réduit considérablement les risques de blocages ou de shadowban."
+    },
+    {
+      q: "Vais-je subir un shadowban avec ces comptes ?",
+      a: "Non. Grâce à l'ancienneté et à la qualité de nos comptes, vous évitez les filtres anti-spam agressifs qui touchent généralement les nouveaux comptes, vous permettant de publier à l'international de manière sécurisée."
+    },
+    {
+      q: "La livraison est-elle vraiment instantanée ?",
+      a: "Oui, la livraison est 100% automatisée. Dès que votre paiement est validé (par carte, crypto ou mobile money), vos identifiants s'affichent instantanément à l'écran et vous sont envoyés par email."
+    },
+    {
+      q: "Quels sont les moyens de paiement acceptés ?",
+      a: "Nous acceptons les cartes bancaires, les cryptomonnaies (USDT, LTC, Binance Pay), ainsi que les principales solutions de Mobile Money pour la région africaine."
+    },
+    {
+      q: "Puis-je modifier les informations de sécurité ?",
+      a: "Absolument. Dès la livraison, vous devenez l'unique propriétaire du compte. Nous vous recommandons d'ailleurs de modifier l'email de récupération et le mot de passe pour garantir votre sécurité."
+    }
+  ];
+
+  return (
+    <section id="faq" className="py-32 relative">
+      <div className="max-w-3xl mx-auto px-margin-mobile md:px-gutter">
+        <div className="text-center mb-16 reveal-target opacity-0">
+          <div className="inline-block px-4 py-1.5 rounded-full border border-white/10 bg-white/5 mb-6">
+            <span className="font-label-sm uppercase tracking-widest text-l-primary font-bold text-[10px]">FAQ</span>
+          </div>
+          <h3 className="font-headline-lg text-4xl md:text-5xl text-on-surface font-extrabold mb-6">
+            Questions Fréquentes
+          </h3>
+          <p className="text-on-surface-variant text-lg">
+            Tout ce que vous devez savoir avant de dominer l'algorithme.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((faq, idx) => (
+            <div 
+              key={idx} 
+              className={`glass rounded-2xl overflow-hidden transition-all duration-300 reveal-target opacity-0 border ${openIndex === idx ? 'border-l-primary/30' : 'border-white/5 hover:border-white/20'}`}
+              style={{ animationDelay: `${0.1 * idx}s` }}
+            >
+              <button 
+                onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
+                className="w-full px-8 py-6 flex items-center justify-between text-left"
+              >
+                <span className={`font-bold text-lg transition-colors ${openIndex === idx ? 'text-l-primary' : 'text-on-surface'}`}>
+                  {faq.q}
+                </span>
+                <span className={`material-symbols-outlined text-l-primary transition-transform duration-300 ${openIndex === idx ? 'rotate-180' : ''}`}>
+                  expand_more
+                </span>
+              </button>
+              <div 
+                className={`px-8 overflow-hidden transition-all duration-500 ease-in-out ${openIndex === idx ? 'max-h-96 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}
+              >
+                <p className="text-on-surface-variant leading-relaxed">
+                  {faq.a}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 };
 
@@ -5557,6 +5633,31 @@ const AuthView = ({ navigate }) => {
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
         </div>
 
+        {pendingConfirmEmail ? (
+          /* Écran de confirmation d'email (inscription réussie, en attente de vérification) */
+          <div className="w-full text-center animate-in fade-in zoom-in duration-300">
+            <div className="w-20 h-20 mx-auto mb-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Mail size={34} className="text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Confirme ton email</h2>
+            <p className="text-gray-500 leading-relaxed mb-2">
+              On vient d'envoyer un lien de confirmation à<br />
+              <span className="font-bold text-gray-900">{pendingConfirmEmail}</span>.
+            </p>
+            <p className="text-gray-400 text-sm mb-8">Clique sur le lien dans l'email (pense à vérifier les spams) pour activer ton compte.</p>
+
+            {infoMessage && <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 mb-4">{infoMessage}</div>}
+            {errorMessage && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
+
+            <button onClick={handleResendConfirmation} disabled={loading} className="w-full h-14 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-3">
+              {loading && <RefreshCcw size={16} className="animate-spin" />} Renvoyer l'email
+            </button>
+            <button onClick={() => { setPendingConfirmEmail(''); setIsLogin(true); setErrorMessage(''); setInfoMessage(''); }} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors">
+              ← Retour à la connexion
+            </button>
+          </div>
+        ) : (
+        <>
         {/* Welcome Text */}
         <div className="text-center mb-16">
           <h2 className="text-[40px] font-bold text-gray-900 mb-4 tracking-tight leading-none">Welcome</h2>
@@ -5637,6 +5738,14 @@ const AuthView = ({ navigate }) => {
             Forgot your password?
           </button>
         </div>
+
+        {infoMessage && (
+          <div className="mt-6 w-full bg-green-50 text-green-600 p-4 rounded-xl text-xs font-bold border border-green-100 flex items-center gap-2">
+            <CheckCircle size={14} /> {infoMessage}
+          </div>
+        )}
+        </>
+        )}
       </div>
     </div>
   );
