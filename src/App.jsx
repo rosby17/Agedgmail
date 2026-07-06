@@ -254,7 +254,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">payments</span>
                     <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Paiement Flexible</h5>
-                    <p className="text-on-surface-variant text-sm leading-relaxed">Acceptés : Crypto/Binance, Orange Money et Mobile Money.</p>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">Acceptés : Crypto/Binance, USDT, LTC, mobile money.</p>
                   </div>
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">headset_mic</span>
@@ -915,15 +915,15 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <ArrowLeft size={20} />
           </button>
         )}
-        <button onClick={() => go('home', 'all', 'all')} className="h-20 flex items-center group transition-all">
+        <button onClick={() => go('shop', 'all', 'all')} className="h-20 flex items-center group transition-all">
           <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
         </button>
       </div>
 
       {/* Menu central */}
       <nav className="hidden lg:flex items-center gap-8">
-        <button onClick={() => go('home', 'all', 'all')} className={linkCls(currentView === 'home')}>{t('products')}</button>
-        <button onClick={() => go('home', 'all', 'sms')} className={linkCls(false)}>{t('sms')}</button>
+        <button onClick={() => go('shop', 'all', 'all')} className={linkCls(currentView === 'shop')}>{t('products')}</button>
+        <button onClick={() => go('shop', 'all', 'sms')} className={linkCls(false)}>{t('sms')}</button>
         <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>{t('api')}</button>
         {session && (
           <button onClick={() => navigate('dashboard')} className={linkCls(currentView === 'dashboard')}>{t('myOrders')}</button>
