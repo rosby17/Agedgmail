@@ -907,7 +907,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
   <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 font-sans">
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
       <div className="flex items-center gap-4">
-        {currentView !== 'home' && (
+        {currentView !== 'shop' && (
           <button
             onClick={() => window.history.back()}
             className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all border border-gray-100 dark:border-gray-700 shadow-sm"
@@ -915,7 +915,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <ArrowLeft size={20} />
           </button>
         )}
-        <button onClick={() => go('shop', 'all', 'all')} className="h-20 flex items-center group transition-all">
+        <button onClick={() => navigate('')} className="h-20 flex items-center group transition-all">
           <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
         </button>
       </div>
@@ -5435,6 +5435,18 @@ const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, c
 // AUTH VIEW
 // ==========================================
 
+// Traduit les messages d'erreur techniques de Supabase en messages clairs.
+const friendlyAuthError = (raw = '') => {
+  const m = raw.toLowerCase();
+  if (m.includes('invalid login credentials')) return "Email ou mot de passe incorrect.";
+  if (m.includes('email not confirmed')) return "Ton email n'est pas encore confirmé. Vérifie ta boîte mail (et les spams).";
+  if (m.includes('user already registered') || m.includes('already been registered')) return "Un compte existe déjà avec cet email. Connecte-toi.";
+  if (m.includes('password should be at least')) return "Le mot de passe doit contenir au moins 6 caractères.";
+  if (m.includes('unable to validate email') || m.includes('invalid email')) return "Adresse email invalide.";
+  if (m.includes('rate limit') || m.includes('too many')) return "Trop de tentatives. Patiente une minute avant de réessayer.";
+  return raw || "Une erreur est survenue. Réessaie.";
+};
+
 const AuthView = ({ navigate }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -5445,33 +5457,62 @@ const AuthView = ({ navigate }) => {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
+  // Écran "confirme ton email" après inscription quand la confirmation est requise.
+  const [pendingConfirmEmail, setPendingConfirmEmail] = useState("");
 
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage("");
+    setInfoMessage("");
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        // La connexion réussie déclenche onAuthStateChange → redirection propre.
+        navigate('shop');
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: {
-              first_name: firstName,
-              last_name: lastName,
-              display_name: username
-            }
-          }
+            emailRedirectTo: window.location.origin,
+            data: { first_name: firstName, last_name: lastName, display_name: username },
+          },
         });
         if (error) throw error;
-        alert("Check your emails to confirm your registration!");
+        // Si une session est immédiatement créée, la confirmation email est
+        // désactivée côté projet → l'utilisateur est connecté, on entre.
+        if (data?.session) {
+          navigate('shop');
+        } else {
+          // Sinon, un email de confirmation a été envoyé : on affiche un écran
+          // dédié au lieu d'une alerte, et on NE redirige PAS (pas encore connecté).
+          setPendingConfirmEmail(email);
+        }
       }
-      navigate('shop');
     } catch (err) {
-      setErrorMessage(err.message);
+      setErrorMessage(friendlyAuthError(err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    setLoading(true);
+    setErrorMessage("");
+    setInfoMessage("");
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: pendingConfirmEmail || email,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      setInfoMessage("Email de confirmation renvoyé. Vérifie ta boîte mail.");
+    } catch (err) {
+      setErrorMessage(friendlyAuthError(err.message));
     } finally {
       setLoading(false);
     }
@@ -5479,30 +5520,32 @@ const AuthView = ({ navigate }) => {
 
   const handleResetPassword = async () => {
     if (!email) {
-      setErrorMessage("Please enter your email address to reset your password.");
+      setErrorMessage("Entre d'abord ton adresse email pour réinitialiser le mot de passe.");
       return;
     }
     setLoading(true);
     setErrorMessage("");
+    setInfoMessage("");
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin,
       });
       if (error) throw error;
-      alert("A reset email has been sent!");
+      setInfoMessage("Un email de réinitialisation a été envoyé. Vérifie ta boîte mail.");
     } catch (err) {
-      setErrorMessage(err.message);
+      setErrorMessage(friendlyAuthError(err.message));
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
+    setErrorMessage("");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin }
+      options: { redirectTo: window.location.origin },
     });
-    if (error) console.error(error);
+    if (error) setErrorMessage(friendlyAuthError(error.message));
   };
 
   return (
@@ -6004,6 +6047,13 @@ function App() {
         if (event === 'SIGNED_OUT') {
           setCart([]);
           setCartOpen(false);
+          // Si on était sur une vue qui exige une session (dashboard, réglages,
+          // recharge, admin), on repart proprement sur le catalogue au lieu de
+          // laisser un écran vide (les vues protégées ne rendent rien sans session).
+          const protectedViews = ['dashboard', 'settings', 'recharge', 'admin'];
+          if (protectedViews.includes(window.location.hash.replace('#', ''))) {
+            navigate('shop');
+          }
         }
       }
     });
@@ -6284,9 +6334,10 @@ function App() {
       // (detectSessionInUrl). On NE TOUCHE PAS à window.location.hash ici —
       // un history.replaceState prématuré effacerait le jeton avant que
       // Supabase ait fini de le traiter et casserait la connexion. On se
-      // contente d'afficher l'accueil pendant que Supabase travaille en
+      // contente d'afficher le catalogue pendant que Supabase travaille en
       // arrière-plan ; il nettoiera l'URL une fois la session établie.
-      setCurrentView('home');
+      // ('shop' = catalogue ; 'home' n'est PAS une vue rendue → écran blanc.)
+      setCurrentView('shop');
     } else if (params.get('paymentStatus')) {
       setCurrentView('dashboard');
       window.history.replaceState(null, '', `${window.location.pathname}#dashboard`);
