@@ -6422,9 +6422,13 @@ function App() {
           navigate('reset-password');
           return;
         }
-        // Only redirect to home if we are currently on the auth view and just signed in
-        if (event === 'SIGNED_IN' && window.location.hash === '#auth') {
-          navigate('shop');
+        // Redirection après connexion : si le hash est vide (cas d'un retour
+        // OAuth Google), 'landing', ou 'auth', on les envoie vers le shop.
+        if (event === 'SIGNED_IN') {
+          const h = window.location.hash.replace('#', '');
+          if (!h || h === 'auth' || h === 'landing') {
+            navigate('shop');
+          }
         }
       } else {
         setProfile(null);
