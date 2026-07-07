@@ -1470,7 +1470,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
         if (error) throw new Error(error.message);
         if (data.error) throw new Error(data.error);
-        if (data.Status !== "200") throw new Error(data.Error || 'Provider Error');
+        if (data.Status !== "200" && data.Status !== "Success") throw new Error(data.Error || 'Provider Error');
 
         if (data.Prices && data.Prices.length > 0) {
           // Sort alphabetically by Country name
@@ -1567,7 +1567,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
       if (error) throw new Error(error.message);
       if (data.error) throw new Error(data.error);
-      if (data.Status !== "200") throw new Error(data.Error || 'Provider Error');
+      if (data.Status !== "200" && data.Status !== "Success") throw new Error(data.Error || 'Provider Error');
 
       setPhoneNumber(data.Number);
       setSecurityId(data.SecurityId);

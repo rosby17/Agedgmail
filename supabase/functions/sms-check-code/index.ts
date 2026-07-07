@@ -39,7 +39,7 @@ serve(async (req) => {
     const data = await res.json();
 
     // If we have an SMS, deduct balance
-    if (data.Status === "200" && data.SMS) {
+    if ((data.Status === "200" || data.Status === "Success") && data.SMS) {
       // Use service role to update balance
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
       

@@ -47,7 +47,7 @@ serve(async (req) => {
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.Status !== "200") {
+    if (data.Status !== "200" && data.Status !== "Success") {
       throw new Error(`SMS Provider Error: ${data.Error || 'Unknown error'}`);
     }
 
