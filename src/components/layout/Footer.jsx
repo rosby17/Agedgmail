@@ -62,7 +62,7 @@ const Footer = ({ navigate, lang }) => (
           <ul className="space-y-6">
             <li className="flex items-center gap-3 text-on-surface-variant text-sm font-medium">
               <Mail size={16} className="text-primary shrink-0" />
-              <a href="mailto:support@agedgmailyt.com" className="hover:text-primary transition-colors truncate">support@agedgmailyt.com</a>
+              <a href="mailto:support@tools-cl.com" className="hover:text-primary transition-colors truncate">support@tools-cl.com</a>
             </li>
             <li className="pt-2">
               <a 
