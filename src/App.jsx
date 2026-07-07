@@ -384,24 +384,28 @@ const FAQSection = () => {
   
   const faqs = [
     {
-      q: "Qu'est-ce qu'un compte Aged ?",
-      a: "Un compte 'Aged' est un compte créé il y a plusieurs mois ou années. Les algorithmes (comme YouTube ou Google) accordent naturellement plus de confiance à ces comptes par rapport aux comptes fraîchement créés, ce qui réduit considérablement les risques de blocages ou de shadowban."
+      q: "Qu'est-ce qu'un compte AgedGmailYT ?",
+      a: "Nous vendons tout type de comptes (récents, aged) sur de multiples plateformes (Gmail, Facebook, Twitter, TikTok, etc.). 'AgedGmailYT' est simplement le nom de notre plateforme. Les comptes Gmail US sont notre accroche principale, mais notre catalogue vous offre une grande variété de réseaux sociaux."
     },
     {
-      q: "Vais-je subir un shadowban avec ces comptes ?",
-      a: "Non. Grâce à l'ancienneté et à la qualité de nos comptes, vous évitez les filtres anti-spam agressifs qui touchent généralement les nouveaux comptes, vous permettant de publier à l'international de manière sécurisée."
+      q: "Vais-je subir un shadow ban avec ces comptes ?",
+      a: "Un compte ne garantit pas l'absence de shadow ban si vous ne respectez pas les algorithmes. Cependant, nos comptes vous donnent l'immense avantage d'apparaître comme un utilisateur résidant hors du continent africain, ce qui est très difficile avec des comptes locaux. Ils maximisent vos chances, mais votre comportement dictera le reste."
+    },
+    {
+      q: "Est-ce que ces comptes sont fiables pour percer sur YouTube ou ailleurs ?",
+      a: "De nombreux créateurs ont acheté nos comptes et ont percé. Cependant, la clé reste la qualité de votre contenu. Nos adresses mails maximisent vos chances en vous offrant un profil solide dès le lancement, ce qui réduit drastiquement les risques de shadow ban initiaux."
     },
     {
       q: "La livraison est-elle vraiment instantanée ?",
-      a: "Oui, la livraison est 100% automatisée. Dès que votre paiement est validé (par carte, crypto ou mobile money), vos identifiants s'affichent instantanément à l'écran et vous sont envoyés par email."
+      a: "Oui ! La livraison des comptes achetés est 100% instantanée, sans aucune validation manuelle. (Notez que la recharge de votre solde, elle, peut parfois nécessiter une validation manuelle selon le moyen de paiement, sauf pour les paiements Crypto/Binance qui sont 100% automatisés)."
     },
     {
       q: "Quels sont les moyens de paiement acceptés ?",
-      a: "Nous acceptons les cartes bancaires, les cryptomonnaies (USDT, LTC, Binance Pay), ainsi que les principales solutions de Mobile Money pour la région africaine."
+      a: "Nous acceptons principalement la Crypto (notamment USDT) ainsi que les principales solutions de Mobile Money."
     },
     {
       q: "Puis-je modifier les informations de sécurité ?",
-      a: "Absolument. Dès la livraison, vous devenez l'unique propriétaire du compte. Nous vous recommandons d'ailleurs de modifier l'email de récupération et le mot de passe pour garantir votre sécurité."
+      a: "Oui, dès réception, vous devenez propriétaire de la boîte mail. Vous pouvez modifier l'authentification (Google Authenticator) et le mot de passe. Nous conseillons de patienter au minimum 72 heures avant de tout modifier. Ensuite, le compte vous appartient à 100%."
     }
   ];
 
