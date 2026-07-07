@@ -47,7 +47,7 @@ serve(async (req) => {
         const cost = parseFloat(country.Price);
         let margin = 0.50;
         
-        if (cost < 0.10) margin = 0.75;
+        if (cost < 0.10) margin = 0.85;
         else if (cost < 0.50) margin = 0.65;
         else if (cost < 1.00) margin = 0.55;
         else margin = 0.50;
