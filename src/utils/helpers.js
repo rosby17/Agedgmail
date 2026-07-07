@@ -100,3 +100,20 @@ export const getProductDetails = (product = {}) => {
     format: product.description?.match(/Format:\s*([^\n]+)/i)?.[1] || 'Email:Password:Recovery',
   };
 };
+
+
+export const friendlyAuthError = (raw = '') => {
+  const m = raw.toLowerCase();
+  if (m.includes('invalid login credentials')) return "Email ou mot de passe incorrect.";
+  if (m.includes('email not confirmed')) return "Ton email n'est pas encore confirmé. Vérifie ta boîte mail (et les spams).";
+  if (m.includes('user already registered') || m.includes('already been registered')) return "Un compte existe déjà avec cet email. Connecte-toi.";
+  if (m.includes('password should be at least')) return "Le mot de passe doit contenir au moins 6 caractères.";
+  if (m.includes('unable to validate email') || m.includes('invalid email')) return "Adresse email invalide.";
+  if (m.includes('rate limit') || m.includes('too many')) return "Trop de tentatives. Patiente une minute avant de réessayer.";
+  // Panne d'envoi d'email côté serveur (SMTP non configuré ou en échec) —
+  // ne pas laisser le message technique brut de Supabase s'afficher.
+  if (m.includes('error sending confirmation') || m.includes('error sending recovery') || m.includes('sending email')) {
+    return "Impossible d'envoyer l'email pour le moment. Réessaie dans un instant ou contacte le support si le problème persiste.";
+  }
+  return raw || "Une erreur est survenue. Réessaie.";
+};

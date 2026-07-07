@@ -25,5 +25,3 @@ export const JUNK_CATEGORIES = ['accounts-telegram', 'amazon'];
 export const SUPPLIERS = ['ytseller', 'smmshiba'];
 
 export const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
-
-export const SUPPLIER_LABEL = { ytseller: 'YTSeller', smmshiba: 'SMMSHIBA' };

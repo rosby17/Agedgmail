@@ -26,6 +26,596 @@ import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
+const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'fr' }) => {
+  const [range, setRange] = useState(7);
+  const [activeMetric, setActiveMetric] = useState('revenue'); // 'revenue' | 'users'
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+
+  const calculateNetProfit = (ordersList) => netProfitOf(ordersList, mappings);
+
+  const getChartData = () => {
+    if (range === 7 || range === 30) {
+      // Daily grouping
+      const days = [...Array(range)].map((_, i) => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - (range - 1 - i));
+        return d;
+      });
+
+      return days.map((day, index) => {
+        const next = new Date(day); next.setDate(next.getDate() + 1);
+        const dayOrders = confirmedOrders
+          .filter(o => { const t = new Date(o.created_at); return t >= day && t < next; });
+
+        const netProfit = calculateNetProfit(dayOrders);
+
+        const users = allUsers
+          .filter(u => { const t = new Date(u.created_at); return t >= day && t < next; })
+          .length;
+
+        return {
+          date: day,
+          label: day.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: '2-digit' }),
+          revenue: netProfit,
+          users,
+          index
+        };
+      });
+    } else if (range === 365) {
+      // Monthly grouping (last 12 months)
+      const months = [...Array(12)].map((_, i) => {
+        const d = new Date();
+        d.setDate(1);
+        d.setHours(0, 0, 0, 0);
+        d.setMonth(d.getMonth() - (11 - i));
+        return d;
+      });
+
+      return months.map((monthStart, index) => {
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthEnd.getMonth() + 1);
+
+        const monthOrders = confirmedOrders
+          .filter(o => { const t = new Date(o.created_at); return t >= monthStart && t < monthEnd; });
+
+        const netProfit = calculateNetProfit(monthOrders);
+
+        const users = allUsers
+          .filter(u => { const t = new Date(u.created_at); return t >= monthStart && t < monthEnd; })
+          .length;
+
+        return {
+          date: monthStart,
+          label: monthStart.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: '2-digit' }),
+          revenue: netProfit,
+          users,
+          index
+        };
+      });
+    } else {
+      // Lifetime grouping (Monthly from oldest to now)
+      const oldestOrderTime = confirmedOrders.length > 0
+        ? Math.min(...confirmedOrders.map(o => new Date(o.created_at).getTime()))
+        : Date.now();
+      const oldestUserTime = allUsers.length > 0
+        ? Math.min(...allUsers.map(u => new Date(u.created_at).getTime()))
+        : Date.now();
+
+      const oldestTime = Math.min(oldestOrderTime, oldestUserTime, Date.now());
+      const start = new Date(oldestTime);
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+
+      const current = new Date();
+      const diffMonths = (current.getFullYear() - start.getFullYear()) * 12 + (current.getMonth() - start.getMonth()) + 1;
+      const numMonths = Math.max(diffMonths, 6); // at least 6 months
+
+      const months = [...Array(numMonths)].map((_, i) => {
+        const d = new Date(start);
+        d.setMonth(d.getMonth() + i);
+        return d;
+      });
+
+      return months.map((monthStart, index) => {
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthEnd.getMonth() + 1);
+
+        const monthOrders = confirmedOrders
+          .filter(o => { const t = new Date(o.created_at); return t >= monthStart && t < monthEnd; });
+
+        const netProfit = calculateNetProfit(monthOrders);
+
+        const users = allUsers
+          .filter(u => { const t = new Date(u.created_at); return t >= monthStart && t < monthEnd; })
+          .length;
+
+        return {
+          date: monthStart,
+          label: monthStart.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: '2-digit' }),
+          revenue: netProfit,
+          users,
+          index
+        };
+      });
+    }
+  };
+
+  const dataPoints = getChartData();
+
+  // Totaux cumulés sur la période sélectionnée (pour l'en-tête des onglets)
+  const rangeRevenue = dataPoints.reduce((s, p) => s + p.revenue, 0);
+  const rangeUsers = dataPoints.reduce((s, p) => s + p.users, 0);
+
+  // Données actives pour le tracé du graphique
+  const activeTotals = dataPoints.map(p => activeMetric === 'revenue' ? p.revenue : p.users);
+  const max = Math.max(...activeTotals, 1);
+
+  // Configuration SVG
+  const width = 600;
+  const height = 160;
+  const paddingX = 25;
+  const paddingY = 25;
+
+  const points = dataPoints.map((p, i) => {
+    const val = activeMetric === 'revenue' ? p.revenue : p.users;
+    const x = paddingX + (i / (dataPoints.length - 1)) * (width - 2 * paddingX);
+    const y = height - paddingY - (val / max) * (height - 2 * paddingY);
+    return { x, y, amount: val, date: p.date, label: p.label, index: i };
+  });
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  const areaPath = points.length > 0
+    ? `${linePath} L ${points[points.length - 1].x} ${height - 5} L ${points[0].x} ${height - 5} Z`
+    : '';
+
+  const rangeOptions = [
+    { value: 7, label: lang === 'fr' ? '7 jours' : '7 days' },
+    { value: 30, label: lang === 'fr' ? '30 jours' : '30 days' },
+    { value: 365, label: lang === 'fr' ? '1 an' : '1 year' },
+    { value: 'lifetime', label: lang === 'fr' ? 'À vie' : 'Lifetime' }
+  ];
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative space-y-6">
+      {/* Sélecteurs de Période */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-black text-gray-500 dark:text-slate-500 uppercase tracking-widest">
+            {lang === 'fr' ? 'Performances générales' : 'General metrics'}
+          </h3>
+        </div>
+        <div className="flex gap-2">
+          {rangeOptions.map(opt => (
+            <button key={opt.value} onClick={() => { setRange(opt.value); setHoveredPoint(null); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === opt.value ? 'bg-primary text-white dark:text-gray-900' : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-800'}`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Onglets style YouTube Studio */}
+      <div className="grid grid-cols-2 gap-4 border-b border-gray-100 dark:border-slate-800 pb-2">
+        {/* Onglet Revenu Estimé */}
+        <button
+          onClick={() => { setActiveMetric('revenue'); setHoveredPoint(null); }}
+          className={`text-left p-4 rounded-2xl transition-all relative border flex flex-col justify-between ${
+            activeMetric === 'revenue'
+              ? 'bg-gray-50 dark:bg-slate-800/40 border-gray-200 dark:border-slate-700/80 text-gray-900 dark:text-white'
+              : 'bg-transparent border-transparent text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300'
+          }`}
+        >
+          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-slate-400">
+            {lang === 'fr' ? 'Bénéfice Net' : 'Net Profit'}
+          </div>
+          <div className="text-2xl font-black font-mono mt-1 text-gray-900 dark:text-white">${rangeRevenue.toFixed(2)}</div>
+          <div className="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold mt-1">
+            {lang === 'fr' ? `Total sur ${rangeOptions.find(o => o.value === range)?.label.toLowerCase()}` : `Total for ${rangeOptions.find(o => o.value === range)?.label.toLowerCase()}`}
+          </div>
+          {activeMetric === 'revenue' && (
+            <div className="absolute bottom-[-10px] left-0 right-0 h-1 bg-primary rounded-full" />
+          )}
+        </button>
+
+        {/* Onglet Clients Inscrits */}
+        <button
+          onClick={() => { setActiveMetric('users'); setHoveredPoint(null); }}
+          className={`text-left p-4 rounded-2xl transition-all relative border flex flex-col justify-between ${
+            activeMetric === 'users'
+              ? 'bg-gray-50 dark:bg-slate-800/40 border-gray-200 dark:border-slate-700/80 text-gray-900 dark:text-white'
+              : 'bg-transparent border-transparent text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300'
+          }`}
+        >
+          <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-slate-400">
+            {lang === 'fr' ? 'Clients Inscrits' : 'Registered Clients'}
+          </div>
+          <div className="text-2xl font-black font-mono mt-1 text-gray-900 dark:text-white">{rangeUsers}</div>
+          <div className="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold mt-1">
+            {lang === 'fr' ? `Inscriptions sur la période` : `Registrations in period`}
+          </div>
+          {activeMetric === 'users' && (
+            <div className="absolute bottom-[-10px] left-0 right-0 h-1 bg-primary rounded-full" />
+          )}
+        </button>
+      </div>
+
+      {/* Zone Graphique */}
+      <div className="relative h-44 w-full">
+        {/* Tooltip flottant */}
+        {hoveredPoint && (
+          <div
+            className="absolute z-20 bg-white dark:bg-slate-950 border border-gray-100 dark:border-slate-800 px-3 py-2 rounded-xl shadow-xl text-center pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95"
+            style={{
+              left: `${(hoveredPoint.x / width) * 100}%`,
+              top: `${(hoveredPoint.y / height) * 100 - 45}%`,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <div className="text-[9px] text-gray-500 dark:text-slate-500 font-black uppercase">
+              {hoveredPoint.label}
+            </div>
+            <div className="text-xs font-black text-primary font-mono">
+              {activeMetric === 'revenue' ? `${hoveredPoint.amount.toFixed(2)}` : `${hoveredPoint.amount} client(s)`}
+            </div>
+          </div>
+        )}
+
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+          <defs>
+            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {/* Grille horizontale en arrière-plan */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+            const y = paddingY + ratio * (height - 2 * paddingY);
+            return (
+              <line
+                key={idx}
+                x1={paddingX}
+                y1={y}
+                x2={width - paddingX}
+                y2={y}
+                strokeWidth="1"
+                strokeDasharray="4 4"
+                className="stroke-gray-100 dark:stroke-slate-800"
+              />
+            );
+          })}
+
+          {/* Remplissage dégradé sous la courbe */}
+          {areaPath && <path d={areaPath} fill="url(#chartGradient)" />}
+
+          {/* Ligne principale de la courbe */}
+          {linePath && (
+            <path
+              d={linePath}
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Points sur la courbe */}
+          {points.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r={hoveredPoint?.index === i ? "6" : "3.5"}
+              fill="#10B981"
+              strokeWidth={hoveredPoint?.index === i ? "3" : "2"}
+              className="stroke-white dark:stroke-slate-900 transition-all duration-150"
+            />
+          ))}
+
+          {/* Zones interactives transparentes pour le survol */}
+          {points.map((p, i) => (
+            <rect
+              key={i}
+              x={p.x - (width / points.length) / 2}
+              y={0}
+              width={width / points.length}
+              height={height}
+              fill="transparent"
+              className="cursor-pointer"
+              onMouseEnter={() => setHoveredPoint(p)}
+              onMouseLeave={() => setHoveredPoint(null)}
+            />
+          ))}
+        </svg>
+      </div>
+
+      <div className="flex justify-between text-[9px] text-slate-500 font-bold uppercase pt-2">
+        <span>{points[0]?.label || ''}</span>
+        <span>{points[points.length - 1]?.label || ''}</span>
+      </div>
+    </div>
+  );
+};
+
+const RecentActivityTable = ({ allOrders }) => {
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const filtered = allOrders
+    .filter(o => filter === 'all' || (o.status || 'pending') === filter)
+    .filter(o => !search.trim() || (o.buyer_email || '').toLowerCase().includes(search.trim().toLowerCase()) || (o.product_name || '').toLowerCase().includes(search.trim().toLowerCase()))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 12);
+
+  const statusBadge = (status) => {
+    const s = status || 'pending';
+    const map = {
+      confirmed: { label: 'Confirmed', cls: 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400' },
+      processing: { label: 'Processing', cls: 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400' },
+      cancelled: { label: 'Cancelled', cls: 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400' },
+      pending: { label: 'Pending', cls: 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400' },
+    };
+    const { label, cls } = map[s] || map.pending;
+    return <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wide ${cls}`}>{label}</span>;
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-2xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activité récente</h3>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-xl p-1">
+            {['all', 'confirmed', 'processing', 'pending', 'cancelled'].map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-primary text-white dark:text-gray-900' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white dark:text-gray-900'}`}>
+                {f === 'all' ? 'Toutes' : f}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={14} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher par email, produit…"
+              className="pl-9 pr-3 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-primary/20 outline-none w-52"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm text-gray-600 dark:text-slate-300">
+          <thead>
+            <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+              <th className="pb-4">Client</th><th className="pb-4">Produit</th><th className="pb-4">Date</th><th className="pb-4">Statut</th><th className="pb-4 text-right">Montant</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
+            {filtered.map(o => (
+              <tr key={o.id}>
+                <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email || '—'}</td>
+                <td className="py-4 text-gray-500 dark:text-slate-400">{cleanProductName(o.product_name, lang)}</td>
+                <td className="py-4 text-xs text-gray-400 dark:text-slate-500">{new Date(o.created_at).toLocaleString('fr-FR')}</td>
+                <td className="py-4">{statusBadge(o.status)}</td>
+                <td className="py-4 text-right font-mono font-black text-gray-900 dark:text-white">${Number(o.total_price || 0).toFixed(2)}</td>
+              </tr>
+            ))}
+            {filtered.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-gray-400 dark:text-slate-500">Aucune commande trouvée.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) => {
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all | active | suspended
+  const [viewingClient, setViewingClient] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+
+  // Stats par client, calculées une fois depuis toutes les commandes.
+  const statsByUser = (() => {
+    const map = new Map();
+    allOrders.forEach(o => {
+      const cur = map.get(o.user_id) || { orders: 0, spent: 0, deposited: 0, lastActivity: null };
+      if (o.status === 'confirmed') {
+        if (o.product_id === 999) cur.deposited += o.total_price || 0;
+        else { cur.orders += 1; cur.spent += o.total_price || 0; }
+      }
+      const t = new Date(o.created_at).getTime();
+      if (!cur.lastActivity || t > cur.lastActivity) cur.lastActivity = t;
+      map.set(o.user_id, cur);
+    });
+    return map;
+  })();
+
+  const filtered = allUsers
+    .filter(u => statusFilter === 'all' || (statusFilter === 'suspended' ? u.is_suspended : !u.is_suspended))
+    .filter(u => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      return (u.email || '').toLowerCase().includes(q) || (u.display_name || '').toLowerCase().includes(q);
+    });
+
+  const activeCount = allUsers.filter(u => !u.is_suspended).length;
+  const suspendedCount = allUsers.filter(u => u.is_suspended).length;
+
+  const toggleBan = async (user) => {
+    const next = !user.is_suspended;
+    if (!window.confirm(next
+      ? `Bannir ${user.email} ? Il ne pourra plus acheter ni recharger tant qu'il est suspendu.`
+      : `Réactiver ${user.email} ?`)) return;
+    setBusyId(user.id);
+    const { error } = await supabase.from('profiles').update({ is_suspended: next }).eq('id', user.id);
+    if (error) alert('Erreur : ' + error.message);
+    else await fetchUsers();
+    setBusyId(null);
+  };
+
+  const creditBalance = async (user) => {
+    const raw = prompt(`Créditer le solde de ${user.email} de ($) :`, '10');
+    if (raw == null) return;
+    const amount = parseFloat(raw);
+    if (isNaN(amount) || amount === 0) return;
+    setBusyId(user.id);
+    const { data } = await supabase.from('profiles').select('balance').eq('id', user.id).single();
+    const { error } = await supabase.from('profiles').update({ balance: (data?.balance || 0) + amount }).eq('id', user.id);
+    if (error) alert('Erreur : ' + error.message);
+    else await fetchUsers();
+    setBusyId(null);
+  };
+
+  const initial = (u) => (u.display_name || u.email || '?').trim().charAt(0).toUpperCase();
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 shadow-soft space-y-8">
+      {/* En-tête + compteurs */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des clients</h2>
+          <div className="flex items-center gap-4 mt-2 text-xs font-bold">
+            <span className="text-gray-400">{allUsers.length} au total</span>
+            <span className="text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> {activeCount} actifs</span>
+            <span className="text-red-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {suspendedCount} suspendus</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex gap-1 bg-gray-50 dark:bg-slate-800 rounded-xl p-1">
+            {['all', 'active', 'suspended'].map(f => (
+              <button key={f} onClick={() => setStatusFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${statusFilter === f ? 'bg-gray-900 dark:bg-primary text-white dark:text-gray-900' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+                {f === 'all' ? 'Tous' : f === 'active' ? 'Actifs' : 'Suspendus'}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={15} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher email ou pseudo…"
+              className="pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-2 focus:ring-primary/20 outline-none w-64"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Table clients */}
+      {loading ? (
+        <div className="py-4"><SkeletonRows rows={6} cols={7} /></div>
+      ) : (
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+              <th className="pb-4">Client</th><th className="pb-4">Solde</th><th className="pb-4">Achats</th><th className="pb-4">Dépensé</th><th className="pb-4">Inscrit</th><th className="pb-4">Statut</th><th className="pb-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+            {filtered.map(user => {
+              const s = statsByUser.get(user.id) || { orders: 0, spent: 0, deposited: 0 };
+              return (
+                <tr key={user.id} className={user.is_suspended ? 'opacity-60' : ''}>
+                  <td className="py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-black text-xs flex items-center justify-center shrink-0">{initial(user)}</div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-gray-900 dark:text-white truncate">{user.email}</div>
+                        <div className="text-xs text-gray-400 truncate">{user.display_name || '—'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 font-mono font-black text-primary">${Number(user.balance || 0).toFixed(2)}</td>
+                  <td className="py-4 text-gray-600 dark:text-gray-300">{s.orders}</td>
+                  <td className="py-4 font-mono text-gray-600 dark:text-gray-300">${s.spent.toFixed(2)}</td>
+                  <td className="py-4 text-xs text-gray-400">{user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : '—'}</td>
+                  <td className="py-4">
+                    {user.is_suspended
+                      ? <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-red-100 text-red-700 uppercase tracking-wide">Suspendu</span>
+                      : <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-green-100 text-green-700 uppercase tracking-wide">Actif</span>}
+                  </td>
+                  <td className="py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => setViewingClient(user)} title="Voir l'historique" className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"><Eye size={14} /></button>
+                      <button onClick={() => creditBalance(user)} disabled={busyId === user.id} title="Créditer le solde" className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all disabled:opacity-40"><DollarSign size={14} /></button>
+                      <button onClick={() => toggleBan(user)} disabled={busyId === user.id}
+                        title={user.is_suspended ? 'Réactiver' : 'Bannir'}
+                        className={`p-2 rounded-lg transition-all disabled:opacity-40 ${user.is_suspended ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
+                        {user.is_suspended ? <UserCheck size={14} /> : <Ban size={14} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-gray-400">Aucun client trouvé.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      )}
+
+      {/* Modale détail client */}
+      {viewingClient && (() => {
+        const s = statsByUser.get(viewingClient.id) || { orders: 0, spent: 0, deposited: 0 };
+        const clientOrders = allOrders.filter(o => o.user_id === viewingClient.id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewingClient(null)} />
+            <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl p-10 space-y-6 animate-in fade-in zoom-in duration-300 max-h-[85vh] overflow-y-auto">
+              <div className="flex justify-between items-start border-b border-gray-100 dark:border-slate-800 pb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary font-black text-lg flex items-center justify-center">{initial(viewingClient)}</div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{viewingClient.email}</h3>
+                    <p className="text-xs text-gray-400 font-bold mt-1">{viewingClient.display_name || '—'} · inscrit le {viewingClient.created_at ? new Date(viewingClient.created_at).toLocaleDateString('fr-FR') : '—'}</p>
+                  </div>
+                </div>
+                <button onClick={() => setViewingClient(null)} aria-label="Close" className="w-10 h-10 bg-gray-50 dark:bg-slate-800 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-all"><X size={18} /></button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-4"><div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Solde</div><div className="text-lg font-black text-primary font-mono">${Number(viewingClient.balance || 0).toFixed(2)}</div></div>
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-4"><div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Achats</div><div className="text-lg font-black text-gray-900 dark:text-white">{s.orders}</div></div>
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-4"><div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dépensé</div><div className="text-lg font-black text-gray-900 dark:text-white font-mono">${s.spent.toFixed(2)}</div></div>
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-4"><div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Rechargé</div><div className="text-lg font-black text-gray-900 dark:text-white font-mono">${s.deposited.toFixed(2)}</div></div>
+              </div>
+
+              {clientOrders.length === 0 ? (
+                <p className="text-gray-400 text-sm italic py-8 text-center">Aucune activité pour ce client.</p>
+              ) : (
+                <div className="space-y-3">
+                  {clientOrders.map(o => (
+                    <div key={o.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl">
+                      <div>
+                        <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                          {o.product_id === 999 ? <span className="text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Recharge</span> : <span className="text-[9px] font-black uppercase bg-primary/10 text-primary px-2 py-0.5 rounded-full">Achat</span>}
+                          {o.product_name}
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-bold mt-1">{new Date(o.created_at).toLocaleString('fr-FR')}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-black text-gray-900 dark:text-white font-mono">${o.total_price?.toFixed(2)}</div>
+                        <div className={`text-[10px] font-bold uppercase mt-1 ${o.status === 'confirmed' ? 'text-green-600' : o.status === 'cancelled' ? 'text-red-500' : o.status === 'processing' ? 'text-blue-600' : 'text-yellow-600'}`}>
+                          {o.status === 'confirmed' ? 'Payé' : o.status === 'cancelled' ? 'Annulé' : o.status === 'processing' ? 'En cours' : 'En attente'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+};
+
 const AdminView = ({
   session, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
   actionStatus, setActionStatus, lang, setLang, t, dataLoading = false,
@@ -530,132 +1120,5 @@ function sanitizeDescriptionHtml(html) {
 // ==========================================
 // PRODUCT VIEW
 // ==========================================
-const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow, lang }) => {
-  const [quantity, setQuantity] = useState(1);
-  return (
-    <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-24">
 
-        <div className="bg-gray-50/50 rounded-[2rem] aspect-[4/3] max-h-[360px] flex items-center justify-center border border-gray-100 overflow-hidden relative">
-          <div className="w-full h-full flex items-center justify-center p-10">
-            <ProductVisual product={product} iconSize={64} />
-          </div>
-          {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-5 right-5 bg-primary text-white dark:text-gray-900 text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm">US ACCOUNT</div>}
-        </div>
-
-        <div className="flex flex-col justify-center">
-          <nav className="flex gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-5">
-            <button onClick={() => navigate('')} className="hover:text-primary">HOME</button>
-            <span>/</span>
-            <span className="text-primary">{displayCategoryLabel(product)}</span>
-          </nav>
-
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 tracking-tight leading-snug">{cleanProductName(product.name, lang)}</h1>
-
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-xs font-bold border border-green-100">
-              <Package size={14} /> In stock ({product.stock})
-            </div>
-            <div className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-bold border border-gray-200">
-              {displayCategoryLabel(product)}
-            </div>
-          </div>
-
-          <div className="text-3xl font-bold text-gray-900 mb-8 tracking-tight flex items-baseline gap-1">
-            <span className="text-lg text-gray-400 font-bold">$</span>{product.price.toFixed(2)}
-          </div>
-
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</label>
-              <div className="flex items-center bg-gray-100 rounded-2xl p-1.5 border border-gray-200/50">
-                <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-200/50"><Minus size={16} /></button>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value);
-                    if (!isNaN(val) && val >= 1) setQuantity(Math.min(val, product.stock));
-                  }}
-                  className="w-20 bg-transparent text-center font-black text-xl outline-none border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-                <button onClick={() => quantity < product.stock && setQuantity(quantity + 1)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-200/50"><Plus size={16} /></button>
-              </div>
-            </div>
-
-            <div className="flex gap-4 w-full max-w-md">
-              <button
-                onClick={() => onBuyNow(product)}
-                disabled={product.stock <= 0}
-                className={`flex-grow h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-primary text-white dark:text-gray-900 hover:bg-primaryDark shadow-primary/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-              >
-                {product.stock > 0 ? 'Buy now' : 'Out of stock'}
-              </button>
-              <button
-                onClick={() => {
-                  addToCart(product, quantity);
-                  onCartClick();
-                }}
-                disabled={product.stock <= 0}
-                title="Add to cart"
-                className={`w-20 h-20 shrink-0 rounded-[2rem] flex items-center justify-center transition-all border-2 ${product.stock <= 0 ? 'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary'}`}
-              >
-                <ShoppingCart size={24} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs / Details */}
-      <div className="border-t border-gray-100 pt-20">
-        <div className="flex gap-10 border-b border-gray-100 mb-12 overflow-x-auto pb-4">
-          {['Information', 'Warranty policy'].map((tab, i) => (
-            <button key={tab} className={`text-sm font-black uppercase tracking-[0.2em] pb-4 relative whitespace-nowrap transition-colors ${i === 0 ? 'text-primary' : 'text-gray-400 hover:text-gray-600'}`}>
-              {tab}
-              {i === 0 && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-full"></div>}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-8">
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Information</h3>
-              <div className="divide-y divide-gray-200/70">
-                {product.details?.info?.split(' | ').map((line, i) => (
-                  <div key={i} className="flex items-center justify-between py-2.5 text-sm">
-                    <span className="text-gray-500 font-medium">{line.split(' : ')[0]}</span>
-                    <span className="text-gray-900 font-bold">{line.split(' : ')[1]}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-              <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"><Info size={14} className="text-primary" /> Additional Description</h4>
-              {product.description ? (
-                <div
-                  className="text-gray-600 leading-relaxed text-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1.5 [&_p]:mb-3 [&_strong]:font-bold [&_strong]:text-gray-900 [&_u]:underline"
-                  dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(product.description) }}
-                />
-              ) : (
-                <p className="text-gray-600 leading-relaxed italic text-sm">{product.details?.note}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-              <h4 className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"><ShieldAlert size={14} className="text-primary" /> Terms of Service</h4>
-              <div className="text-xs text-gray-500 leading-relaxed space-y-3">
-                {product.details?.terms?.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 export default AdminView;

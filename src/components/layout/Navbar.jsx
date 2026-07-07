@@ -10,6 +10,7 @@ import { TypewriterText } from '../ui/TypewriterText';
 import ProductCard from '../ui/ProductCard';
 import ProductVisual from '../ui/ProductVisual';
 import DeliveredAccountCard from '../ui/DeliveredAccountCard';
+import NotificationBell from './NotificationBell';
 
 const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView, setActiveCategory, setActiveGroup, onCartClick, lang, setLang, theme, setTheme, t }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
