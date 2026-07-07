@@ -506,6 +506,48 @@ const FAQSection = () => {
 };
 
 // ==========================================
+// KEEP ALIVE (Persistence des pages)
+// ==========================================
+
+const KeepAlive = ({ show, children }) => {
+  const [hasRendered, setHasRendered] = useState(show);
+  
+  useEffect(() => {
+    if (show && !hasRendered) {
+      setHasRendered(true);
+    }
+  }, [show, hasRendered]);
+
+  if (!hasRendered) return null;
+
+  return (
+    <div style={{ display: show ? 'block' : 'none', height: '100%', width: '100%' }}>
+      {children}
+    </div>
+  );
+};
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
+
+function App() {
+  const [currentPage, setCurrentPage] = useState('home');
+  // ... (routing logic wrapped in <KeepAlive show={currentPage === '...'}>)
+
+  return (
+    <div>
+      <KeepAlive show={currentPage === 'home'}>
+        <HomePage />
+      </KeepAlive>
+      <KeepAlive show={currentPage === 'shop'}>
+        <ShopPage />
+      </KeepAlive>
+    </div>
+  );
+}
+
+// ==========================================
 // COMPOSANTS UI STYLÉS
 // ==========================================
 
@@ -7331,35 +7373,39 @@ function App() {
         />
       )}
       <div className="flex-grow">
-        {currentView === 'landing' && <LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} />}
-        {currentView === 'sms' && <SmsView session={session} profile={profile} lang={lang} navigate={navigate} fetchProfile={fetchProfile} />}
-        {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
-        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} lang={lang} />}
-        {currentView === 'api' && <ApiView navigate={navigate} session={session} lang={lang} />}
-        {currentView === 'policies' && <PoliciesView navigate={navigate} lang={lang} />}
-        {currentView === 'auth' && <AuthView navigate={navigate} lang={lang} />}
-        {currentView === 'reset-password' && <ResetPasswordView navigate={navigate} lang={lang} />}
-        {currentView === 'dashboard' && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} />}
-        {currentView === 'settings' && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} />}
-        {currentView === 'recharge' && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} />}
-        {currentView === 'admin' && (
-          <AdminView
-            session={session}
-            navigate={navigate}
-            products={products}
-            fetchProducts={fetchProducts}
-            allOrders={allOrders}
-            fetchAllOrders={fetchAllOrders}
-            allUsers={allUsers}
-            fetchUsers={fetchUsers}
-            actionStatus={actionStatus}
-            setActionStatus={setActionStatus}
-            lang={lang}
-            setLang={setLang}
-            t={t}
-            dataLoading={adminDataLoading}
-          />
-        )}
+        <KeepAlive show={currentView === 'landing'}><LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} /></KeepAlive>
+        <KeepAlive show={currentView === 'sms'}><SmsView session={session} profile={profile} lang={lang} navigate={navigate} fetchProfile={fetchProfile} /></KeepAlive>
+        <KeepAlive show={currentView === 'shop'}><HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} /></KeepAlive>
+        <KeepAlive show={currentView === 'product' && !!selectedProduct}>
+          {selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} lang={lang} />}
+        </KeepAlive>
+        <KeepAlive show={currentView === 'api'}><ApiView navigate={navigate} session={session} lang={lang} /></KeepAlive>
+        <KeepAlive show={currentView === 'policies'}><PoliciesView navigate={navigate} lang={lang} /></KeepAlive>
+        <KeepAlive show={currentView === 'auth'}><AuthView navigate={navigate} lang={lang} /></KeepAlive>
+        <KeepAlive show={currentView === 'reset-password'}><ResetPasswordView navigate={navigate} lang={lang} /></KeepAlive>
+        <KeepAlive show={currentView === 'dashboard'}><MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} /></KeepAlive>
+        <KeepAlive show={currentView === 'settings'}><SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} /></KeepAlive>
+        <KeepAlive show={currentView === 'recharge'}><RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} /></KeepAlive>
+        <KeepAlive show={currentView === 'admin'}>
+          {isAdmin && (
+            <AdminView
+              session={session}
+              navigate={navigate}
+              products={products}
+              fetchProducts={fetchProducts}
+              allOrders={allOrders}
+              fetchAllOrders={fetchAllOrders}
+              allUsers={allUsers}
+              fetchUsers={fetchUsers}
+              actionStatus={actionStatus}
+              setActionStatus={setActionStatus}
+              lang={lang}
+              setLang={setLang}
+              t={t}
+              dataLoading={adminDataLoading}
+            />
+          )}
+        </KeepAlive>
       </div>
 
       {!isAdmin && session && <SupportChatWidget session={session} profile={profile} />}
