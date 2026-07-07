@@ -5414,7 +5414,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             </div>
 
-            <button onClick={onClose} className="w-full py-4 rounded-2xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-all">
+            <button onClick={() => navigate('dashboard')} className="w-full py-4 rounded-2xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-all">
               Fermer (J'ai bien noté l'adresse)
             </button>
           </div>
@@ -5682,7 +5682,7 @@ function sanitizeDescriptionHtml(html) {
 // ==========================================
 // PRODUCT VIEW
 // ==========================================
-const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) => {
+const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow, lang }) => {
   const [quantity, setQuantity] = useState(1);
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
@@ -6760,64 +6760,7 @@ function App() {
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [adminDataLoading, setAdminDataLoading] = useState(true);
 
-  useEffect(() => {
-    if (!supabase) {
-      fetchProducts(); // Will use local fallback
-      return;
-    }
 
-    fetchProducts();
-    fetchAllOrders();
-    fetchUsers();
-
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession);
-      if (initialSession) fetchProfile(initialSession.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      setSession(currentSession);
-      if (currentSession) {
-        fetchProfile(currentSession.user.id);
-        // Lien de réinitialisation cliqué depuis l'email : Supabase crée une
-        // session temporaire et émet PASSWORD_RECOVERY. On force l'écran de
-        // saisie du nouveau mot de passe — fiable quel que soit le format du
-        // lien (hash #type=recovery en flow implicite, ?code= en PKCE) et le
-        // timing du nettoyage d'URL par Supabase. C'est LA correction du bug
-        // "le lien de reset renvoie vers la landing".
-        if (event === 'PASSWORD_RECOVERY') {
-          navigate('reset-password');
-          return;
-        }
-        // Redirection après connexion : si le hash est vide (cas d'un retour
-        // OAuth Google), 'landing', ou 'auth', on les envoie vers le shop.
-        if (event === 'SIGNED_IN') {
-          const h = window.location.hash.replace('#', '');
-          if (!h || h === 'auth' || h === 'landing') {
-            navigate('shop');
-          }
-        }
-      } else {
-        setProfile(null);
-        setOrders([]);
-        // Déconnexion explicite : vide le panier pour que la personne suivante
-        // sur cet appareil ne voie jamais le panier/le solde du client précédent.
-        if (event === 'SIGNED_OUT') {
-          setCart([]);
-          setCartOpen(false);
-          // Si on était sur une vue qui exige une session (dashboard, réglages,
-          // recharge, admin), on repart proprement sur le catalogue au lieu de
-          // laisser un écran vide (les vues protégées ne rendent rien sans session).
-          const protectedViews = ['dashboard', 'settings', 'recharge', 'admin'];
-          if (protectedViews.includes(window.location.hash.replace('#', ''))) {
-            navigate('shop');
-          }
-        }
-      }
-    });
-
-    return () => subscription?.unsubscribe();
-  }, []);
 
   // Real-time Profile Updates (Balance, etc.)
   useEffect(() => {
@@ -6844,25 +6787,7 @@ function App() {
     };
   }, [session]);
 
-  // Real-time Orders — Admin sees all new orders instantly
-  useEffect(() => {
-    if (!supabase) return;
 
-    const ordersChannel = supabase
-      .channel('all-orders-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          fetchAllOrders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(ordersChannel);
-    };
-  }, []);
 
   // Nettoie les recharges Binance Pay restées 'pending' au-delà de leur
   // délai (client qui a fermé la fenêtre sans payer) — l'update déclenche
@@ -7067,6 +6992,85 @@ function App() {
   };
 
   useEffect(() => {
+    if (!supabase) {
+      fetchProducts(); // Will use local fallback
+      return;
+    }
+
+    fetchProducts();
+    fetchAllOrders();
+    fetchUsers();
+
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      if (initialSession) fetchProfile(initialSession.user.id);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      setSession(currentSession);
+      if (currentSession) {
+        fetchProfile(currentSession.user.id);
+        // Lien de réinitialisation cliqué depuis l'email : Supabase crée une
+        // session temporaire et émet PASSWORD_RECOVERY. On force l'écran de
+        // saisie du nouveau mot de passe — fiable quel que soit le format du
+        // lien (hash #type=recovery en flow implicite, ?code= en PKCE) et le
+        // timing du nettoyage d'URL par Supabase. C'est LA correction du bug
+        // "le lien de reset renvoie vers la landing".
+        if (event === 'PASSWORD_RECOVERY') {
+          navigate('reset-password');
+          return;
+        }
+        // Redirection après connexion : si le hash est vide (cas d'un retour
+        // OAuth Google), 'landing', ou 'auth', on les envoie vers le shop.
+        if (event === 'SIGNED_IN') {
+          const h = window.location.hash.replace('#', '');
+          if (!h || h === 'auth' || h === 'landing') {
+            navigate('shop');
+          }
+        }
+      } else {
+        setProfile(null);
+        setOrders([]);
+        // Déconnexion explicite : vide le panier pour que la personne suivante
+        // sur cet appareil ne voie jamais le panier/le solde du client précédent.
+        if (event === 'SIGNED_OUT') {
+          setCart([]);
+          setCartOpen(false);
+          // Si on était sur une vue qui exige une session (dashboard, réglages,
+          // recharge, admin), on repart proprement sur le catalogue au lieu de
+          // laisser un écran vide (les vues protégées ne rendent rien sans session).
+          const protectedViews = ['dashboard', 'settings', 'recharge', 'admin'];
+          if (protectedViews.includes(window.location.hash.replace('#', ''))) {
+            navigate('shop');
+          }
+        }
+      }
+    });
+
+    return () => subscription?.unsubscribe();
+  }, []);
+
+  // Real-time Orders — Admin sees all new orders instantly
+  useEffect(() => {
+    if (!supabase) return;
+
+    const ordersChannel = supabase
+      .channel('all-orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          fetchAllOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+    };
+  }, []);
+
+  useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname.replace(/^\/+/, '');
       if (path === 'myorders') {
@@ -7137,7 +7141,7 @@ function App() {
         {currentView === 'landing' && <LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} />}
         {currentView === 'sms' && <SmsView session={session} profile={profile} lang={lang} navigate={navigate} fetchProfile={fetchProfile} />}
         {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
-        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
+        {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} lang={lang} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} lang={lang} />}
         {currentView === 'policies' && <PoliciesView navigate={navigate} lang={lang} />}
         {currentView === 'auth' && <AuthView navigate={navigate} lang={lang} />}
