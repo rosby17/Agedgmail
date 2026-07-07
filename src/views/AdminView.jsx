@@ -935,7 +935,6 @@ const AdminView = ({
         </div>
       </div>
     );
-    );
   }
 
   if (session.user.email !== ADMIN_EMAIL && !profile?.is_admin) {

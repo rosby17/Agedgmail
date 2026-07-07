@@ -63,6 +63,12 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <Shield size={14} /> {t('admin')}
           </button>
         )}
+
+        {session && (
+          <button onClick={() => navigate('vendor')} className="text-orange-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-orange-500/10 px-4 py-2 rounded-full border border-orange-500/20 hover:bg-orange-500/20 transition-all">
+            <Store size={14} /> Vendre
+          </button>
+        )}
         
         {/* Cart Button */}
         <button onClick={onCartClick} className="bg-gray-900 dark:bg-primary text-white dark:text-gray-900 px-3 md:px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 md:gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
