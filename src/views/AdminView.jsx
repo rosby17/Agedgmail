@@ -1218,6 +1218,8 @@ const AdminView = ({
 
           {activeTab === 'support' && <SupportAdmin session={session} />}
 
+          {activeTab === 'supplier' && <SupplierAdmin />}
+
           {financialDetailType && (
             <FinancialDetailsModal
               type={financialDetailType}
