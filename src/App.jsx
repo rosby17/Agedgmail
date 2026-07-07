@@ -717,9 +717,12 @@ function App() {
   const clearCart = () => setCart([]);
   const navigate = (v) => {
     if (v === 'landing') v = '';
-    const path = v === 'dashboard' ? 'myorders' : v;
-    window.history.pushState(null, '', `/${path}`);
-    setCurrentView(v || 'landing');
+    const [viewName, queryString] = (v || '').split('?');
+    const pathName = viewName === 'dashboard' ? 'myorders' : viewName;
+    const fullPath = queryString ? `/${pathName}?${queryString}` : `/${pathName}`;
+    
+    window.history.pushState(null, '', fullPath);
+    setCurrentView(viewName || 'landing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

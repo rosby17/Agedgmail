@@ -92,7 +92,7 @@ const ApiView = ({ navigate, session, lang }) => {
               ? 'Votre clé API unique est requise pour authentifier toutes vos requêtes. Pour des raisons de sécurité, vous devez la générer et la copier depuis votre page de Paramètres.' 
               : 'Your unique API key is required to authenticate all your requests. For security reasons, you must generate and copy it from your Settings page.'}
           </p>
-          <button onClick={() => navigate('settings')} className="bg-primary text-white dark:text-gray-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shrink-0">
+          <button onClick={() => navigate('settings?tab=api')} className="bg-primary text-white dark:text-gray-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shrink-0">
             {lang === 'fr' ? 'Gérer ma clé API' : 'Manage my API Key'}
           </button>
         </div>

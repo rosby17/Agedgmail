@@ -4,7 +4,10 @@ import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert,
 import { supabase } from '../supabaseClient';
 
 const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
-  const [activeTab, setActiveTab] = useState('general'); // general | security | api
+  const [activeTab, setActiveTab] = useState(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('tab') || 'general';
+  }); // general | security | api | seller
   
   const [firstName, setFirstName] = useState(profile?.first_name || "");
   const [lastName, setLastName] = useState(profile?.last_name || "");
