@@ -114,7 +114,7 @@ serve(async (req) => {
       const pvaCountry = parts[2] || 'usa';
       const appName = "google";
       
-      const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${pvaCountry}&app=${appName}`;
+      const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${encodeURIComponent(pvaCountry)}&app=${appName}`;
       const res = await fetch(url);
       const text = await res.text();
       

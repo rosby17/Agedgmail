@@ -117,17 +117,17 @@ serve(async (req) => {
       if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
       
       const pvaCountryMap: Record<string, string> = {
-        'US': 'usa',
-        'GB': 'united kingdom',
-        'FR': 'france',
-        'DE': 'germany',
-        'RU': 'russia',
-        'CA': 'canada'
+        'US': 'USA',
+        'GB': 'UK',
+        'FR': 'France',
+        'DE': 'Germany',
+        'RU': 'Russia',
+        'CA': 'Canada'
       };
-      const countryName = pvaCountryMap[targetIso] || targetIso.toLowerCase();
+      const countryName = pvaCountryMap[targetIso] || targetIso;
       const appName = "google"; 
       
-      const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${countryName}`;
+      const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${encodeURIComponent(countryName)}`;
       const res = await fetch(url);
       const text = await res.text();
       
