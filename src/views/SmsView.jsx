@@ -62,6 +62,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(initialState?.selectedCountry || '');
   const [currentPrice, setCurrentPrice] = useState(initialState?.currentPrice || 1.00);
+  const [currentRawPrice, setCurrentRawPrice] = useState(initialState?.currentRawPrice || 0.50);
   const [currentProvider, setCurrentProvider] = useState(initialState?.currentProvider || 'smscodes');
   
   // Service ID pour YouTube sur smscodes.io
@@ -98,6 +99,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           // Do not set a default country selection, keep it empty initially
           setSelectedCountry('');
           setCurrentPrice(1.00);
+          setCurrentRawPrice(0.50);
           setCurrentProvider('smscodes');
         }
         setStatus('IDLE');
@@ -116,6 +118,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     if (!iso) {
       setSelectedCountry('');
       setCurrentPrice(1.00);
+      setCurrentRawPrice(0.50);
       setCurrentProvider('smscodes');
       return;
     }
@@ -123,8 +126,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     const country = countries.find(c => c.Iso === iso);
     if (country) {
       const priceVal = parseFloat(country.Price);
+      const rawPriceVal = parseFloat(country.RawPrice || 0.50);
       const providerVal = country.Provider || 'smscodes';
       setCurrentPrice(priceVal);
+      setCurrentRawPrice(rawPriceVal);
       setCurrentProvider(providerVal);
       // Automatically request the number
       requestNumber(iso, priceVal, providerVal);
@@ -166,6 +171,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               securityId, 
               number: phoneNumber, 
               price: currentPrice,
+              supplier_cost: currentRawPrice,
               provider: currentProvider,
               description: `SMS Verification (YouTube, ${selectedCountry})` 
             }

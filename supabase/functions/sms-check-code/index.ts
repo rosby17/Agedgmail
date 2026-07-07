@@ -31,10 +31,11 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
-    const { securityId, number, price, description, provider } = await req.json();
+    const { securityId, number, price, supplier_cost, description, provider } = await req.json();
     if (!securityId || !number) throw new Error('Missing parameters');
     
     const smsPrice = price || 1.00;
+    const supplierCost = supplier_cost || 0.50;
     const currentProvider = provider || 'smscodes';
 
     // Parse securityId
@@ -172,6 +173,7 @@ serve(async (req) => {
           user_id: user.id,
           product_name: description || `SMS Verification (${providerName})`,
           total_price: smsPrice,
+          supplier_cost: supplierCost,
           quantity: 1,
           buyer_email: user.email,
           status: 'confirmed',

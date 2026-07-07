@@ -158,6 +158,7 @@ serve(async (req) => {
         Country: c.Country,
         Iso: c.Iso,
         Price: (c.Price + margin).toFixed(2),
+        RawPrice: c.Price,
         Provider: c.Provider
       };
     });
