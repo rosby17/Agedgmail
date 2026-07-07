@@ -1,3 +1,4 @@
+import { BONUS_TIERS } from './constants';
 import { CATEGORIES, GROUP_LABELS, AVATAR_COLORS, JUNK_CATEGORIES } from './constants';
 
 export const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat || 'Others';
@@ -116,4 +117,44 @@ export const friendlyAuthError = (raw = '') => {
     return "Impossible d'envoyer l'email pour le moment. Réessaie dans un instant ou contacte le support si le problème persiste.";
   }
   return raw || "Une erreur est survenue. Réessaie.";
+};
+
+export const resolveIcon = (product = {}) => {
+  const cat = String(product.category || '').toLowerCase();
+  const name = String(product.name || '').toLowerCase();
+  const has = (s) => cat.includes(s) || name.includes(s);
+  if (has('snapchat')) return 'snapchat';
+  // categoryVisual must be defined before resolveIcon, which it is in helpers.js!
+  const bucket = categoryVisual(product);
+  if (bucket === 'mail' && (has('outlook') || has('hotmail'))) return 'outlook';
+  return bucket;
+};
+
+export const shortOrderId = (uuid = '') => {
+  const hex = String(uuid).replace(/-/g, '').slice(0, 8);
+  const num = parseInt(hex, 16) || 0;
+  return String(num % 1000000).padStart(6, '0');
+};
+
+export function sanitizeDescriptionHtml(html) {
+  if (!html) return '';
+  return String(html)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/javascript:/gi, '');
+}
+
+export const orderSupplierCost = (order, mappings = []) => {
+  if (order.supplier_cost !== undefined && order.supplier_cost !== null) return order.supplier_cost;
+  const m = mappings.find(map => map.product_id === order.product_id);
+  if (m) return (m.supplier_rate || 0) * (order.quantity || 1);
+  return 0;
+};
+
+export const netProfitOf = (ordersList, mappings = []) => {
+  return ordersList.reduce((sum, o) => sum + (o.total_price || 0) - orderSupplierCost(o, mappings), 0);
+};
+
+export const bonusPercentFor = (amountUsd) => {
+  return [...BONUS_TIERS].reverse().find(t => amountUsd >= t.amount)?.pct || 0;
 };

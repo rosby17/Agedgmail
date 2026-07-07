@@ -1,3 +1,5 @@
+import { sanitizeDescriptionHtml, displayCategoryLabel, cleanProductName } from '../utils/helpers';
+import { Package, Minus, Plus, ShieldAlert } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Share2, Copy, CheckCircle, Info, Hash, Star } from 'lucide-react';
 import { hashStr, getProductDetails } from '../utils/helpers';

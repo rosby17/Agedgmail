@@ -1,3 +1,4 @@
+import { netProfitOf, orderSupplierCost } from '../utils/helpers';
 import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
 import { supabase } from '../supabaseClient';
@@ -397,7 +398,7 @@ const RecentActivityTable = ({ allOrders }) => {
             {filtered.map(o => (
               <tr key={o.id}>
                 <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email || '—'}</td>
-                <td className="py-4 text-gray-500 dark:text-slate-400">{cleanProductName(o.product_name, lang)}</td>
+                <td className="py-4 text-gray-500 dark:text-slate-400">{cleanProductName(o.product_name, 'fr')}</td>
                 <td className="py-4 text-xs text-gray-400 dark:text-slate-500">{new Date(o.created_at).toLocaleString('fr-FR')}</td>
                 <td className="py-4">{statusBadge(o.status)}</td>
                 <td className="py-4 text-right font-mono font-black text-gray-900 dark:text-white">${Number(o.total_price || 0).toFixed(2)}</td>

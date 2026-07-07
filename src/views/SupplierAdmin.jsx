@@ -312,7 +312,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
               {pending.map(o => (
                 <tr key={o.id} className="text-gray-700">
                   <td className="py-4 font-mono">#{o.id}</td>
-                  <td className="py-4 font-bold">{cleanProductName(o.product_name, lang)}</td>
+                  <td className="py-4 font-bold">{cleanProductName(o.product_name, 'fr')}</td>
                   <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 font-bold text-xs">{SUPPLIER_LABEL[o.supplier] || o.supplier}</span></td>
                   <td className="py-4">{o.quantity}</td>
                   <td className="py-4 font-mono">{o.supplier_order_id || '—'}</td>

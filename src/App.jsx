@@ -1,3 +1,4 @@
+import { X, MessageCircle, Headphones, Send } from 'lucide-react';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
 import ProductView from './views/ProductView';
 import React, { useState, useEffect } from 'react';
