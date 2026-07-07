@@ -1612,21 +1612,51 @@ const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
 
 const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const isFr = lang === 'fr';
-  const [status, setStatus] = useState('IDLE'); // IDLE, LOADING_PRICES, WAITING_SMS, COMPLETED
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [securityId, setSecurityId] = useState('');
-  const [smsCode, setSmsCode] = useState('');
-  const [timeLeft, setTimeLeft] = useState(900);
+
+  const loadState = () => {
+    try {
+      const saved = localStorage.getItem('smsViewState');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.status === 'WAITING_SMS' && parsed.endTime > Date.now()) {
+          parsed.timeLeft = Math.floor((parsed.endTime - Date.now()) / 1000);
+          return parsed;
+        } else if (parsed.status === 'COMPLETED') {
+          return parsed;
+        }
+      }
+    } catch(e) {}
+    return null;
+  };
+
+  const initialState = loadState();
+
+  const [status, setStatus] = useState(initialState?.status || 'IDLE'); 
+  const [phoneNumber, setPhoneNumber] = useState(initialState?.phoneNumber || '');
+  const [securityId, setSecurityId] = useState(initialState?.securityId || '');
+  const [smsCode, setSmsCode] = useState(initialState?.smsCode || '');
+  const [timeLeft, setTimeLeft] = useState(initialState?.timeLeft || 900);
+  const [endTime, setEndTime] = useState(initialState?.endTime || 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
   // Dynamic pricing states
   const [countries, setCountries] = useState([]);
-  const [selectedCountry, setSelectedCountry] = useState('US');
-  const [currentPrice, setCurrentPrice] = useState(1.00);
+  const [selectedCountry, setSelectedCountry] = useState(initialState?.selectedCountry || 'US');
+  const [currentPrice, setCurrentPrice] = useState(initialState?.currentPrice || 1.00);
   
   // Service ID pour YouTube sur smscodes.io
   const [selectedService, setSelectedService] = useState('8a97735e-9a14-427e-8a88-e9d999bf3429'); 
+
+  useEffect(() => {
+    if (status === 'IDLE') {
+      localStorage.removeItem('smsViewState');
+    } else {
+      localStorage.setItem('smsViewState', JSON.stringify({
+        status, phoneNumber, securityId, smsCode, endTime, selectedCountry, currentPrice
+      }));
+    }
+  }, [status, phoneNumber, securityId, smsCode, endTime, selectedCountry, currentPrice]);
 
   useEffect(() => {
     // Fetch prices on component mount
@@ -1675,8 +1705,11 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     let timer;
     let pollInterval;
     
-    if (status === 'WAITING_SMS' && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    if (status === 'WAITING_SMS' && endTime > Date.now()) {
+      timer = setInterval(() => {
+        const remaining = Math.floor((endTime - Date.now()) / 1000);
+        setTimeLeft(remaining > 0 ? remaining : 0);
+      }, 1000);
       
       pollInterval = setInterval(async () => {
         try {
@@ -1711,6 +1744,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       setError(isFr ? "Délai d'attente expiré. Aucun code reçu. Vous n'avez pas été débité." : "Timeout expired. No code received. You were not charged.");
       setPhoneNumber('');
       setSecurityId('');
+      setEndTime(0);
+      localStorage.removeItem('smsViewState');
     }
     
     return () => {
@@ -1750,6 +1785,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       setSecurityId(data.SecurityId);
       setStatus('WAITING_SMS');
       setTimeLeft(900);
+      setEndTime(Date.now() + 900000);
     } catch (err) {
       console.error(err);
       setError(err.message || (isFr ? 'Une erreur est survenue' : 'An error occurred'));
@@ -1764,7 +1800,9 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     setSecurityId('');
     setSmsCode('');
     setTimeLeft(900);
+    setEndTime(0);
     setError('');
+    localStorage.removeItem('smsViewState');
   };
 
   const copyToClipboard = (text) => {
