@@ -259,8 +259,8 @@ const LandingView = ({ navigate, products = [], setSelectedProduct, lang, setLan
                   </div>
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">payments</span>
-                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Paiement Flexible' : 'Flexible Payment'}</h5>
-                    <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Recommandé : Binance Pay. Acceptés : USDT, LTC, BTC.' : 'Recommended: Binance Pay. Accepted: USDT, LTC, BTC.'}</p>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Paiement Sécurisé' : 'Secure Payment'}</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Recommandé : Binance Pay (0 frais). Dépôt minimum très bas.' : 'Recommended: Binance Pay (0 fees). Very low minimum deposit.'}</p>
                   </div>
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">headset_mic</span>
@@ -4563,9 +4563,6 @@ const CRYPTO_CURRENCIES = [
 // les cryptos (via NOWPayments) sont à $20 à cause des frais de réseau fluctuants (min ~18.86$).
 const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5, recommended: true },
-  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 20 },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 20 },
-  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 20 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
