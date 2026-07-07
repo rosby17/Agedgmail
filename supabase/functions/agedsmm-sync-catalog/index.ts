@@ -18,6 +18,9 @@ import { getAdmin, logSupplier, corsHeaders, resolveCheapestSupplier } from '../
 const SUPPLIER = 'agedsmm'
 const DEFAULT_MARGIN = 50
 
+// Produits AgedSMM qui affichent un faux stock (acceptent la commande puis annulent pour "Out of stock")
+const BLACKLISTED_PRODUCT_IDS = ['43'] // '43' = Gmail US 2020 - 2025
+
 // Neutralise la marque du fournisseur et les constructions HTML dangereuses
 function sanitize(input: string | null | undefined): string {
   if (!input) return ''
@@ -60,6 +63,11 @@ serve(async (req) => {
 
     for (const ag of agProducts) {
       const agId = String(ag.product)
+
+      if (BLACKLISTED_PRODUCT_IDS.includes(agId)) {
+        continue // Ignore le produit cassé, il tombera dans "vanished" et passera à 0 de stock
+      }
+
       seen.add(agId)
 
       const rate = Number(ag.rate) || 0
