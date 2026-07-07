@@ -4522,7 +4522,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
 
 const AdminView = ({
   session, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
-  actionStatus, setActionStatus, theme, setTheme, lang, setLang, t, dataLoading = false,
+  actionStatus, setActionStatus, lang, setLang, t, dataLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
   const [supplierBalance, setSupplierBalance] = useState(null);
@@ -7103,8 +7103,6 @@ function App() {
             fetchUsers={fetchUsers}
             actionStatus={actionStatus}
             setActionStatus={setActionStatus}
-            theme={theme}
-            setTheme={setTheme}
             lang={lang}
             setLang={setLang}
             t={t}
