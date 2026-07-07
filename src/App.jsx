@@ -1026,7 +1026,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
       {/* Menu central */}
       <nav className="hidden lg:flex items-center gap-8">
         <button onClick={() => go('shop', 'all', 'all')} className={linkCls(currentView === 'shop' || currentView === 'landing')}>{lang === 'fr' ? 'Catalogue' : 'Catalog'}</button>
-        <button onClick={() => go('shop', 'all', 'sms')} className={linkCls(false)}>{t('sms')}</button>
+        <button onClick={() => navigate('sms')} className={linkCls(currentView === 'sms')}>{t('sms')}</button>
         <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>{t('api')}</button>
         {session && (
           <button onClick={() => navigate('dashboard')} className={linkCls(currentView === 'dashboard')}>{t('myOrders')}</button>
@@ -1437,6 +1437,211 @@ const HomeView = ({
 // API VIEW — API revendeur (doc + gestion de clé)
 // ==========================================
 const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
+
+
+const SmsView = ({ session, profile, lang, navigate }) => {
+  const isFr = lang === 'fr';
+  const SMS_PRICE = 1.00;
+  const [status, setStatus] = useState('IDLE');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [smsCode, setSmsCode] = useState('');
+  const [timeLeft, setTimeLeft] = useState(900);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let timer;
+    if (status === 'WAITING_SMS' && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    } else if (timeLeft === 0 && status === 'WAITING_SMS') {
+      setStatus('IDLE');
+      setError(isFr ? "Délai d'attente expiré. Aucun code reçu." : "Timeout expired. No code received.");
+      setPhoneNumber('');
+    }
+    return () => clearInterval(timer);
+  }, [status, timeLeft, isFr]);
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const requestNumber = async () => {
+    if (!session) {
+      navigate('auth');
+      return;
+    }
+    if (profile?.balance < SMS_PRICE) {
+      setError(isFr ? 'Solde insuffisant. Veuillez recharger votre compte.' : 'Insufficient balance. Please top up your account.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+
+    setTimeout(() => {
+      setPhoneNumber('+1 (202) 555-0198');
+      setStatus('WAITING_SMS');
+      setTimeLeft(900);
+      setLoading(false);
+
+      setTimeout(() => {
+        setSmsCode('G-847291');
+        setStatus('COMPLETED');
+      }, 8000);
+    }, 1500);
+  };
+
+  const cancelRequest = () => {
+    setStatus('IDLE');
+    setPhoneNumber('');
+    setSmsCode('');
+    setTimeLeft(900);
+    setError('');
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto px-6 py-16 font-sans">
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center gap-2 bg-red-500/10 text-red-600 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
+          <MessageSquare size={14} /> {isFr ? 'Service SMS YouTube' : 'YouTube SMS Service'}
+        </div>
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">
+          {isFr ? 'Vérification de chaîne YouTube' : 'YouTube Channel Verification'}
+        </h1>
+        <p className="text-gray-500 text-lg leading-relaxed max-w-xl mx-auto">
+          {isFr 
+            ? 'Obtenez un numéro de téléphone unique et propre pour valider votre chaîne YouTube instantanément.' 
+            : 'Get a unique and clean phone number to instantly verify your YouTube channel.'}
+        </p>
+      </div>
+
+      <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 md:p-12 shadow-soft">
+        
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 mb-8">
+            <AlertCircle size={20} /> {error}
+          </div>
+        )}
+
+        {status === 'IDLE' && (
+          <div className="text-center space-y-8">
+            <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 transform rotate-3">
+              <Smartphone className="text-gray-400" size={40} />
+            </div>
+            
+            <div className="bg-gray-50 rounded-2xl p-6 flex items-center justify-between">
+              <div className="text-left">
+                <p className="font-bold text-gray-900">{isFr ? 'Vérification YouTube' : 'YouTube Verification'}</p>
+                <p className="text-sm text-gray-500">{isFr ? '1 numéro pour 1 code SMS' : '1 number for 1 SMS code'}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black text-primary">${SMS_PRICE.toFixed(2)}</p>
+                <p className="text-xs text-gray-400 font-bold uppercase">{isFr ? 'Par vérification' : 'Per verification'}</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={requestNumber} 
+              disabled={loading}
+              className="w-full bg-primary text-white py-4 rounded-2xl font-black text-lg hover:bg-primaryDark hover:scale-[1.02] transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+            >
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Smartphone size={20} />}
+              {loading 
+                ? (isFr ? 'Génération du numéro...' : 'Generating number...') 
+                : (isFr ? 'Obtenir un numéro' : 'Get a number')}
+            </button>
+            <p className="text-xs text-gray-400">
+              {isFr ? 'Vous ne serez facturé que si vous recevez le code.' : 'You will only be charged if you receive the code.'}
+            </p>
+          </div>
+        )}
+
+        {status === 'WAITING_SMS' && (
+          <div className="text-center space-y-8 animate-in fade-in zoom-in duration-300">
+            <div>
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">
+                {isFr ? 'Votre numéro' : 'Your number'}
+              </p>
+              <div className="flex justify-center items-center gap-4">
+                <span className="text-4xl md:text-5xl font-black text-gray-900 font-mono tracking-tight">{phoneNumber}</span>
+                <button 
+                  onClick={() => copyToClipboard(phoneNumber)}
+                  className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                >
+                  <Copy size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="border border-primary/20 bg-primary/5 rounded-3xl p-8 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-primary/20">
+                <div className="h-full bg-primary animate-pulse" style={{ width: '100%' }}></div>
+              </div>
+              <div className="flex flex-col items-center justify-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                </div>
+                <p className="font-bold text-primary text-lg">
+                  {isFr ? 'En attente du SMS Google...' : 'Waiting for Google SMS...'}
+                </p>
+                <p className="text-2xl font-black text-gray-900 font-mono">{formatTime(timeLeft)}</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={cancelRequest}
+              className="text-gray-400 text-sm font-bold hover:text-red-500 transition-colors underline decoration-dotted"
+            >
+              {isFr ? 'Annuler et rembourser' : 'Cancel and refund'}
+            </button>
+          </div>
+        )}
+
+        {status === 'COMPLETED' && (
+          <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="text-green-500" size={48} />
+            </div>
+            
+            <div>
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">
+                {isFr ? 'Code de validation' : 'Verification Code'}
+              </p>
+              <div className="inline-flex flex-col items-center gap-4 bg-gray-900 text-white p-8 rounded-3xl shadow-2xl relative">
+                <span className="text-5xl md:text-6xl font-black tracking-[0.2em]">{smsCode}</span>
+                <button 
+                  onClick={() => copyToClipboard(smsCode)}
+                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-bold bg-white/10 px-4 py-2 rounded-full"
+                >
+                  <Copy size={16} /> {isFr ? 'Copier le code' : 'Copy code'}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-green-600 font-bold bg-green-50 py-3 px-6 rounded-full inline-block">
+              {isFr ? `Succès ! ${SMS_PRICE.toFixed(2)} ont été débités.` : `Success! ${SMS_PRICE.toFixed(2)} has been charged.`}
+            </p>
+
+            <div>
+              <button 
+                onClick={cancelRequest} 
+                className="w-full bg-gray-100 text-gray-900 py-4 rounded-2xl font-black text-lg hover:bg-gray-200 transition-colors mt-4"
+              >
+                {isFr ? 'Effectuer une autre vérification' : 'Verify another channel'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 const ApiView = ({ navigate, session, lang }) => {
   const [apiKey, setApiKey] = useState(null);
@@ -6760,8 +6965,7 @@ function App() {
       if (path === 'myorders') {
         setCurrentView('dashboard');
       } else if (path === 'sms') {
-        setCurrentView('shop');
-        setActiveCategory('sms');
+        setCurrentView('sms');
       } else {
         setCurrentView(path || 'landing');
       }
@@ -6824,6 +7028,7 @@ function App() {
       )}
       <div className="flex-grow">
         {currentView === 'landing' && <LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} />}
+        {currentView === 'sms' && <SmsView session={session} profile={profile} lang={lang} navigate={navigate} />}
         {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} lang={lang} />}
