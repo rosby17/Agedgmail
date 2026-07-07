@@ -254,6 +254,31 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       return;
     }
 
+    if (gateway === 'mobile_money') {
+      setLoading(true);
+      setError('');
+      try {
+        // En attendant que l'Edge Function soit créée et déployée, on va simuler l'appel.
+        // On utilisera : await supabase.functions.invoke('maketou-create-checkout', { body: ... })
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('maketou-create-checkout', {
+          body: { userId: session.user.id, email: session.user.email, amountUsd, bonusPct },
+        });
+        
+        if (fnError) throw new Error(await extractFnErrorMessage(fnError));
+        if (fnData?.error) throw new Error(fnData.error);
+        if (fnData?.redirectUrl) {
+          window.location.href = fnData.redirectUrl;
+          return;
+        }
+        throw new Error('Aucun lien de paiement reçu de Maketou.');
+      } catch (err) {
+        setError(err.message || 'Une erreur est survenue avec la passerelle Mobile Money.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (isCrypto) {
       if (belowMin) { setError(`Montant minimum pour ${selectedGateway.name} : $${selectedMin.toFixed(2)}`); return; }
 
@@ -422,20 +447,31 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </div>
 
             {gateway === 'binance_pay' && (
-              <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed border border-gray-100 dark:border-gray-700">
-                Paiement via Binance Pay, montant exact demandé. Tu devras coller ton pseudo
-                ({profile?.display_name ? <span className="font-bold text-gray-700 dark:text-gray-300">{profile.display_name}</span> : <span className="font-bold text-amber-600 dark:text-amber-500">non configuré</span>})
-                {' '}dans la note du paiement pour t'identifier. Confirmation vérifiée manuellement, généralement rapide.
+              <div className="bg-green-50 dark:bg-green-900/10 rounded-2xl p-4 text-xs text-green-700 dark:text-green-500 leading-relaxed border border-green-200 dark:border-green-800/30">
+                <span className="font-bold flex items-center gap-1 mb-1"><ShieldCheck size={14} /> 0% de frais</span>
+                Paiement via Binance Pay totalement gratuit. Montant à payer : ${amountUsd.toFixed(2)}.
+                <div className="mt-1 text-[10px] opacity-80">
+                  Veille à coller ton pseudo dans la note Binance pour t'identifier : {profile?.display_name ? <span className="font-bold">{profile.display_name}</span> : <span>non configuré</span>}.
+                </div>
               </div>
             )}
 
-            {(isCrypto || selectedGateway?.manual) && (
+            {gateway === 'mobile_money' && (
+              <div className="bg-amber-50 dark:bg-amber-900/10 rounded-2xl p-4 text-xs text-amber-700 dark:text-amber-500 leading-relaxed border border-amber-200 dark:border-amber-800/30">
+                <span className="font-bold flex items-center gap-1 mb-1"><AlertTriangle size={14} /> Frais d'opérateur (8%)</span>
+                Les paiements par Mobile Money (Orange, MTN, Wave...) appliquent 8% de frais de passerelle.
+                <div className="mt-2 text-gray-800 dark:text-gray-300 font-bold">
+                  Montant total à payer : ${(amountUsd * 1.08).toFixed(2)} (env. {(amountUsd * 1.08 * 650).toFixed(0)} FCFA)
+                </div>
+              </div>
+            )}
+
+            {(isCrypto || (selectedGateway?.manual && gateway !== 'binance_pay')) && (
               <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed border border-gray-100 dark:border-gray-700">
                 Dépôt en {selectedGateway.name} ({selectedGateway.sub}). Une adresse de dépôt et le montant exact te seront indiqués.
                 {typeof selectedMin === 'number' && (
                   <> <span className="font-bold text-gray-700 dark:text-gray-300">Montant minimum : ${selectedMin.toFixed(2)}.</span></>
                 )}
-                {' '}D'éventuels frais de réseau sont à ta charge.
               </div>
             )}
 
