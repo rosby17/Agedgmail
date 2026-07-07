@@ -38,7 +38,9 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
   const [newMap, setNewMap] = useState({ product_id: '', supplier: 'ytseller', supplier_product_id: '', margin_percent: 30 });
   const [marginInput, setMarginInput] = useState('');
   const [busyRetryId, setBusyRetryId] = useState(null);
-  const [mappingLimit, setMappingLimit] = useState(20);
+  const [mappingLimit, setMappingLimit] = useState(30);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('name_asc');
 
   const productName = (id) => products.find(p => p.id === id)?.name || `#${id}`;
 
@@ -188,6 +190,24 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
   const sellPrice = (m) => Math.round((Number(m.supplier_rate) || 0) * (1 + (Number(m.margin_percent) || 0) / 100) * 100) / 100;
   const unmappedProducts = products.filter(p => !mappings.some(m => m.product_id === p.id));
 
+  let filteredMappings = [...mappings];
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filteredMappings = filteredMappings.filter(m => 
+      productName(m.product_id).toLowerCase().includes(q) ||
+      String(m.supplier_product_id).toLowerCase().includes(q) ||
+      m.supplier.toLowerCase().includes(q)
+    );
+  }
+
+  filteredMappings.sort((a, b) => {
+    if (sortBy === 'name_asc') return productName(a.product_id).localeCompare(productName(b.product_id));
+    if (sortBy === 'price_asc') return sellPrice(a) - sellPrice(b);
+    if (sortBy === 'price_desc') return sellPrice(b) - sellPrice(a);
+    if (sortBy === 'supplier_asc') return a.supplier.localeCompare(b.supplier);
+    return 0;
+  });
+
   return (
     <div className="space-y-8">
       {/* Soldes + synchro par fournisseur */}
@@ -238,20 +258,32 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
 
       {/* Mapping produits */}
       <div className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product mapping</h2>
             <p className="text-xs text-gray-400 mt-1">Un produit peut avoir un mapping par fournisseur ; celui marqué "Active" fixe le prix/stock affichés en boutique.</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <label className="text-xs font-bold text-gray-500">Afficher:</label>
-            <select value={mappingLimit} onChange={e => setMappingLimit(Number(e.target.value))} className="bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold px-3 py-2 cursor-pointer">
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-              <option value={10000}>Tout</option>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Chercher produit, ID, four..." className="pl-9 pr-4 py-2 w-full md:w-48 bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-primary transition-all" />
+            </div>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl text-xs font-bold px-3 py-2 cursor-pointer outline-none">
+              <option value="name_asc">Trier par Nom</option>
+              <option value="price_asc">Trier par Prix croissant</option>
+              <option value="price_desc">Trier par Prix décroissant</option>
+              <option value="supplier_asc">Trier par Fournisseur</option>
             </select>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold text-gray-500">Afficher:</label>
+              <select value={mappingLimit} onChange={e => setMappingLimit(Number(e.target.value))} className="bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold px-3 py-2 cursor-pointer">
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
+                <option value={100}>100</option>
+                <option value={10000}>Tout</option>
+              </select>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
@@ -264,7 +296,7 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
-              {mappings.slice(0, mappingLimit).map(m => (
+              {filteredMappings.slice(0, mappingLimit).map(m => (
                 <tr key={m.id} className="text-gray-700 dark:text-gray-300">
                   {editing === m.id ? (
                     <td className="py-4">
@@ -313,7 +345,7 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
                   )}
                 </tr>
               ))}
-              {mappings.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-400 dark:text-slate-500">No mapped product.</td></tr>}
+              {filteredMappings.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-400 dark:text-slate-500">No mapped product.</td></tr>}
             </tbody>
           </table>
         </div>
