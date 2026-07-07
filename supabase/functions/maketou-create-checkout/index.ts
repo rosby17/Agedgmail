@@ -30,8 +30,24 @@ serve(async (req) => {
       throw new Error("Invalid request data");
     }
 
-    // Taux de conversion : ex. 1 USD = 650 FCFA (à adapter plus tard dynamiquement ou via variable d'environnement)
-    const EXCHANGE_RATE = parseInt(Deno.env.get("USD_TO_FCFA_RATE") || "650", 10);
+    // Récupérer le taux de conversion en direct sur Binance P2P
+    let EXCHANGE_RATE = parseInt(Deno.env.get("USD_TO_FCFA_RATE") || "600", 10);
+    try {
+      const binanceRes = await fetch('https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ asset: "USDT", tradeType: "BUY", fiat: "XAF", transAmount: "", order: "", page: 1, rows: 1, filterType: "all" })
+      });
+      if (binanceRes.ok) {
+        const data = await binanceRes.json();
+        if (data && data.data && data.data.length > 0) {
+          EXCHANGE_RATE = parseFloat(data.data[0].adv.price);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch Binance rate, falling back to default.", e);
+    }
+
     // On applique 8% de frais pour le Mobile Money
     const totalUsd = amountUsd * 1.08;
     const amountFcfa = Math.round(totalUsd * EXCHANGE_RATE);

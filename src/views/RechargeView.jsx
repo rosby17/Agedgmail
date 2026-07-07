@@ -43,8 +43,26 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const [binanceOrderIdInput, setBinanceOrderIdInput] = useState('');
   const [usdtTxidInput, setUsdtTxidInput] = useState('');
   const [verifying, setVerifying] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(600);
 
-  useEffect(() => () => setSuggestedAmount(null), []);
+  useEffect(() => {
+    return () => setSuggestedAmount(null);
+  }, []);
+
+  useEffect(() => {
+    // Récupérer le taux de change dynamique depuis Binance P2P
+    const fetchExchangeRate = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('get-exchange-rate');
+        if (data && data.rate) {
+          setExchangeRate(data.rate);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch dynamic exchange rate', e);
+      }
+    };
+    fetchExchangeRate();
+  }, []);
 
   useEffect(() => {
     if (!session) {
@@ -460,8 +478,12 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               <div className="bg-amber-50 dark:bg-amber-900/10 rounded-2xl p-4 text-xs text-amber-700 dark:text-amber-500 leading-relaxed border border-amber-200 dark:border-amber-800/30">
                 <span className="font-bold flex items-center gap-1 mb-1"><AlertTriangle size={14} /> Frais d'opérateur (8%)</span>
                 Les paiements par Mobile Money (Orange, MTN, Wave...) appliquent 8% de frais de passerelle.
-                <div className="mt-2 text-gray-800 dark:text-gray-300 font-bold">
-                  Montant total à payer : ${(amountUsd * 1.08).toFixed(2)} (env. {(amountUsd * 1.08 * 600).toFixed(0)} FCFA)
+                <div className="mt-2 text-gray-800 dark:text-gray-300 font-bold flex justify-between items-center">
+                  <span>Montant total à payer :</span>
+                  <span className="text-right">
+                    <span className="block text-sm">${(amountUsd * 1.08).toFixed(2)}</span>
+                    <span className="block text-[10px] opacity-80">(env. {(amountUsd * 1.08 * exchangeRate).toFixed(0)} FCFA au taux de {exchangeRate}F)</span>
+                  </span>
                 </div>
               </div>
             )}
