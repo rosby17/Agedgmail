@@ -327,20 +327,15 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
       
       {/* Service Selection */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm">
-        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{isFr ? 'Service' : 'Service'}</label>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 max-w-sm border-2 border-primary bg-primary/5 dark:bg-primary/5 rounded-[2rem] p-6 flex items-start gap-4 transition-all duration-300">
-             <div className="w-12 h-12 bg-red-600 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-red-600/10">
-               <YouTubeLogo className="w-6 h-6 fill-current text-white" />
-             </div>
-             <div>
-               <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-sm mb-1">YouTube Verification</h4>
-               <p className="text-xs text-gray-500 leading-normal">
-                 {isFr ? 'Vérifier le numéro de sa chaîne YouTube pour activer les fonctionnalités intermédiaires.' : 'Verify the number of your YouTube channel to activate intermediate features.'}
-               </p>
-             </div>
-          </div>
+      <div className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent border border-red-500/20 rounded-[2.5rem] p-8 mb-8 relative overflow-hidden flex flex-col md:flex-row items-center gap-6 shadow-sm">
+        <div className="w-16 h-16 bg-red-600 text-white rounded-3xl flex items-center justify-center shrink-0 shadow-lg shadow-red-600/20 z-10">
+          <YouTubeLogo className="w-8 h-8 fill-current text-white" />
+        </div>
+        <div className="flex-1 text-center md:text-left space-y-1.5 z-10">
+          <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-sm">{isFr ? 'Service Actif : YouTube Verification' : 'Active Service: YouTube Verification'}</h4>
+          <p className="text-xs text-gray-550 dark:text-gray-400 leading-relaxed max-w-2xl">
+            {isFr ? "Vérifiez le numéro de votre chaîne YouTube pour débloquer immédiatement les fonctionnalités intermédiaires (vidéos de plus de 15 minutes, miniatures personnalisées, diffusion en direct)." : "Verify your YouTube channel number to immediately unlock intermediate features (videos over 15 minutes, custom thumbnails, live streaming)."}
+          </p>
         </div>
       </div>
       
@@ -449,8 +444,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                 <AlertCircle className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" size={16} />
                 <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium leading-relaxed">
                   {isFr 
-                    ? "Si le SMS n'arrive pas après 2 à 3 minutes, c'est que YouTube (ou le service) n'a pas envoyé le SMS à ce numéro spécifique, ou que l'opérateur local le bloque. Cliquez sur \"Annuler / Remboursement\" pour annuler sans frais et essayer un autre numéro ou un autre pays."
-                    : "If the SMS doesn't arrive after 2-3 minutes, YouTube (or the service) likely didn't send the SMS to this specific number, or the local carrier blocked it. Click \"Cancel / Refund\" to cancel without being charged and try another number or country."}
+                    ? "Si le SMS n'arrive pas après 5 minutes, c'est que YouTube (ou le service) n'a pas envoyé le SMS à ce numéro spécifique, ou que l'opérateur local le bloque. Cliquez sur \"Annuler / Remboursement\" pour annuler sans frais et essayer un autre numéro ou un autre pays."
+                    : "If the SMS doesn't arrive after 5 minutes, YouTube (or the service) likely didn't send the SMS to this specific number, or the local carrier blocked it. Click \"Cancel / Refund\" to cancel without being charged and try another number or country."}
                 </p>
               </div>
             )}
