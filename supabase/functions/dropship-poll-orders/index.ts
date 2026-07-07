@@ -23,7 +23,7 @@ const ADAPTERS: Record<string, { getOrderStatus: typeof ytseller.getOrderStatus;
 }
 
 const BATCH = 25
-const TIMEOUT_MIN = 15
+const TIMEOUT_MIN = 60  // AgedSMM/SMMSHIBA peuvent prendre plus de temps à traiter
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
