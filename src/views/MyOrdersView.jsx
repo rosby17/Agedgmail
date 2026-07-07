@@ -28,7 +28,11 @@ import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
 const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile, lang, t, loading = false }) => {
-  if (!session) { navigate('auth'); return null; }
+  React.useEffect(() => {
+    if (!session) {
+      navigate('auth');
+    }
+  }, [session, navigate]);
   const [viewOrder, setViewOrder] = useState(null);
   const [showTransfer, setShowTransfer] = useState(false);
   // Initialise la checkbox depuis le profil
@@ -59,7 +63,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
     if (!name) return { baseName: '', options: [] };
 
     // Détecte les options avec émojis colorés (format YTSeller)
-    const emojiOptionRegex = /([🟢🔴🟡⚪🔵🟠🟤⚫]+[^🟢🔴🟡⚪🔵🟠🟤⚫\n]+)/g;
+    const emojiOptionRegex = /([🟢🔴🟡⚪🔵🟠🟤⚫]+[^🟢🔴🟡⚪🔵🟠🟤⚫\n]+)/gu;
     const emojiMatches = name.match(emojiOptionRegex);
     if (emojiMatches && emojiMatches.length > 1) {
       const cleanOptions = emojiMatches.map(o => o.trim().replace(/\s*-\s*$/, '').trim()).filter(Boolean);
@@ -99,7 +103,10 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
 
   // Télécharge les credentials d'une commande en .txt
   const downloadCredentials = (order) => {
-    const raw = order.credentials || order.data || '';
+    let raw = order.credentials || order.data || '';
+    if (!raw.trim() && order.delivery_data && typeof order.delivery_data === 'object') {
+      raw = `Phone: ${order.delivery_data.number || ''}\nSMS Code: ${order.delivery_data.code || order.delivery_data.sms || ''}\nProvider: ${order.delivery_data.provider || ''}`;
+    }
     if (!raw.trim()) return;
     const blob = new Blob([raw], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -110,7 +117,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
     URL.revokeObjectURL(url);
   };
 
-  const hasDelivery = (order) => !!(order.credentials || order.data);
+  const hasDelivery = (order) => !!(order.credentials || order.data || (order.delivery_data && typeof order.delivery_data === 'object' && (order.delivery_data.code || order.delivery_data.sms)));
 
   const statusBadge = (order) => {
     const isSpecial = order.product_id === 999 || order.product_id === 998;
@@ -123,6 +130,8 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
     const { label, cls } = map[order.status] || map.pending;
     return <span className={`text-xs font-bold px-3 py-1 rounded-full border ${cls}`}>{label}</span>;
   };
+
+  if (!session) return null;
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-16 font-sans">

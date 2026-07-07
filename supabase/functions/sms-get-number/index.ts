@@ -12,14 +12,15 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Missing Authorization header');
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: req.headers.get('Authorization')! } }
+      global: { headers: { Authorization: authHeader } }
     });
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('Missing Authorization header');
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
@@ -64,10 +65,52 @@ serve(async (req) => {
     } else if (currentProvider === '5sim') {
       const apiKey = Deno.env.get('FIVESIM_API_KEY');
       if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
+
+      const fivesimCountryMap: Record<string, string> = {
+        'US': 'usa',
+        'GB': 'england',
+        'FR': 'france',
+        'DE': 'germany',
+        'RU': 'russia',
+        'CA': 'canada',
+        'ES': 'spain',
+        'IT': 'italy',
+        'UA': 'ukraine',
+        'PL': 'poland',
+        'IN': 'india',
+        'ID': 'indonesia',
+        'BR': 'brazil',
+        'MX': 'mexico',
+        'VN': 'vietnam',
+        'RO': 'romania',
+        'EG': 'egypt',
+      };
+      
+      const countryName = fivesimCountryMap[targetIso] || targetIso.toLowerCase();
+      const appName = "youtube";
+      
+      const url = `https://5sim.net/v1/user/buy/activation/${countryName}/any/${appName}`;
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`5sim API Error: ${errText || res.statusText}`);
+      }
+      
+      const data = await res.json();
+      if (!data.id || !data.phone) {
+        throw new Error(`5sim API Error: ${JSON.stringify(data)}`);
+      }
+      
       providerData = {
         Status: "200",
-        Number: "+1234567890 (5sim mock)",
-        SecurityId: `5sim:mock_id`
+        Number: data.phone,
+        SecurityId: `5sim:${data.id}:${countryName}`
       };
     } else if (currentProvider === 'pvapins') {
       const apiKey = Deno.env.get('PVAPINS_API_KEY');

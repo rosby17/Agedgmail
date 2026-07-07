@@ -12,6 +12,9 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Missing Authorization header');
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     // Use service role to bypass RLS for balance update
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -19,7 +22,7 @@ serve(async (req) => {
     // Client for auth verification
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: req.headers.get('Authorization')! } }
+      global: { headers: { Authorization: authHeader } }
     });
 
     const authHeader = req.headers.get('Authorization');
@@ -71,7 +74,37 @@ serve(async (req) => {
     } else if (providerName === '5sim') {
       const apiKey = Deno.env.get('FIVESIM_API_KEY');
       if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
-      dataObj = { mock: "waiting" };
+      
+      const url = `https://5sim.net/v1/user/check/${externalSecurityId}`;
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`5sim Check API Error: ${errText || res.statusText}`);
+      }
+      
+      dataObj = await res.json();
+      
+      if (dataObj.sms && Array.isArray(dataObj.sms) && dataObj.sms.length > 0) {
+        status = "success";
+        smsCode = dataObj.sms[0].code || dataObj.sms[0].text;
+      } else if (dataObj.status === 'PENDING') {
+        status = "waiting";
+      } else if (dataObj.status === 'FINISHED' || dataObj.status === 'RECEIVED') {
+        if (dataObj.sms && dataObj.sms.length > 0) {
+          status = "success";
+          smsCode = dataObj.sms[0].code || dataObj.sms[0].text;
+        } else {
+          status = "waiting";
+        }
+      } else if (dataObj.status === 'CANCELED' || dataObj.status === 'TIMEOUT') {
+        throw new Error(`Activation was canceled or timed out: ${dataObj.status}`);
+      }
     } else if (providerName === 'pvapins') {
       const apiKey = Deno.env.get('PVAPINS_API_KEY');
       if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
@@ -141,7 +174,8 @@ serve(async (req) => {
           price_usd: smsPrice,
           buyer_email: user.email,
           status: 'confirmed',
-          delivery_data: { number: number, code: smsCode, provider: providerName }
+          delivery_data: { number: number, code: smsCode, provider: providerName },
+          credentials: `Phone: ${number}\nSMS Code: ${smsCode}\nProvider: ${providerName}`
         });
 
       // Notification

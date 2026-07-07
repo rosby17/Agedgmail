@@ -44,6 +44,12 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
   useEffect(() => () => setSuggestedAmount(null), []);
 
+  useEffect(() => {
+    if (!session) {
+      navigate('auth');
+    }
+  }, [session, navigate]);
+
   // Reprise d'une commande Binance Pay 'pending' depuis "Mes commandes" : on
   // rejoue l'étape d'attente avec les infos déjà en base, sans recréer de
   // commande (le montant/code/expiration restent ceux d'origine).
@@ -91,7 +97,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     return () => clearInterval(retry);
   }, [binanceSubStep, payment]);
 
-  if (!session) { navigate('auth'); return null; }
+
 
   const close = () => navigate('dashboard');
   const bonusPct = bonusPercentFor(amountUsd);
@@ -250,6 +256,8 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     }, 6000);
     return () => clearInterval(interval);
   }, [step, payment, session, fetchProfile]);
+
+  if (!session) return null;
 
   return (
     <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>

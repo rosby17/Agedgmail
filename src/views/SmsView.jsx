@@ -41,7 +41,9 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           return parsed;
         }
       }
-    } catch(e) {}
+    } catch(e) {
+      console.warn("Failed to load initial SMS state:", e);
+    }
     return null;
   };
 
@@ -58,7 +60,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   
   // Dynamic pricing states
   const [countries, setCountries] = useState([]);
-  const [selectedCountry, setSelectedCountry] = useState(initialState?.selectedCountry || 'US');
+  const [selectedCountry, setSelectedCountry] = useState(initialState?.selectedCountry || '');
   const [currentPrice, setCurrentPrice] = useState(initialState?.currentPrice || 1.00);
   const [currentProvider, setCurrentProvider] = useState(initialState?.currentProvider || 'smscodes');
   
@@ -93,11 +95,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           const sorted = data.Prices.sort((a, b) => a.Country.localeCompare(b.Country));
           setCountries(sorted);
           
-          // Set default to US if available, or first country
-          const defaultCountry = sorted.find(c => c.Iso === 'US') || sorted[0];
-          setSelectedCountry(defaultCountry.Iso);
-          setCurrentPrice(parseFloat(defaultCountry.Price));
-          setCurrentProvider(defaultCountry.Provider || 'smscodes');
+          // Do not set a default country selection, keep it empty initially
+          setSelectedCountry('');
+          setCurrentPrice(1.00);
+          setCurrentProvider('smscodes');
         }
         setStatus('IDLE');
       } catch (err) {
@@ -112,11 +113,21 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
   const handleCountryChange = (e) => {
     const iso = e.target.value;
+    if (!iso) {
+      setSelectedCountry('');
+      setCurrentPrice(1.00);
+      setCurrentProvider('smscodes');
+      return;
+    }
     setSelectedCountry(iso);
     const country = countries.find(c => c.Iso === iso);
     if (country) {
-      setCurrentPrice(parseFloat(country.Price));
-      setCurrentProvider(country.Provider || 'smscodes');
+      const priceVal = parseFloat(country.Price);
+      const providerVal = country.Provider || 'smscodes';
+      setCurrentPrice(priceVal);
+      setCurrentProvider(providerVal);
+      // Automatically request the number
+      requestNumber(iso, priceVal, providerVal);
     }
   };
 
@@ -169,7 +180,9 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
               audio.volume = 1.0;
               audio.play().catch(e => console.log('Audio play failed:', e));
-            } catch(e) {}
+            } catch(e) {
+              console.log("Audio notification failed:", e);
+            }
 
             if (fetchProfile) fetchProfile();
           }
@@ -190,12 +203,13 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const requestNumber = async () => {
+  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider) => {
     if (!session) {
       navigate('auth');
       return;
     }
-    if (profile?.balance < currentPrice) {
+    if (!isoVal) return;
+    if (profile?.balance < priceVal) {
       setError(isFr ? `Solde insuffisant ($${profile?.balance?.toFixed(2)}). Veuillez recharger votre compte.` : `Insufficient balance ($${profile?.balance?.toFixed(2)}). Please top up.`);
       return;
     }
@@ -204,7 +218,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
     try {
       const { data, error } = await supabase.functions.invoke('sms-get-number', {
-        body: { iso: selectedCountry, serviceId: selectedService, price: currentPrice, provider: currentProvider }
+        body: { iso: isoVal, serviceId: selectedService, price: priceVal, provider: providerVal }
       });
 
       if (error) throw new Error(error.message);
@@ -360,13 +374,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                     disabled={status !== 'IDLE' && status !== 'LOADING_PRICES'}
                     className="w-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 font-medium disabled:opacity-50"
                   >
-                    {countries.length > 0 ? (
-                      countries.map(c => (
-                        <option key={c.Iso} value={c.Iso}>{c.Country} ({c.Iso})</option>
-                      ))
-                    ) : (
-                      <option value="US">{isFr ? 'Chargement...' : 'Loading...'}</option>
-                    )}
+                    <option value="">{isFr ? '-- Choisir un pays --' : '-- Choose a country --'}</option>
+                    {countries.map(c => (
+                      <option key={c.Iso} value={c.Iso}>{c.Country} ({c.Iso})</option>
+                    ))}
                   </select>
                </div>
                <div>
@@ -380,50 +391,50 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
          </div>
 
          {/* Step 2: Use the Number */}
-         <div className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm transition-all duration-300 ${(status === 'IDLE' && !phoneNumber) ? 'opacity-70 grayscale-[20%]' : 'opacity-100'}`}>
+         <div className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm transition-all duration-300 ${(!selectedCountry) ? 'opacity-50 grayscale-[20%]' : 'opacity-100'}`}>
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-sm font-black text-gray-900 dark:text-white mb-2 uppercase tracking-widest">
-                  {isFr ? 'Étape 2 - Obtenir le numéro' : 'STEP TWO - USE THE NUMBER'}
+                  {isFr ? 'Étape 2 - Numéro de téléphone' : 'STEP TWO - PHONE NUMBER'}
                 </h3>
                 <p className="text-gray-500 text-sm max-w-xl">
-                  {isFr ? 'Entrez ce numéro sur YouTube pour déclencher l\'envoi du code de vérification.' : 'Enter the number into the website/app to receive the SMS verification message.'}
+                  {isFr ? 'Utilisez ce numéro de téléphone pour déclencher l\'envoi du code de vérification.' : 'Use this phone number to trigger the sending of the verification code.'}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 items-end">
-               <div className="flex-1 w-full">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Numéro de téléphone' : 'Phone Number'}</label>
-                  <div className="relative group">
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={phoneNumber || (loading ? (isFr ? 'Génération en cours...' : 'Generating...') : '')} 
-                      placeholder={isFr ? "Cliquez sur obtenir un numéro" : "Click get number"} 
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-xl font-mono font-bold text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-colors group-hover:border-primary/30" 
-                    />
-                    {phoneNumber && (
-                       <button onClick={() => copyToClipboard(phoneNumber)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors">
-                         <Copy size={18} />
-                       </button>
+            {!selectedCountry ? (
+              <div className="text-center py-6 text-yellow-600 dark:text-yellow-400 font-bold bg-yellow-50/50 dark:bg-yellow-950/10 rounded-2xl border border-dashed border-yellow-200/50 dark:border-yellow-900/20">
+                {isFr ? "⚠️ Veuillez d'abord sélectionner un pays à l'étape 1" : "⚠️ Please select a country in step 1 first"}
+              </div>
+            ) : (
+              <div className="flex flex-col md:flex-row gap-4 items-end animate-in fade-in slide-in-from-bottom-2 duration-300">
+                 <div className="flex-1 w-full">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Numéro de téléphone' : 'Phone Number'}</label>
+                    <div className="relative group">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={phoneNumber || (loading ? (isFr ? 'Génération du numéro en cours...' : 'Generating number...') : '')} 
+                        placeholder={isFr ? "Génération automatique..." : "Automatic generation..."} 
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-xl font-mono font-bold text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-colors group-hover:border-primary/30" 
+                      />
+                      {phoneNumber && (
+                         <button onClick={() => copyToClipboard(phoneNumber)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors">
+                           <Copy size={18} />
+                         </button>
+                      )}
+                    </div>
+                 </div>
+                 <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
+                    {(status === 'WAITING_SMS' || status === 'COMPLETED') && (
+                      <button onClick={cancelRequest} className="w-full md:w-auto bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold py-3.5 px-8 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-red-500 dark:hover:text-red-400 transition-colors h-[54px]">
+                        {isFr ? 'Annuler' : 'Cancel / Refund'}
+                      </button>
                     )}
-                  </div>
-               </div>
-               <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
-                  {status === 'IDLE' && (
-                    <button onClick={requestNumber} disabled={loading || status === 'LOADING_PRICES' || countries.length === 0} className="w-full md:w-auto bg-primary text-white font-bold py-3.5 px-8 rounded-xl hover:bg-primaryDark transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 h-[54px] shadow-lg shadow-primary/20">
-                      {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Smartphone size={18} />}
-                      {isFr ? 'Obtenir le numéro' : 'Get Number'}
-                    </button>
-                  )}
-                  {(status === 'WAITING_SMS' || status === 'COMPLETED') && (
-                    <button onClick={cancelRequest} className="w-full md:w-auto bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold py-3.5 px-8 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-red-500 dark:hover:text-red-400 transition-colors h-[54px]">
-                      {isFr ? 'Annuler' : 'Cancel / Refund'}
-                    </button>
-                  )}
-               </div>
-            </div>
+                 </div>
+              </div>
+            )}
          </div>
 
          {/* Step 3: Receive SMS */}
@@ -448,30 +459,38 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                 </p>
               </div>
             )}
-
-            <div className="flex flex-col md:flex-row gap-4 items-stretch">
-               <div className="flex-1 relative">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Message SMS' : 'SMS Message'}</label>
-                  <textarea 
-                    readOnly 
-                    value={smsCode} 
-                    rows={2} 
-                    className={`w-full bg-gray-50 dark:bg-gray-800 border ${status === 'COMPLETED' ? 'border-green-500/50 text-green-600 dark:text-green-400' : 'border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white'} rounded-xl px-4 py-4 text-xl font-mono font-bold outline-none resize-none`} 
-                    placeholder={status === 'WAITING_SMS' ? (isFr ? 'En attente de réception...' : 'Waiting for SMS...') : ''}
-                  ></textarea>
-               </div>
-               {smsCode && (
-                 <div className="flex items-end">
-                   <button onClick={() => copyToClipboard(smsCode)} className="w-full md:w-auto bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-4 px-8 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 h-[68px]">
-                     <Copy size={18} /> {isFr ? 'Copier le code' : 'Copy Code'}
-                   </button>
+            
+            {status === 'COMPLETED' && smsCode ? (
+              <div className="bg-green-500/10 border-2 border-green-500/30 rounded-[2rem] p-8 flex flex-col items-center justify-center gap-4 text-center animate-in zoom-in duration-300">
+                <div className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-green-500/20">
+                  <CheckCircle size={32} />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-green-700 dark:text-green-400 uppercase tracking-wider">{isFr ? 'CODE SMS REÇU !' : 'SMS CODE RECEIVED!'}</h4>
+                  <p className="text-xs text-green-600/80 font-bold mt-1">
+                    {isFr ? `Débité de $${currentPrice.toFixed(2)}` : `Charged $${currentPrice.toFixed(2)}`}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 border border-green-500/20 px-10 py-6 rounded-2xl shadow-inner relative group select-all">
+                  <span className="text-4xl md:text-5xl font-mono font-black tracking-widest text-gray-900 dark:text-white select-all">{smsCode}</span>
+                </div>
+                <button onClick={() => copyToClipboard(smsCode)} className="bg-green-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-green-700 transition-all flex items-center gap-2 active:scale-95 shadow-md">
+                  <Copy size={16} /> {isFr ? 'Copier le code' : 'Copy Code'}
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col md:flex-row gap-4 items-stretch">
+                 <div className="flex-1 relative">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Message SMS' : 'SMS Message'}</label>
+                    <textarea 
+                      readOnly 
+                      value={smsCode} 
+                      rows={2} 
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-4 text-xl font-mono font-bold outline-none resize-none animate-pulse" 
+                      placeholder={status === 'WAITING_SMS' ? (isFr ? 'En attente de réception...' : 'Waiting for SMS...') : ''}
+                    ></textarea>
                  </div>
-               )}
-            </div>
-            {status === 'COMPLETED' && (
-              <p className="text-sm text-green-600 dark:text-green-400 font-bold mt-4">
-                {isFr ? `Succès ! $${currentPrice.toFixed(2)} ont été débités.` : `Success! $${currentPrice.toFixed(2)} has been charged.`}
-              </p>
+              </div>
             )}
          </div>
       </div>

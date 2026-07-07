@@ -21,7 +21,7 @@ export function parseAccountDelivery(rawLine) {
   }
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  let parts = [];
+  let parts;
 
   // Détection du format : si on a des tabulations, c'est probablement le nouveau format (avec codes de secours)
   if (rawLine.includes('\t')) {

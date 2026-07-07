@@ -12,6 +12,12 @@ import ProductVisual from '../ui/ProductVisual';
 import DeliveredAccountCard from '../ui/DeliveredAccountCard';
 
 const OrderCredentialsModal = ({ order, onClose, lang }) => {
+  const isSms = order.product_name?.toLowerCase().includes('sms') || (order.delivery_data && typeof order.delivery_data === 'object' && (order.delivery_data.number || order.delivery_data.code || order.delivery_data.sms));
+  
+  const smsNumber = order.delivery_data?.number || "";
+  const smsCode = order.delivery_data?.code || order.delivery_data?.sms || "";
+  const smsProvider = order.delivery_data?.provider || "";
+
   const raw = order.credentials || order.data || "";
   const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
 
@@ -19,12 +25,61 @@ const OrderCredentialsModal = ({ order, onClose, lang }) => {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
       <div className="bg-white w-full max-w-3xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 flex flex-col">
         <div className="bg-gray-900 p-8 text-white flex justify-between items-center shrink-0">
-          <div><h3 className="text-xl font-bold">{cleanProductName(order.product_name, lang)}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Tes identifiants de connexion</p></div>
+          <div><h3 className="text-xl font-bold">{cleanProductName(order.product_name, lang)}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">{isSms ? 'Vérification SMS' : 'Tes identifiants de connexion'}</p></div>
           <button onClick={onClose} aria-label="Close" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
         </div>
 
-        <div className="p-10 space-y-6 overflow-y-auto custom-scrollbar">
-          {lines.length === 0 ? (
+        <div className="p-10 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+          {isSms ? (
+            <div className="space-y-8 py-4">
+              <div className="bg-green-500/10 border-2 border-green-500/30 rounded-3xl p-8 flex flex-col items-center justify-center gap-4 text-center">
+                <div className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-green-500/20">
+                  <CheckCircle size={32} />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-green-700 uppercase tracking-wider">SMS Réceptionné avec Succès</h4>
+                  <p className="text-xs text-green-600/80 font-bold mt-1">
+                    Facturé : ${order.price_usd || order.total_price || '1.00'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 relative group">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Numéro Utilisé</label>
+                  <span className="text-lg font-mono font-bold text-gray-900">{smsNumber}</span>
+                  {smsNumber && (
+                    <button 
+                      onClick={() => navigator.clipboard.writeText(smsNumber)} 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 relative group">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Fournisseur SMS</label>
+                  <span className="text-lg font-bold text-gray-900 capitalize">{smsProvider || "smscodes"}</span>
+                </div>
+              </div>
+
+              <div className="bg-gray-900 rounded-3xl p-8 text-center space-y-4">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">CODE SMS REÇU</label>
+                <div className="inline-block bg-white/10 px-8 py-4 rounded-2xl border border-white/10">
+                  <span className="text-3xl md:text-4xl font-mono font-black text-white tracking-widest select-all">{smsCode}</span>
+                </div>
+                <div>
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(smsCode)} 
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-white font-bold rounded-xl text-xs hover:bg-primaryDark transition-all"
+                  >
+                    <Copy size={14} /> Copier le code SMS
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : lines.length === 0 ? (
             <div className="bg-gray-50 rounded-3xl p-10 border border-gray-100 text-center text-gray-400 font-bold">En attente de livraison…</div>
           ) : (
             <>

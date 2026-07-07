@@ -20,14 +20,15 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Missing Authorization header');
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: req.headers.get('Authorization')! } }
+      global: { headers: { Authorization: authHeader } }
     });
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('Missing Authorization header');
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
@@ -64,6 +65,26 @@ serve(async (req) => {
 
     // 2. Fetch from 5sim.net (Guest API for prices)
     try {
+      const fivesimCountryToIso: Record<string, string> = {
+        'usa': 'US',
+        'england': 'GB',
+        'france': 'FR',
+        'germany': 'DE',
+        'russia': 'RU',
+        'canada': 'CA',
+        'spain': 'ES',
+        'italy': 'IT',
+        'ukraine': 'UA',
+        'poland': 'PL',
+        'india': 'IN',
+        'indonesia': 'ID',
+        'brazil': 'BR',
+        'mexico': 'MX',
+        'vietnam': 'VN',
+        'romania': 'RO',
+        'egypt': 'EG',
+      };
+
       // product=youtube
       const res = await fetch('https://5sim.net/v1/guest/prices?product=youtube');
       const data = await res.json();
@@ -81,17 +102,27 @@ serve(async (req) => {
             // 5sim returns prices in RUB. 1 RUB = ~0.011 USD. Let's convert roughly.
             const costUsd = lowest * 0.011; 
             
-            let foundIso = '';
-            for (const [iso, existing] of bestPrices.entries()) {
-              if (existing.Country.toLowerCase() === countryName.toLowerCase()) {
-                foundIso = iso;
-                break;
+            let targetIso = fivesimCountryToIso[countryName.toLowerCase()];
+            if (!targetIso) {
+              // Try matching by exact name
+              for (const [iso, existing] of bestPrices.entries()) {
+                if (existing.Country.toLowerCase() === countryName.toLowerCase()) {
+                  targetIso = iso;
+                  break;
+                }
               }
             }
-            if (foundIso) {
-              const existing = bestPrices.get(foundIso)!;
-              if (costUsd < existing.Price) {
-                bestPrices.set(foundIso, { ...existing, Price: costUsd, Provider: '5sim' });
+
+            if (targetIso) {
+              const existing = bestPrices.get(targetIso);
+              if (!existing || costUsd < existing.Price) {
+                const displayName = existing ? existing.Country : (countryName.charAt(0).toUpperCase() + countryName.slice(1));
+                bestPrices.set(targetIso, {
+                  Country: displayName,
+                  Iso: targetIso,
+                  Price: costUsd,
+                  Provider: '5sim'
+                });
               }
             }
           }
