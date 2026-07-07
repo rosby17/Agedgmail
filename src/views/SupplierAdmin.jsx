@@ -38,6 +38,7 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
   const [newMap, setNewMap] = useState({ product_id: '', supplier: 'ytseller', supplier_product_id: '', margin_percent: 30 });
   const [marginInput, setMarginInput] = useState('');
   const [busyRetryId, setBusyRetryId] = useState(null);
+  const [mappingLimit, setMappingLimit] = useState(20);
 
   const productName = (id) => products.find(p => p.id === id)?.name || `#${id}`;
 
@@ -237,9 +238,23 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
 
       {/* Mapping produits */}
       <div className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">Product mapping</h2>
-        <p className="text-xs text-gray-400 -mt-6 mb-8">Un produit peut avoir un mapping par fournisseur ; celui marqué "Active" (le moins cher, en stock) fixe le prix/stock affichés en boutique.</p>
-        <div className="overflow-x-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product mapping</h2>
+            <p className="text-xs text-gray-400 mt-1">Un produit peut avoir un mapping par fournisseur ; celui marqué "Active" fixe le prix/stock affichés en boutique.</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <label className="text-xs font-bold text-gray-500">Afficher:</label>
+            <select value={mappingLimit} onChange={e => setMappingLimit(Number(e.target.value))} className="bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold px-3 py-2 cursor-pointer">
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={10000}>Tout</option>
+            </select>
+          </div>
+        </div>
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
@@ -249,7 +264,7 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
-              {mappings.map(m => (
+              {mappings.slice(0, mappingLimit).map(m => (
                 <tr key={m.id} className="text-gray-700 dark:text-gray-300">
                   {editing === m.id ? (
                     <td className="py-4">
