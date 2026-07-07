@@ -1440,10 +1440,10 @@ const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
 
 
 
+
 const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const isFr = lang === 'fr';
-  const SMS_PRICE = 1.00;
-  const [status, setStatus] = useState('IDLE');
+  const [status, setStatus] = useState('IDLE'); // IDLE, LOADING_PRICES, WAITING_SMS, COMPLETED
   const [phoneNumber, setPhoneNumber] = useState('');
   const [securityId, setSecurityId] = useState('');
   const [smsCode, setSmsCode] = useState('');
@@ -1451,10 +1451,56 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Default configurations
+  // Dynamic pricing states
+  const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState('US');
+  const [currentPrice, setCurrentPrice] = useState(1.00);
+  
   // Service ID pour YouTube sur smscodes.io
   const [selectedService, setSelectedService] = useState('8a97735e-9a14-427e-8a88-e9d999bf3429'); 
+
+  useEffect(() => {
+    // Fetch prices on component mount
+    const fetchPrices = async () => {
+      setStatus('LOADING_PRICES');
+      try {
+        const { data, error } = await supabase.functions.invoke('sms-get-prices', {
+          body: { serviceId: selectedService }
+        });
+
+        if (error) throw new Error(error.message);
+        if (data.error) throw new Error(data.error);
+        if (data.Status !== "200") throw new Error(data.Error || 'Provider Error');
+
+        if (data.Prices && data.Prices.length > 0) {
+          // Sort alphabetically by Country name
+          const sorted = data.Prices.sort((a, b) => a.Country.localeCompare(b.Country));
+          setCountries(sorted);
+          
+          // Set default to US if available, or first country
+          const defaultCountry = sorted.find(c => c.Iso === 'US') || sorted[0];
+          setSelectedCountry(defaultCountry.Iso);
+          setCurrentPrice(parseFloat(defaultCountry.Price));
+        }
+        setStatus('IDLE');
+      } catch (err) {
+        console.error("Fetch prices error", err);
+        setError(isFr ? "Impossible de charger la liste des pays." : "Could not load the countries list.");
+        setStatus('IDLE');
+      }
+    };
+
+    fetchPrices();
+  }, [selectedService, isFr]);
+
+  const handleCountryChange = (e) => {
+    const iso = e.target.value;
+    setSelectedCountry(iso);
+    const country = countries.find(c => c.Iso === iso);
+    if (country) {
+      setCurrentPrice(parseFloat(country.Price));
+    }
+  };
 
   useEffect(() => {
     let timer;
@@ -1469,8 +1515,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
             body: { 
               securityId, 
               number: phoneNumber, 
-              price: SMS_PRICE, 
-              description: `SMS Verification (Service ${selectedService}, ${selectedCountry})` 
+              price: currentPrice, 
+              description: `SMS Verification (YouTube, ${selectedCountry})` 
             }
           });
           
@@ -1494,7 +1540,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       clearInterval(timer);
       clearInterval(pollInterval);
     };
-  }, [status, timeLeft, isFr, securityId, phoneNumber, fetchProfile, selectedService, selectedCountry]);
+  }, [status, timeLeft, isFr, securityId, phoneNumber, fetchProfile, selectedCountry, currentPrice]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -1507,8 +1553,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       navigate('auth');
       return;
     }
-    if (profile?.balance < SMS_PRICE) {
-      setError(isFr ? 'Solde insuffisant. Veuillez recharger votre compte.' : 'Insufficient balance. Please top up your account.');
+    if (profile?.balance < currentPrice) {
+      setError(isFr ? `Solde insuffisant ($${profile?.balance?.toFixed(2)}). Veuillez recharger votre compte.` : `Insufficient balance ($${profile?.balance?.toFixed(2)}). Please top up.`);
       return;
     }
     setError('');
@@ -1516,7 +1562,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
     try {
       const { data, error } = await supabase.functions.invoke('sms-get-number', {
-        body: { iso: selectedCountry, serviceId: selectedService, price: SMS_PRICE }
+        body: { iso: selectedCountry, serviceId: selectedService, price: currentPrice }
       });
 
       if (error) throw new Error(error.message);
@@ -1571,6 +1617,13 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
             <AlertCircle size={20} /> {error}
           </div>
         )}
+        
+        {status === 'LOADING_PRICES' && (
+          <div className="text-center space-y-4 py-12">
+            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+            <p className="text-gray-500 font-bold">{isFr ? 'Chargement des pays...' : 'Loading countries...'}</p>
+          </div>
+        )}
 
         {status === 'IDLE' && (
           <div className="text-center space-y-8">
@@ -1578,40 +1631,41 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               <Smartphone className="text-gray-400" size={40} />
             </div>
             
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 flex items-center justify-between border border-gray-100 dark:border-gray-700">
-              <div className="text-left">
-                <p className="font-bold text-gray-900 dark:text-white">{isFr ? 'Vérification YouTube' : 'YouTube Verification'}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <select 
-                    value={selectedCountry}
-                    onChange={(e) => setSelectedCountry(e.target.value)}
-                    className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 text-gray-700 dark:text-gray-300 outline-none"
-                  >
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between border border-gray-100 dark:border-gray-700 gap-6">
+              <div className="text-left w-full md:w-auto flex-1">
+                <p className="font-bold text-gray-900 dark:text-white mb-2">{isFr ? 'Sélecteur de pays' : 'Country selector'}</p>
+                <select 
+                  value={selectedCountry}
+                  onChange={handleCountryChange}
+                  className="w-full text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 font-medium"
+                >
+                  {countries.length > 0 ? (
+                    countries.map(c => (
+                      <option key={c.Iso} value={c.Iso}>{c.Country} ({c.Iso})</option>
+                    ))
+                  ) : (
                     <option value="US">USA (US)</option>
-                    <option value="FR">France (FR)</option>
-                    <option value="GB">Royaume-Uni (GB)</option>
-                    <option value="IN">Inde (IN)</option>
-                  </select>
-                </div>
+                  )}
+                </select>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-black text-primary">${SMS_PRICE.toFixed(2)}</p>
-                <p className="text-xs text-gray-400 font-bold uppercase">{isFr ? 'Par vérification' : 'Per verification'}</p>
+              <div className="text-center md:text-right bg-white dark:bg-gray-900 rounded-xl p-4 w-full md:w-auto border border-gray-100 dark:border-gray-700">
+                <p className="text-3xl font-black text-primary">${currentPrice.toFixed(2)}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{isFr ? 'Prix du numéro' : 'Number price'}</p>
               </div>
             </div>
 
             <button 
               onClick={requestNumber} 
-              disabled={loading}
+              disabled={loading || countries.length === 0}
               className="w-full bg-primary text-white dark:text-gray-900 py-4 rounded-2xl font-black text-lg hover:bg-primaryDark hover:scale-[1.02] transition-all disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-primary/20"
             >
               {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white dark:border-gray-900/30 dark:border-t-gray-900 rounded-full animate-spin" /> : <Smartphone size={20} />}
               {loading 
                 ? (isFr ? 'Génération du numéro...' : 'Generating number...') 
-                : (isFr ? 'Obtenir un numéro' : 'Get a number')}
+                : (isFr ? `Obtenir ce numéro pour $${currentPrice.toFixed(2)}` : `Get this number for $${currentPrice.toFixed(2)}`)}
             </button>
             <p className="text-xs text-gray-400">
-              {isFr ? 'Vous ne serez facturé que si vous recevez le code.' : 'You will only be charged if you receive the code.'}
+              {isFr ? 'Votre solde ne sera débité QUE si vous recevez le SMS.' : 'Your balance will ONLY be charged if you receive the SMS.'}
             </p>
           </div>
         )}
@@ -1679,7 +1733,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
             </div>
 
             <p className="text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/30 py-3 px-6 rounded-full inline-block">
-              {isFr ? `Succès ! $${SMS_PRICE.toFixed(2)} ont été débités.` : `Success! $${SMS_PRICE.toFixed(2)} has been charged.`}
+              {isFr ? `Succès ! $${currentPrice.toFixed(2)} ont été débités.` : `Success! $${currentPrice.toFixed(2)} has been charged.`}
             </p>
 
             <div>
