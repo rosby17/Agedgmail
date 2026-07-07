@@ -1,0 +1,14 @@
+project_id = "ncjpbkfwhmsispiczzgl"
+
+# SMTP Brevo pour les emails d'auth (confirmation d'inscription, reset mot de
+# passe...). Les identifiants ne sont jamais écrits ici en clair : `env(...)`
+# lit les variables d'environnement au moment de `supabase config push`,
+# depuis le fichier local .env (ignoré par git).
+[auth.email.smtp]
+enabled = true
+host = "smtp-relay.brevo.com"
+port = 587
+user = "env(BREVO_SMTP_LOGIN)"
+pass = "env(BREVO_SMTP_PASSWORD)"
+admin_email = "env(BREVO_SENDER_EMAIL)"
+sender_name = "AgedGmailYT"

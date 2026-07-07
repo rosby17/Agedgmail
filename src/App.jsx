@@ -10,7 +10,7 @@ import { parseAccountDelivery } from './lib/parseAccountDelivery';
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 
 
-const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
+const LandingView = ({ navigate, products = [], setSelectedProduct, lang }) => {
   const topProductsRaw = [...products]
     .sort((a, b) => (b.sales || 0) - (a.sales || 0))
     .slice(0, 3)
@@ -303,7 +303,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
                       <div className="mb-10">
                         <span className="bg-l-primary text-on-primary px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
                       </div>
-                      <h3 className="font-headline-lg text-3xl mb-3 font-bold">{product.name}</h3>
+                      <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
                       <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                       <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Prêt pour le marketing'}". {product.details?.info}</p>
                       <div className="text-5xl font-extrabold text-on-surface mb-12">{product.price}€</div>
@@ -317,7 +317,7 @@ const LandingView = ({ navigate, products = [], setSelectedProduct }) => {
                     <div className="mb-10">
                       <span className="bg-white/5 border border-white/10 text-on-surface-variant px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
                     </div>
-                    <h3 className="font-headline-lg text-3xl mb-3 font-bold">{product.name}</h3>
+                    <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
                     <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                     <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Prêt pour le marketing'}". {product.details?.info}</p>
                     <div className="text-5xl font-extrabold text-on-surface mb-12">{product.price}€</div>
@@ -1123,7 +1123,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
 // ==========================================
 // QUICK ORDER MODAL — achat direct depuis la fiche produit, sans passer par le panier
 // ==========================================
-const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchProfile, fetchProducts, setRechargeSuggestedAmount }) => {
+const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchProfile, fetchProducts, setRechargeSuggestedAmount, lang }) => {
   const [qty, setQty] = useState(1);
   const [promoCode, setPromoCode] = useState('');
   const [promoMsg, setPromoMsg] = useState('');
@@ -1269,7 +1269,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0"><ProductVisual product={product} iconSize={20} /></div>
                   <div className="flex-grow min-w-0">
-                    <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{cleanProductName(product.name)}</div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{cleanProductName(product.name, lang)}</div>
                     <div className="text-xs text-gray-400">${product.price.toFixed(2)} × {qty}</div>
                   </div>
                   <div className="flex items-center bg-white dark:bg-gray-900 rounded-full border border-gray-200 dark:border-gray-700 shrink-0">
@@ -2027,7 +2027,7 @@ const DeliveredAccountCard = ({ raw, index, total }) => {
   );
 };
 
-const OrderCredentialsModal = ({ order, onClose }) => {
+const OrderCredentialsModal = ({ order, onClose, lang }) => {
   const raw = order.credentials || order.data || "";
   const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
 
@@ -2035,7 +2035,7 @@ const OrderCredentialsModal = ({ order, onClose }) => {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
       <div className="bg-white w-full max-w-3xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 flex flex-col">
         <div className="bg-gray-900 p-8 text-white flex justify-between items-center shrink-0">
-          <div><h3 className="text-xl font-bold">{order.product_name}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Tes identifiants de connexion</p></div>
+          <div><h3 className="text-xl font-bold">{cleanProductName(order.product_name, lang)}</h3><p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Tes identifiants de connexion</p></div>
           <button onClick={onClose} aria-label="Close" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all"><X size={20} /></button>
         </div>
 
@@ -2436,7 +2436,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
           </div>
         </div>
       )}
-      {viewOrder && <OrderCredentialsModal order={viewOrder} onClose={() => setViewOrder(null)} />}
+      {viewOrder && <OrderCredentialsModal order={viewOrder} onClose={() => setViewOrder(null)} lang={lang} />}
       {showTransfer && (
         <TransferCreditsModal
           profile={profile}
@@ -2522,7 +2522,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
                       {/* Produits + options */}
                       <td className="py-5 pr-4 max-w-xs">
                         <div className="font-bold text-gray-900 text-sm leading-snug mb-1.5">
-                          {baseName || order.product_name}
+                          {cleanProductName(baseName || order.product_name, lang)}
                           <span className="text-gray-400 font-medium ml-1">x{order.quantity}</span>
                         </div>
                         {options.length > 0 && (
@@ -2751,7 +2751,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
               {filtered.map(order => (
                 <tr key={order.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/20 transition-colors">
                   <td className="py-5">
-                    <p className="font-bold text-gray-900 dark:text-white text-sm">{order.product_name}</p>
+                    <p className="font-bold text-gray-900 dark:text-white text-sm">{cleanProductName(order.product_name, lang)}</p>
                     <p className="text-gray-400 dark:text-slate-500 text-[10px] font-mono">#{String(order.id).slice(0, 8).toUpperCase()}</p>
                   </td>
                   <td className="py-5 text-sm text-gray-600 dark:text-slate-300">{order.buyer_email || '—'}</td>
@@ -2816,7 +2816,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
 
             <div className="bg-gray-50/50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-800 rounded-3xl p-8 space-y-4">
               {[
-                ['Produit', selectedOrder.product_name, Package],
+                ['Produit', cleanProductName(selectedOrder.product_name, lang), Package],
                 ['Email Client', selectedOrder.buyer_email || '—', Mail],
                 ['Montant', `$${selectedOrder.total_price?.toFixed(2)}`, Wallet],
                 ['Date', new Date(selectedOrder.created_at).toLocaleString(), Clock],
@@ -3198,7 +3198,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
               {pending.map(o => (
                 <tr key={o.id} className="text-gray-700">
                   <td className="py-4 font-mono">#{o.id}</td>
-                  <td className="py-4 font-bold">{o.product_name}</td>
+                  <td className="py-4 font-bold">{cleanProductName(o.product_name, lang)}</td>
                   <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 font-bold text-xs">{SUPPLIER_LABEL[o.supplier] || o.supplier}</span></td>
                   <td className="py-4">{o.quantity}</td>
                   <td className="py-4 font-mono">{o.supplier_order_id || '—'}</td>
@@ -3741,7 +3741,7 @@ const RecentActivityTable = ({ allOrders }) => {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher par email, produit…"
-              className="pl-9 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-primary/20 outline-none w-52"
+              className="pl-9 pr-3 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-primary/20 outline-none w-52"
             />
           </div>
         </div>
@@ -3757,7 +3757,7 @@ const RecentActivityTable = ({ allOrders }) => {
             {filtered.map(o => (
               <tr key={o.id}>
                 <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email || '—'}</td>
-                <td className="py-4 text-gray-500 dark:text-slate-400">{o.product_name}</td>
+                <td className="py-4 text-gray-500 dark:text-slate-400">{cleanProductName(o.product_name, lang)}</td>
                 <td className="py-4 text-xs text-gray-400 dark:text-slate-500">{new Date(o.created_at).toLocaleString('fr-FR')}</td>
                 <td className="py-4">{statusBadge(o.status)}</td>
                 <td className="py-4 text-right font-mono font-black text-gray-900 dark:text-white">${Number(o.total_price || 0).toFixed(2)}</td>
@@ -5201,7 +5201,7 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
             <span className="text-primary">{displayCategoryLabel(product)}</span>
           </nav>
 
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 tracking-tight leading-snug">{cleanProductName(product.name)}</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 tracking-tight leading-snug">{cleanProductName(product.name, lang)}</h1>
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-xs font-bold border border-green-100">
@@ -6634,10 +6634,11 @@ function App() {
           fetchProfile={fetchProfile}
           fetchProducts={fetchProducts}
           setRechargeSuggestedAmount={setRechargeSuggestedAmount}
+          lang={lang}
         />
       )}
       <div className="flex-grow">
-        {currentView === 'landing' && <LandingView navigate={navigate} products={products} setSelectedProduct={setSelectedProduct} />}
+        {currentView === 'landing' && <LandingView navigate={navigate} products={products} setSelectedProduct={setSelectedProduct} lang={lang} />}
         {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
