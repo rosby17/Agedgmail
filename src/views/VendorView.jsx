@@ -1,82 +1,378 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
-import { Store, UploadCloud, DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Store, LayoutDashboard, Package, ShoppingBag, 
+  Wallet, UserCheck, LogOut, ArrowUpRight, DollarSign, 
+  Clock, CheckCircle, TrendingUp, Search, Plus, ExternalLink,
+  ChevronRight, CreditCard
+} from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const VendorView = ({ session, profile, fetchProfile, navigate }) => {
-  const [loading, setLoading] = useState(false);
-  const [cniUrl, setCniUrl] = useState('');
+const MOCK_SALES_DATA = [
+  { name: 'Lun', sales: 400 },
+  { name: 'Mar', sales: 300 },
+  { name: 'Mer', sales: 550 },
+  { name: 'Jeu', sales: 450 },
+  { name: 'Ven', sales: 700 },
+  { name: 'Sam', sales: 850 },
+  { name: 'Dim', sales: 900 }
+];
 
-  if (!profile) return <div className="p-20 text-center">Chargement...</div>;
+const MOCK_PRODUCTS = [
+  { id: 1, name: 'Spotify Premium 1 Mois', price: 2.50, stock: 45, status: 'active', sales: 120 },
+  { id: 2, name: 'Netflix 4K 1 Mois', price: 3.50, stock: 12, status: 'active', sales: 340 },
+  { id: 3, name: 'Disney+ 1 An', price: 15.00, stock: 0, status: 'out_of_stock', sales: 50 },
+];
 
-  const requestVendorStatus = async () => {
-    if (!cniUrl) return alert("Veuillez fournir un lien vers votre pièce d'identité.");
-    setLoading(true);
-    const { error } = await supabase.from('profiles').update({ vendor_status: 'pending', cni_url: cniUrl }).eq('id', profile.id);
-    if (!error) await fetchProfile(profile.id);
-    setLoading(false);
-  };
+const MOCK_ORDERS = [
+  { id: '#1029', product: 'Netflix 4K 1 Mois', customer: 'user12@gmail.com', date: 'Aujourd\'hui, 14:30', amount: 3.50, status: 'pending' },
+  { id: '#1028', product: 'Spotify Premium 1 Mois', customer: 'mark@test.com', date: 'Hier, 09:15', amount: 2.50, status: 'delivered' },
+  { id: '#1027', product: 'Spotify Premium 1 Mois', customer: 'john@doe.com', date: 'Hier, 08:00', amount: 2.50, status: 'delivered' },
+];
+
+const MOCK_WITHDRAWALS = [
+  { id: 'W-001', amount: 150.00, date: '01/07/2026', method: 'Binance Pay', status: 'completed' },
+  { id: 'W-002', amount: 45.50, date: '05/07/2026', method: 'Orange Money', status: 'pending' }
+];
+
+const VendorView = ({ session, profile, navigate }) => {
+  const [currentTab, setCurrentTab] = useState('overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fallbacks if profile is missing
+  const vendorStatus = profile?.vendor_status || 'approved'; // Force approved for mockup view
+  const isApproved = vendorStatus === 'approved';
+
+  const menuItems = [
+    { id: 'overview', label: 'Vue d\'ensemble', icon: <LayoutDashboard size={20} /> },
+    { id: 'products', label: 'Mes Produits', icon: <Package size={20} /> },
+    { id: 'orders', label: 'Ventes & Commandes', icon: <ShoppingBag size={20} /> },
+    { id: 'withdrawals', label: 'Retraits', icon: <Wallet size={20} /> },
+    { id: 'identity', label: 'Identité', icon: <UserCheck size={20} /> },
+  ];
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-gray-950 p-6 md:p-12 font-sans text-gray-900 dark:text-white">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center gap-4 border-b border-gray-100 dark:border-slate-800 pb-6">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
-            <Store size={32} />
+    <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans text-gray-900 dark:text-white flex flex-col md:flex-row">
+      
+      {/* Sidebar */}
+      <div className="w-full md:w-64 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 md:min-h-screen shrink-0">
+        <div className="p-6 flex items-center gap-3 border-b border-gray-100 dark:border-slate-800">
+          <div className="w-10 h-10 bg-orange-500/10 text-orange-500 rounded-xl flex items-center justify-center">
+            <Store size={20} />
           </div>
           <div>
-            <h1 className="text-3xl font-black">Espace Vendeur</h1>
-            <p className="text-gray-500 dark:text-gray-400">Gérez votre boutique et vos gains.</p>
+            <h1 className="font-black text-sm">Espace Vendeur</h1>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{profile?.username || 'Vendeur'}</p>
           </div>
         </div>
 
-        {profile.vendor_status === 'none' && (
-          <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 shadow-soft border border-gray-100 dark:border-slate-800 space-y-6 text-center">
-            <h2 className="text-xl font-bold">Devenir Vendeur</h2>
-            <p className="text-gray-500 max-w-lg mx-auto">Pour vendre sur notre plateforme, vous devez faire vérifier votre identité. Notre commission est de 15% par vente.</p>
-            <div className="max-w-md mx-auto space-y-4 text-left">
-              <label className="block text-xs font-bold uppercase text-gray-400">Lien vers votre pièce d'identité (Image/PDF)</label>
-              <input type="text" value={cniUrl} onChange={e => setCniUrl(e.target.value)} placeholder="https://..." className="w-full h-12 px-4 rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary" />
-              <button onClick={requestVendorStatus} disabled={loading} className="w-full h-12 bg-primary text-white rounded-xl font-bold flex items-center justify-center hover:bg-primaryDark transition-all">
-                Soumettre ma demande
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="p-4 space-y-2">
+          {menuItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setCurrentTab(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
+                currentTab === item.id 
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' 
+                  : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-800/50 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
 
-        {profile.vendor_status === 'pending' && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-[3rem] p-10 text-center">
-            <Clock size={48} className="mx-auto text-yellow-500 mb-4" />
-            <h2 className="text-xl font-bold text-yellow-700 dark:text-yellow-500">Demande en cours d'examen</h2>
-            <p className="text-yellow-600 dark:text-yellow-600 mt-2">L'équipe examine votre candidature. Vous recevrez une réponse sous peu.</p>
-          </div>
-        )}
+          <button 
+            onClick={() => navigate('home')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all mt-8"
+          >
+            <LogOut size={20} /> Retour au site
+          </button>
+        </div>
+      </div>
 
-        {profile.vendor_status === 'approved' && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-6">
-                <div className="w-14 h-14 bg-green-500/10 text-green-500 rounded-2xl flex items-center justify-center"><DollarSign size={24} /></div>
-                <div>
-                  <div className="text-xs font-black text-gray-400 uppercase">Solde Vendeur</div>
-                  <div className="text-3xl font-black font-mono mt-1">${Number(profile.vendor_balance || 0).toFixed(2)}</div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-6">
-                <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center"><CheckCircle size={24} /></div>
-                <div>
-                  <div className="text-xs font-black text-gray-400 uppercase">Statut</div>
-                  <div className="text-xl font-black mt-1 text-green-600">Vendeur Vérifié</div>
-                </div>
-              </div>
+      {/* Main Content */}
+      <div className="flex-1 p-6 md:p-10 max-h-screen overflow-y-auto">
+        <div className="max-w-6xl mx-auto space-y-8">
+          
+          <div className="flex justify-between items-end">
+            <div>
+              <h2 className="text-3xl font-black">{menuItems.find(i => i.id === currentTab)?.label}</h2>
+              <p className="text-sm text-gray-500 mt-1">Gérez vos activités et vos revenus en temps réel.</p>
             </div>
             
-            {/* TODO: Products Management & Withdrawal History */}
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm">
-                <h3 className="text-lg font-bold mb-4">Mes Produits</h3>
-                <p className="text-gray-500 italic">Interface de gestion des produits à venir...</p>
+            <div className="hidden md:flex items-center gap-3 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-100 dark:border-slate-800 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-xs font-bold text-gray-500">Statut: <span className="text-green-500">Vérifié</span></span>
             </div>
           </div>
-        )}
+
+          {/* OVERVIEW TAB */}
+          {currentTab === 'overview' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-green-500/10 text-green-500 rounded-2xl flex items-center justify-center"><DollarSign size={24} /></div>
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest">Revenus générés</div>
+                  </div>
+                  <div className="text-4xl font-black font-mono">$1,245.50</div>
+                  <div className="flex items-center gap-2 mt-2 text-xs font-bold text-green-500">
+                    <TrendingUp size={14} /> +12.5% ce mois
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-orange-500/10 text-orange-500 rounded-2xl flex items-center justify-center"><Wallet size={24} /></div>
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest">Solde Disponible</div>
+                  </div>
+                  <div className="text-4xl font-black font-mono">$320.00</div>
+                  <div className="mt-2 text-xs font-bold text-gray-400">Prêt à être retiré</div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center"><ShoppingBag size={24} /></div>
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest">Ventes réalisées</div>
+                  </div>
+                  <div className="text-4xl font-black font-mono">510</div>
+                  <div className="mt-2 text-xs font-bold text-gray-400">Commandes traitées</div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-xl font-bold">Évolution des revenus (7 derniers jours)</h3>
+                </div>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={MOCK_SALES_DATA}>
+                      <defs>
+                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dx={-10} tickFormatter={(val) => `$${val}`} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                        itemStyle={{ color: '#f97316', fontWeight: 'bold' }}
+                      />
+                      <Area type="monotone" dataKey="sales" stroke="#f97316" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PRODUCTS TAB */}
+          {currentTab === 'products' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+              <div className="flex justify-between items-center">
+                <div className="relative w-64">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input type="text" placeholder="Rechercher un produit..." className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-sm focus:border-orange-500 outline-none transition-colors" />
+                </div>
+                <button className="flex items-center gap-2 bg-orange-500 text-white px-5 py-3 rounded-2xl font-bold text-sm hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/20">
+                  <Plus size={16} /> Ajouter un produit
+                </button>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden p-6">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                        <th className="pb-4 font-normal">Produit</th>
+                        <th className="pb-4 font-normal">Prix de vente</th>
+                        <th className="pb-4 font-normal">Stock dispo.</th>
+                        <th className="pb-4 font-normal">Ventes totales</th>
+                        <th className="pb-4 font-normal">Statut</th>
+                        <th className="pb-4 font-normal text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+                      {MOCK_PRODUCTS.map(p => (
+                        <tr key={p.id} className="text-gray-700 dark:text-gray-300">
+                          <td className="py-5 font-bold">{p.name}</td>
+                          <td className="py-5 font-mono">${p.price.toFixed(2)}</td>
+                          <td className="py-5">{p.stock > 0 ? <span className="text-green-500 font-bold">{p.stock}</span> : <span className="text-red-500 font-bold">Rupture</span>}</td>
+                          <td className="py-5 font-bold">{p.sales}</td>
+                          <td className="py-5">
+                            {p.status === 'active' ? (
+                              <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-[10px] font-bold uppercase">En ligne</span>
+                            ) : (
+                              <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold uppercase">Hors ligne</span>
+                            )}
+                          </td>
+                          <td className="py-5 text-right">
+                            <button className="text-orange-500 hover:text-orange-600 font-bold text-xs uppercase tracking-wider">Éditer</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ORDERS TAB */}
+          {currentTab === 'orders' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+              <div className="flex gap-4 mb-6">
+                <button className="px-5 py-2.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-sm">À Livrer (1)</button>
+                <button className="px-5 py-2.5 rounded-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-500 font-bold text-sm">Historique (150)</button>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm p-6 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                        <th className="pb-4 font-normal">Commande</th>
+                        <th className="pb-4 font-normal">Client</th>
+                        <th className="pb-4 font-normal">Date</th>
+                        <th className="pb-4 font-normal">Montant</th>
+                        <th className="pb-4 font-normal">Statut</th>
+                        <th className="pb-4 font-normal text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+                      {MOCK_ORDERS.map((o, idx) => (
+                        <tr key={idx} className="text-gray-700 dark:text-gray-300">
+                          <td className="py-5">
+                            <div className="font-bold">{o.product}</div>
+                            <div className="text-xs text-gray-400 font-mono mt-0.5">{o.id}</div>
+                          </td>
+                          <td className="py-5 text-gray-500">{o.customer}</td>
+                          <td className="py-5 text-gray-500">{o.date}</td>
+                          <td className="py-5 font-mono font-bold">${o.amount.toFixed(2)}</td>
+                          <td className="py-5">
+                            {o.status === 'pending' ? (
+                              <span className="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-600 text-[10px] font-bold uppercase flex items-center gap-1 w-max"><Clock size={10}/> En attente</span>
+                            ) : (
+                              <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-[10px] font-bold uppercase flex items-center gap-1 w-max"><CheckCircle size={10}/> Livré</span>
+                            )}
+                          </td>
+                          <td className="py-5 text-right">
+                            {o.status === 'pending' ? (
+                              <button className="bg-orange-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-orange-600 transition-colors">
+                                Livrer la commande
+                              </button>
+                            ) : (
+                              <button className="text-gray-400 hover:text-gray-600 text-xs font-bold uppercase tracking-wider">
+                                Détails
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* WITHDRAWALS TAB */}
+          {currentTab === 'withdrawals' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-white dark:to-gray-200 p-8 rounded-[2rem] text-white dark:text-gray-900 flex justify-between items-center shadow-lg">
+                  <div>
+                    <div className="text-sm font-bold text-gray-400 dark:text-gray-500 mb-1">Solde Retirable</div>
+                    <div className="text-5xl font-black font-mono">$320.00</div>
+                  </div>
+                  <button className="bg-orange-500 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-orange-500/30 hover:bg-orange-600 transition-all flex items-center gap-2">
+                    <CreditCard size={18} /> Demander un retrait
+                  </button>
+                </div>
+                
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-center">
+                  <div className="text-sm font-bold text-gray-400 mb-4">Moyens de paiement enregistrés</div>
+                  <div className="flex items-center justify-between p-4 border border-gray-100 dark:border-slate-700 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-yellow-500/10 text-yellow-600 rounded-xl flex items-center justify-center font-black">B</div>
+                      <div>
+                        <div className="font-bold text-sm">Binance Pay (USDT)</div>
+                        <div className="text-xs text-gray-400 font-mono">ID: 293847561</div>
+                      </div>
+                    </div>
+                    <button className="text-orange-500 text-xs font-bold uppercase">Modifier</button>
+                  </div>
+                </div>
+              </div>
+
+              <h3 className="text-lg font-bold mb-4">Historique des retraits</h3>
+              <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm p-6 overflow-hidden">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                      <th className="pb-4 font-normal">ID</th>
+                      <th className="pb-4 font-normal">Montant</th>
+                      <th className="pb-4 font-normal">Méthode</th>
+                      <th className="pb-4 font-normal">Date</th>
+                      <th className="pb-4 font-normal text-right">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+                    {MOCK_WITHDRAWALS.map(w => (
+                      <tr key={w.id} className="text-gray-700 dark:text-gray-300">
+                        <td className="py-5 font-mono">{w.id}</td>
+                        <td className="py-5 font-mono font-bold">${w.amount.toFixed(2)}</td>
+                        <td className="py-5 font-bold">{w.method}</td>
+                        <td className="py-5 text-gray-500">{w.date}</td>
+                        <td className="py-5 text-right">
+                          {w.status === 'completed' ? (
+                            <span className="text-green-500 font-bold text-xs uppercase flex items-center justify-end gap-1"><CheckCircle size={12}/> Payé</span>
+                          ) : (
+                            <span className="text-yellow-500 font-bold text-xs uppercase flex items-center justify-end gap-1"><Clock size={12}/> En cours</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* IDENTITY TAB */}
+          {currentTab === 'identity' && (
+            <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4">
+              <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 border border-gray-100 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-4 mb-8 pb-8 border-b border-gray-100 dark:border-slate-800">
+                  <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center">
+                    <UserCheck size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-green-500">Identité Vérifiée</h3>
+                    <p className="text-sm text-gray-500 mt-1">Vous avez l'autorisation de vendre sur la plateforme.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nom de la boutique / Vendeur</label>
+                    <input type="text" value={profile?.username || 'Vendeur XYZ'} disabled className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-transparent text-gray-500 font-bold" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Document d'identité fourni</label>
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
+                      <span className="text-sm font-bold text-gray-500">CNI_Vendeur.pdf</span>
+                      <ExternalLink size={16} className="text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
