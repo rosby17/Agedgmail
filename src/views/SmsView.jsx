@@ -60,6 +60,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(initialState?.selectedCountry || 'US');
   const [currentPrice, setCurrentPrice] = useState(initialState?.currentPrice || 1.00);
+  const [currentProvider, setCurrentProvider] = useState(initialState?.currentProvider || 'smscodes');
   
   // Service ID pour YouTube sur smscodes.io
   const [selectedService, setSelectedService] = useState('8a97735e-9a14-427e-8a88-e9d999bf3429'); 
@@ -69,10 +70,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       localStorage.removeItem('smsViewState');
     } else {
       localStorage.setItem('smsViewState', JSON.stringify({
-        status, phoneNumber, securityId, smsCode, endTime, selectedCountry, currentPrice
+        status, phoneNumber, securityId, smsCode, endTime, selectedCountry, currentPrice, currentProvider
       }));
     }
-  }, [status, phoneNumber, securityId, smsCode, endTime, selectedCountry, currentPrice]);
+  }, [status, phoneNumber, securityId, smsCode, endTime, selectedCountry, currentPrice, currentProvider]);
 
   useEffect(() => {
     // Fetch prices on component mount
@@ -96,6 +97,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           const defaultCountry = sorted.find(c => c.Iso === 'US') || sorted[0];
           setSelectedCountry(defaultCountry.Iso);
           setCurrentPrice(parseFloat(defaultCountry.Price));
+          setCurrentProvider(defaultCountry.Provider || 'smscodes');
         }
         setStatus('IDLE');
       } catch (err) {
@@ -114,6 +116,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     const country = countries.find(c => c.Iso === iso);
     if (country) {
       setCurrentPrice(parseFloat(country.Price));
+      setCurrentProvider(country.Provider || 'smscodes');
     }
   };
 
@@ -133,7 +136,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
             body: { 
               securityId, 
               number: phoneNumber, 
-              price: currentPrice, 
+              price: currentPrice,
+              provider: currentProvider,
               description: `SMS Verification (YouTube, ${selectedCountry})` 
             }
           });
@@ -168,7 +172,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       clearInterval(timer);
       clearInterval(pollInterval);
     };
-  }, [status, timeLeft, isFr, securityId, phoneNumber, fetchProfile, selectedCountry, currentPrice]);
+  }, [status, timeLeft, isFr, securityId, phoneNumber, fetchProfile, selectedCountry, currentPrice, currentProvider]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -190,7 +194,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
     try {
       const { data, error } = await supabase.functions.invoke('sms-get-number', {
-        body: { iso: selectedCountry, serviceId: selectedService, price: currentPrice }
+        body: { iso: selectedCountry, serviceId: selectedService, price: currentPrice, provider: currentProvider }
       });
 
       if (error) throw new Error(error.message);

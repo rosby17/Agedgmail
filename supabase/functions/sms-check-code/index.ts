@@ -28,21 +28,56 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
-    const { securityId, number, price, description } = await req.json();
+    const { securityId, number, price, description, provider } = await req.json();
     if (!securityId || !number) throw new Error('Missing parameters');
     
     const smsPrice = price || 1.00;
+    const currentProvider = provider || 'smscodes';
 
-    const apiKey = Deno.env.get('SMSCODES_API_KEY');
-    if (!apiKey) throw new Error('SMSCODES_API_KEY is not configured');
+    // Parse securityId
+    // It should look like "smscodes:12345" or "5sim:98765"
+    let providerName = currentProvider;
+    let externalSecurityId = securityId;
 
-    // Call smscodes.io
-    const url = `https://code.smscodes.io/api/sms/GetSMSCode?key=${apiKey}&sid=${securityId}&number=${number}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    if (securityId.includes(':')) {
+      const parts = securityId.split(':');
+      providerName = parts[0];
+      externalSecurityId = parts[1];
+    } else {
+      // Legacy support for ongoing smscodes orders before this update
+      providerName = 'smscodes';
+    }
+
+    let status = "waiting";
+    let smsCode = null;
+    let dataObj = null;
+
+    if (providerName === 'smscodes') {
+      const apiKey = Deno.env.get('SMSCODES_API_KEY');
+      if (!apiKey) throw new Error('SMSCODES_API_KEY is not configured');
+
+      const url = `https://code.smscodes.io/api/sms/GetSMSCode?key=${apiKey}&sid=${externalSecurityId}&number=${number}`;
+      const res = await fetch(url);
+      dataObj = await res.json();
+
+      if ((dataObj.Status === "200" || dataObj.Status === "Success") && dataObj.SMS) {
+        status = "success";
+        smsCode = dataObj.SMS;
+      }
+    } else if (providerName === '5sim') {
+      const apiKey = Deno.env.get('FIVESIM_API_KEY');
+      if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
+      // Mock code check
+      dataObj = { mock: "waiting" };
+    } else if (providerName === 'pvapins') {
+      const apiKey = Deno.env.get('PVAPINS_API_KEY');
+      if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
+      // Mock code check
+      dataObj = { mock: "waiting" };
+    }
 
     // If we have an SMS, deduct balance
-    if ((data.Status === "200" || data.Status === "Success") && data.SMS) {
+    if (status === "success" && smsCode) {
       // Use service role to update balance
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
       
@@ -69,11 +104,11 @@ serve(async (req) => {
         .from('orders')
         .insert({
           user_id: user.id,
-          product_name: description || 'SMS Verification (YouTube)',
+          product_name: description || `SMS Verification (${providerName})`,
           price_usd: smsPrice,
           buyer_email: user.email,
           status: 'confirmed',
-          delivery_data: { number: data.Number, code: data.SMS }
+          delivery_data: { number: number, code: smsCode, provider: providerName }
         });
 
       // Notification
@@ -81,20 +116,20 @@ serve(async (req) => {
         user_id: user.id,
         type: 'info',
         title: 'SMS Reçu',
-        message: `Votre code SMS pour le numéro terminant par ${String(data.Number || '').slice(-4)} est arrivé !`,
+        message: `Votre code SMS pour le numéro terminant par ${String(number || '').slice(-4)} est arrivé !`,
       });
         
       return new Response(JSON.stringify({
         status: 'success',
-        sms: data.SMS,
-        number: data.Number
+        sms: smsCode,
+        number: number
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Waiting for SMS or error
     return new Response(JSON.stringify({
       status: 'waiting',
-      apiData: data
+      apiData: dataObj
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {

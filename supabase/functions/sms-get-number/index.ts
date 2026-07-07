@@ -24,8 +24,9 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
-    const { iso, serviceId, price } = await req.json();
+    const { iso, serviceId, price, provider } = await req.json();
     const smsPrice = price || 1.00;
+    const currentProvider = provider || 'smscodes';
 
     // Check balance
     const { data: profile } = await supabase
@@ -38,23 +39,51 @@ serve(async (req) => {
       throw new Error('Insufficient balance');
     }
 
-    const apiKey = Deno.env.get('SMSCODES_API_KEY');
-    if (!apiKey) throw new Error('SMSCODES_API_KEY is not configured');
-
     const targetIso = iso || 'US';
-    // For youtube, serviceId might be something specific on smscodes.io
     const targetServ = serviceId || '1'; // Placeholder
 
-    // Call smscodes.io
-    const url = `https://code.smscodes.io/api/sms/GetServiceNumber?key=${apiKey}&iso=${targetIso}&serv=${targetServ}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    let providerData = { Status: "Error", Error: "Provider not implemented", SecurityId: "", Number: "" };
 
-    if (data.Status !== "200" && data.Status !== "Success") {
-      throw new Error(`SMS Provider Error: ${data.Error || 'Unknown error'}`);
+    if (currentProvider === 'smscodes') {
+      const apiKey = Deno.env.get('SMSCODES_API_KEY');
+      if (!apiKey) throw new Error('SMSCODES_API_KEY is not configured');
+
+      const url = `https://code.smscodes.io/api/sms/GetServiceNumber?key=${apiKey}&iso=${targetIso}&serv=${targetServ}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.Status !== "200" && data.Status !== "Success") {
+        throw new Error(`SMS Provider Error: ${data.Error || 'Unknown error'}`);
+      }
+
+      providerData = {
+        Status: "200",
+        Number: data.Number,
+        SecurityId: `smscodes:${data.SecurityId}` // Prefix with provider
+      };
+    } else if (currentProvider === '5sim') {
+      const apiKey = Deno.env.get('FIVESIM_API_KEY');
+      if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
+      // Mock for now until API integration is complete
+      providerData = {
+        Status: "200",
+        Number: "+1234567890 (5sim mock)",
+        SecurityId: `5sim:mock_id`
+      };
+    } else if (currentProvider === 'pvapins') {
+      const apiKey = Deno.env.get('PVAPINS_API_KEY');
+      if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
+      // Mock for now until API integration is complete
+      providerData = {
+        Status: "200",
+        Number: "+1987654321 (pvapins mock)",
+        SecurityId: `pvapins:mock_id`
+      };
+    } else {
+      throw new Error(`Unknown provider: ${currentProvider}`);
     }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(providerData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

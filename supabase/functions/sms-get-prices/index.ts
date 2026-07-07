@@ -6,6 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Types
+interface FormattedPrice {
+  Country: string;
+  Iso: string;
+  Price: number;
+  Provider: string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -24,42 +32,106 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
-    const apiKey = Deno.env.get('SMSCODES_API_KEY');
-    if (!apiKey) throw new Error('SMSCODES_API_KEY is not configured');
-
     const body = await req.json().catch(() => ({}));
-    // Default to YouTube Service ID if not provided
     const targetService = body.serviceId || '8a97735e-9a14-427e-8a88-e9d999bf3429';
 
-    // Call smscodes.io
-    const url = `https://code.smscodes.io/api/sms/GetServicePrices?key=${apiKey}&serviceId=${targetService}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    // Map of Iso to lowest price info
+    const bestPrices = new Map<string, FormattedPrice>();
 
-    if (data.Status !== "200" && data.Status !== "Success") {
-      throw new Error(`SMS Provider Error: ${data.Error || 'Unknown error'}`);
+    // 1. Fetch from smscodes.io
+    const smsCodesKey = Deno.env.get('SMSCODES_API_KEY');
+    if (smsCodesKey) {
+      try {
+        const url = `https://code.smscodes.io/api/sms/GetServicePrices?key=${smsCodesKey}&serviceId=${targetService}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.Status === "200" || data.Status === "Success") {
+          data.Prices.forEach((c: any) => {
+            if (!c.Iso || !c.Price) return;
+            const price = parseFloat(c.Price);
+            bestPrices.set(c.Iso, {
+              Country: c.Country,
+              Iso: c.Iso,
+              Price: price,
+              Provider: 'smscodes'
+            });
+          });
+        }
+      } catch (e) {
+        console.error("Error fetching smscodes prices", e);
+      }
     }
 
-    // Apply dynamic margins
-    if (data.Prices && Array.isArray(data.Prices)) {
-      data.Prices = data.Prices.map((country: any) => {
-        if (!country.Price) return country;
-        const cost = parseFloat(country.Price);
-        let margin = 0.50;
-        
-        if (cost < 0.10) margin = 0.85;
-        else if (cost < 0.50) margin = 0.65;
-        else if (cost < 1.00) margin = 0.55;
-        else margin = 0.50;
-
-        return {
-          ...country,
-          Price: (cost + margin).toFixed(2)
-        };
-      });
+    // 2. Fetch from 5sim.net (Guest API for prices)
+    try {
+      // product=youtube
+      const res = await fetch('https://5sim.net/v1/guest/prices?product=youtube');
+      const data = await res.json();
+      if (data && data.youtube) {
+        const countries = data.youtube;
+        for (const [countryName, operators] of Object.entries(countries)) {
+          // get lowest price among operators
+          let lowest = Infinity;
+          for (const [opName, opData] of Object.entries(operators as any)) {
+            if (opData.cost && opData.cost < lowest) {
+              lowest = opData.cost;
+            }
+          }
+          if (lowest < Infinity) {
+            // 5sim returns prices in RUB. 1 RUB = ~0.011 USD. Let's convert roughly.
+            const costUsd = lowest * 0.011; 
+            
+            let foundIso = '';
+            for (const [iso, existing] of bestPrices.entries()) {
+              if (existing.Country.toLowerCase() === countryName.toLowerCase()) {
+                foundIso = iso;
+                break;
+              }
+            }
+            if (foundIso) {
+              const existing = bestPrices.get(foundIso)!;
+              if (costUsd < existing.Price) {
+                bestPrices.set(foundIso, { ...existing, Price: costUsd, Provider: '5sim' });
+              }
+            }
+          }
+        }
+      }
+    } catch(e) {
+      console.error("Error fetching 5sim prices", e);
     }
 
-    return new Response(JSON.stringify(data), {
+    // 3. (Mock) Fetch from PVAPins for US/UK
+    const pvaPinsKey = Deno.env.get('PVAPINS_API_KEY');
+    if (pvaPinsKey) {
+      // Mocked forced prices
+      const usExisting = bestPrices.get('US');
+      if (usExisting) {
+        bestPrices.set('US', { ...usExisting, Price: 0.25, Provider: 'pvapins' });
+      }
+      const gbExisting = bestPrices.get('GB');
+      if (gbExisting) {
+        bestPrices.set('GB', { ...gbExisting, Price: 0.35, Provider: 'pvapins' });
+      }
+    }
+
+    // Apply Margins and Format Response
+    const finalPrices = Array.from(bestPrices.values()).map(c => {
+      let margin = 0.50;
+      if (c.Price < 0.10) margin = 0.85;
+      else if (c.Price < 0.50) margin = 0.65;
+      else if (c.Price < 1.00) margin = 0.55;
+      else margin = 0.50;
+
+      return {
+        Country: c.Country,
+        Iso: c.Iso,
+        Price: (c.Price + margin).toFixed(2),
+        Provider: c.Provider
+      };
+    });
+
+    return new Response(JSON.stringify({ Status: "200", Prices: finalPrices }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
