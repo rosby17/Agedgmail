@@ -1558,175 +1558,185 @@ const ApiView = ({ navigate, session, lang }) => {
 // ==========================================
 // POLICIES VIEW — CGU / Avertissement / Politique d'achat / Garantie
 // ==========================================
-const getPolicySections = (lang) => [
-  {
-    id: 'terms',
-    title: lang === 'fr' ? "Conditions Générales d'Utilisation" : "Terms of Service",
-    icon: FileText,
-    content: lang === 'fr' ? [
-      "Veuillez lire attentivement la description du produit et cette politique avant d'acheter.",
-      "Vous êtes entièrement responsable de toutes les actions effectuées sur le compte après la livraison.",
-      "Dès réception du compte, vous devez vous y connecter et vérifier immédiatement s'il correspond à la description.",
-    ] : [
-      "Please read the product description and this policy carefully before purchasing.",
-      "You are fully responsible for all actions taken on the account after delivery.",
-      "Upon receipt of the account, you must log in and check it immediately to ensure it matches the description.",
-    ],
-  },
-  {
-    id: 'disclaimer',
-    title: lang === 'fr' ? "Clause de non-responsabilité" : "Disclaimer",
-    icon: Shield,
-    content: lang === 'fr' ? [
-      "Vous acceptez que l'utilisation d'AgedGmailYT se fait à vos propres risques. AgedGmailYT ne peut être tenu responsable des dommages que vous ou votre entreprise pourriez subir.",
-      "AgedGmailYT ne garantit pas la disponibilité continue du site, car il dépend de services internet tiers.",
-    ] : [
-      "You agree that your use of AgedGmailYT is at your own risk. AgedGmailYT cannot be held liable for any damages you or your business may suffer.",
-      "AgedGmailYT does not guarantee the continuous availability of the site, as it relies on third-party internet services.",
-    ],
-  },
-  {
-    id: 'purchase',
-    title: lang === 'fr' ? "Politique d'Achat" : "Purchase Policy",
-    icon: ShoppingCart,
-    content: lang === 'fr' ? [
-      "En achetant des crédits ou en rechargeant votre solde, vous confirmez comprendre et accepter votre achat, et vous vous engagez à ne pas ouvrir de litiges frauduleux ou publier des avis de mauvaise foi.",
-      "En cas de tentative de litige frauduleux ou d'avis abusif, nous nous réservons le droit de réinitialiser les crédits, de suspendre le compte et/ou de bannir définitivement l'adresse IP concernée.",
-      "Le solde crédité sur AgedGmailYT n'est pas remboursable tant que le système et le site fonctionnent normalement. La garantie du produit est calculée à partir du moment où il vous est livré ; le fait de ne pas vous connecter ne vous donne pas droit à un remplacement ou remboursement.",
-      "Après achat, veuillez télécharger et conserver vos données. Les commandes sont automatiquement supprimées de nos systèmes après 30 jours pour des raisons de sécurité.",
-      "Lorsqu'un produit est au format EMAIL | MOT DE PASSE | (RÉCUPÉRATION), l'email et le mot de passe sont toujours fournis ; les informations de récupération dépendent des stocks disponibles.",
-      "Les crédits ne sont pas transférables entre différents produits ou services.",
-      "Le produit est livré immédiatement après l'achat ; c'est à vous de l'utiliser, même si vous ne vous connectez pas tout de suite.",
-      "Après la première connexion, et uniquement après quelques jours, changez systématiquement le mot de passe, l'email de récupération, le numéro de téléphone, et activez la validation en deux étapes.",
-      "Utilisez toujours une adresse IP résidentielle/propre pour vous connecter. Ne jamais utiliser de proxy gratuit ou VPN. Aucun remplacement ne sera effectué si vous avez utilisé un VPN ou proxy gratuit."
-    ] : [
-      "By purchasing credits or topping up your balance, you confirm you understand and accept your purchase, and agree not to open fraudulent disputes or post bad faith reviews.",
-      "In case of an attempted fraudulent dispute or abusive review, we reserve the right to reset credits, suspend the account, and/or permanently ban the relevant IP address.",
-      "The balance credited on AgedGmailYT is non-refundable as long as the system and site are operating normally. The product warranty is calculated from the moment it is delivered to you; your failure to log in does not entitle you to a replacement or refund.",
-      "After purchase, please download and keep your data on your end. Orders are automatically deleted from our systems after 30 days for security reasons.",
-      "When a product is in EMAIL | PASSWORD | (RECOVERY) format, the email and password are always provided; recovery information depends on stock availability at the time of order.",
-      "Credits are not transferable between different products or services.",
-      "The product is delivered immediately after purchase; it is your responsibility to use it, even if you do not log in right away.",
-      "After the first login, and only after a few days, systematically change the password, recovery email, phone number, and enable two-step verification to secure the account.",
-      "Always use a clean/residential IP to connect. Never use a free proxy or VPN, social platforms detect them. No replacement will be made if you use a VPN or a free proxy to connect.",
-    ],
-  },
-  {
-    id: 'warranty',
-    title: lang === 'fr' ? "Politique de Garantie et Retours" : 'Warranty & Returns Policy',
-    icon: CheckCircle,
-    content: [],
-  },
-];
-
-const getWarrantyBlocks = (lang) => [
-  {
-    label: lang === 'fr' ? 'Garantie' : 'Warranty',
-    items: lang === 'fr' ? [
-      "Nous garantissons uniquement la première connexion réussie et que le produit est livré tel que décrit.",
-      "Nous ne garantissons pas que les informations du compte peuvent être modifiées immédiatement (de nombreuses plateformes exigent une utilisation prolongée depuis la même IP/appareil).",
-      "Nous ne pouvons garantir la réception des codes de vérification envoyés à un ancien email ou ancien numéro. Ajoutez votre propre email et numéro si nécessaire.",
-      "Aucune garantie ne s'applique si : vous avez modifié le mot de passe, l'email de récupération, activé la 2FA avant la période conseillée ; vous vous êtes connecté via un VPN ou proxy gratuit ; ou si la connexion fonctionne de notre côté mais pas du vôtre (problème lié à votre configuration).",
-    ] : [
-      "We only guarantee the first successful login and that the product is delivered as described.",
-      "We do not guarantee that account information can be changed immediately (many platforms require prolonged use from the same IP and device).",
-      "We cannot guarantee the receipt of verification codes sent to an old email or old number. Add your own email and number if needed.",
-      "No warranty is applied if: you have changed the password, recovery email, phone number, or enabled 2FA; you connected via a VPN or free proxy; or if the login works on our end but not yours (issue related to your configuration).",
-    ],
-  },
-  {
-    label: lang === 'fr' ? 'Recommandations' : 'Recommendations',
-    items: lang === 'fr' ? [
-      "Modifiez le mot de passe, l'email de récupération, vérifiez l'activité de l'appareil, ajoutez un numéro de téléphone et activez la 2FA pour sécuriser votre compte.",
-      "Il est recommandé d'effectuer ces changements au moins 7 jours après la première connexion, avec le même profil de navigateur et la même IP/proxy.",
-      "Si vous débutez ou ne savez pas gérer plusieurs comptes ou chaînes, contactez le support pour être guidé.",
-    ] : [
-      "Change the password, recovery email, check device activity, add a phone number, and enable 2FA to secure your account.",
-      "It is recommended to make these changes at least 7 days after the first login, with the same browser profile and IP/proxy.",
-      "If you are a beginner or unsure about managing multiple accounts or channels, contact support for guidance.",
-    ],
-  },
-  {
-    label: lang === 'fr' ? 'Politique de Remboursement et Retours' : 'Refund & Return Policy',
-    items: lang === 'fr' ? [
-      "Les clients disposent d'un délai de 5 jours maximum après la livraison pour signaler un problème lié à un compte. Passé ce délai de 5 jours, nous ne sommes plus responsables du compte.",
-      "Aucun remboursement ne sera accordé pour une erreur de la part du client (ex: acheter un compte Facebook au lieu d'un compte Gmail). Vous êtes responsable de choisir le bon produit.",
-      "Les remboursements ou remplacements ne sont accordés QUE s'il y a un réel problème technique lié à notre service (ex: impossible de se connecter à cause d'un problème d'authentification, ou compte gelé/banni au moment de la livraison).",
-      "Si vous vous connectez avec succès au compte et que le service promis fonctionne tel que décrit à ce moment-là, aucun retour ou remboursement ultérieur ne sera accepté."
-    ] : [
-      "Customers have a maximum window of 5 days after delivery to report any issues with an account. After this 5-day period, we are no longer responsible for the account.",
-      "No refunds will be issued for customer mistakes (e.g., purchasing a Facebook account instead of a Gmail account). You are responsible for ensuring you purchase the correct product.",
-      "Refunds or replacements will ONLY be granted if there is a genuine problem related to our service (e.g., impossible to log in due to authentication issues, or the account is frozen/banned upon delivery).",
-      "If you successfully log into the account and the promised service works as described at that time, no subsequent returns or refunds will be accepted.",
-    ],
-  },
-];
-
 const PoliciesView = ({ navigate, lang }) => {
-  const POLICY_SECTIONS = getPolicySections(lang);
-  const WARRANTY_BLOCKS = getWarrantyBlocks(lang);
-  const [active, setActive] = useState('terms');
-  const activeSection = POLICY_SECTIONS.find(s => s.id === active) || POLICY_SECTIONS[0];
+  const isFr = lang === 'fr';
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
-      <div className="mb-12">
+    <div className="max-w-4xl mx-auto px-6 py-16 font-sans">
+      <div className="mb-12 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
-          <Shield size={14} /> {lang === 'fr' ? 'Politiques Légal' : 'Policies'}
+          <Shield size={14} /> {isFr ? 'Légal & Support' : 'Legal & Support'}
         </div>
-        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">{lang === 'fr' ? 'Conditions d\'Utilisation et Garanties' : 'Terms of Service, Warranty, and Purchase Policies'}</h1>
-        <p className="text-gray-500 text-lg leading-relaxed">{lang === 'fr' ? 'Veuillez lire attentivement ces politiques avant tout achat sur AgedGmailYT.' : 'Please read these policies carefully before any purchase on AgedGmailYT.'}</p>
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">
+          {isFr ? 'Conditions Générales de Vente (CGV)' : 'Terms and Conditions of Sale'}
+        </h1>
+        <p className="text-gray-500 text-lg leading-relaxed">
+          {isFr ? 'Veuillez lire attentivement ces politiques avant tout achat sur AgedGmailYT.' : 'Please read these policies carefully before any purchase on AgedGmailYT.'}
+        </p>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-10">
-        {POLICY_SECTIONS.map(s => (
-          <button
-            key={s.id}
-            onClick={() => setActive(s.id)}
-            className={`flex items-center gap-2 px-5 py-3 rounded-full text-sm font-bold border transition-all ${
-              active === s.id ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-primary/50'
-            }`}
-          >
-            <s.icon size={16} /> {s.title}
-          </button>
-        ))}
-      </div>
+      <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 md:p-12 shadow-soft space-y-12 text-gray-700 leading-relaxed text-sm">
+        
+        {/* 1. Acceptation */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">1. {isFr ? 'Acceptation des Conditions' : 'Acceptance of Terms'}</h2>
+          <p>{isFr ? "En effectuant un achat, en rechargeant votre solde ou en utilisant les services proposés par AgedGmailYT, vous reconnaissez avoir lu, compris et accepté sans réserve les présentes Conditions Générales de Vente ainsi que notre Politique de Garantie et de Remboursement." : "By making a purchase, topping up your balance, or using the services offered by AgedGmailYT, you acknowledge having read, understood, and unreservedly accepted these Terms and Conditions of Sale as well as our Warranty and Refund Policy."}</p>
+          <p className="mt-2">{isFr ? "Tout achat est considéré comme définitif dès la livraison du produit, sauf disposition contraire prévue dans les présentes." : "All purchases are considered final upon delivery of the product, unless otherwise provided herein."}</p>
+        </section>
 
-      <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
-          <activeSection.icon size={22} className="text-primary" /> {activeSection.title}
-        </h2>
-
-        {active === 'warranty' ? (
-          <div className="space-y-10">
-            {WARRANTY_BLOCKS.map(block => (
-              <div key={block.label}>
-                <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-4">{block.label}</h3>
-                <ul className="space-y-3">
-                  {block.items.map((item, i) => (
-                    <li key={i} className="flex gap-3 text-gray-600 text-sm leading-relaxed">
-                      <CheckCircle size={16} className="text-primary shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <ul className="space-y-4">
-            {activeSection.content.map((item, i) => (
-              <li key={i} className="flex gap-3 text-gray-600 text-sm leading-relaxed">
-                <CheckCircle size={16} className="text-primary shrink-0 mt-0.5" />
-                <span>{item}</span>
-              </li>
-            ))}
+        {/* 2. Paiement et Crédit */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">2. {isFr ? 'Paiement et Crédit du Compte' : 'Payment and Account Credit'}</h2>
+          <p>{isFr ? "Les crédits ajoutés à votre compte AgedGmailYT constituent un moyen de paiement interne exclusivement destiné aux achats réalisés sur notre plateforme." : "Credits added to your AgedGmailYT account constitute an internal payment method intended exclusively for purchases made on our platform."}</p>
+          <ul className="list-disc pl-6 mt-4 space-y-2">
+            <li>{isFr ? "ne sont pas remboursables ;" : "are not refundable;"}</li>
+            <li>{isFr ? "ne sont pas convertibles en espèces ;" : "are not convertible into cash;"}</li>
+            <li>{isFr ? "ne peuvent être revendus ;" : "cannot be resold;"}</li>
+            <li>{isFr ? "ne sont pas transférables vers un autre compte utilisateur sauf autorisation écrite d'AgedGmailYT." : "are not transferable to another user account without written authorization from AgedGmailYT."}</li>
           </ul>
-        )}
+          <p className="mt-4">{isFr ? "Le client est seul responsable du montant qu'il choisit de créditer sur son compte." : "The customer is solely responsible for the amount they choose to credit to their account."}</p>
+        </section>
+
+        {/* 3. Livraison */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">3. {isFr ? 'Livraison' : 'Delivery'}</h2>
+          <p>{isFr ? "La livraison est effectuée automatiquement immédiatement après validation du paiement." : "Delivery is carried out automatically immediately after payment validation."}</p>
+          <p className="mt-2">{isFr ? "Le client est responsable de récupérer les informations livrées dans son espace client." : "The customer is responsible for retrieving the information delivered in their customer area."}</p>
+          <p className="mt-2">{isFr ? "Pour des raisons de sécurité, les commandes peuvent être supprimées automatiquement de nos serveurs après 30 jours. Le client est invité à sauvegarder immédiatement toutes les informations fournies." : "For security reasons, orders may be automatically deleted from our servers after 30 days. The customer is advised to immediately save all provided information."}</p>
+          <p className="mt-2 font-bold">{isFr ? "Une commande supprimée après ce délai ne pourra pas être restaurée." : "An order deleted after this period cannot be restored."}</p>
+        </section>
+
+        {/* 4. Formats de livraison */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">4. {isFr ? 'Description des Produits et Formats de Livraison' : 'Product Description and Delivery Formats'}</h2>
+          <p>{isFr ? "Les produits commercialisés par AgedGmailYT peuvent être livrés sous différents formats selon leur nature, leur disponibilité et leur description au moment de la commande." : "The products marketed by AgedGmailYT may be delivered in different formats depending on their nature, availability, and description at the time of the order."}</p>
+          <p className="mt-2">{isFr ? "La description affichée sur la fiche produit fait foi et précise les informations incluses dans la livraison." : "The description displayed on the product page is authentic and specifies the information included in the delivery."}</p>
+          <p className="mt-4 mb-2">{isFr ? "Les formats de livraison peuvent notamment comprendre, sans s'y limiter :" : "Delivery formats may include, but are not limited to:"}</p>
+          
+          <div className="overflow-x-auto rounded-xl border border-gray-100 mb-6">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="px-4 py-3 font-black">Format</th>
+                  <th className="px-4 py-3 font-black">{isFr ? 'Contenu fourni' : 'Provided Content'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                <tr><td className="px-4 py-3 font-mono text-xs font-bold whitespace-nowrap">EMAIL | MOT DE PASSE</td><td className="px-4 py-3">{isFr ? "Adresse email et mot de passe de connexion." : "Email address and login password."}</td></tr>
+                <tr><td className="px-4 py-3 font-mono text-xs font-bold whitespace-nowrap">EMAIL | MOT DE PASSE | RÉCUPÉRATION</td><td className="px-4 py-3">{isFr ? "Adresse email, mot de passe et, lorsque disponible, une ou plusieurs informations de récupération (email secondaire, numéro, codes)." : "Email, password and, when available, recovery information (secondary email, phone, codes)."}</td></tr>
+                <tr><td className="px-4 py-3 font-mono text-xs font-bold whitespace-nowrap">EMAIL | MOT DE PASSE | APP PASSWORD</td><td className="px-4 py-3">{isFr ? "Adresse email, mot de passe principal et mot de passe d'application (App Password)." : "Email address, main password and App Password."}</td></tr>
+                <tr><td className="px-4 py-3 font-mono text-xs font-bold whitespace-nowrap">EMAIL | MOT DE PASSE | 2FA SECRET KEY</td><td className="px-4 py-3">{isFr ? "Adresse email, mot de passe et clé secrète permettant de générer les codes 2FA." : "Email address, password and secret key to generate 2FA codes."}</td></tr>
+                <tr><td className="px-4 py-3 font-mono text-xs font-bold whitespace-nowrap">EMAIL | MOT DE PASSE | BACKUP CODES</td><td className="px-4 py-3">{isFr ? "Adresse email, mot de passe et codes de secours (Backup Codes) lorsque ceux-ci sont inclus." : "Email address, password and backup codes when included."}</td></tr>
+                <tr><td className="px-4 py-3 font-mono text-xs font-bold whitespace-nowrap">EMAIL | MOT DE PASSE | COOKIES</td><td className="px-4 py-3">{isFr ? "Identifiants de connexion accompagnés des cookies de session, lorsque le produit le prévoit." : "Login credentials accompanied by session cookies, when the product provides them."}</td></tr>
+                <tr><td className="px-4 py-3 font-mono text-xs font-bold whitespace-nowrap">{isFr ? "Format personnalisé" : "Custom Format"}</td><td className="px-4 py-3">{isFr ? "Tout autre format explicitement indiqué sur la fiche du produit au moment de l'achat." : "Any other format explicitly indicated on the product page at the time of purchase."}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="font-bold text-gray-900 mt-6">{isFr ? "Disponibilité des informations complémentaires" : "Availability of additional information"}</h3>
+          <p className="mt-2">{isFr ? "Les informations complémentaires (email de récupération, numéro, app password, 2FA, backup codes, cookies) ne sont fournies QUE lorsqu'elles sont expressément mentionnées dans la description du produit." : "Additional information (recovery email, phone, app password, 2FA, backup codes, cookies) are provided ONLY when expressly mentioned in the product description."}</p>
+          <p className="mt-2">{isFr ? "Leur absence ne constitue ni un défaut de conformité, ni un motif de remboursement lorsque ces éléments ne faisaient pas partie de la description du produit acheté." : "Their absence does not constitute a lack of conformity, nor a reason for refund when these elements were not part of the description of the purchased product."}</p>
+        </section>
+
+        {/* 5. Responsabilité */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">5. {isFr ? "Responsabilité du Client après Livraison" : "Customer Responsibility After Delivery"}</h2>
+          <p>{isFr ? "À compter de la première connexion réussie, le client devient entièrement responsable de l'utilisation, de la gestion et de la sécurisation du compte." : "From the first successful login, the customer becomes entirely responsible for the use, management, and securing of the account."}</p>
+          <p className="mt-2">{isFr ? "Toute suspension, restriction ou vérification imposée ultérieurement par les plateformes ne saurait engager la responsabilité d'AgedGmailYT." : "Any suspension, restriction, or verification subsequently imposed by the platforms cannot hold AgedGmailYT liable."}</p>
+        </section>
+
+        {/* 6. Sécurisation */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">6. {isFr ? "Sécurisation du Compte" : "Securing the Account"}</h2>
+          <p>{isFr ? "Après réception du compte, le client est invité à vérifier les informations, conserver les accès, et modifier progressivement les paramètres de sécurité." : "After receiving the account, the customer is advised to verify the information, keep the credentials safe, and progressively modify the security settings."}</p>
+          <p className="mt-4 font-bold">{isFr ? "Pour limiter les risques de détection automatique, il est fortement recommandé :" : "To limit the risks of automatic detection, it is strongly recommended:"}</p>
+          <ul className="list-disc pl-6 mt-2 space-y-2">
+            <li>{isFr ? "d'attendre au minimum 72 heures avant toute modification importante ;" : "to wait at least 72 hours before any major modification;"}</li>
+            <li>{isFr ? "idéalement d'attendre 7 jours avant de modifier simultanément le mot de passe, l'email de récupération, le numéro, ou la 2FA." : "ideally to wait 7 days before simultaneously modifying the password, recovery email, phone, or 2FA."}</li>
+          </ul>
+        </section>
+
+        {/* 7. Connexion */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">7. {isFr ? "Conditions de Connexion" : "Connection Conditions"}</h2>
+          <p>{isFr ? "Le client s'engage à utiliser une connexion Internet fiable, idéalement une IP résidentielle stable." : "The customer commits to using a reliable Internet connection, ideally a stable residential IP."}</p>
+          <p className="mt-2 text-red-600 font-bold">{isFr ? "L'utilisation de VPN publics, proxys gratuits ou serveurs anonymes est fortement déconseillée et annulera notre responsabilité." : "The use of public VPNs, free proxies, or anonymous servers is strongly discouraged and will void our liability."}</p>
+        </section>
+
+        {/* 8. Garantie */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">8. {isFr ? "Garantie" : "Warranty"}</h2>
+          <p>{isFr ? "La garantie couvre exclusivement la livraison du produit, sa conformité à la description, et la possibilité d'effectuer une première connexion réussie." : "The warranty exclusively covers the delivery of the product, its conformity to the description, and the ability to make a first successful login."}</p>
+          <p className="mt-2">{isFr ? "Le fait que le client décide de ne pas utiliser immédiatement le compte n'a aucun effet sur la durée de cette garantie." : "The fact that the customer decides not to use the account immediately has no effect on the duration of this warranty."}</p>
+        </section>
+
+        {/* 9. Exclusions de Garantie */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">9. {isFr ? "Exclusions de Garantie" : "Warranty Exclusions"}</h2>
+          <p>{isFr ? "La garantie cesse immédiatement si :" : "The warranty ceases immediately if:"}</p>
+          <ul className="list-disc pl-6 mt-2 space-y-2">
+            <li>{isFr ? "le mot de passe a été modifié avant le délai recommandé ;" : "the password was modified before the recommended delay;"}</li>
+            <li>{isFr ? "les paramètres de sécurité ont été modifiés prématurément ;" : "security settings were modified prematurely;"}</li>
+            <li>{isFr ? "un VPN, proxy gratuit ou méthode anormale a été utilisée ;" : "a VPN, free proxy, or abnormal method was used;"}</li>
+            <li>{isFr ? "les problèmes proviennent de la configuration du client." : "the problems stem from the customer's configuration."}</li>
+          </ul>
+        </section>
+
+        {/* 10. Limitation de Responsabilité */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">10. {isFr ? "Limitation de Responsabilité" : "Limitation of Liability"}</h2>
+          <p>{isFr ? "En aucun cas AgedGmailYT ne pourra être tenu responsable des pertes financières, de revenus, de données, de la suspension de chaîne YouTube ou de compte Google. Le client utilise les produits sous sa seule responsabilité." : "In no event shall AgedGmailYT be held liable for financial losses, loss of revenue, data loss, suspension of a YouTube channel, or Google account closure. The customer uses the products at their sole responsibility."}</p>
+        </section>
+
+        {/* 12. Politique de Remboursement */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">11. {isFr ? "Politique de Remboursement" : "Refund Policy"}</h2>
+          <p>{isFr ? "Les produits commercialisés étant des biens numériques livrés instantanément, ils ne peuvent être retournés après livraison." : "The products sold being digital goods delivered instantly, they cannot be returned after delivery."}</p>
+          <p className="mt-2">{isFr ? "Un remboursement ou remplacement ne pourra être envisagé que si :" : "A refund or replacement will only be considered if:"}</p>
+          <ul className="list-disc pl-6 mt-2 space-y-2">
+            <li>{isFr ? "le produit livré est manifestement différent de celui commandé ;" : "the delivered product is clearly different from the one ordered;"}</li>
+            <li>{isFr ? "le compte est inaccessible dès la livraison en raison d'un problème imputable à AgedGmailYT ;" : "the account is inaccessible upon delivery due to an issue attributable to AgedGmailYT;"}</li>
+            <li>{isFr ? "la première connexion est impossible malgré le respect des conditions." : "the first login is impossible despite respecting the conditions."}</li>
+          </ul>
+        </section>
+
+        {/* 13. Délai de Réclamation */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">12. {isFr ? "Délai de Réclamation" : "Claim Period"}</h2>
+          <p>{isFr ? "Toute réclamation doit être transmise dans un délai maximum de 5 jours calendaires suivant la livraison. Passé ce délai, le produit sera réputé conforme et définitivement accepté." : "Any claim must be submitted within a maximum of 5 calendar days following delivery. After this period, the product will be deemed compliant and definitively accepted."}</p>
+        </section>
+
+        {/* 14. Cas Excluant Tout Remboursement */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">13. {isFr ? "Cas Excluant Tout Remboursement" : "Cases Excluding Any Refund"}</h2>
+          <p>{isFr ? "Aucun remboursement ne sera accordé notamment dans les situations suivantes :" : "No refunds will be granted, notably in the following situations:"}</p>
+          <ul className="list-disc pl-6 mt-2 space-y-2">
+            <li>{isFr ? "erreur de commande du client ;" : "customer order error;"}</li>
+            <li>{isFr ? "mauvaise utilisation du produit ;" : "misuse of the product;"}</li>
+            <li>{isFr ? "modification prématurée des paramètres de sécurité ;" : "premature modification of security settings;"}</li>
+            <li>{isFr ? "utilisation d'un VPN ou proxy ;" : "use of a VPN or proxy;"}</li>
+            <li>{isFr ? "perte d'accès après une première connexion réussie ;" : "loss of access after a successful first login;"}</li>
+            <li>{isFr ? "changement d'avis ou absence d'utilisation du compte." : "change of mind or lack of account use."}</li>
+          </ul>
+        </section>
+
+        {/* 15. Fraudes */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">14. {isFr ? "Lutte contre les Fraudes" : "Anti-Fraud Policy"}</h2>
+          <p>{isFr ? "AgedGmailYT se réserve le droit de suspendre immédiatement tout compte utilisateur en cas de suspicion raisonnable de fraude ou de tentative de rétrofacturation abusive (chargeback)." : "AgedGmailYT reserves the right to immediately suspend any user account in case of reasonable suspicion of fraud or abusive chargeback attempt."}</p>
+        </section>
+
+        {/* 16. Réclamations */}
+        <section>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">15. {isFr ? "Réclamations et Assistance" : "Claims and Support"}</h2>
+          <p>{isFr ? "Toute demande d'assistance doit être adressée au support officiel. Toute réclamation manifestement abusive, répétitive ou effectuée de mauvaise foi pourra être rejetée." : "Any support request must be addressed to the official support. Any claim that is manifestly abusive, repetitive, or made in bad faith may be rejected."}</p>
+        </section>
+
       </div>
 
       <div className="text-center mt-12">
-        <button onClick={() => navigate('shop')} className="text-sm font-bold text-primary hover:underline">{lang === 'fr' ? 'Retour au catalogue' : 'Back to catalog'}</button>      </div>
+        <button onClick={() => navigate('shop')} className="text-sm font-bold text-primary hover:underline">{isFr ? 'Retour au catalogue' : 'Back to catalog'}</button>
+      </div>
     </div>
   );
 };
