@@ -1596,19 +1596,14 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
   if (status === 'LOADING_PRICES') {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-300">
-        <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 md:p-8 mb-8 shadow-sm">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse"></div>
-             <div>
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm">
+          <div className="flex items-start gap-4">
+             <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse shrink-0"></div>
+             <div className="flex-1 w-full">
                <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-               <div className="h-6 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+               <div className="h-[46px] max-w-sm bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse mb-3"></div>
+               <div className="h-2 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
              </div>
-          </div>
-          <div className="mt-6 md:mt-0 flex flex-col items-center md:items-end">
-             <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-             <div className="h-8 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
-             <div className="h-2 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mt-3"></div>
           </div>
         </div>
 
@@ -1660,22 +1655,25 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
       
       {/* Header Dashboard style */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 md:p-8 mb-8 shadow-sm">
-        <div className="flex items-center gap-4">
-           <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500">
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm">
+        <div className="flex items-start gap-4">
+           <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 shrink-0">
              <MessageSquare size={24} />
            </div>
-           <div>
-             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{isFr ? 'Service' : 'Service Name'}</p>
-             <h2 className="text-xl font-black text-gray-900 dark:text-white leading-none">YouTube</h2>
+           <div className="flex-1 w-full">
+             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Service' : 'Service'}</label>
+             <select 
+                value={selectedService} 
+                onChange={(e) => setSelectedService(e.target.value)}
+                disabled={status !== 'IDLE' && status !== 'LOADING_PRICES'}
+                className="w-full max-w-sm text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 font-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 mb-3"
+             >
+                <option value="8a97735e-9a14-427e-8a88-e9d999bf3429">YouTube</option>
+             </select>
+             <p className="text-sm text-gray-500">
+               {isFr ? 'Vérifier le numéro de sa chaîne YouTube pour activer les fonctionnalités intermédiaires.' : 'Verify the number of your YouTube channel to activate intermediate features.'}
+             </p>
            </div>
-        </div>
-        <div className="mt-6 md:mt-0 text-center md:text-right">
-           <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{isFr ? 'Solde disponible' : 'Balance'}</p>
-           <h2 className="text-2xl font-black text-primary leading-none">${profile?.balance?.toFixed(2) || '0.00'}</h2>
-           <p className="text-[10px] text-gray-400 mt-2 max-w-[200px]">
-             {isFr ? 'Vous n\'êtes débité que si vous recevez le code.' : 'You do not pay anything from your balance until you receive your sms code!'}
-           </p>
         </div>
       </div>
       
