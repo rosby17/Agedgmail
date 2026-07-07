@@ -5588,6 +5588,11 @@ const friendlyAuthError = (raw = '') => {
   if (m.includes('password should be at least')) return "Le mot de passe doit contenir au moins 6 caractères.";
   if (m.includes('unable to validate email') || m.includes('invalid email')) return "Adresse email invalide.";
   if (m.includes('rate limit') || m.includes('too many')) return "Trop de tentatives. Patiente une minute avant de réessayer.";
+  // Panne d'envoi d'email côté serveur (SMTP non configuré ou en échec) —
+  // ne pas laisser le message technique brut de Supabase s'afficher.
+  if (m.includes('error sending confirmation') || m.includes('error sending recovery') || m.includes('sending email')) {
+    return "Impossible d'envoyer l'email pour le moment. Réessaie dans un instant ou contacte le support si le problème persiste.";
+  }
   return raw || "Une erreur est survenue. Réessaie.";
 };
 
