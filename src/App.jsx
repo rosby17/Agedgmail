@@ -102,7 +102,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 {lang === 'fr' ? 'Accédez à des comptes Gmail US très demandés, vérifiés et optimisés pour percer à l\'international sans blocages. Dominez le marché US dès aujourd\'hui.' : 'Get instant access to highly demanded US Gmail accounts, verified and ready for your international marketing campaigns without shadowbans.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-5">
-                <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-on-primary px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
+                <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-white px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
                   {lang === 'fr' ? 'Acheter un compte US' : 'Buy a US Account'}
                   <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </button>
@@ -120,37 +120,37 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                       <div className="w-3 h-3 rounded-full bg-yellow-500/40"></div>
                       <div className="w-3 h-3 rounded-full bg-l-primary/40"></div>
                     </div>
-                    <div className="text-[10px] font-label-sm text-on-surface-variant">VÉRIFICATION SYSTÈME</div>
+                    <div className="text-[10px] font-label-sm text-on-surface-variant">{lang === 'fr' ? 'VÉRIFICATION SYSTÈME' : 'SYSTEM CHECK'}</div>
                   </div>
                   <div className="p-6 space-y-6">
                     <div className="flex justify-between items-center">
-                      <h4 className="font-headline-lg font-bold text-lg">Tableau de bord</h4>
-                      <span className="text-l-primary text-xs font-bold px-3 py-1 bg-l-primary/10 rounded-lg">Actif</span>
+                      <h4 className="font-headline-lg font-bold text-lg">{lang === 'fr' ? 'Tableau de bord' : 'Dashboard'}</h4>
+                      <span className="text-l-primary text-xs font-bold px-3 py-1 bg-l-primary/10 rounded-lg">{lang === 'fr' ? 'Actif' : 'Active'}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Trust Score</p>
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">{lang === 'fr' ? 'Score de confiance' : 'Trust Score'}</p>
                         <p className="text-xl font-bold text-l-primary">98%</p>
                       </div>
                       <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Consistency</p>
-                        <p className="text-xl font-bold text-on-surface">Good</p>
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">{lang === 'fr' ? 'Cohérence' : 'Consistency'}</p>
+                        <p className="text-xl font-bold text-on-surface">{lang === 'fr' ? 'Bon' : 'Good'}</p>
                       </div>
                       <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Consistent Score</p>
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">{lang === 'fr' ? 'Score de qualité' : 'Consistent Score'}</p>
                         <p className="text-xl font-bold text-l-primary">100%</p>
                       </div>
                       <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Fingerprint Scan</p>
-                        <p className="text-xl font-bold text-on-surface">Clean</p>
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">{lang === 'fr' ? 'Empreinte digitale' : 'Fingerprint Scan'}</p>
+                        <p className="text-xl font-bold text-on-surface">{lang === 'fr' ? 'Propre' : 'Clean'}</p>
                       </div>
                       <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">Geo-Location</p>
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">{lang === 'fr' ? 'Géolocalisation' : 'Geo-Location'}</p>
                         <p className="text-xl font-bold text-on-surface">US</p>
                       </div>
                       <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">NoMask Detect</p>
-                        <p className="text-xl font-bold text-l-primary">Passed</p>
+                        <p className="text-[10px] uppercase text-on-surface-variant mb-1">{lang === 'fr' ? 'Détection anti-masque' : 'NoMask Detect'}</p>
+                        <p className="text-xl font-bold text-l-primary">{lang === 'fr' ? 'Réussi' : 'Passed'}</p>
                       </div>
                     </div>
                     <div className="space-y-3">
@@ -162,7 +162,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                           <div className="h-2 w-24 bg-l-primary/30 rounded-full mb-1"></div>
                           <div className="h-1.5 w-16 bg-white/10 rounded-full"></div>
                         </div>
-                        <span className="text-[10px] font-bold text-l-primary">VÉRIFIÉ</span>
+                        <span className="text-[10px] font-bold text-l-primary">{lang === 'fr' ? 'VÉRIFIÉ' : 'VERIFIED'}</span>
                       </div>
                     </div>
                   </div>
@@ -172,12 +172,12 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 <div className="flex items-center gap-8">
                   <div>
                     <p className="text-4xl font-extrabold text-l-primary leading-none mb-1">99.9%</p>
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Taux de succès</p>
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">{lang === 'fr' ? 'Taux de succès' : 'Success Rate'}</p>
                   </div>
                   <div className="h-12 w-px bg-white/10"></div>
                   <div>
                     <p className="text-4xl font-extrabold text-on-surface leading-none mb-1">5k+</p>
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Utilisateurs</p>
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">{lang === 'fr' ? 'Utilisateurs' : 'Users'}</p>
                   </div>
                 </div>
               </div>
@@ -262,7 +262,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-8 font-extrabold">{lang === 'fr' ? 'Nos Best-Sellers US' : 'Our US Best Sellers'} <br/>{lang === 'fr' ? 'Livraison immédiate' : 'Instant delivery'}</h2>
                 <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">{lang === 'fr' ? 'Recommandé : Payez par Binance Pay sans limite de minimum. Pas de frais cachés.' : 'Recommended: Pay with Binance Pay with no minimum. No hidden fees.'}</p>
               </div>
-              <button onClick={() => navigate('shop')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary hover:border-l-primary transition-all duration-500">
+              <button onClick={() => navigate('shop')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white hover:border-l-primary transition-all duration-500">
                 {lang === 'fr' ? 'Accéder au catalogue complet' : 'Access the full catalog'}
               </button>
             </div>
@@ -282,16 +282,15 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 if (isCenter) {
                   return (
                     <div key={product.id} className="glass glass-glow rounded-[48px] p-12 flex flex-col border-l-primary/40 relative overflow-hidden transform md:scale-105 shadow-[0_0_80px_rgba(78,223,159,0.1)] reveal-target opacity-0" style={{ animationDelay: delay }}>
-                      <div className="absolute top-12 right-[-45px] bg-l-primary text-on-primary px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">Meilleur Choix</div>
-                      <div className="absolute top-12 right-[-45px] bg-l-primary text-on-primary px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">{lang === 'fr' ? 'Meilleur Choix' : 'Best Choice'}</div>
+                      <div className="absolute top-12 right-[-45px] bg-l-primary text-white px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">{lang === 'fr' ? 'Meilleur Choix' : 'Best Choice'}</div>
                       <div className="mb-10">
-                        <span className="bg-l-primary text-on-primary px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
+                        <span className="bg-l-primary text-white px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
                       </div>
                       <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
                       <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                       <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Gmail US Premium'}".</p>
                       <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
-                      <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-on-primary py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">{lang === 'fr' ? 'Acheter maintenant' : 'Buy Now'}</button>
+                      <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-white py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">{lang === 'fr' ? 'Acheter maintenant' : 'Buy Now'}</button>
                     </div>
                   );
                 }
@@ -305,7 +304,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                     <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                     <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Gmail US Ready'}".</p>
                     <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
-                    <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary transition-all duration-300">{lang === 'fr' ? 'Sélectionner' : 'Select'}</button>
+                    <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white transition-all duration-300">{lang === 'fr' ? 'Sélectionner' : 'Select'}</button>
                   </div>
                 );
               })}
@@ -361,7 +360,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 <h2 className="font-headline-lg text-4xl md:text-6xl text-on-surface mb-10 font-extrabold leading-tight">Aujourd'hui, les créateurs d'élite propulsent leur business digital et encaissent leurs premiers 100 000€.</h2>
                 <p className="font-body-md text-on-surface-variant text-xl mb-16 max-w-2xl mx-auto leading-relaxed">Profitez d'un RPM élevé et d'une croissance fulgurante. Vos comptes 'Aged' n'attendent que vous.</p>
                 <div className="flex flex-col items-center gap-10">
-                  <button onClick={() => navigate('shop')} className="bg-l-primary text-on-primary px-16 py-7 rounded-2xl font-bold text-2xl hover:scale-110 transition-all duration-300 shadow-2xl shadow-l-primary/40 emerald-glow">
+                  <button onClick={() => navigate('shop')} className="bg-l-primary text-white px-16 py-7 rounded-2xl font-bold text-2xl hover:scale-110 transition-all duration-300 shadow-2xl shadow-l-primary/40 emerald-glow">
                     Acheter maintenant
                   </button>
                   <div className="flex items-center gap-3 bg-white/5 px-6 py-3 rounded-full border border-white/5">
@@ -785,6 +784,7 @@ const cleanProductName = (raw, lang) => {
 
   // Traduction pour rendre les noms compréhensibles
   if (lang === 'fr') {
+    s = s.replace(/fresh/gi, "Nouveau");
     s = s.replace(/month old/gi, "Mois d'ancienneté");
     s = s.replace(/months old/gi, "Mois d'ancienneté");
     s = s.replace(/year old/gi, "An d'ancienneté");
@@ -1011,16 +1011,8 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
   <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 font-sans">
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
       <div className="flex items-center gap-4">
-        {currentView !== 'shop' && (
-          <button
-            onClick={() => window.history.back()}
-            className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all border border-gray-100 dark:border-gray-700 shadow-sm"
-          >
-            <ArrowLeft size={20} />
-          </button>
-        )}
         <button onClick={() => navigate('')} className="h-20 flex items-center gap-3 group transition-all">
-          <img src="/logo.png" alt="AgedGmailYT" className="h-10 w-auto group-hover:scale-105 transition-transform duration-300" />
+          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA2ZF5zZB5llhXjTZgvs64In3ytJg2FF_ek-KSm4bibJfw782IYaJSOV0Knvsmsuy_-PYMZlJp2iWO-tS2m2PBLuOiMGjhAV8_kzD9iQWOs6_dhwuhZCfBob0ZTq-oO131Htvb8G1tMAbz5fJlbqj4KbpEnBj0OIpWFUJmpCPQHQnv6k5fK9-FlMxX9UCNKVjE4jBej0HcFQB6je4WpnxANg0kP-0szIcnPZVSjDhlYnscIx5TNK88H1o1znlvXYZ7gV59gR7BNZDe" alt="AgedGmailYT" className="h-10 w-auto group-hover:scale-105 transition-transform duration-300" />
           <span className="font-headline-lg font-bold text-primary text-xl tracking-tighter hidden md:block">AgedGmailYT</span>
         </button>
       </div>
