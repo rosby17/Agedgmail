@@ -24,29 +24,15 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
-    const { iso, serviceId, price } = await req.json();
-    const smsPrice = price || 1.00;
-
-    // Check balance
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('balance')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || profile.balance < smsPrice) {
-      throw new Error('Insufficient balance');
-    }
-
     const apiKey = Deno.env.get('SMSCODES_API_KEY');
     if (!apiKey) throw new Error('SMSCODES_API_KEY is not configured');
 
-    const targetIso = iso || 'US';
-    // For youtube, serviceId might be something specific on smscodes.io
-    const targetServ = serviceId || '1'; // Placeholder
+    const body = await req.json().catch(() => ({}));
+    // Default to YouTube Service ID if not provided
+    const targetService = body.serviceId || '8a97735e-9a14-427e-8a88-e9d999bf3429';
 
     // Call smscodes.io
-    const url = `https://code.smscodes.io/api/sms/GetServiceNumber?key=${apiKey}&iso=${targetIso}&serv=${targetServ}`;
+    const url = `https://code.smscodes.io/api/sms/GetServicePrices?key=${apiKey}&serviceId=${targetService}`;
     const res = await fetch(url);
     const data = await res.json();
 

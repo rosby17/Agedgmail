@@ -22,8 +22,11 @@ serve(async (req) => {
       global: { headers: { Authorization: req.headers.get('Authorization')! } }
     });
 
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user) throw new Error('Unauthorized');
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Missing Authorization header');
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser(token);
+    if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
     const { securityId, number, price, description } = await req.json();
     if (!securityId || !number) throw new Error('Missing parameters');
@@ -89,7 +92,7 @@ serve(async (req) => {
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200,
     });
   }
 });
