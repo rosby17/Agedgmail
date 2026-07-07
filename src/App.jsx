@@ -375,53 +375,6 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
 
         <FAQSection />
       </main>
-
-      <footer className="border-t border-white/5 py-32 relative bg-[#050f18]">
-        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-20">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-3 mb-10">
-                <img alt="AgedGmailYT Icon" className="h-10 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA2ZF5zZB5llhXjTZgvs64In3ytJg2FF_ek-KSm4bibJfw782IYaJSOV0Knvsmsuy_-PYMZlJp2iWO-tS2m2PBLuOiMGjhAV8_kzD9iQWOs6_dhwuhZCfBob0ZTq-oO131Htvb8G1tMAbz5fJlbqj4KbpEnBj0OIpWFUJmpCPQHQnv6k5fK9-FlMxX9UCNKVjE4jBej0HcFQB6je4WpnxANg0kP-0szIcnPZVSjDhlYnscIx5TNK88H1o1znlvXYZ7gV59gR7BNZDe" />
-                <span className="font-headline-lg font-bold text-xl text-on-surface">AgedGmailYT</span>
-              </div>
-              <p className="text-on-surface-variant max-w-sm mb-12 text-sm leading-relaxed">Solution Premium pour Créateurs Ambitieux. Nous fournissons l'infrastructure nécessaire à votre domination digitale globale.</p>
-              <div className="flex gap-6 items-center">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10 opacity-60">
-                  <span className="material-symbols-outlined text-[14px] text-l-primary">smartphone</span>
-                  <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Orange/Mobile Money</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10 opacity-60">
-                  <span className="material-symbols-outlined text-[14px] text-l-primary">currency_bitcoin</span>
-                  <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Crypto / Binance</span>
-                </div>
-                <div className="flex items-center gap-3 opacity-40">
-                  <span className="material-symbols-outlined text-l-primary text-lg">verified</span>
-                  <span className="font-label-sm uppercase tracking-widest text-[9px] font-bold">SÉCURISÉ SSL</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">Navigation</h6>
-              <ul className="space-y-6">
-                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#catalogue" onClick={(e) => scrollToSection(e, '#catalogue')}>Catalogue</a></li>
-                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#features" onClick={(e) => scrollToSection(e, '#features')}>Fonctionnalités</a></li>
-                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#faq" onClick={(e) => scrollToSection(e, '#faq')}>FAQ</a></li>
-              </ul>
-            </div>
-            <div>
-              <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">Légal &amp; Support</h6>
-              <ul className="space-y-6">
-                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#">Conditions Générales</a></li>
-                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#">Confidentialité</a></li>
-                <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm" href="#">Contact Support</a></li>
-                <li className="pt-8">
-                  <p className="text-[10px] text-on-surface-variant/40 leading-relaxed uppercase tracking-tighter">© 2024 AgedGmailYT. Tous droits réservés.</p>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
@@ -6015,62 +5968,55 @@ const AuthView = ({ navigate }) => {
 // FOOTER
 // ==========================================
 
-const Footer = ({ navigate }) => (
-  <footer className="bg-white border-t border-gray-100 pt-32 pb-16 px-6 font-sans mt-auto">
-    <div className="max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
-        {/* Brand Section */}
-        <div className="md:col-span-2">
-          <div className="h-24 mb-8">
-            <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('')} />
-          </div>
-          <p className="text-gray-400 text-lg max-w-md leading-relaxed mb-10 font-medium">
-            The #1 marketplace for acquiring certified accounts and premium digital services. Security, speed, and reliability guaranteed.
+const Footer = ({ navigate, lang }) => (
+  <footer className="border-t border-surface-container-high py-32 relative bg-l-background mt-auto">
+    <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-20">
+        <div className="col-span-1 md:col-span-2">
+          <button onClick={() => navigate('')} className="flex items-center gap-3 mb-10 group transition-all text-left">
+            <img alt="AgedGmailYT Icon" className="h-10 w-auto group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA2ZF5zZB5llhXjTZgvs64In3ytJg2FF_ek-KSm4bibJfw782IYaJSOV0Knvsmsuy_-PYMZlJp2iWO-tS2m2PBLuOiMGjhAV8_kzD9iQWOs6_dhwuhZCfBob0ZTq-oO131Htvb8G1tMAbz5fJlbqj4KbpEnBj0OIpWFUJmpCPQHQnv6k5fK9-FlMxX9UCNKVjE4jBej0HcFQB6je4WpnxANg0kP-0szIcnPZVSjDhlYnscIx5TNK88H1o1znlvXYZ7gV59gR7BNZDe" />
+            <span className="font-headline-lg font-bold text-xl text-on-surface">AgedGmailYT</span>
+          </button>
+          <p className="text-on-surface-variant max-w-sm mb-12 text-sm leading-relaxed">
+            {lang === 'fr' ? "Solution Premium pour Créateurs Ambitieux. Nous fournissons l'infrastructure nécessaire à votre domination digitale globale." : "Premium Solution for Ambitious Creators. We provide the infrastructure needed for your global digital domination."}
           </p>
-          <div className="flex gap-4">
-            <div className="flex flex-wrap gap-3">
-              {['BTC', 'ETH', 'USDT', 'LTC'].map(coin => (
-                <span key={coin} className="px-4 py-2 bg-gray-50 rounded-xl text-[10px] font-black text-gray-400 border border-gray-100 uppercase tracking-widest">{coin}</span>
-              ))}
+          <div className="flex flex-wrap gap-6 items-center">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-surface-container-high bg-white/5 opacity-80">
+              <span className="material-symbols-outlined text-[14px] text-l-primary">smartphone</span>
+              <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Orange/Mobile Money</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-surface-container-high bg-white/5 opacity-80">
+              <span className="material-symbols-outlined text-[14px] text-l-primary">currency_bitcoin</span>
+              <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Crypto / Binance</span>
+            </div>
+            <div className="flex items-center gap-3 opacity-60">
+              <span className="material-symbols-outlined text-l-primary text-lg">verified</span>
+              <span className="font-label-sm uppercase tracking-widest text-[9px] font-bold text-on-surface">SÉCURISÉ SSL</span>
             </div>
           </div>
         </div>
-
-        {/* Links Sections */}
         <div>
-          <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Platform</h4>
-          <ul className="space-y-4">
-            <li><button onClick={() => navigate('dashboard')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Account</button></li>
-            <li><button onClick={() => navigate('shop')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Service</button></li>
-            <li><button onClick={() => navigate('shop')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Resources</button></li>
+          <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">Navigation</h6>
+          <ul className="space-y-6">
+            <li><button onClick={() => navigate('shop')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">{lang === 'fr' ? 'Catalogue' : 'Catalog'}</button></li>
+            <li><button onClick={() => navigate('shop')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">SMS</button></li>
+            <li><button onClick={() => navigate('api')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">API</button></li>
+            <li><button onClick={() => navigate('dashboard')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">{lang === 'fr' ? 'Mes commandes' : 'My Orders'}</button></li>
           </ul>
         </div>
-
         <div>
-          <h4 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-[11px]">Support</h4>
-          <ul className="space-y-4">
-            <li><button onClick={() => navigate('policies')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">Policies</button></li>
-            <li><button onClick={() => navigate('api')} className="text-gray-500 hover:text-primary font-bold text-sm transition-colors">API</button></li>
+          <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">{lang === 'fr' ? 'Légal & Support' : 'Legal & Support'}</h6>
+          <ul className="space-y-6">
+            <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium" href="#">{lang === 'fr' ? 'Conditions Générales' : 'Terms of Service'}</a></li>
+            <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium" href="#">{lang === 'fr' ? 'Confidentialité' : 'Privacy Policy'}</a></li>
+            <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium" href="#">Support</a></li>
+            <li className="pt-8 flex items-center gap-4">
+              <p className="text-[10px] text-on-surface-variant/60 leading-relaxed uppercase tracking-tighter">© 2026 AgedGmailYT. {lang === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
+              <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-8 h-8 rounded-full border border-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-l-primary hover:bg-surface-container transition-all">
+                <ChevronUp size={16} />
+              </button>
+            </li>
           </ul>
-        </div>
-      </div>
-
-      {/* Bottom Footer */}
-      <div className="pt-10 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">Copyright 2026 © AgedGmailYT</span>
-          <span className="text-gray-200 hidden md:block">•</span>
-          <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em]">All rights reserved</span>
-        </div>
-
-        <div className="flex gap-8 items-center">
-          <div className="flex gap-4 items-center">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Operational</span>
-          </div>
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-all border border-gray-100">
-            <ChevronUp size={18} />
-          </button>
         </div>
       </div>
     </div>
@@ -6812,7 +6758,7 @@ function App() {
       </div>
 
       {!isAdmin && session && <SupportChatWidget session={session} profile={profile} />}
-      {!isAdmin && <Footer navigate={navigate} />}
+      {!isAdmin && <Footer navigate={navigate} lang={lang} />}
     </div>
   );
 }
