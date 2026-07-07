@@ -2333,6 +2333,7 @@ const shortOrderId = (uuid = '') => {
 // dans sa propre page (menu déroulant du profil), et l'onglet "Dashboard" a été
 // retiré car redondant avec cette page elle-même.
 const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile, lang, t, loading = false }) => {
+  if (!session) { navigate('auth'); return null; }
   const [viewOrder, setViewOrder] = useState(null);
   const [showTransfer, setShowTransfer] = useState(false);
   // Initialise la checkbox depuis le profil
@@ -2610,7 +2611,10 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
 
 // Page Paramètres dédiée (accessible via le menu déroulant du profil, plus
 // via un onglet noyé dans un dashboard).
-const SettingsView = ({ profile, navigate, fetchProfile, session, lang, t }) => (
+const SettingsView = ({ profile, navigate, fetchProfile, session, lang, t }) => {
+  if (!session) { navigate('auth'); return null; }
+  
+  return (
   <div className="max-w-3xl mx-auto px-6 py-16 font-sans">
     <div className="flex items-center gap-4 mb-10">
       <button onClick={() => navigate('dashboard')} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all border border-gray-100"><ArrowLeft size={18} /></button>
@@ -2618,7 +2622,8 @@ const SettingsView = ({ profile, navigate, fetchProfile, session, lang, t }) => 
     </div>
     <SettingsTab profile={profile} onUpdate={() => fetchProfile && session && fetchProfile(session.user.id)} lang={lang} t={t} />
   </div>
-);
+  );
+};
 
 // ==========================================
 // ORDERS ADMIN — Composant gestion commandes
@@ -4563,7 +4568,7 @@ const CRYPTO_CURRENCIES = [
 // les cryptos (via NOWPayments) sont à $20 à cause des frais de réseau fluctuants (min ~18.86$).
 const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5, recommended: true },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', manual: true, min: 20 },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', manual: true, min: 0.5 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
@@ -6698,9 +6703,9 @@ function App() {
         {currentView === 'policies' && <PoliciesView navigate={navigate} />}
         {currentView === 'auth' && <AuthView navigate={navigate} />}
         {currentView === 'reset-password' && <ResetPasswordView navigate={navigate} />}
-        {currentView === 'dashboard' && session && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} />}
-        {currentView === 'settings' && session && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} />}
-        {currentView === 'recharge' && session && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} />}
+        {currentView === 'dashboard' && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} />}
+        {currentView === 'settings' && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} />}
+        {currentView === 'recharge' && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} />}
         {currentView === 'admin' && (
           <AdminView
             session={session}
