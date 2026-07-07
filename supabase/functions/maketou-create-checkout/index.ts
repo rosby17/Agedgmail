@@ -48,8 +48,8 @@ serve(async (req) => {
       console.warn("Could not fetch Binance rate, falling back to default.", e);
     }
 
-    // On applique 8% de frais pour le Mobile Money
-    const totalUsd = amountUsd * 1.08;
+    // On applique 10% de frais pour le Mobile Money (couvre Maketou + retrait)
+    const totalUsd = amountUsd * 1.10;
     const amountFcfa = Math.round(totalUsd * EXCHANGE_RATE);
 
     // Clé API et ID produit Maketou depuis les variables d'environnement

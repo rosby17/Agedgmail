@@ -476,13 +476,13 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
             {gateway === 'mobile_money' && (
               <div className="bg-amber-50 dark:bg-amber-900/10 rounded-2xl p-4 text-xs text-amber-700 dark:text-amber-500 leading-relaxed border border-amber-200 dark:border-amber-800/30">
-                <span className="font-bold flex items-center gap-1 mb-1"><AlertTriangle size={14} /> Frais d'opérateur (8%)</span>
-                Les paiements par Mobile Money (Orange, MTN, Wave...) appliquent 8% de frais de passerelle.
+                <span className="font-bold flex items-center gap-1 mb-1"><AlertTriangle size={14} /> Frais d'opérateur et de traitement</span>
+                Les paiements par Mobile Money (Orange, MTN, Wave...) appliquent des frais de passerelle et de retrait couverts par une majoration de 10%.
                 <div className="mt-2 text-gray-800 dark:text-gray-300 font-bold flex justify-between items-center">
                   <span>Montant total à payer :</span>
                   <span className="text-right">
-                    <span className="block text-sm">${(amountUsd * 1.08).toFixed(2)}</span>
-                    <span className="block text-[10px] opacity-80">(env. {(amountUsd * 1.08 * exchangeRate).toFixed(0)} FCFA au taux de {exchangeRate}F)</span>
+                    <span className="block text-sm">${(amountUsd * 1.10).toFixed(2)}</span>
+                    <span className="block text-[10px] opacity-80">(env. {(amountUsd * 1.10 * exchangeRate).toFixed(0)} FCFA au taux de {exchangeRate}F)</span>
                   </span>
                 </div>
               </div>
