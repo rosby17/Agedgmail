@@ -28,6 +28,7 @@ import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
 const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile, lang, t, loading = false }) => {
+  const isFr = lang === 'fr';
   React.useEffect(() => {
     if (!session) {
       navigate('auth');
@@ -157,7 +158,20 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
       )}
 
       <div className="flex items-center justify-between mb-10">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('myOrders')}</h1>
+        <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{t('myOrders')}</h1>
+      </div>
+
+      {/* Notice de confidentialité / suppression des commandes */}
+      <div className="mb-8 bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400 rounded-3xl p-5 flex items-start gap-4 animate-in fade-in duration-300">
+        <Info size={20} className="shrink-0 mt-0.5" />
+        <div>
+          <h4 className="text-xs font-black uppercase tracking-widest mb-1">{isFr ? 'NOTE IMPORTANTE' : 'IMPORTANT NOTICE'}</h4>
+          <p className="text-xs leading-relaxed opacity-90 font-medium">
+            {isFr 
+              ? "Les données de vos commandes sont automatiquement supprimées le 2 de chaque mois pour protéger votre vie privée. Seuls les 30 derniers jours sont conservés. Assurez-vous d'enregistrer vos informations de votre côté."
+              : "Order data is automatically deleted on the 2nd of each month for privacy protection. Only the most recent 30 days of orders are kept. Please make sure to store your data on your side."}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 mb-10">
