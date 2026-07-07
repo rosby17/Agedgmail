@@ -1,0 +1,102 @@
+import { CATEGORIES, GROUP_LABELS, AVATAR_COLORS, JUNK_CATEGORIES } from './constants';
+
+export const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat || 'Others';
+
+export const hashStr = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+
+export const detectFromText = (text) => {
+  const t = text;
+  if (t.includes('youtube')) return 'youtube';
+  if (t.includes('facebook')) return 'facebook';
+  if (t.includes('github')) return 'github';
+  if (t.includes('instagram')) return 'instagram';
+  if (t.includes('tiktok') || t.includes('tik tok')) return 'tiktok';
+  if (t.includes('reddit')) return 'reddit';
+  if (t.includes('twitter') || t.includes('/x') || t === 'x' || / x[)\s]/.test(t)) return 'twitter';
+  if (t.includes('discord')) return 'discord';
+  if (t.includes('icloud') || t.includes('apple')) return 'apple';
+  if (t.includes('telegram')) return 'telegram';
+  if (t.includes('sms')) return 'sms';
+  if (t.includes('snapchat')) return 'snapchat';
+  if (t === 'email' || t.includes('gmail')) return 'gmail';
+  if (t.includes('gmx') || t.includes('rambler') || t.includes('mail ru') || t.includes('mail.ru') || t.includes('hotmail') || t.includes('outlook')) return 'mail';
+  if (t.includes('amazon')) return 'amazon';
+  return null;
+};
+
+export const categoryVisual = (product = {}) => {
+  if (typeof product === 'string') product = { category: product };
+  const cat = String(product.category || '').toLowerCase();
+  const name = String(product.name || '').toLowerCase();
+  
+  if (name.includes('github')) return 'github';
+
+  const isJunkCategory = JUNK_CATEGORIES.some(j => cat === j || cat.includes(j));
+
+  if (isJunkCategory) {
+    return detectFromText(name) || detectFromText(cat) || 'other';
+  }
+  return detectFromText(cat) || detectFromText(name) || 'other';
+};
+
+export const displayCategoryLabel = (product = {}) => {
+  const cat = String(product.category || '').toLowerCase();
+  const isJunkCategory = JUNK_CATEGORIES.some(j => cat === j || cat.includes(j));
+  if (isJunkCategory) return GROUP_LABELS[categoryVisual(product)] || categoryName(product.category);
+  return categoryName(product.category);
+};
+
+export const cleanProductName = (raw, lang) => {
+  if (!raw) return raw;
+  if (!lang) lang = typeof window !== 'undefined' ? (localStorage.getItem('agedgmail_lang') || 'fr') : 'fr';
+  let s = String(raw).trim();
+
+  const toRemove = [
+    /【[^】]+】/g,
+    /\[[^\]]+\]/g,
+    /\|.*$/,
+    /\\.*$/,
+    /-\s*$/,
+    /^[-\s]+/
+  ];
+
+  toRemove.forEach(regex => {
+    s = s.replace(regex, '').trim();
+  });
+
+  const words = s.split(/\s+/);
+  if (words.length > 2 && words[0] === words[words.length - 1]) {
+    words.pop();
+    s = words.join(' ');
+  }
+
+  const parts = s.split(' - ');
+  if (parts.length === 2 && parts[0] === parts[1]) {
+    s = parts[0];
+  }
+
+  const isEmail = (str) => /^[a-zA-Z0-9]+(gmail|outlook|hotmail|mail|gmx)/i.test(str) && str.length < 20;
+  if (isEmail(s)) {
+    return lang === 'fr' ? 'Compte Email Aléatoire' : 'Random Email Account';
+  }
+
+  return s || raw;
+};
+
+export const getProductDetails = (product = {}) => {
+  const c = String(product.category || '').toLowerCase();
+  const n = String(product.name || '').toLowerCase();
+  
+  const has = (terms) => terms.some(t => c.includes(t) || n.includes(t));
+  
+  return {
+    year: (n.match(/(?:20|19)\d{2}/) || c.match(/(?:20|19)\d{2}/))?.[0] || 'New',
+    subscribers: (n.match(/(\d+[kK]?)\s*(?:sub|subs|subscriber)/) || c.match(/(\d+[kK]?)\s*(?:sub|subs|subscriber)/))?.[1] || '0',
+    monetized: has(['monetized', 'monetization']),
+    phoneVerified: has(['pva', 'phone verified', 'sms verified', 'number verified', 'number added']),
+    emailVerified: has(['eva', 'email verified', 'email added']),
+    twoFa: has(['2fa', '2 step']),
+    cookies: has(['cookie', 'cookies', 'token', 'auth_token']),
+    format: product.description?.match(/Format:\s*([^\n]+)/i)?.[1] || 'Email:Password:Recovery',
+  };
+};
