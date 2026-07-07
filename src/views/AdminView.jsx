@@ -1048,17 +1048,6 @@ const AdminView = ({
         </div>
 
         <div>
-          {/* Theme and Language Switchers */}
-          <div className="flex gap-3 justify-center items-center py-4 border-t border-gray-100 dark:border-slate-800 mt-6">
-            <button
-              onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
-              className="flex-1 h-10 rounded-xl bg-gray-50 dark:bg-slate-800 flex items-center justify-center font-bold text-xs text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-slate-700"
-              title="Change Language"
-            >
-              {lang.toUpperCase()}
-            </button>
-          </div>
-
           {/* Back to site */}
           <div className="pt-6 border-t border-gray-100 dark:border-slate-800 mt-4 space-y-4">
             <div className="text-xs text-gray-500 dark:text-slate-500 font-semibold px-2">

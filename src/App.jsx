@@ -22,7 +22,6 @@ import MyOrdersView from './views/MyOrdersView';
 import SettingsView from './views/SettingsView';
 import RechargeView from './views/RechargeView';
 import AdminView from './views/AdminView';
-import VendorView from './views/VendorView';
 import HomeView from './views/HomeView';
 
 import Navbar from './components/layout/Navbar';
@@ -826,7 +825,6 @@ function App() {
         <KeepAlive show={currentView === 'dashboard'}><MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} /></KeepAlive>
         <KeepAlive show={currentView === 'settings'}><SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} /></KeepAlive>
         <KeepAlive show={currentView === 'recharge'}><RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} /></KeepAlive>
-        <KeepAlive show={currentView === 'vendor'}><VendorView profile={profile} session={session} fetchProfile={fetchProfile} navigate={navigate} /></KeepAlive>
         <KeepAlive show={currentView === 'admin'}>
           {isAdmin && (
             <AdminView

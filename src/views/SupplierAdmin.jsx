@@ -26,7 +26,7 @@ import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
-const SupplierAdmin = ({ products, fetchProducts }) => {
+const SupplierAdmin = ({ products = [], fetchProducts }) => {
   const [settingsBySupplier, setSettingsBySupplier] = useState({});
   const [mappings, setMappings] = useState([]);
   const [pending, setPending] = useState([]);
@@ -176,16 +176,16 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
         {SUPPLIERS.map(supplier => {
           const settings = settingsBySupplier[supplier];
           return (
-            <div key={supplier} className="bg-white border border-gray-100 rounded-[3rem] p-8 shadow-soft">
+            <div key={supplier} className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 shadow-soft">
               <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{SUPPLIER_LABEL[supplier]} Balance</div>
-              <div className="text-3xl font-black font-mono text-gray-900 mb-1">
+              <div className="text-3xl font-black font-mono text-gray-900 dark:text-white mb-1">
                 {settings ? `${Number(settings.balance).toFixed(2)} ${settings.currency}` : '—'}
               </div>
               <div className="text-xs text-gray-400 mb-6">
                 {settings?.last_catalog_sync ? `Last sync: ${new Date(settings.last_catalog_sync).toLocaleString()}` : 'Never synced'}
               </div>
               {settings && Number(settings.balance) <= 0 && (
-                <div className="mb-4 text-xs font-bold text-red-600 bg-red-50 rounded-xl px-4 py-2 flex items-center gap-2">
+                <div className="mb-4 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2 flex items-center gap-2">
                   <AlertTriangle size={14} /> Balance is 0 — top up to deliver via this supplier.
                 </div>
               )}
@@ -206,41 +206,41 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
         })}
       </div>
 
-      {msg && <div className="text-sm font-bold text-gray-600 bg-white border border-gray-100 rounded-2xl px-5 py-3">{msg}</div>}
+      {msg && <div className="text-sm font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-2xl px-5 py-3">{msg}</div>}
 
       {/* Marge globale */}
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+      <div className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Global margin % (tous fournisseurs)</label>
         <div className="flex gap-2">
-          <input type="number" value={marginInput} onChange={e => setMarginInput(e.target.value)} className="w-24 h-12 px-4 rounded-xl border border-gray-200 font-mono" />
-          <button onClick={handleSaveMargin} className="h-12 px-4 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200"><Save size={16} /></button>
+          <input type="number" value={marginInput} onChange={e => setMarginInput(e.target.value)} className="w-24 h-12 px-4 rounded-xl border border-gray-200 dark:border-slate-700 font-mono bg-transparent" />
+          <button onClick={handleSaveMargin} className="h-12 px-4 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-slate-700"><Save size={16} /></button>
         </div>
       </div>
 
       {/* Mapping produits */}
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8">Product mapping</h2>
+      <div className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">Product mapping</h2>
         <p className="text-xs text-gray-400 -mt-6 mb-8">Un produit peut avoir un mapping par fournisseur ; celui marqué "Active" (le moins cher, en stock) fixe le prix/stock affichés en boutique.</p>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+              <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
                 <th className="pb-4">My product</th><th className="pb-4">Supplier</th><th className="pb-4">Supplier ID</th><th className="pb-4">Cost</th>
                 <th className="pb-4">Margin %</th><th className="pb-4">Sell price</th><th className="pb-4">Avail</th>
                 <th className="pb-4">Active</th><th className="pb-4">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
               {mappings.map(m => (
-                <tr key={m.id} className="text-gray-700">
+                <tr key={m.id} className="text-gray-700 dark:text-gray-300">
                   <td className="py-4 font-bold">{productName(m.product_id)}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 font-bold text-xs">{SUPPLIER_LABEL[m.supplier] || m.supplier}</span></td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 font-bold text-xs">{SUPPLIER_LABEL[m.supplier] || m.supplier}</span></td>
                   {editing === m.id ? (
                     <>
                       <td className="py-4"><input value={editForm.supplier_product_id} onChange={e => setEditForm({ ...editForm, supplier_product_id: e.target.value })} className="w-24 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
                       <td className="py-4 font-mono">${Number(m.supplier_rate).toFixed(2)}</td>
                       <td className="py-4"><input type="number" value={editForm.margin_percent} onChange={e => setEditForm({ ...editForm, margin_percent: e.target.value })} className="w-20 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
-                      <td className="py-4 font-mono text-gray-400">—</td>
+                      <td className="py-4 font-mono text-gray-400 dark:text-slate-500">—</td>
                       <td className="py-4">{m.supplier_available}</td>
                       <td className="py-4"><input type="checkbox" checked={editForm.active} onChange={e => setEditForm({ ...editForm, active: e.target.checked })} /></td>
                       <td className="py-4 flex gap-2">
@@ -260,65 +260,65 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                       </td>
                       <td className="py-4">{m.active ? <span className="text-green-600 font-bold">Yes</span> : <span className="text-gray-400">No</span>}</td>
                       <td className="py-4 flex gap-2">
-                        <button onClick={() => startEdit(m)} className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200"><Edit size={14} /></button>
+                        <button onClick={() => startEdit(m)} className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"><Edit size={14} /></button>
                         <button onClick={() => handleDelete(m)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><Trash size={14} /></button>
                       </td>
                     </>
                   )}
                 </tr>
               ))}
-              {mappings.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-400">No mapped product.</td></tr>}
+              {mappings.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-400 dark:text-slate-500">No mapped product.</td></tr>}
             </tbody>
           </table>
         </div>
 
         {/* Ajout mapping */}
-        <div className="mt-8 pt-8 border-t border-gray-100 flex flex-wrap items-end gap-4">
+        <div className="mt-8 pt-8 border-t border-gray-100 dark:border-slate-800 flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Product</label>
-            <select value={newMap.product_id} onChange={e => setNewMap({ ...newMap, product_id: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-bold min-w-[220px]">
+            <select value={newMap.product_id} onChange={e => setNewMap({ ...newMap, product_id: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 font-bold min-w-[220px] bg-transparent">
               <option value="">— Choose —</option>
               {unmappedProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Supplier</label>
-            <select value={newMap.supplier} onChange={e => setNewMap({ ...newMap, supplier: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-bold">
+            <select value={newMap.supplier} onChange={e => setNewMap({ ...newMap, supplier: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 font-bold bg-transparent">
               {SUPPLIERS.map(s => <option key={s} value={s}>{SUPPLIER_LABEL[s]}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Supplier ID</label>
-            <input value={newMap.supplier_product_id} onChange={e => setNewMap({ ...newMap, supplier_product_id: e.target.value })} placeholder="ex: 11" className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-28" />
+            <input value={newMap.supplier_product_id} onChange={e => setNewMap({ ...newMap, supplier_product_id: e.target.value })} placeholder="ex: 11" className="px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 font-mono w-28 bg-transparent" />
           </div>
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Margin %</label>
-            <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-24" />
+            <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 font-mono w-24 bg-transparent" />
           </div>
           <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white dark:text-gray-900 font-bold text-sm flex items-center gap-2"><Plus size={16} /> Map</button>
         </div>
       </div>
 
       {/* Commandes en attente fournisseur */}
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold mb-8">Pending supplier orders ({pending.length})</h2>
+      <div className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
+        <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">Pending supplier orders ({pending.length})</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+              <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
                 <th className="pb-4">Order</th><th className="pb-4">Product</th><th className="pb-4">Supplier</th><th className="pb-4">Qty</th>
                 <th className="pb-4">Supplier #</th><th className="pb-4">Status</th><th className="pb-4">Last check</th><th className="pb-4">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
               {pending.map(o => (
-                <tr key={o.id} className="text-gray-700">
+                <tr key={o.id} className="text-gray-700 dark:text-gray-300">
                   <td className="py-4 font-mono">#{o.id}</td>
                   <td className="py-4 font-bold">{cleanProductName(o.product_name, 'fr')}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 font-bold text-xs">{SUPPLIER_LABEL[o.supplier] || o.supplier}</span></td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 font-bold text-xs">{SUPPLIER_LABEL[o.supplier] || o.supplier}</span></td>
                   <td className="py-4">{o.quantity}</td>
                   <td className="py-4 font-mono">{o.supplier_order_id || '—'}</td>
-                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-yellow-50 text-yellow-700 font-bold text-xs">{o.supplier_status || 'Pending'}</span></td>
+                  <td className="py-4"><span className="px-2 py-1 rounded-lg bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-500/20 text-yellow-700 dark:text-yellow-400 font-bold text-xs">{o.supplier_status || 'Pending'}</span></td>
                   <td className="py-4 text-xs text-gray-400">{o.supplier_last_checked_at ? new Date(o.supplier_last_checked_at).toLocaleString() : '—'}</td>
                   <td className="py-4">
                     {!o.supplier_order_id && (
@@ -333,21 +333,21 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                   </td>
                 </tr>
               ))}
-              {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">No pending order.</td></tr>}
+              {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400 dark:text-slate-500">No pending order.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* Logs */}
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
+      <div className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold">Supplier log</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Supplier log</h2>
           <button onClick={fetchAll} className="text-sm font-bold text-primary hover:underline flex items-center gap-2"><RefreshCcw size={14} /> Refresh</button>
         </div>
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {logs.map(l => (
-            <div key={l.id} className={`text-xs rounded-xl px-4 py-3 flex items-start gap-3 ${l.level === 'error' ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'}`}>
+            <div key={l.id} className={`text-xs rounded-xl px-4 py-3 flex items-start gap-3 ${l.level === 'error' ? 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20' : 'bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-gray-300'}`}>
               <span className="font-mono text-gray-400 shrink-0">{new Date(l.created_at).toLocaleTimeString()}</span>
               <span className="font-bold shrink-0 uppercase tracking-wide">{SUPPLIER_LABEL[l.supplier] || l.supplier}</span>
               <span className="font-bold shrink-0 uppercase tracking-wide">{l.action}</span>
