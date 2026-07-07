@@ -208,7 +208,19 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       setEndTime(Date.now() + 900000);
     } catch (err) {
       console.error(err);
-      setError(err.message || (isFr ? 'Une erreur est survenue' : 'An error occurred'));
+      let errMsg = err.message || (isFr ? 'Une erreur est survenue' : 'An error occurred');
+      
+      if (errMsg.includes('NoNumberAvailable')) {
+        errMsg = isFr 
+          ? "Désolé, aucun numéro n'est disponible pour ce pays actuellement. Veuillez essayer un autre pays."
+          : "Sorry, no number is currently available for this country. Please try another country.";
+      } else if (errMsg.includes('Insufficient balance')) {
+        errMsg = isFr 
+          ? "Solde insuffisant pour cette opération. Veuillez recharger votre compte."
+          : "Insufficient balance for this operation. Please top up your account.";
+      }
+      
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
