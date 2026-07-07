@@ -982,15 +982,20 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
 
       <div className="flex items-center gap-4">
         {/* Language selector */}
-        <button
-          onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
-          className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center font-bold text-xs text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700"
-          title="Change Language / Changer de langue"
-        >
-          {lang.toUpperCase()}
-        </button>
-
-
+        <div className="relative group">
+          <button
+            className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center font-bold text-xs text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700"
+            title="Change Language / Changer de langue"
+          >
+            {lang.toUpperCase()}
+          </button>
+          <div className="absolute right-0 top-full pt-2 w-32 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-2 flex flex-col gap-1">
+              <button onClick={() => setLang('fr')} className={`w-full text-left px-4 py-2 rounded-xl text-xs font-bold transition-all ${lang === 'fr' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>Français</button>
+              <button onClick={() => setLang('en')} className={`w-full text-left px-4 py-2 rounded-xl text-xs font-bold transition-all ${lang === 'en' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>English</button>
+            </div>
+          </div>
+        </div>
 
         {session && session.user.email === ADMIN_EMAIL && (
           <button onClick={() => navigate('admin')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
@@ -1015,7 +1020,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover/balance:text-primary transition-colors flex items-center gap-1">
                 {t('balance')} <Plus size={10} className="opacity-0 group-hover/balance:opacity-100 transition-opacity" />
               </span>
-              <span className="text-sm font-bold text-primary font-mono">${profile?.balance?.toFixed(2) || "0.00"}</span>
+              <span className="text-sm font-bold text-primary font-price">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </button>
             <div className="relative group">
               <button aria-label="Account menu" className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
@@ -2227,7 +2232,7 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t
           {/* Solde dispo */}
           <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between">
             <span className="text-sm text-gray-500 font-medium">{lang === 'fr' ? "Votre solde disponible" : "Your available balance"}</span>
-            <span className="text-lg font-black text-gray-900 font-mono">${balance.toFixed(2)}</span>
+            <span className="text-xl font-black text-gray-900 font-price">${balance.toFixed(2)}</span>
           </div>
 
           {step === 'form' && (
@@ -2477,21 +2482,31 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
         <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('myOrders')}</h1>
       </div>
 
-      <div className="bg-gray-900 rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-        <div className="relative z-10">
-          <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">{t('currentBalance')}</div>
-          <div className="text-4xl font-black font-mono">${profile?.balance?.toFixed(2) || "0.00"}</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="md:col-span-2 bg-gray-900 rounded-[2rem] p-8 relative overflow-hidden flex flex-col justify-between">
+          <div className="relative z-10 mb-8">
+            <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">{t('currentBalance')}</div>
+            <div className="text-5xl font-black font-price text-white">${profile?.balance?.toFixed(2) || "0.00"}</div>
+          </div>
+          <div className="relative z-10 flex flex-col sm:flex-row gap-4">
+            <button onClick={() => navigate('recharge')} className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+              <Plus size={18} /> {t('topUpBtn')}
+            </button>
+            <button onClick={() => setShowTransfer(true)} className="flex-1 bg-white/10 border border-white/20 text-white py-4 rounded-2xl font-bold text-sm hover:bg-white/20 transition-all flex items-center justify-center gap-2">
+              <Send size={16} /> {t('transferBtn')}
+            </button>
+          </div>
+          <Wallet size={180} className="absolute -bottom-10 -right-10 text-white/5 pointer-events-none" />
         </div>
-        <div className="relative z-10 flex items-center gap-3">
-          <button
-            onClick={() => setShowTransfer(true)}
-            className="bg-white/10 border border-white/20 text-white px-5 py-3 rounded-full font-bold text-sm hover:bg-white/20 transition-all flex items-center gap-2"
-          >
-            <Send size={16} /> {t('transferBtn')}
-          </button>
-          <button onClick={() => navigate('recharge')} className="bg-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center gap-2 shrink-0"><Plus size={18} /> {t('topUpBtn')}</button>
+        
+        <div className="bg-primary/10 border border-primary/20 rounded-[2rem] p-8 flex flex-col justify-center items-center text-center relative overflow-hidden">
+          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm z-10">
+            <TrendingUp size={24} className="text-primary" />
+          </div>
+          <h3 className="font-bold text-gray-900 text-lg mb-2 z-10">Statut Compte</h3>
+          <p className="text-sm text-gray-600 z-10 leading-relaxed">Votre compte est actif et prêt pour vos commandes.</p>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
         </div>
-        <Wallet size={120} className="absolute -bottom-6 -right-6 text-white/5" />
       </div>
 
       <div className="bg-white border border-gray-100 rounded-[3rem] p-8 md:p-10 shadow-soft">
@@ -6307,8 +6322,14 @@ function App() {
   const [products, setProducts] = useState([]);
 
   const [currentView, setCurrentView] = useState(() => {
-    const hash = window.location.hash.replace('#', '');
-    return hash || 'landing';
+    const rawHash = window.location.hash;
+    if (rawHash.includes('type=recovery') || rawHash.includes('access_token=') || rawHash.includes('error=')) {
+      return 'shop'; // Let the effect handle the OAuth hash
+    }
+    const path = window.location.pathname.replace(/^\/+/, '');
+    if (path === 'myorders') return 'dashboard';
+    if (path === 'sms') return 'shop';
+    return path || 'landing';
   });
   const [selectedProduct, setSelectedProduct] = useState(() => {
     const saved = localStorage.getItem('agedgmail_product');
@@ -6637,56 +6658,44 @@ function App() {
   const removeFromCart = (id) => setCart(pc => pc.filter(i => i.id !== id));
   const clearCart = () => setCart([]);
   const navigate = (v) => {
-    window.location.hash = v;
+    if (v === 'landing') v = '';
+    const path = v === 'dashboard' ? 'myorders' : v;
+    window.history.pushState(null, '', `/${path}`);
+    setCurrentView(v || 'landing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
-    const handleHashChange = () => {
-      let hash = window.location.hash.replace('#', '');
-      if (hash === 'home') {
-        window.history.replaceState(null, '', window.location.pathname);
-        hash = '';
-      }
-      if (hash) {
-        setCurrentView(hash);
+    const handlePopState = () => {
+      const path = window.location.pathname.replace(/^\/+/, '');
+      if (path === 'myorders') {
+        setCurrentView('dashboard');
+      } else if (path === 'sms') {
+        setCurrentView('shop');
+        setActiveCategory('sms');
       } else {
-        setCurrentView('landing');
+        setCurrentView(path || 'landing');
       }
     };
 
-    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
 
-    // Moneroo strips the URL fragment from return_url and only appends
-    // ?paymentId=...&paymentStatus=..., so a payment redirect always lands
-    // with an empty hash. Detect that explicitly and send the user to the
-    // dashboard instead of falling back to the last saved view.
     const params = new URLSearchParams(window.location.search);
     const rawHash = window.location.hash;
 
     if (rawHash.includes('type=recovery')) {
-      // Lien de réinitialisation de mot de passe reçu par email : on affiche
-      // directement l'écran de saisie du nouveau mot de passe (l'event
-      // PASSWORD_RECOVERY confirme ensuite via onAuthStateChange).
       setCurrentView('reset-password');
+      window.history.replaceState(null, '', '/reset-password');
     } else if (rawHash.includes('access_token=') || rawHash.includes('error_description=') || rawHash.includes('error=')) {
-      // Retour de connexion OAuth (Google) : le hash contient les jetons de
-      // session que le client Supabase doit lire et nettoyer lui-même
-      // (detectSessionInUrl). On NE TOUCHE PAS à window.location.hash ici —
-      // un history.replaceState prématuré effacerait le jeton avant que
-      // Supabase ait fini de le traiter et casserait la connexion. On se
-      // contente d'afficher le catalogue pendant que Supabase travaille en
-      // arrière-plan ; il nettoiera l'URL une fois la session établie.
-      // ('shop' = catalogue ; 'home' n'est PAS une vue rendue → écran blanc.)
       setCurrentView('shop');
     } else if (params.get('paymentStatus')) {
       setCurrentView('dashboard');
-      window.history.replaceState(null, '', `${window.location.pathname}#dashboard`);
-    } else if (rawHash) {
-      handleHashChange();
+      window.history.replaceState(null, '', '/myorders');
+    } else if (window.location.pathname.replace(/^\/+/, '') === 'sms') {
+      setActiveCategory('sms');
     }
 
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const isAdmin = currentView === 'admin';

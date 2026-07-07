@@ -76,6 +76,11 @@
   }
   .reveal { animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
   
+  .font-body-md { font-family: "Inter", sans-serif; font-size: 1rem; line-height: 1.5; font-weight: 400; }
+  .font-label-sm { font-family: "Inter", sans-serif; font-size: 0.6875rem; line-height: 1.45; font-weight: 500; }
+  
+  .font-price { font-family: "Space Grotesk", sans-serif; font-variant-numeric: tabular-nums; }
+  
   .grid-bg {
       background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
       background-size: 40px 40px;
