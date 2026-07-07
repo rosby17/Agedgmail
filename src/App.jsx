@@ -10,6 +10,46 @@ import { parseAccountDelivery } from './lib/parseAccountDelivery';
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 
 
+const TypewriterText = ({ words }) => {
+  const [index, setIndex] = useState(0);
+  const [subIndex, setSubIndex] = useState(0);
+  const [reverse, setReverse] = useState(false);
+  const [blink, setBlink] = useState(true);
+
+  useEffect(() => {
+    const timeout2 = setTimeout(() => setBlink((prev) => !prev), 500);
+    return () => clearTimeout(timeout2);
+  }, [blink]);
+
+  useEffect(() => {
+    if (index === words.length) {
+      setIndex(0);
+      return;
+    }
+    if (subIndex === words[index].length + 1 && !reverse) {
+      const timer = setTimeout(() => setReverse(true), 2000);
+      return () => clearTimeout(timer);
+    }
+    if (subIndex === 0 && reverse) {
+      setReverse(false);
+      setIndex((prev) => (prev + 1) % words.length);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setSubIndex((prev) => prev + (reverse ? -1 : 1));
+    }, reverse ? 50 : 120);
+
+    return () => clearTimeout(timeout);
+  }, [subIndex, index, reverse, words]);
+
+  return (
+    <>
+      {words[index].substring(0, subIndex)}
+      <span className={`${blink ? 'opacity-100' : 'opacity-0'} transition-opacity duration-100 font-light`}>|</span>
+    </>
+  );
+};
+
 const LandingView = ({ navigate, session, products = [], setSelectedProduct, lang, setLang }) => {
   const topProductsRaw = [...products]
     .sort((a, b) => (b.sales || 0) - (a.sales || 0))
@@ -93,17 +133,26 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
             <div className="reveal-target opacity-0" style={{ animationDelay: '0.2s' }}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-l-primary/20 bg-l-primary/5 mb-8">
                 <span className="w-2 h-2 rounded-full bg-l-primary animate-pulse"></span>
-                <span className="font-label-sm text-[10px] text-l-primary uppercase tracking-[0.2em]">{lang === 'fr' ? 'LE MEILLEUR DES COMPTES GMAIL US' : 'THE BEST IN US GMAIL ACCOUNTS'}</span>
+                <span className="font-label-sm text-[10px] text-l-primary uppercase tracking-[0.2em]">{lang === 'fr' ? 'LE MEILLEUR DES COMPTES SOCIAUX' : 'THE BEST SOCIAL ACCOUNTS'}</span>
               </div>
               <h1 className="font-headline-lg text-5xl md:text-7xl text-on-surface leading-[1.1] mb-8 font-extrabold">
-                {lang === 'fr' ? 'Comptes Gmail US Vieillis,' : 'Aged US Gmail Accounts,'} <br/><span className="curved-underline text-l-primary">{lang === 'fr' ? 'Qualité Premium.' : 'Premium Quality.'}</span>
+                {lang === 'fr' ? 'Comptes' : 'Accounts'} <br className="hidden md:block"/>
+                <span className="relative inline-block text-l-primary z-10 mt-1 mb-2">
+                  <TypewriterText words={['Gmail', 'Facebook', 'Instagram', 'Snapchat', 'Twitter', 'TikTok']} />
+                  <svg className="absolute -bottom-2 left-0 w-full h-3 -z-10 text-l-primary/30" viewBox="0 0 100 12" preserveAspectRatio="none">
+                    <path d="M0,8 Q50,0 100,8 L100,12 Q50,4 0,12 Z" fill="currentColor"/>
+                  </svg>
+                </span>
+                <br className="hidden md:block"/> {lang === 'fr' ? 'Qualité Premium.' : 'Premium Quality.'}
               </h1>
               <p className="font-body-md text-on-surface-variant text-lg md:text-xl mb-12 max-w-xl leading-relaxed">
-                {lang === 'fr' ? 'Accédez à des comptes Gmail US très demandés, vérifiés et optimisés pour percer à l\'international sans blocages. Dominez le marché US dès aujourd\'hui.' : 'Get instant access to highly demanded US Gmail accounts, verified and ready for your international marketing campaigns without shadowbans.'}
+                {lang === 'fr' 
+                  ? 'Accédez à des comptes vérifiés (Inde, Pakistan, Espagne, US, etc.) et optimisés pour percer à l\'international sans blocages. Dominez votre marché dès aujourd\'hui.' 
+                  : 'Get instant access to verified accounts (India, Pakistan, Spain, US, etc.) ready for your international marketing campaigns without shadowbans.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-5">
                 <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-white px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
-                  {lang === 'fr' ? 'Acheter un compte US' : 'Buy a US Account'}
+                  {lang === 'fr' ? 'Acheter un compte' : 'Buy an Account'}
                   <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </button>
                 <button onClick={() => navigate('shop')} className="btn-magnetic flex items-center justify-center gap-2 border border-white/10 glass text-on-surface hover:bg-white/5 px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300">
@@ -188,16 +237,16 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
         <section className="py-section-gap relative">
           <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
             <div className="text-center mb-24 reveal-target opacity-0">
-              <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-6 font-extrabold">{lang === 'fr' ? 'Pourquoi choisir nos comptes US ?' : 'Why choose our US accounts?'}</h2>
-              <p className="font-body-md text-on-surface-variant text-lg max-w-2xl mx-auto leading-relaxed">{lang === 'fr' ? 'Le marché américain est le plus rentable mais aussi le plus strict. Ne laissez pas des algorithmes freiner votre croissance.' : 'The US market is the most profitable but also the strictest. Do not let algorithms slow down your growth.'}</p>
+              <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-6 font-extrabold">{lang === 'fr' ? 'Pourquoi choisir nos comptes premiums ?' : 'Why choose our premium accounts?'}</h2>
+              <p className="font-body-md text-on-surface-variant text-lg max-w-2xl mx-auto leading-relaxed">{lang === 'fr' ? 'Les algorithmes sociaux sont de plus en plus stricts. Ne laissez pas des blocages freiner votre croissance internationale.' : 'Social algorithms are getting stricter. Do not let blocks slow down your international growth.'}</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.1s' }}>
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
                   <span className="material-symbols-outlined text-l-primary text-4xl">public</span>
                 </div>
-                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">{lang === 'fr' ? 'Audience 100% US' : '100% US Audience'}</h4>
-                <p className="text-on-surface-variant leading-relaxed">{lang === 'fr' ? 'Ces comptes sont perçus comme américains par Google, idéal pour cibler directement l\'audience la plus monétisable.' : 'These accounts are perceived as American by Google, ideal for directly targeting the most monetizable audience.'}</p>
+                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">{lang === 'fr' ? 'Audience Internationale' : 'Global Audience'}</h4>
+                <p className="text-on-surface-variant leading-relaxed">{lang === 'fr' ? 'Des comptes géo-localisés (US, Inde, Espagne, etc.) pour cibler précisément les audiences les plus monétisables sans restrictions.' : 'Geo-localized accounts (US, India, Spain, etc.) to accurately target the most monetizable audiences without restrictions.'}</p>
               </div>
               <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.2s' }}>
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
@@ -986,19 +1035,10 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
 
       <div className="flex items-center gap-4">
         {/* Language selector */}
-        <div className="relative group">
-          <button
-            className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center font-bold text-xs text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700"
-            title="Change Language / Changer de langue"
-          >
-            {lang.toUpperCase()}
-          </button>
-          <div className="absolute right-0 top-full pt-2 w-32 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-2 flex flex-col gap-1">
-              <button onClick={() => setLang('fr')} className={`w-full text-left px-4 py-2 rounded-xl text-xs font-bold transition-all ${lang === 'fr' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>Français</button>
-              <button onClick={() => setLang('en')} className={`w-full text-left px-4 py-2 rounded-xl text-xs font-bold transition-all ${lang === 'en' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>English</button>
-            </div>
-          </div>
+        <div className="flex items-center text-sm font-bold font-sans tracking-wide">
+          <button onClick={() => setLang('fr')} className={`transition-colors hover:text-primary ${lang === 'fr' ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`}>FR</button>
+          <span className="mx-3 text-gray-300 dark:text-gray-600">|</span>
+          <button onClick={() => setLang('en')} className={`transition-colors hover:text-primary ${lang === 'en' ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`}>EN</button>
         </div>
 
         {session && session.user.email === ADMIN_EMAIL && (
