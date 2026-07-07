@@ -1575,12 +1575,12 @@ const WARRANTY_BLOCKS = [
     ],
   },
   {
-    label: 'Refund Policy',
+    label: 'Refund & Return Policy',
     items: [
-      "If delivery is impossible due to a platform update, you can choose to wait or request a cancellation.",
-      "The warranty ends immediately after the first successful login.",
-      "Accounts are guaranteed 1 day (2 days for bulk orders) until your first login.",
-      "If the account does not work or is banned before your first login, contact us for verification and replacement.",
+      "Customers have a maximum window of 5 days after delivery to report any issues with an account. After this 5-day period, we are no longer responsible for the account.",
+      "No refunds will be issued for customer mistakes (e.g., purchasing a Facebook account instead of a Gmail account). You are responsible for ensuring you purchase the correct product.",
+      "Refunds or replacements will ONLY be granted if there is a genuine problem related to our service (e.g., impossible to log in due to authentication issues, or the account is frozen/banned upon delivery).",
+      "If you successfully log into the account and the promised service works as described at that time, no subsequent returns or refunds will be accepted.",
     ],
   },
 ];
@@ -6001,12 +6001,8 @@ const Footer = ({ navigate, lang }) => (
           </p>
           <div className="flex flex-wrap gap-6 items-center">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-surface-container-high bg-white/5 opacity-80">
-              <span className="material-symbols-outlined text-[14px] text-l-primary">smartphone</span>
-              <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Orange/Mobile Money</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-surface-container-high bg-white/5 opacity-80">
               <span className="material-symbols-outlined text-[14px] text-l-primary">currency_bitcoin</span>
-              <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Crypto / Binance</span>
+              <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Crypto / Binance / USDT</span>
             </div>
             <div className="flex items-center gap-3 opacity-60">
               <span className="material-symbols-outlined text-l-primary text-lg">verified</span>
@@ -6026,9 +6022,9 @@ const Footer = ({ navigate, lang }) => (
         <div>
           <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">{lang === 'fr' ? 'Légal & Support' : 'Legal & Support'}</h6>
           <ul className="space-y-6">
-            <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium" href="#">{lang === 'fr' ? 'Conditions Générales' : 'Terms of Service'}</a></li>
-            <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium" href="#">{lang === 'fr' ? 'Confidentialité' : 'Privacy Policy'}</a></li>
-            <li><a className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium" href="#">Support</a></li>
+            <li><button onClick={() => { window.scrollTo(0,0); navigate('policies'); }} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">{lang === 'fr' ? 'Conditions Générales' : 'Terms of Service'}</button></li>
+            <li><button onClick={() => { window.scrollTo(0,0); navigate('policies'); }} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">{lang === 'fr' ? 'Confidentialité' : 'Privacy Policy'}</button></li>
+            <li><button onClick={() => { window.scrollTo(0,0); navigate('policies'); }} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">Support</button></li>
             <li className="pt-8 flex items-center gap-4">
               <p className="text-[10px] text-on-surface-variant/60 leading-relaxed uppercase tracking-tighter">© 2026 AgedGmailYT. {lang === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
               <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-8 h-8 rounded-full border border-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-l-primary hover:bg-surface-container transition-all">
