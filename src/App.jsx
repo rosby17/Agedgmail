@@ -527,25 +527,6 @@ const KeepAlive = ({ show, children }) => {
   );
 };
 
-// ==========================================
-// MAIN COMPONENT
-// ==========================================
-
-function App() {
-  const [currentPage, setCurrentPage] = useState('home');
-  // ... (routing logic wrapped in <KeepAlive show={currentPage === '...'}>)
-
-  return (
-    <div>
-      <KeepAlive show={currentPage === 'home'}>
-        <HomePage />
-      </KeepAlive>
-      <KeepAlive show={currentPage === 'shop'}>
-        <ShopPage />
-      </KeepAlive>
-    </div>
-  );
-}
 
 // ==========================================
 // COMPOSANTS UI STYLÉS
