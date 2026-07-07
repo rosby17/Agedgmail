@@ -29,17 +29,18 @@ import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
 const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile, resumeOrder, clearResumeOrder, lang, t }) => {
-  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 50);
+  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 10);
   const [gateway, setGateway] = useState(null); // null tant que le client n'a pas choisi de passerelle
   const [payCurrency, setPayCurrency] = useState('usdttrc20');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState('form'); // 'form' | 'awaiting' | 'success'
+  const [step, setStep] = useState('form'); // 'form' | 'manual_usdt' | 'awaiting' | 'success' | 'success_manual'
   const [error, setError] = useState('');
   const [payment, setPayment] = useState(null); // { orderId, payAddress, payAmount, payCurrency, bonusPct, creditAmount }
   const [copied, setCopied] = useState(false);
   const [minAmounts, setMinAmounts] = useState({}); // { btc: 18.78, eth: 18.78, ... }
   const [binanceSubStep, setBinanceSubStep] = useState('pay'); // 'pay' | 'verify' — Binance Pay uniquement
   const [binanceOrderIdInput, setBinanceOrderIdInput] = useState('');
+  const [usdtTxidInput, setUsdtTxidInput] = useState('');
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => () => setSuggestedAmount(null), []);
@@ -136,12 +137,36 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     }
 
     if (gateway === 'usdt_trc20') {
-      setPayment({
-        provider: 'usdt_trc20',
-        expectedAmount: amountUsd,
-        address: 'TFy2DpPjsHhsbTeMVhtAQ8JuYxjUkKTMPu'
-      });
-      setStep('manual_usdt');
+      setLoading(true);
+      setError('');
+      try {
+        const { data: orderData, error: orderErr } = await supabase.from('orders').insert({
+          user_id: session.user.id,
+          buyer_email: session.user.email,
+          product_id: 999,
+          product_name: 'Dépôt USDT (TRC20)',
+          quantity: 1,
+          total_price: amountUsd,
+          expected_amount: amountUsd,
+          credit_amount: amountUsd * (1 + bonusPct / 100),
+          payment_method: 'usdt_trc20',
+          status: 'pending'
+        }).select().single();
+
+        if (orderErr) throw orderErr;
+
+        setPayment({
+          provider: 'usdt_trc20',
+          orderId: orderData.id,
+          expectedAmount: amountUsd,
+          address: 'TFy2DpPjsHhsbTeMVhtAQ8JuYxjUkKTMPu'
+        });
+        setStep('manual_usdt');
+      } catch (err) {
+        setError(err.message || 'Une erreur est survenue.');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -261,15 +286,15 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
   return (
     <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between px-8 pt-8 pb-2">
-          <h2 className="text-2xl font-black text-gray-900">{t('topUpAccount')}</h2>
-          <button onClick={close} aria-label="Close" className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"><X size={18} /></button>
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white">{t('topUpAccount')}</h2>
+          <button onClick={close} aria-label="Close" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all"><X size={18} /></button>
         </div>
 
         {step === 'form' && (
           <div className="px-8 pb-8 pt-4 space-y-6">
-            <p className="text-sm text-gray-500">Plus vous rechargez, plus le bonus est important — crédité instantanément.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Plus vous rechargez, plus le bonus est important — crédité instantanément.</p>
 
             {suggestedAmount && (
               <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-gray-600">
@@ -291,14 +316,14 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('amountToRecharge')}</label>
+              <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{t('amountToRecharge')}</label>
               <input
                 type="number"
-                min="0.01"
+                min="10"
                 step="0.01"
                 value={amountUsd}
                 onChange={e => setAmountUsd(Number(e.target.value))}
-                className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary"
+                className="w-full px-6 py-4 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-primary/20 outline-none font-black text-xl font-mono text-primary"
               />
               {belowMin && (
                 <p className="text-xs text-red-500 font-bold mt-2 flex items-center gap-1"><AlertTriangle size={12} /> Minimum autorisé pour {selectedGateway.name} : ${selectedMin}.</p>
@@ -320,20 +345,15 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                       key={g.id}
                       onClick={() => g.enabled && setGateway(g.id)}
                       disabled={!g.enabled}
-                      className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${!g.enabled ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed' : gateway === g.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'} ${g.recommended ? 'ring-2 ring-amber-400 border-amber-400' : ''}`}
+                      className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${!g.enabled ? 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-800 opacity-60 cursor-not-allowed' : gateway === g.id ? 'bg-primary/5 dark:bg-primary/10 border-primary' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50'} ${g.recommended ? 'ring-2 ring-amber-400 border-amber-400' : ''}`}
                     >
-                      <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.recommended ? 'text-amber-700 bg-amber-100 animate-pulse' : g.enabled ? 'text-green-700 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
+                      <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.recommended ? 'text-amber-700 bg-amber-100 animate-pulse' : g.enabled ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800'}`}>
                         {g.recommended ? 'Recommandé' : g.enabled ? 'Auto' : 'Bientôt'}
                       </span>
-                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${g.recommended ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600'}`}>{g.symbol}</span>
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${g.recommended ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>{g.symbol}</span>
                       <span>
-                        <span className="block text-sm font-bold text-gray-900">{g.name}</span>
-                        <span className="block text-[10px] text-gray-400 font-medium">{g.sub}</span>
-                        {g.enabled && displayMin > 0 && (
-                          <span className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-primary">
-                            <Info size={9} /> Min. ${displayMin.toFixed(2)}
-                          </span>
-                        )}
+                        <span className="block text-sm font-bold text-gray-900 dark:text-white">{g.name}</span>
+                        <span className="block text-[10px] text-gray-400 dark:text-gray-500 font-medium">{g.sub}</span>
                       </span>
                     </button>
                   );
@@ -389,45 +409,84 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
         {step === 'manual_usdt' && (
           <div className="px-8 pb-8 pt-2 space-y-6">
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-black text-gray-900">Dépôt Manuel USDT</h3>
-              <p className="text-gray-500 text-sm">Transférez exactement le montant ci-dessous via le réseau <span className="font-bold text-gray-900">Tron (TRC20)</span>.</p>
+              <h3 className="text-xl font-black text-gray-900 dark:text-white">Dépôt Manuel USDT</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Transférez exactement le montant ci-dessous via le réseau <span className="font-bold text-gray-900 dark:text-gray-200">Tron (TRC20)</span>.</p>
             </div>
             
-            <div className="bg-gray-50 rounded-2xl p-6 flex flex-col items-center gap-6 border border-gray-100 shadow-inner">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 flex flex-col items-center gap-6 border border-gray-100 dark:border-gray-700 shadow-inner">
               <div className="text-center">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Montant exact à envoyer</span>
+                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1">Montant exact à envoyer</span>
                 <p className="text-4xl font-black text-primary font-mono">${Number(payment?.expectedAmount).toFixed(2)}</p>
               </div>
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${payment?.address}`} alt="QR Code USDT TRC20" className="w-40 h-40" />
               </div>
               <div className="w-full space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Adresse USDT (TRC20)</label>
-                <div className="flex bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                  <div className="flex-1 px-4 py-3 text-xs font-mono font-bold text-gray-600 truncate flex items-center">{payment?.address}</div>
-                  <button onClick={() => { navigator.clipboard.writeText(payment?.address); setCopied('address'); setTimeout(() => setCopied(''), 2000); }} className="bg-gray-100 hover:bg-gray-200 px-4 flex items-center justify-center text-gray-600 transition-colors">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Adresse USDT (TRC20)</label>
+                <div className="flex bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                  <div className="flex-1 px-4 py-3 text-xs font-mono font-bold text-gray-600 dark:text-gray-300 truncate flex items-center">{payment?.address}</div>
+                  <button onClick={() => { navigator.clipboard.writeText(payment?.address); setCopied('address'); setTimeout(() => setCopied(''), 2000); }} className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-4 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors">
                     {copied === 'address' ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                  <AlertTriangle size={16} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-amber-900 text-sm mb-1">Étape Finale</h4>
-                  <p className="text-xs text-amber-800 leading-relaxed">
-                    Une fois le transfert effectué, veuillez contacter le support (en bas à droite) avec une capture d'écran ou le hash de la transaction. L'équipe créditera votre solde manuellement.
-                  </p>
-                </div>
-              </div>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Hash de la transaction (TXID)</label>
+              <input
+                type="text"
+                value={usdtTxidInput}
+                onChange={e => setUsdtTxidInput(e.target.value)}
+                placeholder="Ex: 5b6c..."
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary/20 outline-none font-mono text-sm dark:text-white"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">Une fois le transfert effectué, colle le TXID ici pour que nous puissions valider le paiement.</p>
             </div>
 
-            <button onClick={() => navigate('dashboard')} className="w-full py-4 rounded-2xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-all">
-              Fermer (J'ai bien noté l'adresse)
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 dark:border-red-800">{error}</div>
+            )}
+
+            <button
+              onClick={async () => {
+                if (!usdtTxidInput.trim()) { setError('Veuillez entrer le hash (TXID) de votre transaction.'); return; }
+                setVerifying(true);
+                setError('');
+                const { error: updateErr } = await supabase.from('orders')
+                  .update({ binance_tx_id: usdtTxidInput.trim() })
+                  .eq('id', payment.orderId);
+                
+                if (updateErr) {
+                  setError("Erreur lors de l'enregistrement de la transaction : " + updateErr.message);
+                } else {
+                  setStep('success_manual');
+                }
+                setVerifying(false);
+              }}
+              disabled={verifying}
+              className="w-full py-4 rounded-2xl font-bold bg-primary text-white dark:text-gray-900 hover:bg-primaryDark transition-all disabled:opacity-50"
+            >
+              {verifying ? 'Enregistrement...' : 'Valider le paiement'}
+            </button>
+          </div>
+        )}
+
+        {step === 'success_manual' && (
+          <div className="px-8 pb-8 pt-2 text-center space-y-6">
+            <CheckCircle size={72} className="text-amber-500 mx-auto" />
+            <h3 className="text-2xl font-black text-gray-900 dark:text-white">Paiement enregistré</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+              Ton TXID a bien été pris en compte. Un administrateur vérifiera ce dépôt et ton solde sera crédité sous peu.
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              En cas de problème, n'hésite pas à contacter le support à : <br/><span className="font-bold text-gray-700 dark:text-gray-300">support@tools-cl.com</span>
+            </p>
+            <button
+              onClick={close}
+              className="w-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 py-4 rounded-2xl font-bold hover:bg-primary dark:hover:bg-primary transition-all"
+            >
+              Fermer et retourner au site
             </button>
           </div>
         )}
@@ -625,13 +684,13 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
         {step === 'success' && (
           <div className="px-8 pb-8 pt-2 text-center space-y-6">
             <CheckCircle size={72} className="text-green-500 mx-auto" />
-            <h3 className="text-2xl font-black text-gray-900">Solde crédité !</h3>
-            <p className="text-gray-500 text-sm leading-relaxed">
+            <h3 className="text-2xl font-black text-gray-900 dark:text-white">Solde crédité !</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
               Ton paiement a été confirmé et ton solde a été mis à jour.
             </p>
             <button
               onClick={close}
-              className="w-full bg-gray-900 text-white dark:text-gray-900 py-4 rounded-2xl font-bold hover:bg-primary transition-all"
+              className="w-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 py-4 rounded-2xl font-bold hover:bg-primary transition-all"
             >
               Mon compte
             </button>

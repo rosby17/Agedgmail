@@ -48,24 +48,21 @@ const Footer = ({ navigate, lang }) => (
           <ul className="space-y-6">
             <li><button onClick={() => { window.scrollTo(0,0); navigate('policies'); }} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">{lang === 'fr' ? 'Conditions Générales' : 'Terms of Service'}</button></li>
             <li><button onClick={() => { window.scrollTo(0,0); navigate('policies'); }} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">{lang === 'fr' ? 'Confidentialité' : 'Privacy Policy'}</button></li>
-            <li><button onClick={() => { window.scrollTo(0,0); navigate('policies'); }} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">Support</button></li>
-            <li className="pt-8 flex items-center gap-4">
-              <p className="text-[10px] text-on-surface-variant/60 leading-relaxed uppercase tracking-tighter">© 2026 AgedGmailYT. {lang === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
-              <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-8 h-8 rounded-full border border-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-l-primary hover:bg-surface-container transition-all">
-                <ChevronUp size={16} />
-              </button>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">{lang === 'fr' ? 'Contact & Assistance' : 'Contact & Assistance'}</h6>
-          <ul className="space-y-6">
             <li className="flex items-center gap-3 text-on-surface-variant text-sm font-medium">
               <Mail size={16} className="text-primary shrink-0" />
               <a href="mailto:support@tools-cl.com" className="hover:text-primary transition-colors truncate">support@tools-cl.com</a>
             </li>
           </ul>
         </div>
+      </div>
+
+      <div className="mt-20 pt-8 border-t border-surface-container flex flex-col items-center justify-center gap-6">
+        <p className="text-[11px] font-medium text-on-surface-variant/60 leading-relaxed tracking-tighter lowercase">
+          © 2026 agedgmailyt. {lang === 'fr' ? 'tous droits réservés.' : 'all rights reserved.'}
+        </p>
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-l-primary hover:bg-surface-container-highest transition-all">
+          <ChevronUp size={18} />
+        </button>
       </div>
     </div>
   </footer>

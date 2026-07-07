@@ -118,6 +118,17 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
     setErrorMessage("");
 
     try {
+      if (email !== profile.email) {
+        const { error: authError } = await supabase.auth.updateUser({ email });
+        if (authError) throw authError;
+        await window.showAlert(
+          "Confirmation Requise",
+          lang === 'fr' 
+            ? "Un email de confirmation a été envoyé à votre nouvelle adresse. Veuillez valider le lien pour confirmer le changement."
+            : "A confirmation email has been sent to your new address. Please click the link to confirm the change."
+        );
+      }
+
       const { error } = await supabase.from('profiles').upsert({
         id: profile.id,
         email,
@@ -135,7 +146,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
       onUpdate();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setErrorMessage(err.message);
+      setErrorMessage(friendlyAuthError(err.message));
     } finally {
       setLoading(false);
     }
@@ -204,10 +215,11 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
       <div className="w-full md:w-64 bg-gray-50/50 dark:bg-slate-950/60 border-r border-gray-150 dark:border-slate-800 p-6 flex flex-col justify-between shrink-0">
         <div className="space-y-2">
           <button 
+            type="button"
             onClick={() => setActiveTab('general')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'general'
-                ? 'bg-gray-150 dark:bg-slate-800 text-primary'
+                ? 'bg-gray-155 dark:bg-slate-800 text-primary'
                 : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/40'
             }`}
           >
@@ -216,10 +228,11 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
           </button>
 
           <button 
+            type="button"
             onClick={() => setActiveTab('security')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'security'
-                ? 'bg-gray-150 dark:bg-slate-800 text-primary'
+                ? 'bg-gray-155 dark:bg-slate-800 text-primary'
                 : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/40'
             }`}
           >
@@ -228,21 +241,39 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
           </button>
 
           <button 
+            type="button"
             onClick={() => setActiveTab('api')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'api'
-                ? 'bg-gray-150 dark:bg-slate-800 text-primary'
+                ? 'bg-gray-155 dark:bg-slate-800 text-primary'
                 : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/40'
             }`}
           >
             <Key size={16} />
-            {lang === 'fr' ? 'Clé API Revendeur' : 'Reseller API Key'}
+            API
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => setActiveTab('seller')}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+              activeTab === 'seller'
+                ? 'bg-gray-155 dark:bg-slate-800 text-primary'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/40'
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <ShoppingBag size={16} />
+              {lang === 'fr' ? 'Devenir Vendeur' : 'Become Seller'}
+            </span>
+            <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-black uppercase tracking-wider scale-90">Bientôt</span>
           </button>
         </div>
 
         <button 
+          type="button"
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all mt-8"
+          className="hidden md:flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all mt-8"
         >
           <LogOut size={16} />
           {lang === 'fr' ? 'Se déconnecter' : 'Log Out'}
@@ -263,24 +294,25 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
             <form onSubmit={handleSave} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 dark:text-slate-450 uppercase tracking-widest mb-2">{t('firstName')}</label>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-slate-455 uppercase tracking-widest mb-2">{t('firstName')}</label>
                   <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-150 dark:border-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 font-bold text-sm outline-none" placeholder="Ex: John" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 dark:text-slate-450 uppercase tracking-widest mb-2">{t('lastName')}</label>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-slate-455 uppercase tracking-widest mb-2">{t('lastName')}</label>
                   <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-150 dark:border-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 font-bold text-sm outline-none" placeholder="Ex: Doe" />
                 </div>
               </div>
+              
               <div>
-                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-450 uppercase tracking-widest mb-2">{t('displayName')} *</label>
-                <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-150 dark:border-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 font-bold text-sm outline-none" />
-                <p className="text-[10px] text-gray-400 dark:text-slate-500 italic mt-2">C'est le nom qui s'affichera sur votre tableau de bord et vos avis.</p>
+                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-455 uppercase tracking-widest mb-2">Username *</label>
+                <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-155 dark:border-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 font-bold text-sm outline-none" />
+                <p className="text-[10px] text-gray-400 dark:text-slate-500 italic mt-2">C'est votre nom d'utilisateur unique sur la plateforme.</p>
               </div>
               
               <div>
-                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-450 uppercase tracking-widest mb-3">Photo de Profil</label>
+                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-455 uppercase tracking-widest mb-3">Photo de Profil</label>
                 <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800/40 rounded-[1.5rem] border border-gray-150 dark:border-slate-800 flex items-center justify-center overflow-hidden relative group shrink-0">
+                  <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800/40 rounded-[1.5rem] border border-gray-155 dark:border-slate-800 flex items-center justify-center overflow-hidden relative group shrink-0">
                     {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" alt="Preview" /> : <User size={24} className="text-gray-300 dark:text-slate-650" />}
                     {uploading && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><RefreshCcw size={16} className="text-white animate-spin" /></div>}
                   </div>
@@ -295,8 +327,8 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
               </div>
               
               <div>
-                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-450 uppercase tracking-widest mb-2">Adresse E-mail *</label>
-                <input type="email" value={email} readOnly className="w-full px-5 py-3.5 rounded-2xl bg-gray-100 dark:bg-slate-800/40 border border-gray-150 dark:border-slate-800 text-gray-400 dark:text-slate-500 font-bold text-sm cursor-not-allowed outline-none" />
+                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-455 uppercase tracking-widest mb-2">Adresse E-mail *</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-155 dark:border-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 font-bold text-sm outline-none" />
               </div>
               
               {errorMessage && <div className="bg-red-50 dark:bg-red-950/10 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 dark:border-red-950/20 flex items-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
@@ -337,11 +369,11 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                   </div>
                 </div>
                 {hasGoogle ? (
-                  <button onClick={handleUnlinkGoogle} disabled={googleLoading} className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-155 dark:border-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/10 transition-all disabled:opacity-50">
+                  <button type="button" onClick={handleUnlinkGoogle} disabled={googleLoading} className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-155 dark:border-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/10 transition-all disabled:opacity-50">
                     {googleLoading ? '…' : 'Désactiver'}
                   </button>
                 ) : (
-                  <button onClick={handleLinkGoogle} disabled={googleLoading} className="px-4 py-2 bg-gray-900 dark:bg-primary text-white dark:text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primaryDark transition-all disabled:opacity-50">
+                  <button type="button" onClick={handleLinkGoogle} disabled={googleLoading} className="px-4 py-2 bg-gray-900 dark:bg-primary text-white dark:text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primaryDark transition-all disabled:opacity-50">
                     {googleLoading ? '…' : 'Activer'}
                   </button>
                 )}
@@ -368,7 +400,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                     </button>
                   </div>
                   <div className="relative">
-                    <input type={showConfirmPw ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmer" className="w-full pl-4 pr-10 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 outline-none font-bold text-sm" />
+                    <input type={showConfirmPw ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmer" className="w-full pl-4 pr-10 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-155 dark:border-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 outline-none font-bold text-sm" />
                     <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-655">
                       {showConfirmPw ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -376,7 +408,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                 </div>
                 {pwError && <div className="bg-red-50 dark:bg-red-950/10 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 dark:border-red-950/20 flex items-center gap-2"><AlertTriangle size={14} /> {pwError}</div>}
                 {pwSuccess && <div className="bg-green-50 dark:bg-green-950/10 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 dark:border-green-950/20 flex items-center gap-2"><CheckCircle size={14} /> {pwSuccess}</div>}
-                <button onClick={handleUpdatePassword} disabled={pwLoading} className="px-5 py-2.5 bg-gray-900 dark:bg-primary text-white dark:text-gray-900 rounded-xl font-bold text-xs hover:bg-primary/80 transition-all flex items-center gap-2 disabled:opacity-50">
+                <button type="button" onClick={handleUpdatePassword} disabled={pwLoading} className="px-5 py-2.5 bg-gray-900 dark:bg-primary text-white dark:text-gray-900 rounded-xl font-bold text-xs hover:bg-primary/80 transition-all flex items-center gap-2 disabled:opacity-50">
                   {pwLoading && <RefreshCcw size={12} className="animate-spin" />}
                   {hasPasswordIdentity ? 'Mettre à jour' : 'Définir le mot de passe'}
                 </button>
@@ -391,7 +423,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                     <p className="text-xs text-gray-400 dark:text-slate-500 font-medium">Une couche de sécurité supplémentaire.</p>
                   </div>
                 </div>
-                <button onClick={async () => {
+                <button type="button" onClick={async () => {
                   const newVal = !tfaEnabled;
                   setTfaEnabled(newVal);
                   await supabase.from('profiles').update({ two_factor_enabled: newVal }).eq('id', profile.id);
@@ -402,13 +434,12 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
             </div>
           </div>
         )}
-
-        {/* Contenu : Clé API */}
+          {/* Contenu : Clé API */}
         {activeTab === 'api' && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Clé API Revendeur</h3>
-              <p className="text-xs text-gray-400 dark:text-slate-450">Intègre notre catalogue d'e-mails et nos numéros SMS dans tes propres projets grâce à ta clé API unique.</p>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">API</h3>
+              <p className="text-xs text-gray-400 dark:text-slate-455">Intègre notre catalogue d'e-mails et nos numéros SMS dans tes propres projets grâce à ta clé API unique.</p>
             </div>
 
             <div className="p-6 bg-gray-50/50 dark:bg-slate-800/20 rounded-[1.5rem] border border-gray-150 dark:border-slate-800 space-y-4">
@@ -429,9 +460,10 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                       type="text" 
                       readOnly 
                       value={apiKey} 
-                      className="flex-grow px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 font-mono text-xs text-gray-705 dark:text-slate-300 outline-none" 
+                      className="flex-grow px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-155 dark:border-slate-800 font-mono text-xs text-gray-705 dark:text-slate-300 outline-none" 
                     />
                     <button 
+                      type="button"
                       onClick={handleCopyKey}
                       className="px-4 py-3 rounded-xl bg-gray-900 dark:bg-slate-800 text-white dark:text-slate-300 hover:bg-black dark:hover:bg-slate-700 text-xs font-bold transition-all flex items-center gap-2 shrink-0"
                     >
@@ -439,8 +471,9 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                     </button>
                   </div>
                   <button 
+                    type="button"
                     onClick={generateApiKey}
-                    className="px-4 py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/10 text-red-650 hover:text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/20 rounded-xl text-xs font-bold transition-all"
+                    className="px-4 py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-955/10 text-red-650 hover:text-red-700 dark:text-red-450 border border-red-100 dark:border-red-900/20 rounded-xl text-xs font-bold transition-all"
                   >
                     Régénérer une clé API
                   </button>
@@ -449,6 +482,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                 <div className="space-y-3">
                   <p className="text-xs text-gray-500 dark:text-slate-400">Aucune clé API n'a été créée pour ton compte pour le moment.</p>
                   <button 
+                    type="button"
                     onClick={generateApiKey}
                     className="px-6 py-3 bg-gray-900 dark:bg-primary text-white dark:text-gray-900 rounded-xl text-xs font-bold hover:bg-black dark:hover:bg-primaryDark transition-all"
                   >
@@ -458,14 +492,48 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
               )}
             </div>
             
-            <div className="p-6 bg-blue-50/30 dark:bg-blue-950/10 rounded-[1.5rem] border border-blue-100/60 dark:border-blue-900/20">
+            <div className="p-6 bg-blue-50/30 dark:bg-blue-955/10 rounded-[1.5rem] border border-blue-100/60 dark:border-blue-900/20">
               <h5 className="font-bold text-sm text-gray-900 dark:text-white mb-2">Besoin d'aide pour l'intégration ?</h5>
               <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
-                Consulte notre onglet <button onClick={() => navigate('api')} className="text-primary font-black hover:underline">API</button> pour retrouver la documentation technique, la liste des commandes et les méthodes de requêtes disponibles pour tes scripts.
+                Consulte notre onglet <button type="button" onClick={() => navigate('api')} className="text-primary font-black hover:underline">API</button> pour retrouver la documentation technique, la liste des commandes et les méthodes de requêtes disponibles pour tes scripts.
               </p>
             </div>
           </div>
         )}
+
+        {/* Contenu : Devenir Vendeur */}
+        {activeTab === 'seller' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Devenir Vendeur</h3>
+              <p className="text-xs text-gray-400 dark:text-slate-450">Rejoins les fournisseurs officiels d'AgedGmail.</p>
+            </div>
+            
+            <div className="p-8 border border-dashed border-gray-200 dark:border-slate-800 rounded-[2rem] text-center space-y-4 bg-gray-50/30 dark:bg-slate-900/20">
+              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
+                <ShoppingBag size={28} />
+              </div>
+              <div className="max-w-md mx-auto space-y-2">
+                <h4 className="font-bold text-sm text-gray-900 dark:text-white">Fonctionnalité en cours de développement</h4>
+                <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                  Tu souhaites vendre tes propres comptes certifiés (Gmail, Outlook, Discord, etc.) sur notre marketplace ? Cette intégration fournisseur sera activée prochainement. Tu pourras gérer ton stock local et suivre tes ventes en temps réel.
+                </p>
+              </div>
+              <div className="inline-block bg-primary/10 text-primary px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider scale-95">
+                Disponible Prochainement
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button 
+          type="button"
+          onClick={handleLogout}
+          className="md:hidden w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold text-red-500 bg-red-50 dark:bg-red-950/20 mt-10 transition-all"
+        >
+          <LogOut size={16} />
+          {lang === 'fr' ? 'Se déconnecter' : 'Log Out'}
+        </button>
       </div>
     </div>
   );

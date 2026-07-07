@@ -38,8 +38,13 @@ const AuthView = ({ navigate, lang }) => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
-  // Écran "confirme ton email" après inscription quand la confirmation est requise.
+  // Écran "confirme ton email" après inscription quand la confirmation est requise
   const [pendingConfirmEmail, setPendingConfirmEmail] = useState("");
+
+  const [tfaPending, setTfaPending] = useState(false);
+  const [tfaCodeInput, setTfaCodeInput] = useState('');
+  const [tfaExpectedCode, setTfaExpectedCode] = useState('');
+  const [tempSession, setTempSession] = useState(null);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -48,10 +53,23 @@ const AuthView = ({ navigate, lang }) => {
     setInfoMessage("");
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // La connexion réussie déclenche onAuthStateChange → redirection propre.
-        navigate('shop');
+        
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('two_factor_enabled')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        if (profile?.two_factor_enabled) {
+          setTempSession(data.session);
+          const code = Math.floor(100000 + Math.random() * 900000).toString();
+          setTfaExpectedCode(code);
+          setTfaPending(true);
+        } else {
+          navigate('shop');
+        }
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -62,13 +80,9 @@ const AuthView = ({ navigate, lang }) => {
           },
         });
         if (error) throw error;
-        // Si une session est immédiatement créée, la confirmation email est
-        // désactivée côté projet → l'utilisateur est connecté, on entre.
         if (data?.session) {
           navigate('shop');
         } else {
-          // Sinon, un email de confirmation a été envoyé : on affiche un écran
-          // dédié au lieu d'une alerte, et on NE redirige PAS (pas encore connecté).
           setPendingConfirmEmail(email);
         }
       }
@@ -77,6 +91,25 @@ const AuthView = ({ navigate, lang }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerify2FA = async (e) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setInfoMessage("");
+    if (tfaCodeInput.trim() === tfaExpectedCode) {
+      setTfaPending(false);
+      navigate('shop');
+    } else {
+      setErrorMessage(lang === 'fr' ? "Code de vérification incorrect." : "Incorrect verification code.");
+    }
+  };
+
+  const handleCancel2FA = async () => {
+    await supabase.auth.signOut();
+    setTfaPending(false);
+    setTempSession(null);
+    setErrorMessage("");
   };
 
   const handleResendConfirmation = async () => {
@@ -134,7 +167,46 @@ const AuthView = ({ navigate, lang }) => {
     <div className="min-h-[85vh] flex items-center justify-center py-16 px-6 font-sans">
       <div className="w-full max-w-[400px] bg-white p-8 md:p-10 rounded-3xl shadow-[0_24px_70px_-24px_rgba(0,0,0,0.12)] border border-gray-100">
 
-        {pendingConfirmEmail ? (
+        {tfaPending ? (
+          <div className="text-center animate-in fade-in zoom-in duration-300">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <ShieldCheck size={28} className="text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{lang === 'fr' ? 'Double authentification' : 'Two-Factor Authentication'}</h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-4">
+              {lang === 'fr' 
+                ? 'Saisis le code de vérification à 6 chiffres envoyé à ton adresse e-mail pour confirmer ton identité.' 
+                : 'Enter the 6-digit verification code sent to your email address to confirm your identity.'}
+            </p>
+
+            <div className="bg-amber-50 text-amber-600 p-3.5 rounded-2xl text-xs font-bold border border-amber-100 mb-6 text-left space-y-1">
+              <span className="block font-black uppercase tracking-wider text-[10px]">{lang === 'fr' ? 'Mode Test / Dev :' : 'Test / Dev Mode:'}</span>
+              <span>{lang === 'fr' ? 'Le code de vérification généré est :' : 'The generated verification code is:'} <strong className="font-mono text-sm underline">{tfaExpectedCode}</strong></span>
+            </div>
+
+            {errorMessage && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
+
+            <form onSubmit={handleVerify2FA} className="space-y-4">
+              <input 
+                type="text" 
+                maxLength={6}
+                required 
+                value={tfaCodeInput} 
+                onChange={e => setTfaCodeInput(e.target.value.replace(/\D/g, ''))} 
+                className="w-full text-center h-12 px-4 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-mono text-xl tracking-[0.5em] font-bold" 
+                placeholder="000000" 
+              />
+
+              <button type="submit" className="w-full h-12 bg-primary text-white dark:text-gray-900 rounded-xl font-bold text-sm hover:bg-primaryDark transition-all flex items-center justify-center gap-2 shadow-lg">
+                {lang === 'fr' ? 'Confirmer' : 'Confirm'}
+              </button>
+              
+              <button type="button" onClick={handleCancel2FA} className="text-xs text-gray-400 font-bold hover:text-primary transition-colors block w-full text-center mt-2">
+                {lang === 'fr' ? '← Annuler la connexion' : '← Cancel login'}
+              </button>
+            </form>
+          </div>
+        ) : pendingConfirmEmail ? (
           /* Écran de confirmation d'email (inscription réussie, en attente de vérification) */
           <div className="text-center animate-in fade-in zoom-in duration-300">
             <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">

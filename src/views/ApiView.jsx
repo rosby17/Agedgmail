@@ -86,25 +86,16 @@ const ApiView = ({ navigate, session, lang }) => {
         <h2 className="text-lg font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Shield size={18} className="text-primary" /> {lang === 'fr' ? 'Votre Clé API' : 'Your API Key'}
         </h2>
-        {!session ? (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <p className="text-gray-500 dark:text-gray-455 text-sm flex-grow">{lang === 'fr' ? 'Connectez-vous pour générer votre clé API et commencer.' : 'Log in to generate your API key and get started.'}</p>
-            <button onClick={() => navigate('auth')} className="bg-primary text-white dark:text-gray-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">{lang === 'fr' ? 'Se connecter' : 'Log in'}</button>
-          </div>
-        ) : apiKey ? (
-          <div>
-            <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-800 rounded-2xl px-5 py-4">
-              <code className="text-primary dark:text-primaryLight font-mono text-sm flex-grow break-all">{apiKey}</code>
-              <button onClick={copyKey} className="shrink-0 text-xs font-bold px-4 py-2 rounded-lg bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all">{copied ? (lang === 'fr' ? 'Copié !' : 'Copied!') : (lang === 'fr' ? 'Copier' : 'Copy')}</button>
-            </div>
-            <p className="text-gray-400 dark:text-gray-500 text-xs mt-3">{lang === 'fr' ? 'Gardez cette clé secrète. Elle donne accès à votre solde et vos commandes.' : 'Keep this key secret. It grants access to your balance and your orders.'}</p>
-          </div>
-        ) : (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <p className="text-gray-500 dark:text-gray-400 text-sm flex-grow">{lang === 'fr' ? 'Aucune clé active. Générez-en une pour accéder à l\'API.' : 'No active key. Generate one to access the API.'}</p>
-            <button onClick={generateKey} disabled={loading} className="bg-primary text-white dark:text-gray-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-50">{loading ? (lang === 'fr' ? 'Génération…' : 'Generating…') : (lang === 'fr' ? 'Générer ma clé API' : 'Generate my API Key')}</button>
-          </div>
-        )}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <p className="text-gray-500 dark:text-gray-400 text-sm flex-grow">
+            {lang === 'fr' 
+              ? 'Votre clé API unique est requise pour authentifier toutes vos requêtes. Pour des raisons de sécurité, vous devez la générer et la copier depuis votre page de Paramètres.' 
+              : 'Your unique API key is required to authenticate all your requests. For security reasons, you must generate and copy it from your Settings page.'}
+          </p>
+          <button onClick={() => navigate('settings')} className="bg-primary text-white dark:text-gray-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shrink-0">
+            {lang === 'fr' ? 'Gérer ma clé API' : 'Manage my API Key'}
+          </button>
+        </div>
       </div>
 
       {/* Connexion */}
