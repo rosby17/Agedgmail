@@ -122,14 +122,32 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
   useEffect(() => {
     let timer;
-    let pollInterval;
     
     if (status === 'WAITING_SMS' && endTime > Date.now()) {
       timer = setInterval(() => {
         const remaining = Math.floor((endTime - Date.now()) / 1000);
-        setTimeLeft(remaining > 0 ? remaining : 0);
+        if (remaining <= 0) {
+          setStatus('IDLE');
+          setError(isFr ? "Délai d'attente expiré. Aucun code reçu. Vous n'avez pas été débité." : "Timeout expired. No code received. You were not charged.");
+          setPhoneNumber('');
+          setSecurityId('');
+          setEndTime(0);
+          localStorage.removeItem('smsViewState');
+        } else {
+          setTimeLeft(remaining);
+        }
       }, 1000);
-      
+    }
+    
+    return () => {
+      clearInterval(timer);
+    };
+  }, [status, endTime, isFr]);
+
+  useEffect(() => {
+    let pollInterval;
+    
+    if (status === 'WAITING_SMS' && securityId) {
       pollInterval = setInterval(async () => {
         try {
           const { data, error } = await supabase.functions.invoke('sms-check-code', {
@@ -159,20 +177,12 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           console.error("Polling error", err);
         }
       }, 8000);
-    } else if (timeLeft === 0 && status === 'WAITING_SMS') {
-      setStatus('IDLE');
-      setError(isFr ? "Délai d'attente expiré. Aucun code reçu. Vous n'avez pas été débité." : "Timeout expired. No code received. You were not charged.");
-      setPhoneNumber('');
-      setSecurityId('');
-      setEndTime(0);
-      localStorage.removeItem('smsViewState');
     }
     
     return () => {
-      clearInterval(timer);
       clearInterval(pollInterval);
     };
-  }, [status, timeLeft, isFr, securityId, phoneNumber, fetchProfile, selectedCountry, currentPrice, currentProvider]);
+  }, [status, securityId, phoneNumber, currentPrice, currentProvider, selectedCountry, fetchProfile]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
