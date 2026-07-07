@@ -850,8 +850,8 @@ function App() {
         </KeepAlive>
       </div>
 
-      {!isAdmin && session && <SupportChatWidget session={session} profile={profile} />}
-      {!isAdmin && <Footer navigate={navigate} lang={lang} />}
+      {!isDashboardLayout && session && <SupportChatWidget session={session} profile={profile} />}
+      {!isDashboardLayout && <Footer navigate={navigate} lang={lang} />}
 
       {dialogState && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
