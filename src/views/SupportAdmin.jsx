@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { Mic } from 'lucide-react';
 
 import { ADMIN_EMAIL, CATEGORIES, GROUP_LABELS, GROUP_ORDER, AVATAR_COLORS, JUNK_CATEGORIES, SUPPLIERS, API_BASE_URL } from '../utils/constants';
 import { categoryName, hashStr, detectFromText, categoryVisual, displayCategoryLabel, cleanProductName, getProductDetails } from '../utils/helpers';
@@ -25,6 +26,46 @@ import BinancePaymentsAdmin from './BinancePaymentsAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
+const AttachmentPreview = ({ type, url, filename }) => {
+  if (type === 'image') {
+    return (
+      <div className="relative group max-w-full my-1 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-800">
+        <img 
+          src={url} 
+          alt={filename || "Image attachment"} 
+          className="max-w-full max-h-48 object-contain cursor-zoom-in hover:scale-[1.01] transition-transform duration-200"
+          onClick={() => window.open(url, '_blank')}
+        />
+      </div>
+    );
+  }
+  if (type === 'video') {
+    return (
+      <div className="my-1 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-800 bg-black">
+        <video src={url} controls className="max-w-full max-h-48 object-contain w-full" />
+      </div>
+    );
+  }
+  if (type === 'audio') {
+    return (
+      <div className="my-1 py-1 rounded-xl bg-gray-50 dark:bg-slate-800/40 p-2 border border-gray-100 dark:border-slate-800">
+        <audio src={url} controls className="w-full max-w-xs scale-95 origin-left" />
+      </div>
+    );
+  }
+  return (
+    <a 
+      href={url} 
+      target="_blank" 
+      rel="noreferrer" 
+      className="flex items-center gap-2 my-1 px-3 py-2 bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-800 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-xs font-bold text-gray-800 dark:text-gray-200"
+    >
+      <FileText size={14} className="text-gray-400" />
+      <span className="truncate max-w-[150px]">{filename || 'Télécharger le fichier'}</span>
+    </a>
+  );
+};
+
 const SupportAdmin = ({ session }) => {
   const [tickets, setTickets] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -32,8 +73,131 @@ const SupportAdmin = ({ session }) => {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = React.useRef(null);
+  const fileInputRef = React.useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = React.useRef(null);
+  const audioChunksRef = React.useRef([]);
 
   const active = tickets.find(t => t.id === activeId) || null;
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !active || uploading) return;
+    setUploading(true);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const fileName = `${randomId}-${Date.now()}.${fileExt}`;
+      const filePath = `admin/${active.user_id}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+        
+      if (uploadError) throw new Error(uploadError.message);
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      let type = 'file';
+      if (file.type.startsWith('image/')) type = 'image';
+      else if (file.type.startsWith('video/')) type = 'video';
+      else if (file.type.startsWith('audio/')) type = 'audio';
+
+      const { error: msgErr } = await supabase.from('support_messages').insert({
+        ticket_id: active.id, user_id: active.user_id, sender: 'admin', body: file.name,
+        attachment_url: publicUrl, attachment_type: type
+      });
+      if (msgErr) throw new Error(msgErr.message);
+
+      await supabase.from('support_tickets').update({
+        last_message_at: new Date().toISOString(), last_sender: 'admin', user_unread: true, admin_unread: false,
+      }).eq('id', active.id);
+
+      const { data: msgs } = await supabase.from('support_messages')
+        .select('*').eq('ticket_id', active.id).order('created_at', { ascending: true });
+      setMessages(msgs || []);
+      loadTickets();
+    } catch(err) {
+      alert('Erreur d\'upload : ' + err.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const startRecording = async () => {
+    if (!active) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const file = new File([audioBlob], `vocal-${Date.now()}.webm`, { type: 'audio/webm' });
+        stream.getTracks().forEach(t => t.stop());
+        
+        setUploading(true);
+        try {
+          const randomId = Math.random().toString(36).substring(2, 15);
+          const fileName = `vocal-${randomId}-${Date.now()}.webm`;
+          const filePath = `admin/${active.user_id}/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('chat-attachments')
+            .upload(filePath, file);
+            
+          if (uploadError) throw new Error(uploadError.message);
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('chat-attachments')
+            .getPublicUrl(filePath);
+
+          const { error: msgErr } = await supabase.from('support_messages').insert({
+            ticket_id: active.id, user_id: active.user_id, sender: 'admin', body: 'Message Vocal',
+            attachment_url: publicUrl, attachment_type: 'audio'
+          });
+          if (msgErr) throw new Error(msgErr.message);
+
+          await supabase.from('support_tickets').update({
+            last_message_at: new Date().toISOString(), last_sender: 'admin', user_unread: true, admin_unread: false,
+          }).eq('id', active.id);
+
+          const { data: msgs } = await supabase.from('support_messages')
+            .select('*').eq('ticket_id', active.id).order('created_at', { ascending: true });
+          setMessages(msgs || []);
+          loadTickets();
+        } catch(err) {
+          alert('Erreur d\'envoi du vocal : ' + err.message);
+        } finally {
+          setUploading(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+    } catch (err) {
+      alert('Impossible d\'accéder au micro : ' + err.message);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && recording) {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+    }
+  };
 
   const loadTickets = async () => {
     const { data } = await supabase.from('support_tickets')
@@ -142,7 +306,10 @@ const SupportAdmin = ({ session }) => {
                 {messages.map(m => (
                   <div key={m.id} className={`flex ${m.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'admin' ? 'bg-primary text-white dark:text-gray-900 rounded-br-sm' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-slate-700 rounded-bl-sm'}`}>
-                      {m.body}
+                      {m.attachment_url && (
+                        <AttachmentPreview type={m.attachment_type} url={m.attachment_url} filename={m.body} />
+                      )}
+                      {(!m.attachment_url || m.body !== 'Message Vocal') && <div>{m.body}</div>}
                       <div className={`text-[9px] mt-1 ${m.sender === 'admin' ? 'text-white/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                   </div>
@@ -150,15 +317,45 @@ const SupportAdmin = ({ session }) => {
                 {messages.length === 0 && <p className="text-center text-xs text-gray-400 py-8">Aucun message.</p>}
               </div>
               <div className="p-3 border-t border-gray-100 dark:border-slate-800 flex items-center gap-2 shrink-0">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  className="hidden" 
+                  accept="image/*,video/*,audio/*,.pdf,.zip,.doc,.docx,.xls,.xlsx"
+                />
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  disabled={sending || uploading}
+                  className="w-10 h-10 shrink-0 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-755 transition-all disabled:opacity-40"
+                  title="Ajouter un fichier"
+                >
+                  <Upload size={16} className={uploading ? 'animate-bounce' : ''} />
+                </button>
+
+                <button 
+                  onClick={recording ? stopRecording : startRecording} 
+                  disabled={sending || uploading}
+                  className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
+                    recording 
+                      ? 'bg-red-500 text-white animate-pulse' 
+                      : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-755'
+                  }`}
+                  title={recording ? "Arrêter l'enregistrement" : "Enregistrer un message vocal"}
+                >
+                  <Mic size={16} />
+                </button>
+
                 <input
                   type="text"
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') reply(); }}
-                  placeholder="Répondre…"
-                  className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  disabled={recording}
+                  placeholder={recording ? "Enregistrement en cours..." : "Répondre…"}
+                  className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                 />
-                <button onClick={reply} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40"><Send size={16} /></button>
+                <button onClick={reply} disabled={sending || !input.trim() || recording} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40"><Send size={16} /></button>
               </div>
             </>
           )}

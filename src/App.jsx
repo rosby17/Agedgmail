@@ -1,4 +1,4 @@
-import { X, MessageCircle, Headphones, Send } from 'lucide-react';
+import { X, MessageCircle, Headphones, Send, Upload, Mic, FileText } from 'lucide-react';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
 import ProductView from './views/ProductView';
 import React, { useState, useEffect } from 'react';
@@ -60,6 +60,46 @@ const KeepAlive = ({ show, children }) => {
   );
 };
 
+const AttachmentPreview = ({ type, url, filename }) => {
+  if (type === 'image') {
+    return (
+      <div className="relative group max-w-full my-1 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-800">
+        <img 
+          src={url} 
+          alt={filename || "Image attachment"} 
+          className="max-w-full max-h-48 object-contain cursor-zoom-in hover:scale-[1.01] transition-transform duration-200"
+          onClick={() => window.open(url, '_blank')}
+        />
+      </div>
+    );
+  }
+  if (type === 'video') {
+    return (
+      <div className="my-1 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-800 bg-black">
+        <video src={url} controls className="max-w-full max-h-48 object-contain w-full" />
+      </div>
+    );
+  }
+  if (type === 'audio') {
+    return (
+      <div className="my-1 py-1 rounded-xl bg-gray-50 dark:bg-slate-800/40 p-2 border border-gray-100 dark:border-slate-800">
+        <audio src={url} controls className="w-full max-w-xs scale-95 origin-left" />
+      </div>
+    );
+  }
+  return (
+    <a 
+      href={url} 
+      target="_blank" 
+      rel="noreferrer" 
+      className="flex items-center gap-2 my-1 px-3 py-2 bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-800 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-850 transition-colors text-xs font-bold text-gray-800 dark:text-gray-200"
+    >
+      <FileText size={14} className="text-gray-400" />
+      <span className="truncate max-w-[150px]">{filename || 'Télécharger le fichier'}</span>
+    </a>
+  );
+};
+
 const SupportChatWidget = ({ session, profile }) => {
   const [open, setOpen] = useState(false);
   const [ticket, setTicket] = useState(null);
@@ -68,8 +108,145 @@ const SupportChatWidget = ({ session, profile }) => {
   const [sending, setSending] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const scrollRef = React.useRef(null);
+  const fileInputRef = React.useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = React.useRef(null);
+  const audioChunksRef = React.useRef([]);
 
   const userId = session?.user?.id;
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || uploading || !userId) return;
+    setUploading(true);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const fileName = `${randomId}-${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+        
+      if (uploadError) throw new Error(uploadError.message);
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      let type = 'file';
+      if (file.type.startsWith('image/')) type = 'image';
+      else if (file.type.startsWith('video/')) type = 'video';
+      else if (file.type.startsWith('audio/')) type = 'audio';
+
+      let tk = ticket;
+      if (!tk) {
+        const { data: created, error } = await supabase.from('support_tickets').insert({
+          user_id: userId, user_email: session.user.email, subject: 'Support', status: 'open',
+          last_sender: 'user', admin_unread: true, user_unread: false, last_message_at: new Date().toISOString(),
+        }).select().single();
+        if (error) throw new Error(error.message);
+        tk = created; setTicket(created);
+      }
+
+      const { error: msgErr } = await supabase.from('support_messages').insert({
+        ticket_id: tk.id, user_id: userId, sender: 'user', body: file.name,
+        attachment_url: publicUrl, attachment_type: type
+      });
+      if (msgErr) throw new Error(msgErr.message);
+
+      await supabase.from('support_tickets').update({
+        last_message_at: new Date().toISOString(), last_sender: 'user', admin_unread: true, status: 'open',
+      }).eq('id', tk.id);
+
+      loadTicket();
+    } catch(err) {
+      alert('Erreur d\'upload : ' + err.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const startRecording = async () => {
+    if (!userId) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const file = new File([audioBlob], `vocal-${Date.now()}.webm`, { type: 'audio/webm' });
+        stream.getTracks().forEach(t => t.stop());
+        
+        setUploading(true);
+        try {
+          const randomId = Math.random().toString(36).substring(2, 15);
+          const fileName = `vocal-${randomId}-${Date.now()}.webm`;
+          const filePath = `${userId}/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('chat-attachments')
+            .upload(filePath, file);
+            
+          if (uploadError) throw new Error(uploadError.message);
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('chat-attachments')
+            .getPublicUrl(filePath);
+
+          let tk = ticket;
+          if (!tk) {
+            const { data: created, error } = await supabase.from('support_tickets').insert({
+              user_id: userId, user_email: session.user.email, subject: 'Support', status: 'open',
+              last_sender: 'user', admin_unread: true, user_unread: false, last_message_at: new Date().toISOString(),
+            }).select().single();
+            if (error) throw new Error(error.message);
+            tk = created; setTicket(created);
+          }
+
+          const { error: msgErr } = await supabase.from('support_messages').insert({
+            ticket_id: tk.id, user_id: userId, sender: 'user', body: 'Message Vocal',
+            attachment_url: publicUrl, attachment_type: 'audio'
+          });
+          if (msgErr) throw new Error(msgErr.message);
+
+          await supabase.from('support_tickets').update({
+            last_message_at: new Date().toISOString(), last_sender: 'user', admin_unread: true, status: 'open',
+          }).eq('id', tk.id);
+
+          loadTicket();
+        } catch(err) {
+          alert('Erreur d\'envoi du vocal : ' + err.message);
+        } finally {
+          setUploading(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+    } catch (err) {
+      alert('Impossible d\'accéder au micro : ' + err.message);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && recording) {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+    }
+  };
 
   // Charge le ticket existant + ses messages, et l'état "non lu".
   const loadTicket = async () => {
@@ -169,7 +346,10 @@ const SupportChatWidget = ({ session, profile }) => {
             {messages.map(m => (
               <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'user' ? 'bg-primary text-white dark:text-gray-900 rounded-br-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-sm'}`}>
-                  {m.body}
+                  {m.attachment_url && (
+                    <AttachmentPreview type={m.attachment_type} url={m.attachment_url} filename={m.body} />
+                  )}
+                  {(!m.attachment_url || m.body !== 'Message Vocal') && <div>{m.body}</div>}
                   <div className={`text-[9px] mt-1 ${m.sender === 'user' ? 'text-white/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
               </div>
@@ -177,15 +357,45 @@ const SupportChatWidget = ({ session, profile }) => {
           </div>
 
           <div className="p-3 border-t border-gray-100 dark:border-gray-800 flex items-center gap-2 shrink-0">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              className="hidden" 
+              accept="image/*,video/*,audio/*,.pdf,.zip,.doc,.docx,.xls,.xlsx"
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()} 
+              disabled={sending || uploading}
+              className="w-10 h-10 shrink-0 rounded-full bg-gray-105 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-750 transition-all disabled:opacity-40"
+              title="Ajouter un fichier"
+            >
+              <Upload size={16} className={uploading ? 'animate-bounce' : ''} />
+            </button>
+
+            <button 
+              onClick={recording ? stopRecording : startRecording} 
+              disabled={sending || uploading}
+              className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
+                recording 
+                  ? 'bg-red-500 text-white animate-pulse' 
+                  : 'bg-gray-105 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-750'
+              }`}
+              title={recording ? "Arrêter l'enregistrement" : "Enregistrer un message vocal"}
+            >
+              <Mic size={16} />
+            </button>
+
             <input
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') send(); }}
-              placeholder="Écris ton message…"
-              className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-gray-800 dark:text-white border border-gray-200 dark:border-gray-700 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+              disabled={recording}
+              placeholder={recording ? "Enregistrement en cours..." : "Écris ton message…"}
+              className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-gray-800 dark:text-white border border-gray-200 dark:border-gray-700 text-sm outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
             />
-            <button onClick={send} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40">
+            <button onClick={send} disabled={sending || !input.trim() || recording} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40">
               <Send size={16} />
             </button>
           </div>
