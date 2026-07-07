@@ -1594,6 +1594,68 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     navigator.clipboard.writeText(text);
   };
 
+  if (status === 'LOADING_PRICES') {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-300">
+        <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 md:p-8 mb-8 shadow-sm">
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse"></div>
+             <div>
+               <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+               <div className="h-6 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+             </div>
+          </div>
+          <div className="mt-6 md:mt-0 flex flex-col items-center md:items-end">
+             <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+             <div className="h-8 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+             <div className="h-2 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mt-3"></div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm">
+              <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+              <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-8"></div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6 items-end">
+                 <div>
+                    <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+                    <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                 </div>
+                 <div>
+                    <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+                    <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                 </div>
+              </div>
+           </div>
+
+           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm opacity-70">
+              <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+              <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-8"></div>
+
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                 <div className="flex-1 w-full">
+                    <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+                    <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                 </div>
+                 <div className="w-full md:w-auto">
+                    <div className="h-[54px] w-full md:w-40 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                 </div>
+              </div>
+           </div>
+
+           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm opacity-50">
+              <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+              <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-8"></div>
+
+              <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+              <div className="h-[68px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+           </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
       
