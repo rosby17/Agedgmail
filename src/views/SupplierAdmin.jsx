@@ -191,7 +191,7 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
               )}
               <div className="flex gap-3 flex-wrap">
                 <button onClick={() => handleSync(supplier)} disabled={syncing === supplier}
-                  className="h-11 px-5 rounded-xl bg-gray-900 text-white dark:text-gray-900 font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
+                  className="h-11 px-5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-sm flex items-center gap-2 hover:bg-primary dark:hover:bg-primary transition-all disabled:opacity-50">
                   <RefreshCcw size={14} className={syncing === supplier ? 'animate-spin' : ''} /> {syncing === supplier ? 'Syncing…' : 'Sync'}
                 </button>
                 {supplier === 'ytseller' && (
@@ -237,15 +237,21 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
                   <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 font-bold text-xs">{SUPPLIER_LABEL[m.supplier] || m.supplier}</span></td>
                   {editing === m.id ? (
                     <>
-                      <td className="py-4"><input value={editForm.supplier_product_id} onChange={e => setEditForm({ ...editForm, supplier_product_id: e.target.value })} className="w-24 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
+                      <td className="py-4"><input value={editForm.supplier_product_id} onChange={e => setEditForm({ ...editForm, supplier_product_id: e.target.value })} className="w-24 px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-700 font-mono bg-transparent" /></td>
                       <td className="py-4 font-mono">${Number(m.supplier_rate).toFixed(2)}</td>
-                      <td className="py-4"><input type="number" value={editForm.margin_percent} onChange={e => setEditForm({ ...editForm, margin_percent: e.target.value })} className="w-20 px-2 py-1 rounded-lg border border-gray-200 font-mono" /></td>
-                      <td className="py-4 font-mono text-gray-400 dark:text-slate-500">—</td>
+                      <td className="py-4"><input type="number" value={editForm.margin_percent} onChange={e => setEditForm({ ...editForm, margin_percent: e.target.value })} className="w-20 px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-700 font-mono bg-transparent" /></td>
+                      <td className="py-4 font-mono font-bold">
+                        $<input type="number" step="0.01" value={sellPrice({ ...m, margin_percent: editForm.margin_percent }).toFixed(2)} onChange={e => {
+                          const p = Number(e.target.value);
+                          const c = Number(m.supplier_rate) || 0;
+                          if (c > 0) setEditForm({ ...editForm, margin_percent: ((p / c) - 1) * 100 });
+                        }} className="w-20 ml-1 px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-700 font-mono bg-transparent" />
+                      </td>
                       <td className="py-4">{m.supplier_available}</td>
                       <td className="py-4"><input type="checkbox" checked={editForm.active} onChange={e => setEditForm({ ...editForm, active: e.target.checked })} /></td>
                       <td className="py-4 flex gap-2">
-                        <button onClick={() => saveEdit(m.id)} className="p-2 rounded-lg bg-green-500 text-white"><Save size={14} /></button>
-                        <button onClick={() => setEditing(null)} aria-label="Cancel edit" className="p-2 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
+                        <button onClick={() => saveEdit(m.id)} className="p-2 rounded-lg bg-green-500 text-white hover:bg-green-600"><Save size={14} /></button>
+                        <button onClick={() => setEditing(null)} aria-label="Cancel edit" className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"><X size={14} /></button>
                       </td>
                     </>
                   ) : (
