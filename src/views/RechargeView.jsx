@@ -461,7 +461,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 <span className="font-bold flex items-center gap-1 mb-1"><AlertTriangle size={14} /> Frais d'opérateur (8%)</span>
                 Les paiements par Mobile Money (Orange, MTN, Wave...) appliquent 8% de frais de passerelle.
                 <div className="mt-2 text-gray-800 dark:text-gray-300 font-bold">
-                  Montant total à payer : ${(amountUsd * 1.08).toFixed(2)} (env. {(amountUsd * 1.08 * 650).toFixed(0)} FCFA)
+                  Montant total à payer : ${(amountUsd * 1.08).toFixed(2)} (env. {(amountUsd * 1.08 * 600).toFixed(0)} FCFA)
                 </div>
               </div>
             )}
