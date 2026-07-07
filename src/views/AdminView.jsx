@@ -573,7 +573,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                   <td className="py-4 font-mono font-black text-primary">${Number(user.balance || 0).toFixed(2)}</td>
                   <td className="py-4 text-gray-600 dark:text-gray-300">{s.orders}</td>
                   <td className="py-4 font-mono text-gray-600 dark:text-gray-300">${s.spent.toFixed(2)}</td>
-                  <td className="py-4 text-xs text-gray-400">{user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : '—'}</td>
+                  <td className="py-4 text-xs text-gray-400">{user.created_at ? new Date(user.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
                   <td className="py-4">
                     {user.is_suspended
                       ? <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-red-100 text-red-700 uppercase tracking-wide">Suspendu</span>
@@ -617,7 +617,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                   <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary font-black text-lg flex items-center justify-center">{initial(viewingClient)}</div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">{viewingClient.email}</h3>
-                    <p className="text-xs text-gray-400 font-bold mt-1">{viewingClient.display_name || '—'} · inscrit le {viewingClient.created_at ? new Date(viewingClient.created_at).toLocaleDateString('fr-FR') : '—'}</p>
+                    <p className="text-xs text-gray-400 font-bold mt-1">{viewingClient.display_name || '—'} · inscrit le {viewingClient.created_at ? new Date(viewingClient.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</p>
                   </div>
                 </div>
                 <button onClick={() => setViewingClient(null)} aria-label="Close" className="w-10 h-10 bg-gray-50 dark:bg-slate-800 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-all"><X size={18} /></button>
