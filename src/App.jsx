@@ -1958,6 +1958,26 @@ const DeliveredAccountCard = ({ raw, index, total }) => {
           </ol>
         </div>
       )}
+
+      {/* Codes de secours 2FA */}
+      {account.backupCodes && account.backupCodes.length > 0 && (
+        <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
+          <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-2">
+            <ShieldAlert size={14} /> Codes de secours 2FA (8 chiffres)
+          </div>
+          <p className="text-xs text-amber-800 mb-4 leading-relaxed font-medium">
+            <span className="font-bold">Important :</span> Utilisez l'un de ces codes à 8 chiffres pour vous connecter lorsque la double vérification est demandée. Une fois connecté(e), allez <span className="font-bold underline">immédiatement</span> dans les paramètres de sécurité de votre compte Google pour modifier la méthode 2FA (ajouter votre numéro ou app authenticator).
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {account.backupCodes.map((code, i) => (
+              <div key={i} className="flex items-center justify-between bg-white border border-amber-200/60 rounded-xl px-3 py-2 shadow-sm">
+                <span className="font-mono text-sm text-gray-700 tracking-wider font-bold">{code}</span>
+                <button onClick={() => navigator.clipboard.writeText(code)} className="shrink-0 text-gray-400 hover:text-amber-600 transition-colors"><Copy size={14} /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

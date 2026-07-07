@@ -20,27 +20,40 @@ export function parseAccountDelivery(rawLine) {
     throw err;
   }
 
-  const parts = rawLine.split(':').map((p) => p.trim());
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let parts = [];
+
+  // Détection du format : si on a des tabulations, c'est probablement le nouveau format (avec codes de secours)
+  if (rawLine.includes('\t')) {
+    parts = rawLine.split('\t').map(p => p.trim()).filter(Boolean);
+  } else if (rawLine.includes(':')) {
+    parts = rawLine.split(':').map((p) => p.trim());
+  } else {
+    // Tentative de fallback en séparant par espace (attention aux mots de passe avec espaces)
+    parts = rawLine.split(/\s+/);
+  }
+
   const email = parts[0];
   const password = parts[1];
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email || !password) {
     const err = new Error('Email ou mot de passe manquant.');
     err.code = 'missing_required_fields';
     throw err;
   }
-  // On ne vérifie plus strictement si le premier champ est un email valide,
-  // car certains comptes (comme GitHub ou Facebook) peuvent utiliser un
-  // nom d'utilisateur (username) au lieu d'une adresse email.
 
   const result = { email, password };
   const leftovers = parts.slice(2).filter((p) => p.length > 0);
   const unclassified = [];
+  const backupCodes = [];
 
   for (const part of leftovers) {
     const noSpaces = part.replace(/\s+/g, '');
-    if (!result.recoveryEmail && emailPattern.test(part)) {
+    
+    // Détection des codes de secours à 8 chiffres
+    if (/^\d{8}$/.test(part)) {
+      backupCodes.push(part);
+    } else if (!result.recoveryEmail && emailPattern.test(part)) {
       result.recoveryEmail = part;
     } else if (!result.totpSecret && noSpaces.length === 32) {
       result.totpSecret = noSpaces;
@@ -51,9 +64,13 @@ export function parseAccountDelivery(rawLine) {
     }
   }
 
-  // Ce qui reste de non-classé (au plus un champ dans le format documenté)
+  if (backupCodes.length > 0) {
+    result.backupCodes = backupCodes;
+  }
+
+  // Ce qui reste de non-classé (au plus un champ dans le format original)
   // est le mot de passe de récupération.
-  if (unclassified.length > 0) {
+  if (unclassified.length > 0 && !result.backupCodes) {
     result.recoveryPassword = unclassified[0];
   }
 
