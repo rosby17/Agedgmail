@@ -10,7 +10,7 @@ import { parseAccountDelivery } from './lib/parseAccountDelivery';
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 
 
-const LandingView = ({ navigate, products = [], setSelectedProduct, lang }) => {
+const LandingView = ({ navigate, products = [], setSelectedProduct, lang, setLang }) => {
   const topProductsRaw = [...products]
     .sort((a, b) => (b.sales || 0) - (a.sales || 0))
     .slice(0, 3)
@@ -91,13 +91,19 @@ const LandingView = ({ navigate, products = [], setSelectedProduct, lang }) => {
             <span className="font-headline-lg font-bold text-l-primary text-xl tracking-tighter hidden md:block">AgedGmailYT</span>
           </div>
           <div className="hidden md:flex items-center gap-10">
-            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#catalogue" onClick={(e) => scrollToSection(e, '#catalogue')}>Catalogue</a>
-            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#features" onClick={(e) => scrollToSection(e, '#features')}>Fonctionnalités</a>
+            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#catalogue" onClick={(e) => scrollToSection(e, '#catalogue')}>{lang === 'fr' ? 'Catalogue' : 'Catalog'}</a>
+            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#features" onClick={(e) => scrollToSection(e, '#features')}>{lang === 'fr' ? 'Fonctionnalités' : 'Features'}</a>
             <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#faq" onClick={(e) => scrollToSection(e, '#faq')}>FAQ</a>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('auth')} className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors px-4 py-2 cursor-pointer active:scale-95">Se connecter</button>
-            <button onClick={() => navigate('auth')} className="bg-l-primary text-on-primary px-6 py-2.5 rounded-full text-sm font-bold hover:scale-105 transition-all duration-300 emerald-glow shadow-lg cursor-pointer active:scale-95">Commencer</button>
+            <button
+              onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
+              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all font-bold text-xs"
+            >
+              {lang === 'fr' ? 'FR' : 'EN'}
+            </button>
+            <button onClick={() => navigate('auth')} className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors px-4 py-2 cursor-pointer active:scale-95">{lang === 'fr' ? 'Se connecter' : 'Login'}</button>
+            <button onClick={() => navigate('auth')} className="bg-l-primary text-on-primary px-6 py-2.5 rounded-full text-sm font-bold hover:scale-105 transition-all duration-300 emerald-glow shadow-lg cursor-pointer active:scale-95">{lang === 'fr' ? 'Commencer' : 'Get Started'}</button>
           </div>
         </div>
       </nav>
@@ -110,21 +116,21 @@ const LandingView = ({ navigate, products = [], setSelectedProduct, lang }) => {
             <div className="reveal-target opacity-0" style={{ animationDelay: '0.2s' }}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-l-primary/20 bg-l-primary/5 mb-8">
                 <span className="w-2 h-2 rounded-full bg-l-primary animate-pulse"></span>
-                <span className="font-label-sm text-[10px] text-l-primary uppercase tracking-[0.2em]">FOURNISSEUR DE COMPTES GMAIL PREMIUM</span>
+                <span className="font-label-sm text-[10px] text-l-primary uppercase tracking-[0.2em]">{lang === 'fr' ? 'LE MEILLEUR DES COMPTES GMAIL US' : 'THE BEST IN US GMAIL ACCOUNTS'}</span>
               </div>
               <h1 className="font-headline-lg text-5xl md:text-7xl text-on-surface leading-[1.1] mb-8 font-extrabold">
-                Dites adieu au <br/><span className="curved-underline text-l-primary">shadowban.</span>
+                {lang === 'fr' ? 'Comptes Gmail US Vieillis,' : 'Aged US Gmail Accounts,'} <br/><span className="curved-underline text-l-primary">{lang === 'fr' ? 'Qualité Premium.' : 'Premium Quality.'}</span>
               </h1>
               <p className="font-body-md text-on-surface-variant text-lg md:text-xl mb-12 max-w-xl leading-relaxed">
-                Accédez à des comptes Gmail et YouTube 'aged', vérifiés et optimisés pour percer à l'international sans blocages. Dominez le marché US dès aujourd'hui.
+                {lang === 'fr' ? 'Accédez à des comptes Gmail US très demandés, vérifiés et optimisés pour percer à l\'international sans blocages. Dominez le marché US dès aujourd\'hui.' : 'Get instant access to highly demanded US Gmail accounts, verified and ready for your international marketing campaigns without shadowbans.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-5">
                 <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-on-primary px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
-                  Acheter un compte
+                  {lang === 'fr' ? 'Acheter un compte US' : 'Buy a US Account'}
                   <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </button>
                 <button onClick={() => navigate('shop')} className="btn-magnetic flex items-center justify-center gap-2 border border-white/10 glass text-on-surface hover:bg-white/5 px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300">
-                  Voir le catalogue
+                  {lang === 'fr' ? 'Voir le catalogue' : 'View Catalog'}
                 </button>
               </div>
             </div>
@@ -205,30 +211,30 @@ const LandingView = ({ navigate, products = [], setSelectedProduct, lang }) => {
         <section className="py-section-gap relative">
           <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
             <div className="text-center mb-24 reveal-target opacity-0">
-              <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-6 font-extrabold">Pourquoi les créateurs africains stagnent</h2>
-              <p className="font-body-md text-on-surface-variant text-lg max-w-2xl mx-auto leading-relaxed">Le marché digital actuel est impitoyable. Ne laissez pas des algorithmes obsolètes freiner votre croissance.</p>
+              <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-6 font-extrabold">{lang === 'fr' ? 'Pourquoi choisir nos comptes US ?' : 'Why choose our US accounts?'}</h2>
+              <p className="font-body-md text-on-surface-variant text-lg max-w-2xl mx-auto leading-relaxed">{lang === 'fr' ? 'Le marché américain est le plus rentable mais aussi le plus strict. Ne laissez pas des algorithmes freiner votre croissance.' : 'The US market is the most profitable but also the strictest. Do not let algorithms slow down your growth.'}</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.1s' }}>
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
-                  <span className="material-symbols-outlined text-l-primary text-4xl">block</span>
+                  <span className="material-symbols-outlined text-l-primary text-4xl">public</span>
                 </div>
-                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">Shadowbans systématiques</h4>
-                <p className="text-on-surface-variant leading-relaxed">Les nouveaux comptes sont scrutés par l'IA. Un mauvais pas et votre visibilité disparaît instantanément.</p>
+                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">{lang === 'fr' ? 'Audience 100% US' : '100% US Audience'}</h4>
+                <p className="text-on-surface-variant leading-relaxed">{lang === 'fr' ? 'Ces comptes sont perçus comme américains par Google, idéal pour cibler directement l\'audience la plus monétisable.' : 'These accounts are perceived as American by Google, ideal for directly targeting the most monetizable audience.'}</p>
               </div>
               <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.2s' }}>
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
-                  <span className="material-symbols-outlined text-l-primary text-4xl">new_releases</span>
+                  <span className="material-symbols-outlined text-l-primary text-4xl">shield_person</span>
                 </div>
-                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">Manque de crédibilité chez Google</h4>
-                <p className="text-on-surface-variant leading-relaxed">Sans historique, les plateformes ne vous font pas confiance pour diffuser votre contenu à grande échelle.</p>
+                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">{lang === 'fr' ? 'Haute Autorité' : 'High Authority'}</h4>
+                <p className="text-on-surface-variant leading-relaxed">{lang === 'fr' ? 'Un historique solide qui évite les shadowbans systématiques des nouveaux comptes.' : 'A solid history that avoids the systematic shadowbans of new accounts.'}</p>
               </div>
               <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.3s' }}>
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
-                  <span className="material-symbols-outlined text-l-primary text-4xl">warning</span>
+                  <span className="material-symbols-outlined text-l-primary text-4xl">verified</span>
                 </div>
-                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">Création manuelle risquée</h4>
-                <p className="text-on-surface-variant leading-relaxed">Le "farming" manuel est lent et souvent détecté comme du spam par les algorithmes de sécurité.</p>
+                <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">{lang === 'fr' ? 'Sécurité 2FA Incluse' : '2FA Security Included'}</h4>
+                <p className="text-on-surface-variant leading-relaxed">{lang === 'fr' ? 'Livrés avec les codes de secours ou clé TOTP pour vous garantir l\'accès exclusif à vie.' : 'Delivered with backup codes or TOTP keys to ensure exclusive lifetime access.'}</p>
               </div>
             </div>
           </div>
@@ -239,27 +245,27 @@ const LandingView = ({ navigate, products = [], setSelectedProduct, lang }) => {
           <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
               <div className="reveal-target opacity-0">
-                <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-10 leading-tight font-extrabold">La puissance d'un compte établi entre vos mains.</h2>
+                <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-10 leading-tight font-extrabold">{lang === 'fr' ? 'La puissance d\'un compte établi entre vos mains.' : 'The power of an established account in your hands.'}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">verified_user</span>
-                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Historique Propre</h5>
-                    <p className="text-on-surface-variant text-sm leading-relaxed">Comptes sans aucune infraction passée, prêts pour l'usage pro.</p>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Historique Propre' : 'Clean History'}</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Comptes sans aucune infraction passée, prêts pour l\'usage pro.' : 'Accounts with no past violations, ready for pro use.'}</p>
                   </div>
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">bolt</span>
-                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Livraison Instantanée</h5>
-                    <p className="text-on-surface-variant text-sm leading-relaxed">Vos accès sont envoyés automatiquement après validation du paiement.</p>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Livraison Instantanée' : 'Instant Delivery'}</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Vos accès sont envoyés automatiquement après validation du paiement.' : 'Your access is sent automatically after payment validation.'}</p>
                   </div>
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">payments</span>
-                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Paiement Flexible</h5>
-                    <p className="text-on-surface-variant text-sm leading-relaxed">Acceptés : Crypto/Binance, USDT, LTC, mobile money.</p>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Paiement Flexible' : 'Flexible Payment'}</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Recommandé : Binance Pay. Acceptés : USDT, LTC, BTC.' : 'Recommended: Binance Pay. Accepted: USDT, LTC, BTC.'}</p>
                   </div>
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">headset_mic</span>
-                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">Support 24/7</h5>
-                    <p className="text-on-surface-variant text-sm leading-relaxed">Une équipe technique à votre écoute pour toute intégration.</p>
+                    <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Support 24/7' : '24/7 Support'}</h5>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Une équipe technique à votre écoute pour toute intégration.' : 'A technical team at your disposal for any integration.'}</p>
                   </div>
                 </div>
               </div>
@@ -276,11 +282,11 @@ const LandingView = ({ navigate, products = [], setSelectedProduct, lang }) => {
           <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
             <div className="flex flex-col lg:flex-row justify-between items-end mb-24 gap-10 reveal-target opacity-0">
               <div className="max-w-2xl">
-                <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-8 font-extrabold">Nos Best-Sellers <br/>Livraison immédiate</h2>
-                <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">Payez par Crypto ou Orange Money / Mobile Money. Pas de frais cachés.</p>
+                <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-8 font-extrabold">{lang === 'fr' ? 'Nos Best-Sellers US' : 'Our US Best Sellers'} <br/>{lang === 'fr' ? 'Livraison immédiate' : 'Instant delivery'}</h2>
+                <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">{lang === 'fr' ? 'Recommandé : Payez par Binance Pay sans limite de minimum. Pas de frais cachés.' : 'Recommended: Pay with Binance Pay with no minimum. No hidden fees.'}</p>
               </div>
               <button onClick={() => navigate('shop')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary hover:border-l-primary transition-all duration-500">
-                Accéder au catalogue complet
+                {lang === 'fr' ? 'Accéder au catalogue complet' : 'Access the full catalog'}
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -300,28 +306,29 @@ const LandingView = ({ navigate, products = [], setSelectedProduct, lang }) => {
                   return (
                     <div key={product.id} className="glass glass-glow rounded-[48px] p-12 flex flex-col border-l-primary/40 relative overflow-hidden transform md:scale-105 shadow-[0_0_80px_rgba(78,223,159,0.1)] reveal-target opacity-0" style={{ animationDelay: delay }}>
                       <div className="absolute top-12 right-[-45px] bg-l-primary text-on-primary px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">Meilleur Choix</div>
+                      <div className="absolute top-12 right-[-45px] bg-l-primary text-on-primary px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">{lang === 'fr' ? 'Meilleur Choix' : 'Best Choice'}</div>
                       <div className="mb-10">
                         <span className="bg-l-primary text-on-primary px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
                       </div>
                       <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
                       <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
-                      <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Prêt pour le marketing'}". {product.details?.info}</p>
-                      <div className="text-5xl font-extrabold text-on-surface mb-12">{product.price}€</div>
-                      <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-on-primary py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">Acheter maintenant</button>
+                      <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Gmail US Premium'}".</p>
+                      <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
+                      <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-on-primary py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">{lang === 'fr' ? 'Acheter maintenant' : 'Buy Now'}</button>
                     </div>
                   );
                 }
 
                 return (
-                  <div key={product.id} className="glass glass-glow rounded-[48px] p-12 flex flex-col hover:-translate-y-3 transition-all duration-700 reveal-target opacity-0" style={{ animationDelay: delay }}>
-                    <div className="mb-10">
-                      <span className="bg-white/5 border border-white/10 text-on-surface-variant px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
+                  <div key={product.id} className="glass p-10 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 flex flex-col" style={{ animationDelay: delay }}>
+                    <div className="mb-6 flex justify-between items-start">
+                      <span className="font-label-sm text-[10px] uppercase tracking-widest text-on-surface-variant font-bold bg-white/5 px-3 py-1.5 rounded-full">{badgeText}</span>
                     </div>
                     <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
                     <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
-                    <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Prêt pour le marketing'}". {product.details?.info}</p>
-                    <div className="text-5xl font-extrabold text-on-surface mb-12">{product.price}€</div>
-                    <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary transition-all duration-300">Sélectionner</button>
+                    <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Gmail US Ready'}".</p>
+                    <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
+                    <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-on-primary transition-all duration-300">{lang === 'fr' ? 'Sélectionner' : 'Select'}</button>
                   </div>
                 );
               })}
@@ -4552,13 +4559,13 @@ const CRYPTO_CURRENCIES = [
 // envoyée au backend NOWPayments. Mobile Money reste affiché mais désactivé
 // (grisé, non cliquable) tant que la méthode n'est pas prête.
 // `min` = dépôt minimum autorisé (USD), affiché directement sur la tuile pour
-// que le client le sache AVANT de cliquer. Binance Pay est le seul à $10 ;
-// les cryptos (via NOWPayments) sont à $18 à cause des frais de réseau.
+// que le client le sache AVANT de cliquer. Binance Pay est le seul à $0.50 ;
+// les cryptos (via NOWPayments) sont à $20 à cause des frais de réseau fluctuants (min ~18.86$).
 const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5, recommended: true },
-  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 18 },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 18 },
-  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 18 },
+  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 20 },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 20 },
+  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 20 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
@@ -6630,7 +6637,7 @@ function App() {
         />
       )}
       <div className="flex-grow">
-        {currentView === 'landing' && <LandingView navigate={navigate} products={products} setSelectedProduct={setSelectedProduct} lang={lang} />}
+        {currentView === 'landing' && <LandingView navigate={navigate} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} />}
         {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
