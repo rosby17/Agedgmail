@@ -15,10 +15,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as ytseller from '../_shared/ytseller.ts'
 import * as smmshiba from '../_shared/smmshiba.ts'
+import * as agedsmm from '../_shared/agedsmm.ts'
 import { getAdmin, logSupplier, alertAdmin, refundOrder, notifyTelegram, corsHeaders } from '../_shared/supplier-db.ts'
 
 const ADAPTERS: Record<string, { getBalance: typeof ytseller.getBalance; addProductOrder: typeof ytseller.addProductOrder }> = {
-  ytseller, smmshiba,
+  ytseller, smmshiba, agedsmm,
 }
 
 serve(async (req) => {

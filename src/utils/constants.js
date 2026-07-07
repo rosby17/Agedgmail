@@ -22,11 +22,11 @@ export const AVATAR_COLORS = ['#0D7A52', '#B45309', '#1D4ED8', '#BE185D', '#4338
 
 export const JUNK_CATEGORIES = ['accounts-telegram', 'amazon'];
 
-export const SUPPLIERS = ['ytseller', 'smmshiba'];
+export const SUPPLIERS = ['ytseller', 'smmshiba', 'agedsmm'];
 
 export const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
 
-export const SUPPLIER_LABEL = { ytseller: 'YTSeller', smmshiba: 'SMMSHIBA' };
+export const SUPPLIER_LABEL = { ytseller: 'YTSeller', smmshiba: 'SMMSHIBA', agedsmm: 'AgedSMM' };
 
 
 export const PAYMENT_GATEWAYS = [
