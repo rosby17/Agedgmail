@@ -110,9 +110,6 @@ const SupportChatWidget = ({ session, profile }) => {
   const scrollRef = React.useRef(null);
   const fileInputRef = React.useRef(null);
   const [uploading, setUploading] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const mediaRecorderRef = React.useRef(null);
-  const audioChunksRef = React.useRef([]);
 
   const userId = session?.user?.id;
 
@@ -168,83 +165,6 @@ const SupportChatWidget = ({ session, profile }) => {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const startRecording = async () => {
-    if (!userId) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const file = new File([audioBlob], `vocal-${Date.now()}.webm`, { type: 'audio/webm' });
-        stream.getTracks().forEach(t => t.stop());
-        
-        setUploading(true);
-        try {
-          const randomId = Math.random().toString(36).substring(2, 15);
-          const fileName = `vocal-${randomId}-${Date.now()}.webm`;
-          const filePath = `${userId}/${fileName}`;
-          
-          const { error: uploadError } = await supabase.storage
-            .from('chat-attachments')
-            .upload(filePath, file);
-            
-          if (uploadError) throw new Error(uploadError.message);
-          
-          const { data: { publicUrl } } = supabase.storage
-            .from('chat-attachments')
-            .getPublicUrl(filePath);
-
-          let tk = ticket;
-          if (!tk) {
-            const { data: created, error } = await supabase.from('support_tickets').insert({
-              user_id: userId, user_email: session.user.email, subject: 'Support', status: 'open',
-              last_sender: 'user', admin_unread: true, user_unread: false, last_message_at: new Date().toISOString(),
-            }).select().single();
-            if (error) throw new Error(error.message);
-            tk = created; setTicket(created);
-          }
-
-          const { error: msgErr } = await supabase.from('support_messages').insert({
-            ticket_id: tk.id, user_id: userId, sender: 'user', body: 'Message Vocal',
-            attachment_url: publicUrl, attachment_type: 'audio'
-          });
-          if (msgErr) throw new Error(msgErr.message);
-
-          await supabase.from('support_tickets').update({
-            last_message_at: new Date().toISOString(), last_sender: 'user', admin_unread: true, status: 'open',
-          }).eq('id', tk.id);
-
-          loadTicket();
-        } catch(err) {
-          await window.showAlert("Erreur", 'Erreur d\'envoi du vocal : ' + err.message);
-        } finally {
-          setUploading(false);
-        }
-      };
-
-      mediaRecorder.start();
-      setRecording(true);
-    } catch (err) {
-      await window.showAlert("Accès Micro", 'Impossible d\'accéder au micro : ' + err.message);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recording) {
-      mediaRecorderRef.current.stop();
-      setRecording(false);
     }
   };
 
@@ -335,7 +255,10 @@ const SupportChatWidget = ({ session, profile }) => {
       {open && (
         <div className="fixed bottom-24 right-6 z-[250] w-[92vw] max-w-sm h-[70vh] max-h-[560px] bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
           <div className="bg-gray-900 text-white p-5 shrink-0">
-            <h3 className="font-bold flex items-center gap-2"><Headphones size={18} /> Support AgedGmailYT</h3>
+            <h3 className="font-bold flex items-center gap-2">
+              <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain rounded-md bg-white p-0.5" />
+              Support AgedGmailYT
+            </h3>
             <p className="text-[11px] text-gray-400 mt-0.5">On te répond au plus vite. Explique ton souci ici.</p>
           </div>
 
@@ -344,14 +267,25 @@ const SupportChatWidget = ({ session, profile }) => {
               <p className="text-center text-xs text-gray-400 py-8">Aucun message pour l'instant. Écris-nous ci-dessous !</p>
             )}
             {messages.map(m => (
-              <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'user' ? 'bg-primary text-white dark:text-gray-900 rounded-br-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-sm'}`}>
-                  {m.attachment_url && (
-                    <AttachmentPreview type={m.attachment_type} url={m.attachment_url} filename={m.body} />
-                  )}
-                  {(!m.attachment_url || m.body !== 'Message Vocal') && <div>{m.body}</div>}
-                  <div className={`text-[9px] mt-1 ${m.sender === 'user' ? 'text-white/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+              <div key={m.id} className={`flex gap-2 w-full ${m.sender === 'user' ? 'justify-end' : 'justify-start'} mb-3`}>
+                {m.sender !== 'user' && (
+                  <img src="/logo.png" alt="Support" className="w-7 h-7 rounded-full object-contain bg-white shrink-0 mt-auto border border-gray-200" />
+                )}
+                <div className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                  <span className="text-[10px] text-gray-400 mb-0.5 px-1 font-medium">
+                    {m.sender === 'user' ? (profile?.display_name || session?.user?.email?.split('@')[0] || 'Vous') : 'Support'}
+                  </span>
+                  <div className={`px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'user' ? 'bg-primary text-white dark:text-gray-900 rounded-br-sm shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-sm shadow-sm'}`}>
+                    {m.attachment_url && (
+                      <AttachmentPreview type={m.attachment_type} url={m.attachment_url} filename={m.body} />
+                    )}
+                    {(!m.attachment_url || m.body !== 'Message Vocal') && <div>{m.body}</div>}
+                    <div className={`text-[9px] mt-1 ${m.sender === 'user' ? 'text-white/60 dark:text-gray-900/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
                 </div>
+                {m.sender === 'user' && (
+                  <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || session?.user?.email || 'U')}&background=000&color=fff`} alt="Vous" className="w-7 h-7 rounded-full object-cover shrink-0 mt-auto border border-gray-200 dark:border-gray-700" />
+                )}
               </div>
             ))}
           </div>
@@ -373,29 +307,16 @@ const SupportChatWidget = ({ session, profile }) => {
               <Upload size={16} className={uploading ? 'animate-bounce' : ''} />
             </button>
 
-            <button 
-              onClick={recording ? stopRecording : startRecording} 
-              disabled={sending || uploading}
-              className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
-                recording 
-                  ? 'bg-red-500 text-white animate-pulse' 
-                  : 'bg-gray-105 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-750'
-              }`}
-              title={recording ? "Arrêter l'enregistrement" : "Enregistrer un message vocal"}
-            >
-              <Mic size={16} />
-            </button>
-
             <input
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') send(); }}
-              disabled={recording}
-              placeholder={recording ? "Enregistrement en cours..." : "Écris ton message…"}
+              disabled={sending}
+              placeholder="Écris ton message…"
               className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-gray-800 dark:text-white border border-gray-200 dark:border-gray-700 text-sm outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
             />
-            <button onClick={send} disabled={sending || !input.trim() || recording} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40">
+            <button onClick={send} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40">
               <Send size={16} />
             </button>
           </div>

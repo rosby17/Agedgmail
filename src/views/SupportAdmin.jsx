@@ -75,9 +75,6 @@ const SupportAdmin = ({ session }) => {
   const scrollRef = React.useRef(null);
   const fileInputRef = React.useRef(null);
   const [uploading, setUploading] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const mediaRecorderRef = React.useRef(null);
-  const audioChunksRef = React.useRef([]);
 
   const active = tickets.find(t => t.id === activeId) || null;
 
@@ -126,76 +123,6 @@ const SupportAdmin = ({ session }) => {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const startRecording = async () => {
-    if (!active) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const file = new File([audioBlob], `vocal-${Date.now()}.webm`, { type: 'audio/webm' });
-        stream.getTracks().forEach(t => t.stop());
-        
-        setUploading(true);
-        try {
-          const randomId = Math.random().toString(36).substring(2, 15);
-          const fileName = `vocal-${randomId}-${Date.now()}.webm`;
-          const filePath = `admin/${active.user_id}/${fileName}`;
-          
-          const { error: uploadError } = await supabase.storage
-            .from('chat-attachments')
-            .upload(filePath, file);
-            
-          if (uploadError) throw new Error(uploadError.message);
-          
-          const { data: { publicUrl } } = supabase.storage
-            .from('chat-attachments')
-            .getPublicUrl(filePath);
-
-          const { error: msgErr } = await supabase.from('support_messages').insert({
-            ticket_id: active.id, user_id: active.user_id, sender: 'admin', body: 'Message Vocal',
-            attachment_url: publicUrl, attachment_type: 'audio'
-          });
-          if (msgErr) throw new Error(msgErr.message);
-
-          await supabase.from('support_tickets').update({
-            last_message_at: new Date().toISOString(), last_sender: 'admin', user_unread: true, admin_unread: false,
-          }).eq('id', active.id);
-
-          const { data: msgs } = await supabase.from('support_messages')
-            .select('*').eq('ticket_id', active.id).order('created_at', { ascending: true });
-          setMessages(msgs || []);
-          loadTickets();
-        } catch(err) {
-          await window.showAlert("Erreur", 'Erreur d\'envoi du vocal : ' + err.message);
-        } finally {
-          setUploading(false);
-        }
-      };
-
-      mediaRecorder.start();
-      setRecording(true);
-    } catch (err) {
-      await window.showAlert("Accès Micro", 'Impossible d\'accéder au micro : ' + err.message);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recording) {
-      mediaRecorderRef.current.stop();
-      setRecording(false);
     }
   };
 
@@ -304,14 +231,25 @@ const SupportAdmin = ({ session }) => {
               </div>
               <div ref={scrollRef} className="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-slate-950">
                 {messages.map(m => (
-                  <div key={m.id} className={`flex ${m.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'admin' ? 'bg-primary text-white dark:text-gray-900 rounded-br-sm' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-slate-700 rounded-bl-sm'}`}>
-                      {m.attachment_url && (
-                        <AttachmentPreview type={m.attachment_type} url={m.attachment_url} filename={m.body} />
-                      )}
-                      {(!m.attachment_url || m.body !== 'Message Vocal') && <div>{m.body}</div>}
-                      <div className={`text-[9px] mt-1 ${m.sender === 'admin' ? 'text-white/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div key={m.id} className={`flex gap-2 w-full ${m.sender === 'admin' ? 'justify-end' : 'justify-start'} mb-3`}>
+                    {m.sender !== 'admin' && (
+                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(active.user_email || 'U')}&background=000&color=fff`} alt="Client" className="w-7 h-7 rounded-full object-cover shrink-0 mt-auto border border-gray-200 dark:border-slate-700" />
+                    )}
+                    <div className={`flex flex-col ${m.sender === 'admin' ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                      <span className="text-[10px] text-gray-400 mb-0.5 px-1 font-medium">
+                        {m.sender === 'admin' ? 'Support' : active.user_email?.split('@')[0] || 'Client'}
+                      </span>
+                      <div className={`px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'admin' ? 'bg-primary text-white dark:text-gray-900 rounded-br-sm shadow-sm' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-slate-700 rounded-bl-sm shadow-sm'}`}>
+                        {m.attachment_url && (
+                          <AttachmentPreview type={m.attachment_type} url={m.attachment_url} filename={m.body} />
+                        )}
+                        {(!m.attachment_url || m.body !== 'Message Vocal') && <div>{m.body}</div>}
+                        <div className={`text-[9px] mt-1 ${m.sender === 'admin' ? 'text-white/60 dark:text-gray-900/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
                     </div>
+                    {m.sender === 'admin' && (
+                      <img src="/logo.png" alt="Support" className="w-7 h-7 rounded-full object-contain bg-white shrink-0 mt-auto border border-gray-200" />
+                    )}
                   </div>
                 ))}
                 {messages.length === 0 && <p className="text-center text-xs text-gray-400 py-8">Aucun message.</p>}
@@ -333,29 +271,16 @@ const SupportAdmin = ({ session }) => {
                   <Upload size={16} className={uploading ? 'animate-bounce' : ''} />
                 </button>
 
-                <button 
-                  onClick={recording ? stopRecording : startRecording} 
-                  disabled={sending || uploading}
-                  className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
-                    recording 
-                      ? 'bg-red-500 text-white animate-pulse' 
-                      : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-755'
-                  }`}
-                  title={recording ? "Arrêter l'enregistrement" : "Enregistrer un message vocal"}
-                >
-                  <Mic size={16} />
-                </button>
-
                 <input
                   type="text"
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') reply(); }}
-                  disabled={recording}
-                  placeholder={recording ? "Enregistrement en cours..." : "Répondre…"}
+                  disabled={sending}
+                  placeholder="Répondre…"
                   className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                 />
-                <button onClick={reply} disabled={sending || !input.trim() || recording} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40"><Send size={16} /></button>
+                <button onClick={reply} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40"><Send size={16} /></button>
               </div>
             </>
           )}
