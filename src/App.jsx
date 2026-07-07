@@ -147,8 +147,8 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
               </h1>
               <p className="font-body-md text-on-surface-variant text-lg md:text-xl mb-12 max-w-xl leading-relaxed">
                 {lang === 'fr' 
-                  ? 'Accédez à des comptes vérifiés (Inde, Pakistan, Espagne, US, etc.) et optimisés pour percer à l\'international sans blocages. Dominez votre marché dès aujourd\'hui.' 
-                  : 'Get instant access to verified accounts (India, Pakistan, Spain, US, etc.) ready for your international marketing campaigns without shadowbans.'}
+                  ? 'Accédez à des comptes vérifiés (USA, Inde, France, Espagne, etc.) et optimisés pour percer à l\'international sans blocages. Dominez votre marché dès aujourd\'hui.' 
+                  : 'Get instant access to verified accounts (USA, India, France, Spain, etc.) ready for your international marketing campaigns without shadowbans.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-5">
                 <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-white px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
