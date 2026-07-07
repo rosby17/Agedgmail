@@ -13,10 +13,10 @@ export const CATEGORIES = [
 export const GROUP_LABELS = {
   gmail: 'Gmail', mail: 'Outlook & Mail', youtube: 'Youtube', discord: 'Discord', facebook: 'Facebook',
   instagram: 'Instagram', twitter: 'Twitter X', reddit: 'Reddit', tiktok: 'Tiktok', apple: 'Apple ID',
-  telegram: 'Telegram', sms: 'SMS', snapchat: 'Snapchat', github: 'GitHub', amazon: 'Amazon', other: 'Others',
+  telegram: 'Telegram', snapchat: 'Snapchat', github: 'GitHub', amazon: 'Amazon', other: 'Others',
 };
 
-export const GROUP_ORDER = ['gmail', 'mail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'reddit', 'tiktok', 'apple', 'telegram', 'sms', 'snapchat', 'github', 'amazon', 'other'];
+export const GROUP_ORDER = ['gmail', 'mail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'reddit', 'tiktok', 'apple', 'telegram', 'snapchat', 'github', 'amazon', 'other'];
 
 export const AVATAR_COLORS = ['#0D7A52', '#B45309', '#1D4ED8', '#BE185D', '#4338CA', '#0E7490', '#7C3AED'];
 

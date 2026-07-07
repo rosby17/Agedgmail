@@ -369,7 +369,7 @@ function App() {
       // Produit à stock local : compté ci-dessus.
       stock: p.is_dropship ? (p.supplier_stock || 0) : (stockCountByProduct.get(p.id) || 0),
       details: getProductDetails(p),
-    }));
+    })).filter(p => categoryVisual(p) !== 'sms');
 
     setProducts(updatedProducts);
     setProductsLoading(false);
