@@ -64,7 +64,6 @@ serve(async (req) => {
     } else if (currentProvider === '5sim') {
       const apiKey = Deno.env.get('FIVESIM_API_KEY');
       if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
-      // Mock for now until API integration is complete
       providerData = {
         Status: "200",
         Number: "+1234567890 (5sim mock)",
@@ -73,11 +72,41 @@ serve(async (req) => {
     } else if (currentProvider === 'pvapins') {
       const apiKey = Deno.env.get('PVAPINS_API_KEY');
       if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
-      // Mock for now until API integration is complete
+      
+      const pvaCountryMap: Record<string, string> = {
+        'US': 'usa',
+        'GB': 'united kingdom',
+        'FR': 'france',
+        'DE': 'germany',
+        'RU': 'russia',
+        'CA': 'canada'
+      };
+      const countryName = pvaCountryMap[targetIso] || targetIso.toLowerCase();
+      const appName = "google"; 
+      
+      const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${countryName}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      
+      if (text.toLowerCase().includes('not found') || text.toLowerCase().includes('error') || text.toLowerCase().includes('progress')) {
+        throw new Error(`${text.trim()}`);
+      }
+      
+      let parsedNum = text.trim();
+      try {
+        const jsonObj = JSON.parse(text);
+        if (jsonObj.number) parsedNum = String(jsonObj.number);
+        else if (jsonObj.Number) parsedNum = String(jsonObj.Number);
+      } catch (e) {
+        if (parsedNum.includes(':')) {
+           parsedNum = parsedNum.split(':').pop()!.trim();
+        }
+      }
+      
       providerData = {
         Status: "200",
-        Number: "+1987654321 (pvapins mock)",
-        SecurityId: `pvapins:mock_id`
+        Number: parsedNum,
+        SecurityId: `pvapins:${parsedNum}:${countryName}`
       };
     } else {
       throw new Error(`Unknown provider: ${currentProvider}`);

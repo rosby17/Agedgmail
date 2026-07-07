@@ -35,7 +35,7 @@ serve(async (req) => {
     const currentProvider = provider || 'smscodes';
 
     // Parse securityId
-    // It should look like "smscodes:12345" or "5sim:98765"
+    // It should look like "smscodes:12345" or "pvapins:12345:usa"
     let providerName = currentProvider;
     let externalSecurityId = securityId;
 
@@ -67,13 +67,42 @@ serve(async (req) => {
     } else if (providerName === '5sim') {
       const apiKey = Deno.env.get('FIVESIM_API_KEY');
       if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
-      // Mock code check
       dataObj = { mock: "waiting" };
     } else if (providerName === 'pvapins') {
       const apiKey = Deno.env.get('PVAPINS_API_KEY');
       if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
-      // Mock code check
-      dataObj = { mock: "waiting" };
+      
+      const parts = securityId.split(':');
+      const pvaCountry = parts[2] || 'usa';
+      const appName = "google";
+      
+      const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${pvaCountry}&app=${appName}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      
+      if (text.toLowerCase().includes('not received') || text.toLowerCase().includes('waiting')) {
+         dataObj = { message: text.trim() };
+      } else if (text.toLowerCase().includes('not found') || text.toLowerCase().includes('expired') || text.toLowerCase().includes('error')) {
+         dataObj = { error: text.trim() };
+      } else {
+         let parsedCode = text.trim();
+         try {
+           const jsonObj = JSON.parse(text);
+           if (jsonObj.sms) parsedCode = String(jsonObj.sms);
+           else if (jsonObj.code) parsedCode = String(jsonObj.code);
+         } catch(e) {
+           if (parsedCode.includes(':')) {
+              parsedCode = parsedCode.split(':').pop()!.trim();
+           }
+         }
+         
+         if (parsedCode && parsedCode.length > 0) {
+            status = "success";
+            smsCode = parsedCode;
+         } else {
+            dataObj = { message: "Empty code received" };
+         }
+      }
     }
 
     // If we have an SMS, deduct balance
