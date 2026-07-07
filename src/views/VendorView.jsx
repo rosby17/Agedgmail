@@ -34,11 +34,31 @@ const MOCK_WITHDRAWALS = [
   { id: 'W-002', amount: 45.50, date: '05/07/2026', method: 'Orange Money', status: 'pending' }
 ];
 
+const FORMAT_OPTIONS = [
+  { id: 'email', label: 'Email' },
+  { id: 'password', label: 'Mot de passe' },
+  { id: 'recovery_email', label: 'Email de récupération' },
+  { id: 'recovery_pass', label: 'Mot de passe de récupération' },
+  { id: '2fa_gfa', label: 'Code 2FA (GFA)' },
+  { id: '2fa_ufa', label: 'Code 2FA (UFA)' },
+  { id: 'youtube_link', label: 'Lien Chaîne YouTube' },
+];
+
 const VendorView = ({ session, profile, navigate }) => {
   const [currentTab, setCurrentTab] = useState('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', price: '', category: '', format: '', stock: '' });
+
+  const handleFormatToggle = (id) => {
+    let formats = newProduct.format ? newProduct.format.split(':').filter(Boolean) : [];
+    if (formats.includes(id)) {
+      formats = formats.filter(f => f !== id);
+    } else {
+      formats.push(id);
+    }
+    setNewProduct({ ...newProduct, format: formats.join(':') });
+  };
 
   // Fallbacks if profile is missing
   const vendorStatus = profile?.vendor_status || 'approved'; // Force approved for mockup view
@@ -270,17 +290,30 @@ const VendorView = ({ session, profile, navigate }) => {
                     <div className="space-y-6">
                       <div className="bg-orange-500/5 border border-orange-500/20 p-6 rounded-[2rem]">
                         <h4 className="text-orange-600 font-bold mb-2">Format de livraison exigé</h4>
-                        <p className="text-xs text-orange-600/80 mb-4">Veuillez spécifier le format exact que le système doit attendre lorsque vous ajoutez des comptes (ex: Email:MotDePasse).</p>
+                        <p className="text-xs text-orange-600/80 mb-6">Cochez les informations que vous devrez fournir pour chaque compte vendu. Le système imposera ce format strict.</p>
                         
-                        <label className="block text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">Format (Ligne par ligne)</label>
-                        <input type="text" value={newProduct.format} onChange={e => setNewProduct({...newProduct, format: e.target.value})} placeholder="email:password" className="w-full px-4 py-3 bg-white dark:bg-slate-900 rounded-xl border border-orange-500/30 focus:border-orange-500 outline-none transition-colors font-mono text-sm" />
+                        <div className="flex flex-wrap gap-3 mb-6">
+                          {FORMAT_OPTIONS.map(opt => {
+                            const isSelected = newProduct.format.split(':').includes(opt.id);
+                            return (
+                              <button
+                                key={opt.id}
+                                onClick={() => handleFormatToggle(opt.id)}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors border ${
+                                  isSelected 
+                                    ? 'bg-orange-500 border-orange-500 text-white' 
+                                    : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-500'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                         
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="text-xs font-bold text-gray-500">Exemples courants :</span>
-                          <div className="flex gap-2">
-                            <button onClick={() => setNewProduct({...newProduct, format: 'email:password'})} className="px-2 py-1 bg-white dark:bg-slate-900 text-xs font-mono rounded-lg border border-gray-200 dark:border-slate-700">email:pass</button>
-                            <button onClick={() => setNewProduct({...newProduct, format: 'email:password:token'})} className="px-2 py-1 bg-white dark:bg-slate-900 text-xs font-mono rounded-lg border border-gray-200 dark:border-slate-700">email:pass:token</button>
-                          </div>
+                        <label className="block text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">Aperçu du format final</label>
+                        <div className="w-full px-4 py-3 bg-white dark:bg-slate-900 rounded-xl border border-orange-500/30 text-orange-600 font-mono text-sm break-all">
+                          {newProduct.format || 'Sélectionnez au moins un champ'}
                         </div>
                       </div>
                     </div>
@@ -358,12 +391,13 @@ const VendorView = ({ session, profile, navigate }) => {
           {currentTab === 'withdrawals' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-white dark:to-gray-200 p-8 rounded-[2rem] text-white dark:text-gray-900 flex justify-between items-center shadow-lg">
-                  <div>
-                    <div className="text-sm font-bold text-gray-400 dark:text-gray-500 mb-1">Solde Retirable</div>
-                    <div className="text-5xl font-black font-mono">$320.00</div>
+                <div className="bg-slate-900 dark:bg-slate-800 p-8 rounded-[2rem] text-white flex justify-between items-center shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/20 rounded-full blur-[80px] -mr-20 -mt-20"></div>
+                  <div className="relative z-10">
+                    <div className="text-sm font-bold text-slate-400 mb-1">Solde Retirable</div>
+                    <div className="text-5xl font-black font-mono text-white">$320.00</div>
                   </div>
-                  <button className="bg-orange-500 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-orange-500/30 hover:bg-orange-600 transition-all flex items-center gap-2">
+                  <button className="relative z-10 bg-orange-500 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-orange-500/30 hover:bg-orange-600 transition-all flex items-center gap-2">
                     <CreditCard size={18} /> Demander un retrait
                   </button>
                 </div>
@@ -419,30 +453,74 @@ const VendorView = ({ session, profile, navigate }) => {
 
           {/* IDENTITY TAB */}
           {currentTab === 'identity' && (
-            <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4">
+            <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-4">
               <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 border border-gray-100 dark:border-slate-800 shadow-sm">
-                <div className="flex items-center gap-4 mb-8 pb-8 border-b border-gray-100 dark:border-slate-800">
-                  <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-4 mb-10 pb-8 border-b border-gray-100 dark:border-slate-800">
+                  <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center">
                     <UserCheck size={32} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-green-500">Identité Vérifiée</h3>
-                    <p className="text-sm text-gray-500 mt-1">Vous avez l'autorisation de vendre sur la plateforme.</p>
+                    <h3 className="text-2xl font-black">Vérification d'identité (KYC)</h3>
+                    <p className="text-sm text-gray-500 mt-1">Conformément aux réglementations, veuillez vérifier votre identité pour débloquer les paiements.</p>
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nom de la boutique / Vendeur</label>
-                    <input type="text" value={profile?.username || 'Vendeur XYZ'} disabled className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-transparent text-gray-500 font-bold" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Document d'identité fourni</label>
-                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
-                      <span className="text-sm font-bold text-gray-500">CNI_Vendeur.pdf</span>
-                      <ExternalLink size={16} className="text-gray-400" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <h4 className="font-bold text-lg border-b border-gray-100 dark:border-slate-800 pb-2">Informations personnelles</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Prénom</label>
+                        <input type="text" placeholder="John" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Nom</label>
+                        <input type="text" placeholder="Doe" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Date de naissance</label>
+                      <input type="date" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Adresse de résidence</label>
+                      <input type="text" placeholder="123 Rue de la Paix, Ville, Pays" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors" />
                     </div>
                   </div>
+
+                  <div className="space-y-6">
+                    <h4 className="font-bold text-lg border-b border-gray-100 dark:border-slate-800 pb-2">Document officiel</h4>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Type de document</label>
+                      <select className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors appearance-none">
+                        <option value="id_card">Carte d'Identité Nationale</option>
+                        <option value="passport">Passeport</option>
+                        <option value="driver_license">Permis de conduire</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Numéro du document</label>
+                      <input type="text" placeholder="Numéro d'identification..." className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors font-mono" />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Télécharger le document (Recto / Verso)</label>
+                      <div className="border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl p-8 text-center hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer flex flex-col items-center justify-center gap-3">
+                        <div className="w-12 h-12 bg-orange-500/10 text-orange-500 rounded-xl flex items-center justify-center">
+                          <Plus size={24} />
+                        </div>
+                        <div className="text-sm font-bold text-gray-600 dark:text-gray-400">Cliquez pour importer un fichier PDF, JPG ou PNG</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-widest">Taille max : 5 MB</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 pt-8 border-t border-gray-100 dark:border-slate-800 flex justify-end">
+                  <button className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all">
+                    Soumettre pour vérification
+                  </button>
                 </div>
               </div>
             </div>
