@@ -1060,14 +1060,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
           {lang.toUpperCase()}
         </button>
 
-        {/* Theme switcher */}
-        <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700"
-          title={theme === 'dark' ? 'Mode Clair' : 'Mode Sombre'}
-        >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
+
 
         {session && session.user.email === ADMIN_EMAIL && (
           <button onClick={() => navigate('admin')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
@@ -4377,13 +4370,6 @@ const AdminView = ({
             >
               {lang.toUpperCase()}
             </button>
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="flex-1 h-10 rounded-xl bg-gray-50 dark:bg-slate-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-slate-700"
-              title={theme === 'dark' ? 'Mode Clair' : 'Mode Sombre'}
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
           </div>
 
           {/* Back to site */}
@@ -6214,16 +6200,17 @@ const SupportChatWidget = ({ session, profile }) => {
 
 function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('agedgmail_lang') || 'fr');
-  const [theme, setTheme] = useState(() => localStorage.getItem('agedgmail_theme') || 'dark');
-
   useEffect(() => {
-    localStorage.setItem('agedgmail_theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e) => {
+      if (e.matches) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+    };
+    
+    handleChange(mediaQuery);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('agedgmail_lang', lang);
@@ -6606,7 +6593,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans flex flex-col">
-      {!isAdmin && currentView !== 'landing' && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} t={t} />}
+      {!isAdmin && currentView !== 'landing' && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} t={t} />}
       {!isAdmin && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />}
       {!isAdmin && (
         <CartCheckoutModal
