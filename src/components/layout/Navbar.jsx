@@ -84,19 +84,17 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
               <span className="text-sm font-bold text-primary font-price">${profile?.balance?.toFixed(2) || "0.00"}</span>
             </button>
             <NotificationBell session={session} lang={lang} />
-            <div className="relative group">
-              <button aria-label="Account menu" className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-all border border-gray-100 dark:border-gray-700">
-                <User size={18} />
-              </button>
-              {/* Menu déroulant au survol */}
-              <div className="absolute right-0 top-full pt-2 w-52 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
-                <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-2">
-                  <button onClick={() => navigate('settings')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-all">
-                    <Settings size={16} /> {t('settings')}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <button 
+              onClick={() => navigate('settings')} 
+              aria-label="Settings" 
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border ${
+                currentView === 'settings' 
+                  ? 'bg-primary/10 text-primary border-primary/20' 
+                  : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:text-primary border-gray-100 dark:border-gray-700'
+              }`}
+            >
+              <User size={18} />
+            </button>
           </div>
         ) : (
           <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]">

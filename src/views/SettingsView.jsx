@@ -30,12 +30,12 @@ const SettingsView = ({ profile, navigate, fetchProfile, session, lang, t }) => 
   if (!session) { navigate('auth'); return null; }
   
   return (
-  <div className="max-w-3xl mx-auto px-6 py-16 font-sans">
+  <div className="max-w-5xl mx-auto px-6 py-16 font-sans text-gray-900 dark:text-white">
     <div className="flex items-center gap-4 mb-10">
-      <button onClick={() => navigate('dashboard')} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all border border-gray-100"><ArrowLeft size={18} /></button>
-      <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('settings')}</h1>
+      <button onClick={() => navigate('dashboard')} className="w-10 h-10 rounded-full bg-gray-50 dark:bg-slate-800 flex items-center justify-center text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white transition-all border border-gray-100 dark:border-slate-700"><ArrowLeft size={18} /></button>
+      <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{t('settings')}</h1>
     </div>
-    <SettingsTab profile={profile} session={session} onUpdate={() => fetchProfile && session && fetchProfile(session.user.id)} lang={lang} t={t} />
+    <SettingsTab profile={profile} session={session} onUpdate={() => fetchProfile && session && fetchProfile(session.user.id)} lang={lang} t={t} navigate={navigate} />
   </div>
   );
 };
