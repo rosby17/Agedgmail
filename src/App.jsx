@@ -515,11 +515,10 @@ function App() {
           navigate('reset-password');
           return;
         }
-        // Redirection après connexion : si le hash est vide (cas d'un retour
-        // OAuth Google), 'landing', ou 'auth', on les envoie vers le shop.
+        // Redirection après connexion : si le path est vide (racine), 'landing', ou 'auth', on les envoie vers le shop.
         if (event === 'SIGNED_IN') {
-          const h = window.location.hash.replace('#', '');
-          if (!h || h === 'auth' || h === 'landing') {
+          const p = window.location.pathname.replace(/^\/+/, '');
+          if (!p || p === 'auth' || p === 'landing') {
             navigate('shop');
           }
         }
@@ -534,8 +533,9 @@ function App() {
           // Si on était sur une vue qui exige une session (dashboard, réglages,
           // recharge, admin), on repart proprement sur le catalogue au lieu de
           // laisser un écran vide (les vues protégées ne rendent rien sans session).
-          const protectedViews = ['dashboard', 'settings', 'recharge', 'admin'];
-          if (protectedViews.includes(window.location.hash.replace('#', ''))) {
+          const protectedViews = ['dashboard', 'myorders', 'settings', 'recharge', 'admin'];
+          const p = window.location.pathname.replace(/^\/+/, '');
+          if (protectedViews.includes(p)) {
             navigate('shop');
           }
         }
