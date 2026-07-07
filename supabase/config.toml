@@ -18,3 +18,15 @@ user = "env(BREVO_SMTP_LOGIN)"
 pass = "env(BREVO_SMTP_PASSWORD)"
 admin_email = "env(BREVO_SENDER_EMAIL)"
 sender_name = "AgedGmailYT"
+
+# Templates HTML personnalisés (branding AgedGmailYT) — remplacent le mail
+# générique par défaut de Supabase ("Reset Password" nu, sans logo ni
+# contexte), qui ressemble trop à un email de phishing pour les filtres
+# anti-spam et pour l'utilisateur.
+[auth.email.template.recovery]
+subject = "Réinitialise ton mot de passe AgedGmailYT"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.confirmation]
+subject = "Confirme ton email — AgedGmailYT"
+content_path = "./supabase/templates/confirmation.html"
