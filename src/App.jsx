@@ -2786,8 +2786,10 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
     if (fetchProfile) fetchProfile(session.user.id);
   };
 
-  // Filtre uniquement les commandes d'achat (pas les recharges product_id=999)
-  const purchaseOrders = orders.filter(o => o.product_id !== 999);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(orders.length / itemsPerPage);
+  const displayOrders = orders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   // Parse les options d'un nom de produit YTSeller :
   // "Gmail Accounts 2FA/ BACKUP CODE/ APP PASSWORD (3 Months)" → baseName + options
@@ -2849,14 +2851,15 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
 
   const hasDelivery = (order) => !!(order.credentials || order.data);
 
-  const statusBadge = (status) => {
+  const statusBadge = (order) => {
+    const isSpecial = order.product_id === 999 || order.product_id === 998;
     const map = {
-      confirmed: { label: t('completed'), cls: 'bg-green-100 text-green-700 border-green-200' },
-      cancelled:  { label: t('failed'),    cls: 'bg-red-100 text-red-600 border-red-200' },
-      processing: { label: t('processing'), cls: 'bg-blue-100 text-blue-700 border-blue-200' },
-      pending:    { label: t('pending'),   cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+      confirmed: { label: isSpecial ? 'Succès' : t('completed'), cls: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' },
+      cancelled:  { label: t('failed'),    cls: 'bg-red-100 text-red-600 border-red-200 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400' },
+      processing: { label: t('processing'), cls: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400' },
+      pending:    { label: t('pending'),   cls: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:border-yellow-500/20 dark:text-yellow-400' },
     };
-    const { label, cls } = map[status] || map.pending;
+    const { label, cls } = map[order.status] || map.pending;
     return <span className={`text-xs font-bold px-3 py-1 rounded-full border ${cls}`}>{label}</span>;
   };
 
@@ -2914,37 +2917,31 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
         </div>
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-[3rem] p-8 md:p-10 shadow-soft">
+      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 shadow-soft">
         {/* Barre d'options */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={sendEmailAll}
               onChange={e => handleEmailToggle(e.target.checked)}
-              className="rounded border-gray-300 text-primary focus:ring-primary"
+              className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-primary focus:ring-primary"
             />
             <span>{t('emailDeliveryOptIn')}</span>
           </label>
-          <button
-            onClick={() => navigate('dashboard')}
-            className="text-primary font-bold text-sm flex items-center gap-1 hover:underline"
-          >
-            {t('viewTransactions')} <ChevronRight size={14} />
-          </button>
         </div>
 
         {loading ? (
           <div className="py-4"><SkeletonRows rows={5} cols={6} /></div>
-        ) : purchaseOrders.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
-            <p className="text-gray-400 font-bold">{t('noOrders')}</p>
+        ) : orders.length === 0 ? (
+          <div className="text-center py-20 bg-gray-50 dark:bg-slate-800 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-700">
+            <p className="text-gray-400 dark:text-gray-500 font-bold">{t('noOrders')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
                   <th className="pb-5 pr-4 whitespace-nowrap">{t('orderCode')}</th>
                   <th className="pb-5 pr-4">{t('productsBought')}</th>
                   <th className="pb-5 pr-4">{t('status')}</th>
@@ -2953,20 +2950,20 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
                   <th className="pb-5"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {purchaseOrders.map(order => {
+              <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+                {displayOrders.map(order => {
                   const { baseName, options } = parseProductOptions(order.product_name);
                   const canDownload = hasDelivery(order);
                   return (
-                    <tr key={order.id} className="group hover:bg-gray-50/50 transition-colors">
+                    <tr key={order.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
                       {/* Code de commande */}
                       <td className="py-5 pr-4">
-                        <span className="font-black text-gray-900 text-base font-mono tracking-widest">#{shortOrderId(order.id)}</span>
+                        <span className="font-black text-gray-900 dark:text-white text-base font-mono tracking-widest">#{shortOrderId(order.id)}</span>
                       </td>
 
                       {/* Produits + options */}
                       <td className="py-5 pr-4 max-w-xs">
-                        <div className="font-bold text-gray-900 text-sm leading-snug mb-1.5">
+                        <div className="font-bold text-gray-900 dark:text-white text-sm leading-snug mb-1.5">
                           {cleanProductName(baseName || order.product_name, lang)}
                           <span className="text-gray-400 font-medium ml-1">x{order.quantity}</span>
                         </div>
@@ -2985,22 +2982,22 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
                       </td>
 
                       {/* Status */}
-                      <td className="py-5 pr-4">{statusBadge(order.status)}</td>
+                      <td className="py-5 pr-4">{statusBadge(order)}</td>
 
                       {/* Total */}
-                      <td className="py-5 pr-4 text-right font-black text-gray-900 whitespace-nowrap">
+                      <td className="py-5 pr-4 text-right font-black text-gray-900 dark:text-white whitespace-nowrap">
                         ${order.total_price?.toFixed(2)}
                       </td>
 
                       {/* Date */}
-                      <td className="py-5 pr-4 text-sm text-gray-400 whitespace-nowrap">
+                      <td className="py-5 pr-4 text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
                         {new Date(order.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                       </td>
 
                       {/* Actions */}
                       <td className="py-5">
-                        {order.product_id === 999 ? (
-                          order.status === 'pending' && order.payment_method === 'binance_pay' ? (
+                        {order.product_id === 999 || order.product_id === 998 ? (
+                          order.product_id === 999 && order.status === 'pending' && order.payment_method === 'binance_pay' ? (
                             new Date(order.expires_at || 0).getTime() > Date.now() ? (
                               <button onClick={() => onResume && onResume(order)} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-primary/20 transition-all">
                                 <RefreshCcw size={14} /> Continuer
@@ -3041,8 +3038,31 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
           </div>
         )}
 
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-6">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              {t('previous') || 'Précédent'}
+            </button>
+            <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
+              Page {page} / {totalPages}
+            </span>
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              {t('next') || 'Suivant'}
+            </button>
+          </div>
+        )}
+
         {/* Note livraison en cours */}
-        {purchaseOrders.some(o => o.status === 'processing') && (
+        {orders.some(o => o.status === 'processing') && (
           <div className="mt-6 flex items-center gap-2 text-xs text-gray-400 font-medium">
             <RefreshCcw size={12} className="animate-spin text-primary" />
             Certains articles sont encore en cours de livraison — actualisation automatique…
