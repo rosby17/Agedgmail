@@ -1,5 +1,17 @@
 project_id = "ncjpbkfwhmsispiczzgl"
 
+# Site URL + URLs de redirection autorisées pour l'auth (OAuth Google, liens
+# email). Sans ça, Supabase retombait sur le Site URL par défaut du projet
+# (http://127.0.0.1:3000, jamais changé depuis la création) après une
+# connexion Google — d'où la redirection vers une adresse qui n'existe pas.
+[auth]
+site_url = "https://agedgmail.tools-cl.com"
+additional_redirect_urls = [
+  "https://agedgmail.tools-cl.com",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]
+
 # Conserve la valeur actuelle du projet distant (fonctionnalité payante,
 # non activée) — sans cette ligne, `config push` tentait de l'activer par
 # défaut et se faisait rejeter (402, plan gratuit) avant même de toucher au SMTP.
