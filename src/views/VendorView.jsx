@@ -37,6 +37,8 @@ const MOCK_WITHDRAWALS = [
 const VendorView = ({ session, profile, navigate }) => {
   const [currentTab, setCurrentTab] = useState('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', category: '', format: '', stock: '' });
 
   // Fallbacks if profile is missing
   const vendorStatus = profile?.vendor_status || 'approved'; // Force approved for mockup view
@@ -109,7 +111,7 @@ const VendorView = ({ session, profile, navigate }) => {
           {/* OVERVIEW TAB */}
           {currentTab === 'overview' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 bg-green-500/10 text-green-500 rounded-2xl flex items-center justify-center"><DollarSign size={24} /></div>
@@ -137,6 +139,15 @@ const VendorView = ({ session, profile, navigate }) => {
                   </div>
                   <div className="text-4xl font-black font-mono">510</div>
                   <div className="mt-2 text-xs font-bold text-gray-400">Commandes traitées</div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-purple-500/10 text-purple-500 rounded-2xl flex items-center justify-center"><UserCheck size={24} /></div>
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest">Total Clients</div>
+                  </div>
+                  <div className="text-4xl font-black font-mono">284</div>
+                  <div className="mt-2 text-xs font-bold text-gray-400">Acheteurs uniques</div>
                 </div>
               </div>
 
@@ -171,52 +182,117 @@ const VendorView = ({ session, profile, navigate }) => {
           {/* PRODUCTS TAB */}
           {currentTab === 'products' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <div className="flex justify-between items-center">
-                <div className="relative w-64">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" placeholder="Rechercher un produit..." className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-sm focus:border-orange-500 outline-none transition-colors" />
-                </div>
-                <button className="flex items-center gap-2 bg-orange-500 text-white px-5 py-3 rounded-2xl font-bold text-sm hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/20">
-                  <Plus size={16} /> Ajouter un produit
-                </button>
-              </div>
+              {!showAddProduct ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <div className="relative w-64">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input type="text" placeholder="Rechercher un produit..." className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-sm focus:border-orange-500 outline-none transition-colors" />
+                    </div>
+                    <button onClick={() => setShowAddProduct(true)} className="flex items-center gap-2 bg-orange-500 text-white px-5 py-3 rounded-2xl font-bold text-sm hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/20">
+                      <Plus size={16} /> Ajouter un produit
+                    </button>
+                  </div>
 
-              <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden p-6">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
-                        <th className="pb-4 font-normal">Produit</th>
-                        <th className="pb-4 font-normal">Prix de vente</th>
-                        <th className="pb-4 font-normal">Stock dispo.</th>
-                        <th className="pb-4 font-normal">Ventes totales</th>
-                        <th className="pb-4 font-normal">Statut</th>
-                        <th className="pb-4 font-normal text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
-                      {MOCK_PRODUCTS.map(p => (
-                        <tr key={p.id} className="text-gray-700 dark:text-gray-300">
-                          <td className="py-5 font-bold">{p.name}</td>
-                          <td className="py-5 font-mono">${p.price.toFixed(2)}</td>
-                          <td className="py-5">{p.stock > 0 ? <span className="text-green-500 font-bold">{p.stock}</span> : <span className="text-red-500 font-bold">Rupture</span>}</td>
-                          <td className="py-5 font-bold">{p.sales}</td>
-                          <td className="py-5">
-                            {p.status === 'active' ? (
-                              <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-[10px] font-bold uppercase">En ligne</span>
-                            ) : (
-                              <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold uppercase">Hors ligne</span>
-                            )}
-                          </td>
-                          <td className="py-5 text-right">
-                            <button className="text-orange-500 hover:text-orange-600 font-bold text-xs uppercase tracking-wider">Éditer</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden p-6">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                            <th className="pb-4 font-normal">Produit</th>
+                            <th className="pb-4 font-normal">Prix de vente</th>
+                            <th className="pb-4 font-normal">Stock dispo.</th>
+                            <th className="pb-4 font-normal">Ventes totales</th>
+                            <th className="pb-4 font-normal">Statut</th>
+                            <th className="pb-4 font-normal text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+                          {MOCK_PRODUCTS.map(p => (
+                            <tr key={p.id} className="text-gray-700 dark:text-gray-300">
+                              <td className="py-5 font-bold">{p.name}</td>
+                              <td className="py-5 font-mono">${p.price.toFixed(2)}</td>
+                              <td className="py-5">{p.stock > 0 ? <span className="text-green-500 font-bold">{p.stock}</span> : <span className="text-red-500 font-bold">Rupture</span>}</td>
+                              <td className="py-5 font-bold">{p.sales}</td>
+                              <td className="py-5">
+                                {p.status === 'active' ? (
+                                  <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-[10px] font-bold uppercase">En ligne</span>
+                                ) : (
+                                  <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold uppercase">Hors ligne</span>
+                                )}
+                              </td>
+                              <td className="py-5 text-right">
+                                <button className="text-orange-500 hover:text-orange-600 font-bold text-xs uppercase tracking-wider">Éditer</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-gray-100 dark:border-slate-800 shadow-sm p-8">
+                  <div className="flex justify-between items-center mb-8 border-b border-gray-100 dark:border-slate-800 pb-6">
+                    <h3 className="text-xl font-bold">Ajouter un nouveau produit</h3>
+                    <button onClick={() => setShowAddProduct(false)} className="text-gray-500 hover:text-gray-700 font-bold text-sm bg-gray-50 dark:bg-slate-800 px-4 py-2 rounded-xl">Retour à la liste</button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Nom du produit</label>
+                        <input type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} placeholder="Ex: Netflix 1 Mois..." className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors" />
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="w-1/2">
+                          <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Catégorie</label>
+                          <select value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors appearance-none">
+                            <option value="">Sélectionner...</option>
+                            <option value="streaming">Streaming</option>
+                            <option value="gaming">Jeux Vidéo</option>
+                            <option value="vpn">VPN</option>
+                            <option value="software">Logiciels</option>
+                          </select>
+                        </div>
+                        <div className="w-1/2">
+                          <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Prix (USDT)</label>
+                          <input type="number" step="0.01" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} placeholder="0.00" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors font-mono" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Stock / Inventaire (Optionnel si auto)</label>
+                        <input type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: e.target.value})} placeholder="100" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors font-mono" />
+                        <p className="text-[10px] text-gray-400 mt-2">Le stock sera automatiquement mis à jour si vous ajoutez des lignes de livraison.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="bg-orange-500/5 border border-orange-500/20 p-6 rounded-[2rem]">
+                        <h4 className="text-orange-600 font-bold mb-2">Format de livraison exigé</h4>
+                        <p className="text-xs text-orange-600/80 mb-4">Veuillez spécifier le format exact que le système doit attendre lorsque vous ajoutez des comptes (ex: Email:MotDePasse).</p>
+                        
+                        <label className="block text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">Format (Ligne par ligne)</label>
+                        <input type="text" value={newProduct.format} onChange={e => setNewProduct({...newProduct, format: e.target.value})} placeholder="email:password" className="w-full px-4 py-3 bg-white dark:bg-slate-900 rounded-xl border border-orange-500/30 focus:border-orange-500 outline-none transition-colors font-mono text-sm" />
+                        
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="text-xs font-bold text-gray-500">Exemples courants :</span>
+                          <div className="flex gap-2">
+                            <button onClick={() => setNewProduct({...newProduct, format: 'email:password'})} className="px-2 py-1 bg-white dark:bg-slate-900 text-xs font-mono rounded-lg border border-gray-200 dark:border-slate-700">email:pass</button>
+                            <button onClick={() => setNewProduct({...newProduct, format: 'email:password:token'})} className="px-2 py-1 bg-white dark:bg-slate-900 text-xs font-mono rounded-lg border border-gray-200 dark:border-slate-700">email:pass:token</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 pt-8 border-t border-gray-100 dark:border-slate-800 flex justify-end">
+                    <button className="bg-orange-500 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-orange-500/30 hover:bg-orange-600 transition-all">
+                      Sauvegarder le produit
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

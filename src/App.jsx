@@ -777,13 +777,13 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const isAdmin = currentView === 'admin';
+  const isDashboardLayout = currentView === 'admin' || currentView === 'vendor';
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans flex flex-col">
-      {!isAdmin && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} t={t} />}
-      {!isAdmin && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />}
-      {!isAdmin && (
+      {!isDashboardLayout && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} t={t} />}
+      {!isDashboardLayout && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />}
+      {!isDashboardLayout && (
         <CartCheckoutModal
           open={checkoutOpen}
           onClose={() => setCheckoutOpen(false)}
@@ -828,7 +828,7 @@ function App() {
         <KeepAlive show={currentView === 'recharge'}><RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} /></KeepAlive>
         <KeepAlive show={currentView === 'vendor'}><VendorView profile={profile} session={session} fetchProfile={fetchProfile} navigate={navigate} /></KeepAlive>
         <KeepAlive show={currentView === 'admin'}>
-          {isAdmin && (
+          {isDashboardLayout && currentView === 'admin' && (
             <AdminView
               session={session}
               profile={profile}
