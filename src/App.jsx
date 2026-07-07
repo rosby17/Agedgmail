@@ -10,7 +10,7 @@ import { parseAccountDelivery } from './lib/parseAccountDelivery';
 const ADMIN_EMAIL = "rooseveltmkr@gmail.com";
 
 
-const LandingView = ({ navigate, products = [], setSelectedProduct, lang, setLang }) => {
+const LandingView = ({ navigate, session, products = [], setSelectedProduct, lang, setLang }) => {
   const topProductsRaw = [...products]
     .sort((a, b) => (b.sales || 0) - (a.sales || 0))
     .slice(0, 3)
@@ -84,29 +84,6 @@ const LandingView = ({ navigate, products = [], setSelectedProduct, lang, setLan
 
   return (
     <div className="font-body-md bg-l-background text-on-surface grid-bg">
-      <nav className="fixed top-0 w-full z-50 glass border-b border-white/5 backdrop-blur-xl">
-        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter flex justify-between items-center h-20">
-          <div className="flex items-center gap-3">
-            <img alt="AgedGmailYT Icon" className="h-9 w-auto hover:scale-105 transition-transform duration-300 cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA2ZF5zZB5llhXjTZgvs64In3ytJg2FF_ek-KSm4bibJfw782IYaJSOV0Knvsmsuy_-PYMZlJp2iWO-tS2m2PBLuOiMGjhAV8_kzD9iQWOs6_dhwuhZCfBob0ZTq-oO131Htvb8G1tMAbz5fJlbqj4KbpEnBj0OIpWFUJmpCPQHQnv6k5fK9-FlMxX9UCNKVjE4jBej0HcFQB6je4WpnxANg0kP-0szIcnPZVSjDhlYnscIx5TNK88H1o1znlvXYZ7gV59gR7BNZDe" onClick={() => navigate('')} />
-            <span className="font-headline-lg font-bold text-l-primary text-xl tracking-tighter hidden md:block">AgedGmailYT</span>
-          </div>
-          <div className="hidden md:flex items-center gap-10">
-            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#catalogue" onClick={(e) => scrollToSection(e, '#catalogue')}>{lang === 'fr' ? 'Catalogue' : 'Catalog'}</a>
-            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#features" onClick={(e) => scrollToSection(e, '#features')}>{lang === 'fr' ? 'Fonctionnalités' : 'Features'}</a>
-            <a className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors cursor-pointer" href="#faq" onClick={(e) => scrollToSection(e, '#faq')}>FAQ</a>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
-              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all font-bold text-xs"
-            >
-              {lang === 'fr' ? 'FR' : 'EN'}
-            </button>
-            <button onClick={() => navigate('auth')} className="font-medium text-sm text-on-surface-variant hover:text-l-primary transition-colors px-4 py-2 cursor-pointer active:scale-95">{lang === 'fr' ? 'Se connecter' : 'Login'}</button>
-            <button onClick={() => navigate('auth')} className="bg-l-primary text-on-primary px-6 py-2.5 rounded-full text-sm font-bold hover:scale-105 transition-all duration-300 emerald-glow shadow-lg cursor-pointer active:scale-95">{lang === 'fr' ? 'Commencer' : 'Get Started'}</button>
-          </div>
-        </div>
-      </nav>
 
       <main>
         <section className="relative pt-52 pb-32 overflow-hidden min-h-screen flex items-center">
@@ -1042,14 +1019,15 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <ArrowLeft size={20} />
           </button>
         )}
-        <button onClick={() => navigate('')} className="h-20 flex items-center group transition-all">
-          <img src="/logo.png" alt="AgedGmailYT" className="h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+        <button onClick={() => navigate('')} className="h-20 flex items-center gap-3 group transition-all">
+          <img src="/logo.png" alt="AgedGmailYT" className="h-10 w-auto group-hover:scale-105 transition-transform duration-300" />
+          <span className="font-headline-lg font-bold text-primary text-xl tracking-tighter hidden md:block">AgedGmailYT</span>
         </button>
       </div>
 
       {/* Menu central */}
       <nav className="hidden lg:flex items-center gap-8">
-        <button onClick={() => go('shop', 'all', 'all')} className={linkCls(currentView === 'shop')}>{t('products')}</button>
+        <button onClick={() => go('shop', 'all', 'all')} className={linkCls(currentView === 'shop' || currentView === 'landing')}>{lang === 'fr' ? 'Catalogue' : 'Catalog'}</button>
         <button onClick={() => go('shop', 'all', 'sms')} className={linkCls(false)}>{t('sms')}</button>
         <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>{t('api')}</button>
         {session && (
@@ -1074,6 +1052,14 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <Shield size={14} /> {t('admin')}
           </button>
         )}
+        
+        {/* Cart Button (Now before Profile) */}
+        <button onClick={onCartClick} className="bg-gray-900 dark:bg-primary text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
+          <ShoppingCart size={18} />
+          {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
+          <span className="border-l border-white/20 pl-3">CART / ${cartTotal.toFixed(2)}</span>
+        </button>
+
         {session ? (
           <div className="flex items-center gap-4">
             <button
@@ -1096,10 +1082,6 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
                   <button onClick={() => navigate('settings')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-all">
                     <Settings size={16} /> {t('settings')}
                   </button>
-                  <div className="h-px bg-gray-100 dark:bg-gray-800 my-2" />
-                  <button onClick={() => supabase.auth.signOut()} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
-                    <LogOut size={16} /> {t('logout')}
-                  </button>
                 </div>
               </div>
             </div>
@@ -1109,11 +1091,6 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             <User size={18} /> LOGIN/SIGNUP
           </button>
         )}
-        <button onClick={onCartClick} className="bg-gray-900 dark:bg-primary text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
-          <ShoppingCart size={18} />
-          {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
-          <span className="border-l border-white/20 pl-3">CART / ${cartTotal.toFixed(2)}</span>
-        </button>
       </div>
     </div>
   </header>
@@ -6778,7 +6755,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-gray-950 font-sans flex flex-col">
-      {!isAdmin && currentView !== 'landing' && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} t={t} />}
+      {!isAdmin && <Navbar cartTotal={cartTotal} cartCount={cart.length} navigate={navigate} session={session} profile={profile} currentView={currentView} setActiveCategory={setActiveCategory} setActiveGroup={setActiveGroup} onCartClick={() => setCartOpen(true)} lang={lang} setLang={setLang} t={t} />}
       {!isAdmin && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} updateCartQuantity={updateCartQuantity} removeFromCart={removeFromCart} clearCart={clearCart} cartTotal={cartTotal} navigate={navigate} session={session} onCheckout={() => setCheckoutOpen(true)} />}
       {!isAdmin && (
         <CartCheckoutModal
@@ -6810,7 +6787,7 @@ function App() {
         />
       )}
       <div className="flex-grow">
-        {currentView === 'landing' && <LandingView navigate={navigate} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} />}
+        {currentView === 'landing' && <LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} />}
         {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
