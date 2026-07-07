@@ -122,7 +122,7 @@ const SupportAdmin = ({ session }) => {
       setMessages(msgs || []);
       loadTickets();
     } catch(err) {
-      alert('Erreur d\'upload : ' + err.message);
+      await window.showAlert("Erreur", 'Erreur d\'upload : ' + err.message);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -179,7 +179,7 @@ const SupportAdmin = ({ session }) => {
           setMessages(msgs || []);
           loadTickets();
         } catch(err) {
-          alert('Erreur d\'envoi du vocal : ' + err.message);
+          await window.showAlert("Erreur", 'Erreur d\'envoi du vocal : ' + err.message);
         } finally {
           setUploading(false);
         }
@@ -188,7 +188,7 @@ const SupportAdmin = ({ session }) => {
       mediaRecorder.start();
       setRecording(true);
     } catch (err) {
-      alert('Impossible d\'accéder au micro : ' + err.message);
+      await window.showAlert("Accès Micro", 'Impossible d\'accéder au micro : ' + err.message);
     }
   };
 
@@ -245,7 +245,7 @@ const SupportAdmin = ({ session }) => {
     const { error } = await supabase.from('support_messages').insert({
       ticket_id: active.id, user_id: active.user_id, sender: 'admin', body,
     });
-    if (error) { setSending(false); alert('Erreur : ' + error.message); return; }
+    if (error) { setSending(false); await window.showAlert("Erreur", 'Erreur : ' + error.message); return; }
     await supabase.from('support_tickets').update({
       last_message_at: new Date().toISOString(), last_sender: 'admin', user_unread: true, admin_unread: false,
     }).eq('id', active.id);

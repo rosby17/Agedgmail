@@ -98,7 +98,8 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   };
 
   const handleFullImport = async () => {
-    if (!confirm('IMPORT COMPLET YTSELLER : cela va importer tout le catalogue, supprimer les produits à stock local et vider account_stock. Continuer ?')) return;
+    const ok = await window.showConfirm("Import complet", 'IMPORT COMPLET YTSELLER : cela va importer tout le catalogue, supprimer les produits à stock local et vider account_stock. Continuer ?');
+    if (!ok) return;
     setSyncing('ytseller'); setMsg('');
     try {
       const { data, error } = await supabase.functions.invoke('ytseller-sync-catalog', { body: { full: true } });
@@ -155,7 +156,8 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
   };
 
   const handleDelete = async (m) => {
-    if (!confirm(`Retirer le mapping ${SUPPLIER_LABEL[m.supplier] || m.supplier} de "${productName(m.product_id)}" ?`)) return;
+    const ok = await window.showConfirm("Retirer le mapping", `Retirer le mapping ${SUPPLIER_LABEL[m.supplier] || m.supplier} de "${productName(m.product_id)}" ?`);
+    if (!ok) return;
     await supabase.from('product_supplier_mapping').delete().eq('id', m.id);
     // Si c'était le seul mapping du produit, il repasse en stock local.
     const { count } = await supabase.from('product_supplier_mapping').select('id', { count: 'exact', head: true }).eq('product_id', m.product_id);

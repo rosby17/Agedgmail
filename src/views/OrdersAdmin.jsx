@@ -45,17 +45,17 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
   const executeCancelOrder = async (id, refund = false) => {
     const { data: order, error: orderErr } = await supabase
       .from('orders').select('id, user_id, status, total_price').eq('id', id).single();
-    if (orderErr || !order) { alert("Commande introuvable."); return; }
+    if (orderErr || !order) { await window.showAlert("Erreur", "Commande introuvable."); return; }
     if (order.status === 'cancelled') { fetchAllOrders(); return; }
 
     if (refund) {
       const { data: profile, error: profileErr } = await supabase
         .from('profiles').select('balance').eq('id', order.user_id).single();
-      if (profileErr || !profile) { alert("Profil client introuvable, remboursement impossible."); return; }
+      if (profileErr || !profile) { await window.showAlert("Erreur", "Profil client introuvable, remboursement impossible."); return; }
 
       const { error: creditErr } = await supabase
         .from('profiles').update({ balance: (profile.balance || 0) + (order.total_price || 0) }).eq('id', order.user_id);
-      if (creditErr) { alert("Erreur lors du remboursement : " + creditErr.message); return; }
+      if (creditErr) { await window.showAlert("Erreur", "Erreur lors du remboursement : " + creditErr.message); return; }
 
       const updatePayload = { status: 'cancelled', is_refunded: true };
       const { error: updateErr } = await supabase.from('orders').update(updatePayload).eq('id', id);
@@ -73,7 +73,8 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
   };
 
   const deleteOrder = async (id) => {
-    if (!window.confirm("Supprimer définitivement cette commande ?")) return;
+    const ok = await window.showConfirm("Confirmation", "Supprimer définitivement cette commande ?");
+    if (!ok) return;
     await supabase.from('orders').delete().eq('id', id);
     fetchAllOrders();
   };

@@ -162,9 +162,9 @@ const SupportChatWidget = ({ session, profile }) => {
         last_message_at: new Date().toISOString(), last_sender: 'user', admin_unread: true, status: 'open',
       }).eq('id', tk.id);
 
-      loadTicket();
+      await loadTicket();
     } catch(err) {
-      alert('Erreur d\'upload : ' + err.message);
+      await window.showAlert("Erreur", 'Erreur d\'upload : ' + err.message);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -228,7 +228,7 @@ const SupportChatWidget = ({ session, profile }) => {
 
           loadTicket();
         } catch(err) {
-          alert('Erreur d\'envoi du vocal : ' + err.message);
+          await window.showAlert("Erreur", 'Erreur d\'envoi du vocal : ' + err.message);
         } finally {
           setUploading(false);
         }
@@ -237,7 +237,7 @@ const SupportChatWidget = ({ session, profile }) => {
       mediaRecorder.start();
       setRecording(true);
     } catch (err) {
-      alert('Impossible d\'accéder au micro : ' + err.message);
+      await window.showAlert("Accès Micro", 'Impossible d\'accéder au micro : ' + err.message);
     }
   };
 
@@ -305,13 +305,13 @@ const SupportChatWidget = ({ session, profile }) => {
         user_id: userId, user_email: session.user.email, subject: 'Support', status: 'open',
         last_sender: 'user', admin_unread: true, user_unread: false, last_message_at: new Date().toISOString(),
       }).select().single();
-      if (error) { setSending(false); alert('Erreur : ' + error.message); return; }
+      if (error) { setSending(false); await window.showAlert("Erreur", 'Erreur : ' + error.message); return; }
       tk = created; setTicket(created);
     }
     const { error: msgErr } = await supabase.from('support_messages').insert({
       ticket_id: tk.id, user_id: userId, sender: 'user', body,
     });
-    if (msgErr) { setSending(false); alert('Erreur : ' + msgErr.message); return; }
+    if (msgErr) { setSending(false); await window.showAlert("Erreur", 'Erreur : ' + msgErr.message); return; }
     await supabase.from('support_tickets').update({
       last_message_at: new Date().toISOString(), last_sender: 'user', admin_unread: true, status: 'open',
     }).eq('id', tk.id);
@@ -464,6 +464,33 @@ function App() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [adminDataLoading, setAdminDataLoading] = useState(true);
+
+  const [dialogState, setDialogState] = useState(null); // { type, title, message, defaultValue, resolve }
+  const [promptValue, setPromptValue] = useState("");
+
+  useEffect(() => {
+    window.showAlert = (title, message) => {
+      return new Promise((resolve) => {
+        setDialogState({ type: 'alert', title, message, resolve });
+      });
+    };
+    window.showConfirm = (title, message) => {
+      return new Promise((resolve) => {
+        setDialogState({ type: 'confirm', title, message, resolve });
+      });
+    };
+    window.showPrompt = (title, message, defaultValue = '') => {
+      return new Promise((resolve) => {
+        setDialogState({ type: 'prompt', title, message, defaultValue, resolve });
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (dialogState && dialogState.type === 'prompt') {
+      setPromptValue(dialogState.defaultValue || '');
+    }
+  }, [dialogState]);
 
 
 
@@ -880,6 +907,49 @@ function App() {
 
       {!isAdmin && session && <SupportChatWidget session={session} profile={profile} />}
       {!isAdmin && <Footer navigate={navigate} lang={lang} />}
+
+      {dialogState && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
+          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[2rem] p-6 max-w-sm w-full shadow-2xl space-y-6 text-gray-900 dark:text-white animate-in zoom-in-95 duration-200">
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold tracking-tight">{dialogState.title}</h3>
+              <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{dialogState.message}</p>
+            </div>
+            
+            {dialogState.type === 'prompt' && (
+              <input 
+                type="text" 
+                value={promptValue} 
+                onChange={(e) => setPromptValue(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-150 dark:border-slate-800 bg-gray-50 dark:bg-slate-950/40 dark:text-white text-sm outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+              />
+            )}
+            
+            <div className="flex justify-end gap-3 pt-2">
+              {(dialogState.type === 'confirm' || dialogState.type === 'prompt') && (
+                <button 
+                  onClick={() => {
+                    dialogState.resolve(null);
+                    setDialogState(null);
+                  }}
+                  className="px-5 py-2.5 rounded-xl border border-gray-150 dark:border-slate-800 text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-800 transition-all text-gray-650 dark:text-slate-350"
+                >
+                  {lang === 'fr' ? 'Annuler' : 'Cancel'}
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  dialogState.resolve(dialogState.type === 'prompt' ? promptValue : true);
+                  setDialogState(null);
+                }}
+                className="px-6 py-2.5 rounded-xl bg-gray-950 dark:bg-primary text-white dark:text-gray-950 hover:bg-black dark:hover:bg-primaryDark text-xs font-bold transition-all shadow-md"
+              >
+                {dialogState.type === 'confirm' || dialogState.type === 'prompt' ? (lang === 'fr' ? 'Confirmer' : 'Confirm') : 'OK'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -454,25 +454,29 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
 
   const toggleBan = async (user) => {
     const next = !user.is_suspended;
-    if (!window.confirm(next
-      ? `Bannir ${user.email} ? Il ne pourra plus acheter ni recharger tant qu'il est suspendu.`
-      : `Réactiver ${user.email} ?`)) return;
+    const ok = await window.showConfirm(
+      "Confirmation",
+      next 
+        ? `Bannir ${user.email} ? Il ne pourra plus acheter ni recharger tant qu'il est suspendu.`
+        : `Réactiver ${user.email} ?`
+    );
+    if (!ok) return;
     setBusyId(user.id);
     const { error } = await supabase.from('profiles').update({ is_suspended: next }).eq('id', user.id);
-    if (error) alert('Erreur : ' + error.message);
+    if (error) await window.showAlert("Erreur", 'Erreur : ' + error.message);
     else await fetchUsers();
     setBusyId(null);
   };
 
   const creditBalance = async (user) => {
-    const raw = prompt(`Créditer le solde de ${user.email} de ($) :`, '10');
+    const raw = await window.showPrompt(`Créditer le solde de ${user.email} de ($) :`, '10');
     if (raw == null) return;
     const amount = parseFloat(raw);
     if (isNaN(amount) || amount === 0) return;
     setBusyId(user.id);
     const { data } = await supabase.from('profiles').select('balance').eq('id', user.id).single();
     const { error } = await supabase.from('profiles').update({ balance: (data?.balance || 0) + amount }).eq('id', user.id);
-    if (error) alert('Erreur : ' + error.message);
+    if (error) await window.showAlert("Erreur", 'Erreur : ' + error.message);
     else await fetchUsers();
     setBusyId(null);
   };

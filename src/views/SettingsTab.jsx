@@ -62,7 +62,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
       api_key: newKey,
       active: true
     });
-    if (error) alert("Erreur lors de la génération : " + error.message);
+    if (error) await window.showAlert("Erreur", "Erreur lors de la génération : " + error.message);
     else setApiKey(newKey);
     setLoadingKey(false);
   };
@@ -74,7 +74,8 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
   };
 
   const handleLogout = async () => {
-    if (!window.confirm("Se déconnecter ?")) return;
+    const ok = await window.showConfirm("Déconnexion", "Se déconnecter ?");
+    if (!ok) return;
     await supabase.auth.signOut();
     navigate('');
   };
@@ -183,7 +184,8 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
       setConnMsg({ type: "error", text: "Définis d'abord un mot de passe ci-dessous : sans lui, retirer Google te bloquerait l'accès au compte." });
       return;
     }
-    if (!window.confirm("Retirer la connexion Google ? Tu te connecteras uniquement par email et mot de passe.")) return;
+    const ok = await window.showConfirm("Retirer la connexion Google", "Retirer la connexion Google ? Tu te connecteras uniquement par email et mot de passe.");
+    if (!ok) return;
     setGoogleLoading(true);
     const googleIdentity = identities.find((i) => i.provider === 'google');
     const { error } = await supabase.auth.unlinkIdentity(googleIdentity);
