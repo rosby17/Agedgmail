@@ -159,6 +159,14 @@ const SupportChatWidget = ({ session, profile }) => {
         last_message_at: new Date().toISOString(), last_sender: 'user', admin_unread: true, status: 'open',
       }).eq('id', tk.id);
 
+      supabase.functions.invoke('support-notify', {
+        body: {
+          body: `[Fichier joint] ${file.name}`,
+          user_email: session.user.email,
+          display_name: profile?.display_name
+        }
+      }).catch(console.error);
+
       await loadTicket();
     } catch(err) {
       await window.showAlert("Erreur", 'Erreur d\'upload : ' + err.message);
@@ -235,6 +243,15 @@ const SupportChatWidget = ({ session, profile }) => {
     await supabase.from('support_tickets').update({
       last_message_at: new Date().toISOString(), last_sender: 'user', admin_unread: true, status: 'open',
     }).eq('id', tk.id);
+    
+    supabase.functions.invoke('support-notify', {
+      body: {
+        body,
+        user_email: session.user.email,
+        display_name: profile?.display_name
+      }
+    }).catch(console.error);
+
     setInput('');
     setSending(false);
   };
