@@ -240,11 +240,20 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       console.error(err);
       let errMsg = err.message || (isFr ? 'Une erreur est survenue' : 'An error occurred');
       
-      if (errMsg.includes('NoNumberAvailable')) {
+      const lowerErr = errMsg.toLowerCase();
+      if (
+        lowerErr.includes('nonumberavailable') || 
+        lowerErr.includes('no free channels') || 
+        lowerErr.includes('no_numbers') || 
+        lowerErr.includes('not found') || 
+        lowerErr.includes('not_found') || 
+        lowerErr.includes('out of stock') || 
+        lowerErr.includes('no number')
+      ) {
         errMsg = isFr 
-          ? "Désolé, aucun numéro n'est disponible pour ce pays actuellement. Veuillez essayer un autre pays."
-          : "Sorry, no number is currently available for this country. Please try another country.";
-      } else if (errMsg.includes('Insufficient balance')) {
+          ? "Aucun numéro n'est disponible pour ce pays actuellement. Veuillez réessayer plus tard ou choisir un autre pays."
+          : "No number is currently available for this country. Please try again later or choose another country.";
+      } else if (lowerErr.includes('insufficient balance') || lowerErr.includes('solde insuffisant')) {
         errMsg = isFr 
           ? "Solde insuffisant pour cette opération. Veuillez recharger votre compte."
           : "Insufficient balance for this operation. Please top up your account.";
