@@ -492,7 +492,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   <span>Montant total à payer :</span>
                   <span className="text-right">
                     <span className="block text-sm">${(amountUsd * 1.10).toFixed(2)}</span>
-                    <span className="block text-[10px] opacity-80">(env. {(amountUsd * 1.10 * exchangeRate).toFixed(0)} FCFA au taux de {exchangeRate}F)</span>
+                    <span className="block text-[10px] opacity-80">(env. {(amountUsd * 1.10 * exchangeRate).toFixed(0)} FCFA)</span>
                   </span>
                 </div>
               </div>
