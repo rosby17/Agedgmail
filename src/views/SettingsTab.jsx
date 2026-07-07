@@ -9,23 +9,27 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
   const [firstName, setFirstName] = useState(profile?.first_name || "");
   const [lastName, setLastName] = useState(profile?.last_name || "");
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [email, setEmail] = useState(profile?.email || "");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [tfaEnabled, setTfaEnabled] = useState(profile?.two_factor_enabled || false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
-  const [uploading, setUploading] = useState(false);
   
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [connMsg, setConnMsg] = useState({ type: "", text: "" });
+
+  const [mfaStatus, setMfaStatus] = useState('loading'); // 'loading' | 'unenrolled' | 'enrolling' | 'enrolled'
+  const [mfaFactorId, setMfaFactorId] = useState(null);
+  const [mfaQrCode, setMfaQrCode] = useState(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
 
   const [apiKey, setApiKey] = useState("");
   const [loadingKey, setLoadingKey] = useState(false);
@@ -51,7 +55,82 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
 
   useEffect(() => {
     fetchApiKey();
+    checkMfaStatus();
   }, [session]);
+
+  const checkMfaStatus = async () => {
+    setMfaStatus('loading');
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error) {
+      setMfaError(error.message);
+      setMfaStatus('unenrolled');
+      return;
+    }
+    const totpFactor = data.totp.find(f => f.status === 'verified');
+    if (totpFactor) {
+      setMfaFactorId(totpFactor.id);
+      setMfaStatus('enrolled');
+    } else {
+      setMfaStatus('unenrolled');
+    }
+  };
+
+  const startMfaEnrollment = async () => {
+    setMfaLoading(true);
+    setMfaError('');
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+    if (error) {
+      setMfaError(error.message);
+      setMfaLoading(false);
+      return;
+    }
+    setMfaFactorId(data.id);
+    setMfaQrCode(data.totp.qr_code);
+    setMfaStatus('enrolling');
+    setMfaLoading(false);
+  };
+
+  const verifyMfaEnrollment = async () => {
+    setMfaLoading(true);
+    setMfaError('');
+    const challenge = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+    if (challenge.error) {
+      setMfaError(challenge.error.message);
+      setMfaLoading(false);
+      return;
+    }
+    
+    const verify = await supabase.auth.mfa.verify({
+      factorId: mfaFactorId,
+      challengeId: challenge.data.id,
+      code: mfaCode
+    });
+    
+    if (verify.error) {
+      setMfaError('Code invalide. Veuillez réessayer.');
+      setMfaLoading(false);
+      return;
+    }
+    setMfaStatus('enrolled');
+    setMfaCode('');
+    setMfaQrCode(null);
+    setMfaLoading(false);
+  };
+
+  const unenrollMfa = async () => {
+    const ok = await window.showConfirm("Désactiver 2FA", "Voulez-vous vraiment désactiver l'authentification à deux facteurs ?");
+    if (!ok) return;
+    setMfaLoading(true);
+    setMfaError('');
+    const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+    if (error) {
+      setMfaError(error.message);
+    } else {
+      setMfaFactorId(null);
+      setMfaStatus('unenrolled');
+    }
+    setMfaLoading(false);
+  };
 
   const generateApiKey = async () => {
     if (!session?.user?.id) return;
@@ -80,37 +159,6 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
     navigate('');
   };
 
-  const handleAvatarUpload = async (e) => {
-    try {
-      setUploading(true);
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setAvatarUrl(publicUrl);
-
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
-      onUpdate();
-    } catch (error) {
-      setErrorMessage("Upload error: Ensure you have created a public 'avatars' bucket in Supabase.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -135,8 +183,6 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
         first_name: firstName,
         last_name: lastName,
         display_name: displayName,
-        avatar_url: avatarUrl,
-        two_factor_enabled: tfaEnabled,
         updated_at: new Date().toISOString(),
       });
 
@@ -310,23 +356,6 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
               </div>
               
               <div>
-                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-455 uppercase tracking-widest mb-3">Photo de Profil</label>
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800/40 rounded-[1.5rem] border border-gray-155 dark:border-slate-800 flex items-center justify-center overflow-hidden relative group shrink-0">
-                    {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" alt="Preview" /> : <User size={24} className="text-gray-300 dark:text-slate-650" />}
-                    {uploading && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><RefreshCcw size={16} className="text-white animate-spin" /></div>}
-                  </div>
-                  <div className="space-y-2">
-                    <input type="file" id="avatar" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
-                    <label htmlFor="avatar" className="inline-block bg-white dark:bg-slate-800 border border-gray-155 dark:border-slate-800 text-gray-900 dark:text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-white transition-all cursor-pointer">
-                      {uploading ? "Chargement..." : "Choisir une photo"}
-                    </label>
-                    <p className="text-[10px] text-gray-400 dark:text-slate-500 italic">Formats supportés: JPG, PNG. Max 2Mo.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
                 <label className="block text-[10px] font-black text-gray-400 dark:text-slate-455 uppercase tracking-widest mb-2">Adresse E-mail *</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-155 dark:border-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 font-bold text-sm outline-none" />
               </div>
@@ -415,21 +444,52 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
               </div>
 
               {/* 2FA */}
-              <div className="flex items-center justify-between p-6 bg-gray-50/50 dark:bg-slate-800/20 rounded-[1.5rem] border border-gray-150 dark:border-slate-800">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white dark:bg-slate-850 rounded-xl flex items-center justify-center shadow-sm text-primary shrink-0 border border-gray-100 dark:border-slate-800"><Shield size={20} /></div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white text-sm">Double authentification (2FA)</h4>
-                    <p className="text-xs text-gray-400 dark:text-slate-500 font-medium">Une couche de sécurité supplémentaire.</p>
+              <div className="flex flex-col p-6 bg-gray-50/50 dark:bg-slate-800/20 rounded-[1.5rem] border border-gray-150 dark:border-slate-800 gap-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white dark:bg-slate-850 rounded-xl flex items-center justify-center shadow-sm text-primary shrink-0 border border-gray-100 dark:border-slate-800"><Shield size={20} /></div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-white text-sm">Double authentification (2FA)</h4>
+                      <p className="text-xs text-gray-400 dark:text-slate-500 font-medium">Authentificateur (TOTP)</p>
+                    </div>
                   </div>
+                  
+                  {mfaStatus === 'enrolled' ? (
+                    <button type="button" onClick={unenrollMfa} disabled={mfaLoading} className="px-4 py-2 bg-red-50 dark:bg-red-950/10 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-950/20 transition-all disabled:opacity-50">
+                      {mfaLoading ? '...' : 'Désactiver'}
+                    </button>
+                  ) : mfaStatus === 'unenrolled' ? (
+                    <button type="button" onClick={startMfaEnrollment} disabled={mfaLoading} className="px-4 py-2 bg-gray-900 dark:bg-primary text-white dark:text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black dark:hover:bg-primaryDark transition-all disabled:opacity-50">
+                      {mfaLoading ? '...' : 'Activer'}
+                    </button>
+                  ) : mfaStatus === 'loading' ? (
+                    <div className="px-4 py-2"><RefreshCcw size={16} className="animate-spin text-gray-400" /></div>
+                  ) : null}
                 </div>
-                <button type="button" onClick={async () => {
-                  const newVal = !tfaEnabled;
-                  setTfaEnabled(newVal);
-                  await supabase.from('profiles').update({ two_factor_enabled: newVal }).eq('id', profile.id);
-                }} className={`w-14 h-7 rounded-full relative transition-all duration-300 shrink-0 ${tfaEnabled ? 'bg-primary' : 'bg-gray-200 dark:bg-slate-700'}`}>
-                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 ${tfaEnabled ? 'left-8' : 'left-1'}`} />
-                </button>
+
+                {mfaStatus === 'enrolling' && (
+                  <div className="border-t border-gray-150 dark:border-slate-800 pt-6 space-y-4">
+                    <h5 className="font-bold text-sm text-gray-900 dark:text-white">Configuration de l'authentificateur</h5>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">1. Scannez ce QR Code avec votre application (Google Authenticator, Authy, etc.).</p>
+                    <div className="bg-white p-4 rounded-xl inline-block" dangerouslySetInnerHTML={{ __html: mfaQrCode }} />
+                    <p className="text-xs text-gray-500 dark:text-slate-400">2. Saisissez le code à 6 chiffres généré par l'application.</p>
+                    <div className="flex items-center gap-2 max-w-xs">
+                      <input 
+                        type="text" 
+                        maxLength="6"
+                        placeholder="000000"
+                        value={mfaCode}
+                        onChange={e => setMfaCode(e.target.value)}
+                        className="flex-1 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-155 dark:border-slate-800 font-mono text-center font-bold text-gray-900 dark:text-white outline-none focus:border-primary"
+                      />
+                      <button type="button" onClick={verifyMfaEnrollment} disabled={mfaLoading || mfaCode.length < 6} className="px-4 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primaryDark transition-all disabled:opacity-50">
+                        {mfaLoading ? <RefreshCcw size={16} className="animate-spin" /> : 'Valider'}
+                      </button>
+                    </div>
+                    <button type="button" onClick={() => setMfaStatus('unenrolled')} className="text-[10px] text-gray-400 uppercase font-black hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Annuler</button>
+                  </div>
+                )}
+                {mfaError && <div className="text-xs text-red-500 font-bold flex items-center gap-2"><AlertTriangle size={14} /> {mfaError}</div>}
               </div>
             </div>
           </div>
@@ -473,7 +533,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                   <button 
                     type="button"
                     onClick={generateApiKey}
-                    className="px-4 py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-955/10 text-red-650 hover:text-red-700 dark:text-red-450 border border-red-100 dark:border-red-900/20 rounded-xl text-xs font-bold transition-all"
+                    className="px-6 py-2.5 bg-primary text-white border border-primary/20 rounded-xl text-xs font-bold transition-all hover:bg-primaryDark"
                   >
                     Régénérer une clé API
                   </button>
@@ -484,7 +544,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                   <button 
                     type="button"
                     onClick={generateApiKey}
-                    className="px-6 py-3 bg-gray-900 dark:bg-primary text-white dark:text-gray-900 rounded-xl text-xs font-bold hover:bg-black dark:hover:bg-primaryDark transition-all"
+                    className="px-6 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primaryDark transition-all"
                   >
                     Générer une clé API
                   </button>
