@@ -36,8 +36,8 @@ export const PAYMENT_GATEWAYS = [
 ];
 
 export const BONUS_TIERS = [
-  { amount: 100, pct: 1 },
-  { amount: 500, pct: 2 },
-  { amount: 1000, pct: 3 },
-  { amount: 10000, pct: 4 },
+  { amount: 5, pct: 0 },
+  { amount: 10, pct: 0 },
+  { amount: 50, pct: 1 },
+  { amount: 100, pct: 2 },
 ];

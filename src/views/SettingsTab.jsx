@@ -31,9 +31,10 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
   const [mfaError, setMfaError] = useState('');
   const [mfaLoading, setMfaLoading] = useState(false);
 
-  const [apiKey, setApiKey] = useState("");
+  const [apiKeys, setApiKeys] = useState([]);
+  const [revealedKeyIds, setRevealedKeyIds] = useState([]);
   const [loadingKey, setLoadingKey] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(null); // id of the copied key
 
   const identities = session?.user?.identities || [];
   const hasGoogle = identities.some((i) => i.provider === 'google');
@@ -44,11 +45,11 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
     setLoadingKey(true);
     const { data } = await supabase
       .from('api_keys')
-      .select('api_key')
+      .select('*')
       .eq('user_id', session.user.id)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
     if (data) {
-      setApiKey(data.api_key);
+      setApiKeys(data);
     }
     setLoadingKey(false);
   };
@@ -136,20 +137,34 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
     if (!session?.user?.id) return;
     setLoadingKey(true);
     const newKey = 'ak_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const { error } = await supabase.from('api_keys').upsert({
+    const { data, error } = await supabase.from('api_keys').insert({
       user_id: session.user.id,
       api_key: newKey,
       active: true
-    });
-    if (error) await window.showAlert("Erreur", "Erreur lors de la génération : " + error.message);
-    else setApiKey(newKey);
+    }).select().single();
+    if (error) {
+      await window.showAlert("Erreur", "Erreur lors de la génération : " + error.message);
+    } else {
+      setApiKeys([data, ...apiKeys]);
+      setRevealedKeyIds([...revealedKeyIds, data.id]);
+    }
     setLoadingKey(false);
   };
 
-  const handleCopyKey = () => {
-    navigator.clipboard.writeText(apiKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyKey = (keyObj) => {
+    navigator.clipboard.writeText(keyObj.api_key);
+    setCopied(keyObj.id);
+    setTimeout(() => setCopied(null), 2000);
+    setRevealedKeyIds(revealedKeyIds.filter(id => id !== keyObj.id));
+  };
+
+  const handleDeleteKey = async (id) => {
+    const ok = await window.showConfirm("Supprimer la clé", "Voulez-vous vraiment supprimer cette clé API ? Cette action est irréversible.");
+    if (!ok) return;
+    setLoadingKey(true);
+    await supabase.from('api_keys').delete().eq('id', id);
+    setApiKeys(apiKeys.filter(k => k.id !== id));
+    setLoadingKey(false);
   };
 
   const handleLogout = async () => {
@@ -511,31 +526,45 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                 </div>
               </div>
 
-              {loadingKey ? (
+              {loadingKey && apiKeys.length === 0 ? (
                 <div className="py-2"><RefreshCcw size={16} className="animate-spin text-primary" /></div>
-              ) : apiKey ? (
+              ) : apiKeys.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={apiKey} 
-                      className="flex-grow px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-155 dark:border-slate-800 font-mono text-xs text-gray-705 dark:text-slate-300 outline-none" 
-                    />
-                    <button 
-                      type="button"
-                      onClick={handleCopyKey}
-                      className="px-4 py-3 rounded-xl bg-gray-900 dark:bg-slate-800 text-white dark:text-slate-300 hover:bg-black dark:hover:bg-slate-700 text-xs font-bold transition-all flex items-center gap-2 shrink-0"
-                    >
-                      {copied ? <><CheckCircle size={14} className="text-green-500" /> Copié</> : <><Copy size={14} /> Copier</>}
-                    </button>
+                  <div className="space-y-3">
+                    {apiKeys.map(k => {
+                      const isRevealed = revealedKeyIds.includes(k.id);
+                      const displayKey = isRevealed ? k.api_key : k.api_key.substring(0, 5) + '*******************' + k.api_key.substring(k.api_key.length - 4);
+                      return (
+                        <div key={k.id} className="flex gap-2 items-center bg-white dark:bg-slate-900 border border-gray-155 dark:border-slate-800 rounded-xl p-2 pr-4">
+                          <div className="px-3 py-1 flex-grow font-mono text-xs text-gray-705 dark:text-slate-300 overflow-hidden truncate">
+                            {displayKey}
+                            <span className="block text-[9px] text-gray-400 mt-0.5">Créée le {k.created_at ? new Date(k.created_at).toLocaleDateString() : 'Récemment'}</span>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => handleCopyKey(k)}
+                            className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 text-[10px] font-bold transition-all flex items-center gap-1.5 shrink-0"
+                          >
+                            {copied === k.id ? <><CheckCircle size={12} className="text-green-500" /> Copié</> : <><Copy size={12} /> Copier</>}
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => handleDeleteKey(k.id)}
+                            className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/20 hover:dark:bg-red-950/40 text-red-500 flex items-center justify-center transition-all shrink-0"
+                            title="Supprimer la clé"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                   <button 
                     type="button"
                     onClick={generateApiKey}
-                    className="px-6 py-2.5 bg-primary text-white border border-primary/20 rounded-xl text-xs font-bold transition-all hover:bg-primaryDark"
+                    className="px-6 py-2.5 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-xl text-xs font-bold transition-all hover:bg-black dark:hover:bg-gray-100 flex items-center gap-2"
                   >
-                    Régénérer une clé API
+                    {loadingKey ? <RefreshCcw size={14} className="animate-spin" /> : <Plus size={14} />} Nouvelle clé API
                   </button>
                 </div>
               ) : (
@@ -544,9 +573,9 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                   <button 
                     type="button"
                     onClick={generateApiKey}
-                    className="px-6 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primaryDark transition-all"
+                    className="px-6 py-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-xl text-xs font-bold hover:bg-black dark:hover:bg-gray-100 transition-all flex items-center gap-2"
                   >
-                    Générer une clé API
+                    {loadingKey ? <RefreshCcw size={14} className="animate-spin" /> : <Plus size={14} />} Générer une clé API
                   </button>
                 </div>
               )}

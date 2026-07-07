@@ -29,10 +29,11 @@ import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
 const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile, resumeOrder, clearResumeOrder, lang, t }) => {
-  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 10);
+  const [amountUsd, setAmountUsd] = useState(suggestedAmount || 5);
   const [gateway, setGateway] = useState(null); // null tant que le client n'a pas choisi de passerelle
   const [payCurrency, setPayCurrency] = useState('usdttrc20');
   const [loading, setLoading] = useState(false);
+  const [checkingPending, setCheckingPending] = useState(true);
   const [step, setStep] = useState('form'); // 'form' | 'manual_usdt' | 'awaiting' | 'success' | 'success_manual'
   const [error, setError] = useState('');
   const [payment, setPayment] = useState(null); // { orderId, payAddress, payAmount, payCurrency, bonusPct, creditAmount }
@@ -50,6 +51,51 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       navigate('auth');
     }
   }, [session, navigate]);
+
+  useEffect(() => {
+    if (!session || resumeOrder) {
+      if (!resumeOrder) setCheckingPending(false);
+      return;
+    }
+    const checkPendingOrder = async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'pending')
+        .in('payment_method', ['usdt_trc20', 'binance_pay'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        if (data.payment_method === 'usdt_trc20') {
+          setPayment({
+            provider: 'usdt_trc20',
+            orderId: data.id,
+            expectedAmount: data.expected_amount,
+            address: 'TFy2DpPjsHhsbTeMVhtAQ8JuYxjUkKTMPu'
+          });
+          setStep('manual_usdt');
+        } else if (data.payment_method === 'binance_pay') {
+          setPayment({
+            provider: 'binance_pay',
+            orderId: data.id,
+            payId: data.pay_id,
+            expectedAmount: data.expected_amount,
+            creditAmount: data.credit_amount,
+            paymentCode: profile?.display_name,
+            binanceOrderId: data.binance_tx_id || undefined,
+            expiresAt: data.expires_at ? new Date(data.expires_at).getTime() : Date.now() + 20 * 60_000,
+          });
+          setBinanceSubStep(data.binance_tx_id ? 'submitted' : 'pay');
+          setStep('awaiting');
+        }
+      }
+      setCheckingPending(false);
+    };
+    checkPendingOrder();
+  }, [session, profile, resumeOrder]);
 
   // Reprise d'une commande Binance Pay 'pending' depuis "Mes commandes" : on
   // rejoue l'étape d'attente avec les infos déjà en base, sans recréer de
@@ -113,6 +159,15 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   const belowMin = typeof selectedMin === 'number' && amountUsd < selectedMin;
   const remainingMs = payment?.expiresAt ? Math.max(0, payment.expiresAt - now) : 0;
   const remainingLabel = `${Math.floor(remainingMs / 60000)}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0')}`;
+
+  const cancelPendingOrder = async () => {
+    if (!payment?.orderId) return;
+    setLoading(true);
+    await supabase.from('orders').update({ status: 'cancelled' }).eq('id', payment.orderId);
+    setPayment(null);
+    setStep('form');
+    setLoading(false);
+  };
 
   const extractFnErrorMessage = async (fnError) => {
     // Le SDK Supabase masque le corps JSON réel derrière un message
@@ -292,7 +347,12 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           <button onClick={close} aria-label="Close" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all"><X size={18} /></button>
         </div>
 
-        {step === 'form' && (
+        {checkingPending ? (
+          <div className="flex flex-col justify-center items-center h-64">
+            <RefreshCcw size={32} className="animate-spin text-primary mb-4" />
+            <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Vérification des dépôts en cours...</p>
+          </div>
+        ) : step === 'form' && (
           <div className="px-8 pb-8 pt-4 space-y-6">
             <p className="text-sm text-gray-500 dark:text-gray-400">Plus vous rechargez, plus le bonus est important — crédité instantanément.</p>
 
@@ -307,10 +367,10 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                 <button
                   key={t.amount}
                   onClick={() => setAmountUsd(t.amount)}
-                  className={`px-2 py-2.5 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-0.5 ${amountUsd === t.amount ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-primary/50'}`}
+                  className={`px-2 py-2.5 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-0.5 ${amountUsd === t.amount ? 'bg-primary/10 border-primary text-primary' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary/50 dark:hover:border-primary/50'}`}
                 >
                   <span>${t.amount >= 1000 ? `${t.amount / 1000}k` : t.amount}</span>
-                  <span className="text-primary font-black">+{t.pct}%</span>
+                  {t.pct > 0 && <span className="text-primary font-black">+{t.pct}%</span>}
                 </button>
               ))}
             </div>
@@ -319,7 +379,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{t('amountToRecharge')}</label>
               <input
                 type="number"
-                min="10"
+                min="5"
                 step="0.01"
                 value={amountUsd}
                 onChange={e => setAmountUsd(Number(e.target.value))}
@@ -362,18 +422,18 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </div>
 
             {gateway === 'binance_pay' && (
-              <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
+              <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed border border-gray-100 dark:border-gray-700">
                 Paiement via Binance Pay, montant exact demandé. Tu devras coller ton pseudo
-                ({profile?.display_name ? <span className="font-bold text-gray-700">{profile.display_name}</span> : <span className="font-bold text-amber-600">non configuré</span>})
+                ({profile?.display_name ? <span className="font-bold text-gray-700 dark:text-gray-300">{profile.display_name}</span> : <span className="font-bold text-amber-600 dark:text-amber-500">non configuré</span>})
                 {' '}dans la note du paiement pour t'identifier. Confirmation vérifiée manuellement, généralement rapide.
               </div>
             )}
 
             {(isCrypto || selectedGateway?.manual) && (
-              <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
+              <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed border border-gray-100 dark:border-gray-700">
                 Dépôt en {selectedGateway.name} ({selectedGateway.sub}). Une adresse de dépôt et le montant exact te seront indiqués.
                 {typeof selectedMin === 'number' && (
-                  <> <span className="font-bold text-gray-700">Montant minimum : ${selectedMin.toFixed(2)}.</span></>
+                  <> <span className="font-bold text-gray-700 dark:text-gray-300">Montant minimum : ${selectedMin.toFixed(2)}.</span></>
                 )}
                 {' '}D'éventuels frais de réseau sont à ta charge.
               </div>
@@ -408,8 +468,11 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
         {step === 'manual_usdt' && (
           <div className="px-8 pb-8 pt-2 space-y-6">
-            <div className="text-center space-y-2">
+            <div className="flex items-center justify-between">
               <h3 className="text-xl font-black text-gray-900 dark:text-white">Dépôt Manuel USDT</h3>
+              <button onClick={cancelPendingOrder} disabled={loading} className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-xs font-bold transition-all disabled:opacity-50">Annuler ce dépôt</button>
+            </div>
+            <div className="text-center space-y-2">
               <p className="text-gray-500 dark:text-gray-400 text-sm">Transférez exactement le montant ci-dessous via le réseau <span className="font-bold text-gray-900 dark:text-gray-200">Tron (TRC20)</span>.</p>
             </div>
             
@@ -493,6 +556,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
         {step === 'awaiting' && payment?.provider === 'binance_pay' && (
           <div className="px-8 pb-8 pt-2 space-y-6">
+            <div className="flex justify-end">
+              <button onClick={cancelPendingOrder} disabled={loading} className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-xs font-bold transition-all disabled:opacity-50">Annuler ce dépôt</button>
+            </div>
             {/* Indicateur d'étapes 1/2, comme les checkouts crypto habituels */}
             <div className="flex items-center justify-center gap-3 py-2">
               <div className="flex flex-col items-center gap-1">
@@ -523,13 +589,13 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   {copied && <p className="text-xs text-primary font-bold mt-2">Copié !</p>}
                 </div>
 
-                <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
-                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">⚠️ Obligatoire — note du paiement</p>
-                  <p className="text-xs text-gray-700 leading-relaxed mb-3">
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700/50 rounded-xl p-4 shadow-sm">
+                  <p className="text-[10px] font-black text-amber-700 dark:text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-2"><AlertTriangle size={14} /> Obligatoire — note du paiement</p>
+                  <p className="text-xs text-amber-900/80 dark:text-amber-200/80 leading-relaxed mb-3">
                     Dans Binance, avant d'envoyer, colle ton pseudo dans le champ <span className="font-bold">"Note"</span> du paiement. C'est ce qui permet de t'identifier — toujours le même, à chaque recharge.
                   </p>
-                  <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-4 py-3">
-                    <code className="text-lg font-black font-mono text-gray-900 flex-grow text-left tracking-widest">{payment.paymentCode}</code>
+                  <div className="flex items-center gap-2 bg-white dark:bg-black/20 border border-amber-200 dark:border-amber-700/50 rounded-xl px-4 py-3">
+                    <code className="text-lg font-black font-mono text-gray-900 dark:text-white flex-grow text-left tracking-widest">{payment.paymentCode}</code>
                     <button onClick={() => { navigator.clipboard?.writeText(String(payment.paymentCode)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all"><Copy size={14} /></button>
                   </div>
                 </div>
@@ -557,30 +623,30 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </>
             ) : binanceSubStep === 'verify' ? (
               <>
-                <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between text-sm">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</p>
+                <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between text-sm border border-gray-100 dark:border-gray-700">
+                  <div className="text-center sm:text-left mb-2 sm:mb-0">
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Montant</p>
                     <p className="font-black text-primary font-mono">${Number(payment.expectedAmount).toFixed(2)}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Envoyé à l'ID Binance</p>
-                    <p className="font-bold text-gray-700 font-mono">{payment.payId}</p>
+                  <div className="text-center sm:text-right">
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Envoyé à l'ID Binance</p>
+                    <p className="font-bold text-gray-700 dark:text-gray-300 font-mono">{payment.payId}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Ton Binance Order ID</label>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Ton Binance Order ID</label>
                   <input
                     type="text"
                     value={binanceOrderIdInput}
                     onChange={e => setBinanceOrderIdInput(e.target.value)}
                     placeholder="Ex: 1234567890123456789"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-mono text-sm"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary/20 outline-none font-mono text-sm dark:text-white"
                   />
                 </div>
 
-                <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed space-y-1">
-                  <p className="font-bold text-gray-700">Où trouver ton Order ID :</p>
+                <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed space-y-1 border border-gray-100 dark:border-gray-700">
+                  <p className="font-bold text-gray-700 dark:text-gray-300">Où trouver ton Order ID :</p>
                   <p>1. Dans l'app Binance, ouvre le détail du paiement réussi.</p>
                   <p>2. Copie l'"Order ID" affiché.</p>
                   <p>3. Colle-le ci-dessus et touche "Vérifier le paiement".</p>
@@ -625,7 +691,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   <RefreshCcw size={26} className="text-primary animate-spin" />
                 </div>
                 <p className="text-sm text-gray-600 font-bold">Vérification en cours d'approbation…</p>
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 text-left space-y-1.5 leading-relaxed">
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-700/50 rounded-xl p-3.5 text-xs text-amber-800 dark:text-amber-400 text-left space-y-1.5 leading-relaxed">
                   <p className="font-bold">⚠️ Vérification automatique infructueuse</p>
                   <p>L'Order ID soumis n'a pas pu être validé automatiquement par l'API Binance.</p>
                   <p>Votre dépôt est en cours d'approbation par un administrateur. Si vous avez saisi un mauvais ID ou un mauvais mode de paiement, veuillez le corriger ci-dessous pour éviter que le dépôt ne soit rejeté.</p>
