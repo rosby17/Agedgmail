@@ -1721,7 +1721,7 @@ const PoliciesView = ({ navigate }) => {
   );
 };
 
-const SettingsTab = ({ profile, onUpdate, lang, t }) => {
+const SettingsTab = ({ profile, session, onUpdate, lang, t }) => {
   const [firstName, setFirstName] = useState(profile?.first_name || "");
   const [lastName, setLastName] = useState(profile?.last_name || "");
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
@@ -1734,6 +1734,19 @@ const SettingsTab = ({ profile, onUpdate, lang, t }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [uploading, setUploading] = useState(false);
+  // Gestion des méthodes de connexion (mot de passe, feedback dédié).
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [connMsg, setConnMsg] = useState({ type: "", text: "" });
+
+  // Identités réelles du compte (source de vérité pour "connecté via Google" et
+  // "a un mot de passe"), lues depuis la session — pas depuis un champ profil
+  // qui n'était jamais fiable.
+  const identities = session?.user?.identities || [];
+  const hasGoogle = identities.some((i) => i.provider === 'google');
+  const hasPasswordIdentity = identities.some((i) => i.provider === 'email');
 
   const handleAvatarUpload = async (e) => {
     try {
@@ -1799,35 +1812,70 @@ const SettingsTab = ({ profile, onUpdate, lang, t }) => {
     }
   };
 
+  // Définit (compte Google sans mot de passe) ou change le mot de passe.
+  // Dans les deux cas c'est updateUser({ password }) : Supabase crée
+  // l'identité 'email' si elle n'existait pas, ce qui permet ensuite de se
+  // connecter par email/mot de passe même pour un compte créé via Google.
   const handleUpdatePassword = async () => {
-    if (!newPassword || newPassword !== confirmPassword) {
-      setErrorMessage("Passwords do not match.");
-      return;
-    }
-    setLoading(true);
+    setPwError(""); setPwSuccess("");
+    if (newPassword.length < 6) { setPwError("Le mot de passe doit contenir au moins 6 caractères."); return; }
+    if (newPassword !== confirmPassword) { setPwError("Les deux mots de passe ne correspondent pas."); return; }
+    setPwLoading(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) setErrorMessage(error.message);
+    if (error) setPwError(friendlyAuthError(error.message));
     else {
-      setSuccess(true);
-      setNewPassword("");
-      setConfirmPassword("");
-      setTimeout(() => setSuccess(false), 3000);
+      setNewPassword(""); setConfirmPassword("");
+      setPwSuccess(hasPasswordIdentity
+        ? "Mot de passe mis à jour."
+        : "Mot de passe défini. Tu peux désormais te connecter avec ton email et ce mot de passe.");
+      onUpdate();
+      setTimeout(() => setPwSuccess(""), 5000);
     }
-    setLoading(false);
+    setPwLoading(false);
   };
 
-  const handleDissociateGoogle = async () => {
-    // To dissociate Google, user must have an email/password. 
-    // We send a password reset email to force them to set a password.
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/dashboard?tab=settings',
+  // Active la connexion Google (linkIdentity) — redirige vers Google puis
+  // revient avec l'identité rattachée. Nécessite "Manual linking" activé côté
+  // projet Supabase ; sinon on l'explique clairement au lieu d'un message brut.
+  const handleLinkGoogle = async () => {
+    setConnMsg({ type: "", text: "" });
+    setGoogleLoading(true);
+    const { error } = await supabase.auth.linkIdentity({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/#settings' },
     });
-    if (error) setErrorMessage(error.message);
-    else {
-      alert("A password setup email has been sent to you. Once configured, you can log in via email/pass.");
+    if (error) {
+      const m = error.message?.toLowerCase() || "";
+      setConnMsg({
+        type: "error",
+        text: m.includes('manual linking') || m.includes('disabled')
+          ? "L'association de compte n'est pas activée côté serveur. Contacte le support."
+          : friendlyAuthError(error.message),
+      });
+      setGoogleLoading(false);
     }
-    setLoading(false);
+    // Succès : redirection Google, le retour recharge la page.
+  };
+
+  // Désactive la connexion Google (unlinkIdentity). Refusé par Supabase si
+  // c'est la seule méthode de connexion (sinon compte inaccessible) — on
+  // impose donc d'avoir défini un mot de passe avant.
+  const handleUnlinkGoogle = async () => {
+    setConnMsg({ type: "", text: "" });
+    if (!hasPasswordIdentity) {
+      setConnMsg({ type: "error", text: "Définis d'abord un mot de passe ci-dessous : sans lui, retirer Google te bloquerait l'accès au compte." });
+      return;
+    }
+    if (!window.confirm("Retirer la connexion Google ? Tu te connecteras uniquement par email et mot de passe.")) return;
+    setGoogleLoading(true);
+    const googleIdentity = identities.find((i) => i.provider === 'google');
+    const { error } = await supabase.auth.unlinkIdentity(googleIdentity);
+    if (error) setConnMsg({ type: "error", text: friendlyAuthError(error.message) });
+    else {
+      setConnMsg({ type: "success", text: "Connexion Google retirée." });
+      onUpdate();
+    }
+    setGoogleLoading(false);
   };
 
   return (
@@ -1865,38 +1913,80 @@ const SettingsTab = ({ profile, onUpdate, lang, t }) => {
       </div>
 
       <div className="bg-white border border-gray-100 rounded-[3rem] p-10 shadow-soft">
-        <h2 className="text-2xl font-bold text-gray-900 mb-10 tracking-tight flex items-center gap-3"><ShieldCheck size={28} className="text-primary" /> Security & Connection</h2>
-        <div className="space-y-8">
-          <div className="flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
-            <div className="flex items-center gap-6">
-              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm"><img src="https://www.google.com/favicon.ico" className="w-6 h-6" alt="Google" /></div>
-              <div><h4 className="font-bold text-gray-900">Google Account</h4><p className="text-xs text-gray-400 font-medium">Connected via Google Auth</p></div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight flex items-center gap-3"><ShieldCheck size={26} className="text-primary" /> Connexion & sécurité</h2>
+        <p className="text-sm text-gray-400 mb-8">Gère tes méthodes de connexion. Tu peux utiliser Google, un mot de passe, ou les deux.</p>
+
+        {connMsg.text && (
+          <div className={`mb-6 p-4 rounded-2xl text-xs font-bold border flex items-center gap-2 ${connMsg.type === 'error' ? 'bg-red-50 text-red-500 border-red-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
+            {connMsg.type === 'error' ? <AlertTriangle size={14} /> : <CheckCircle size={14} />} {connMsg.text}
+          </div>
+        )}
+
+        <div className="space-y-5">
+          {/* Google */}
+          <div className="flex items-center justify-between p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm"><img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" /></div>
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm">Connexion Google</h4>
+                <p className="text-xs font-medium flex items-center gap-1.5">
+                  {hasGoogle
+                    ? <><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> <span className="text-green-600">Activée</span></>
+                    : <span className="text-gray-400">Non activée</span>}
+                </p>
+              </div>
             </div>
-            <button onClick={handleDissociateGoogle} disabled={loading} className="px-6 py-3 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all">Unlink</button>
+            {hasGoogle ? (
+              <button onClick={handleUnlinkGoogle} disabled={googleLoading} className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all disabled:opacity-50">
+                {googleLoading ? '…' : 'Désactiver'}
+              </button>
+            ) : (
+              <button onClick={handleLinkGoogle} disabled={googleLoading} className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all disabled:opacity-50">
+                {googleLoading ? '…' : 'Activer'}
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
-            <div className="flex items-center gap-6">
-              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary"><CreditCard size={24} /></div>
-              <div><h4 className="font-bold text-gray-900">Two-Factor Authentication (2FA)</h4><p className="text-xs text-gray-400 font-medium">Add an extra layer of security to your account.</p></div>
+          {/* Mot de passe */}
+          <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+            <div className="flex items-center gap-5 mb-5">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary"><ShieldCheck size={22} /></div>
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm">{hasPasswordIdentity ? 'Mot de passe' : 'Définir un mot de passe'}</h4>
+                <p className="text-xs font-medium flex items-center gap-1.5">
+                  {hasPasswordIdentity
+                    ? <><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> <span className="text-green-600">Connexion par email activée</span></>
+                    : <span className="text-gray-400">Ajoute un mot de passe pour te connecter aussi par email</span>}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={hasPasswordIdentity ? 'Nouveau mot de passe' : 'Mot de passe'} className="w-full px-5 py-3.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-sm" />
+              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmer" className="w-full px-5 py-3.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-sm" />
+            </div>
+            {pwError && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2 mb-4"><AlertTriangle size={14} /> {pwError}</div>}
+            {pwSuccess && <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 flex items-center gap-2 mb-4"><CheckCircle size={14} /> {pwSuccess}</div>}
+            <button onClick={handleUpdatePassword} disabled={pwLoading} className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-xs hover:bg-primary transition-all flex items-center gap-2 disabled:opacity-50">
+              {pwLoading && <RefreshCcw size={14} className="animate-spin" />}
+              {hasPasswordIdentity ? 'Mettre à jour' : 'Définir le mot de passe'}
+            </button>
+          </div>
+
+          {/* 2FA */}
+          <div className="flex items-center justify-between p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary"><CreditCard size={22} /></div>
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm">Double authentification (2FA)</h4>
+                <p className="text-xs text-gray-400 font-medium">Une couche de sécurité supplémentaire.</p>
+              </div>
             </div>
             <button onClick={async () => {
               const newVal = !tfaEnabled;
               setTfaEnabled(newVal);
               await supabase.from('profiles').update({ two_factor_enabled: newVal }).eq('id', profile.id);
-            }} className={`w-14 h-7 rounded-full relative transition-all duration-300 ${tfaEnabled ? 'bg-primary' : 'bg-gray-200'}`}>
+            }} className={`w-14 h-7 rounded-full relative transition-all duration-300 shrink-0 ${tfaEnabled ? 'bg-primary' : 'bg-gray-200'}`}>
               <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 ${tfaEnabled ? 'left-8' : 'left-1'}`} />
-            </button>
-          </div>
-
-          <div className="pt-6 border-t border-gray-100">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Password Change</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
-              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
-            </div>
-            <button onClick={handleUpdatePassword} disabled={loading} className="text-sm font-black text-primary hover:underline uppercase tracking-wider disabled:opacity-50">
-              {loading ? "Updating..." : "Update password"}
             </button>
           </div>
         </div>
@@ -2620,7 +2710,7 @@ const SettingsView = ({ profile, navigate, fetchProfile, session, lang, t }) => 
       <button onClick={() => navigate('dashboard')} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all border border-gray-100"><ArrowLeft size={18} /></button>
       <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('settings')}</h1>
     </div>
-    <SettingsTab profile={profile} onUpdate={() => fetchProfile && session && fetchProfile(session.user.id)} lang={lang} t={t} />
+    <SettingsTab profile={profile} session={session} onUpdate={() => fetchProfile && session && fetchProfile(session.user.id)} lang={lang} t={t} />
   </div>
   );
 };
@@ -5682,31 +5772,33 @@ const ResetPasswordView = ({ navigate }) => {
     }
   };
 
+  const inputCls = "w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-medium text-sm transition-all";
+
   return (
-    <div className="min-h-[90vh] flex items-center justify-center py-20 px-6 font-sans bg-[#F9FAFB]">
-      <div className="w-full max-w-[480px] bg-white p-10 md:p-14 rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.06)] border border-gray-50">
-        <div className="w-16 h-16 mx-auto mb-8 flex items-center justify-center">
+    <div className="min-h-[85vh] flex items-center justify-center py-16 px-6 font-sans">
+      <div className="w-full max-w-[400px] bg-white p-8 md:p-10 rounded-3xl shadow-[0_24px_70px_-24px_rgba(0,0,0,0.12)] border border-gray-100">
+        <div className="w-12 h-12 mx-auto mb-6 flex items-center justify-center">
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
         </div>
         {done ? (
           <div className="text-center animate-in fade-in zoom-in duration-300">
-            <CheckCircle size={56} className="text-green-500 mx-auto mb-5" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Mot de passe mis à jour</h2>
+            <CheckCircle size={48} className="text-green-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Mot de passe mis à jour</h2>
             <p className="text-gray-400 text-sm">Redirection en cours…</p>
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Nouveau mot de passe</h2>
-            <p className="text-gray-400 text-sm text-center mb-8">Choisis un nouveau mot de passe pour ton compte.</p>
-            <form onSubmit={submit} className="space-y-5">
-              <input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
-              <input type="password" required value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirme le mot de passe" className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" />
+            <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Nouveau mot de passe</h2>
+            <p className="text-gray-400 text-sm text-center mb-6">Choisis un nouveau mot de passe pour ton compte.</p>
+            <form onSubmit={submit} className="space-y-3.5">
+              <input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" className={inputCls} />
+              <input type="password" required value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirme le mot de passe" className={inputCls} />
               {error && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {error}</div>}
-              <button type="submit" disabled={loading} className="w-full h-14 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                {loading && <RefreshCcw size={16} className="animate-spin" />} Mettre à jour
+              <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
+                {loading && <RefreshCcw size={15} className="animate-spin" />} Mettre à jour
               </button>
             </form>
-            <button onClick={() => navigate('auth')} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-6">← Retour à la connexion</button>
+            <button onClick={() => navigate('auth')} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-5">← Retour à la connexion</button>
           </>
         )}
       </div>
@@ -5716,7 +5808,6 @@ const ResetPasswordView = ({ navigate }) => {
 
 const AuthView = ({ navigate }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -5815,126 +5906,105 @@ const AuthView = ({ navigate }) => {
     if (error) setErrorMessage(friendlyAuthError(error.message));
   };
 
-  return (
-    <div className="min-h-[90vh] flex items-center justify-center py-20 px-6 font-sans bg-[#F9FAFB]">
-      <div className="w-full max-w-[550px] bg-white p-12 md:p-20 rounded-[4rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.06)] border border-gray-50 flex flex-col items-center">
+  const inputCls = "w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-medium text-sm transition-all";
 
-        {/* Logo */}
-        <div className="w-16 h-16 mb-12 flex items-center justify-center">
-          <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
-        </div>
+  return (
+    <div className="min-h-[85vh] flex items-center justify-center py-16 px-6 font-sans">
+      <div className="w-full max-w-[400px] bg-white p-8 md:p-10 rounded-3xl shadow-[0_24px_70px_-24px_rgba(0,0,0,0.12)] border border-gray-100">
 
         {pendingConfirmEmail ? (
           /* Écran de confirmation d'email (inscription réussie, en attente de vérification) */
-          <div className="w-full text-center animate-in fade-in zoom-in duration-300">
-            <div className="w-20 h-20 mx-auto mb-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Mail size={34} className="text-primary" />
+          <div className="text-center animate-in fade-in zoom-in duration-300">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Mail size={28} className="text-primary" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Confirme ton email</h2>
-            <p className="text-gray-500 leading-relaxed mb-2">
-              On vient d'envoyer un lien de confirmation à<br />
-              <span className="font-bold text-gray-900">{pendingConfirmEmail}</span>.
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Confirme ton email</h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-1">
+              Un lien de confirmation a été envoyé à<br />
+              <span className="font-bold text-gray-900">{pendingConfirmEmail}</span>
             </p>
-            <p className="text-gray-400 text-sm mb-8">Clique sur le lien dans l'email (pense à vérifier les spams) pour activer ton compte.</p>
+            <p className="text-gray-400 text-xs mb-6">Clique dessus pour activer ton compte (pense aux spams).</p>
 
             {infoMessage && <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 mb-4">{infoMessage}</div>}
             {errorMessage && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
 
-            <button onClick={handleResendConfirmation} disabled={loading} className="w-full h-14 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-3">
-              {loading && <RefreshCcw size={16} className="animate-spin" />} Renvoyer l'email
+            <button onClick={handleResendConfirmation} disabled={loading} className="w-full h-12 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-3">
+              {loading && <RefreshCcw size={15} className="animate-spin" />} Renvoyer l'email
             </button>
-            <button onClick={() => { setPendingConfirmEmail(''); setIsLogin(true); setErrorMessage(''); setInfoMessage(''); }} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors">
+            <button onClick={() => { setPendingConfirmEmail(''); setIsLogin(true); setErrorMessage(''); setInfoMessage(''); }} className="text-xs text-gray-400 font-bold hover:text-primary transition-colors">
               ← Retour à la connexion
             </button>
           </div>
         ) : (
         <>
-        {/* Welcome Text */}
-        <div className="text-center mb-16">
-          <h2 className="text-[40px] font-bold text-gray-900 mb-4 tracking-tight leading-none">Welcome</h2>
-          <p className="text-gray-400 font-medium text-lg">#1 Marketplace for certified accounts.</p>
-        </div>
-
-        {!showForm ? (
-          <div className="w-full space-y-4">
-            <button
-              onClick={handleGoogleLogin}
-              className="w-full h-20 bg-white border border-gray-100 rounded-[2rem] flex items-center justify-center gap-4 hover:bg-gray-50 transition-all group shadow-sm"
-            >
-              <img src="https://www.google.com/favicon.ico" className="w-6 h-6 group-hover:scale-110 transition-transform" alt="Google" />
-              <span className="text-gray-700 font-bold text-lg">Continue with Google</span>
-            </button>
-
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-full h-20 bg-[#10B981] text-white rounded-[2rem] flex items-center justify-center gap-4 hover:bg-[#059669] transition-all shadow-xl shadow-green-500/10"
-            >
-              <Mail size={24} />
-              <span className="font-bold text-lg">Continue with Email</span>
-            </button>
+          {/* En-tête */}
+          <div className="text-center mb-7">
+            <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{isLogin ? 'Content de te revoir' : 'Crée ton compte'}</h2>
+            <p className="text-gray-400 text-sm mt-1">{isLogin ? 'Connecte-toi pour continuer.' : 'Rejoins la marketplace n°1 de comptes certifiés.'}</p>
           </div>
-        ) : (
-          <form className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" onSubmit={handleAuth}>
+
+          {/* Google — toujours visible, en haut */}
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-50 hover:border-gray-300 transition-all group mb-5"
+          >
+            <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
+            <span className="text-gray-700 font-bold text-sm">Continuer avec Google</span>
+          </button>
+
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-grow h-px bg-gray-100" />
+            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">ou</span>
+            <div className="flex-grow h-px bg-gray-100" />
+          </div>
+
+          <form className="space-y-3.5" onSubmit={handleAuth}>
             {!isLogin && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Last Name</label>
-                  <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Last Name" />
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} className={inputCls} placeholder="Prénom" />
+                  <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} className={inputCls} placeholder="Nom" />
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">First Name</label>
-                  <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="First Name" />
-                </div>
+                <input type="text" required value={username} onChange={e => setUsername(e.target.value)} className={inputCls} placeholder="Pseudo" />
+              </>
+            )}
+            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder="ton@email.com" />
+            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className={inputCls} placeholder="Mot de passe" />
+
+            {isLogin && (
+              <div className="flex justify-end">
+                <button type="button" onClick={handleResetPassword} className="text-xs font-bold text-gray-400 hover:text-primary transition-colors">
+                  Mot de passe oublié ?
+                </button>
               </div>
             )}
-            {!isLogin && (
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Username</label>
-                <input type="text" required value={username} onChange={e => setUsername(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="Username" />
-              </div>
-            )}
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="your@email.com" />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
-              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full h-16 px-8 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary/20 font-bold text-sm" placeholder="••••••••" />
-            </div>
 
             {errorMessage && (
-              <div className="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2">
+              <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2">
                 <AlertTriangle size={14} /> {errorMessage}
               </div>
             )}
+            {infoMessage && (
+              <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 flex items-center gap-2">
+                <CheckCircle size={14} /> {infoMessage}
+              </div>
+            )}
 
-            <div className="flex gap-4 pt-4">
-              <button type="submit" disabled={loading} className="flex-grow h-16 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-2">
-                {loading && <RefreshCcw size={16} className="animate-spin" />}
-                {isLogin ? 'Log In' : "Sign Up"}
-              </button>
-              <button type="button" onClick={() => setIsLogin(!isLogin)} className="flex-grow h-16 bg-gray-100 text-gray-500 rounded-2xl font-bold text-sm hover:bg-gray-200 transition-all">
-                {isLogin ? "Sign Up" : "Log In"}
-              </button>
-            </div>
-
-            <button type="button" onClick={() => setShowForm(false)} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-4">
-              ← Back to options
+            <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
+              {loading && <RefreshCcw size={15} className="animate-spin" />}
+              {isLogin ? 'Se connecter' : "S'inscrire"}
             </button>
           </form>
-        )}
 
-        <div className="mt-10 text-center">
-          <button onClick={handleResetPassword} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-primary transition-colors">
-            Forgot your password?
-          </button>
-        </div>
-
-        {infoMessage && (
-          <div className="mt-6 w-full bg-green-50 text-green-600 p-4 rounded-xl text-xs font-bold border border-green-100 flex items-center gap-2">
-            <CheckCircle size={14} /> {infoMessage}
+          <div className="text-center mt-6 text-sm text-gray-400">
+            {isLogin ? "Pas encore de compte ?" : "Déjà un compte ?"}{' '}
+            <button onClick={() => { setIsLogin(!isLogin); setErrorMessage(''); setInfoMessage(''); }} className="font-bold text-primary hover:underline">
+              {isLogin ? "S'inscrire" : "Se connecter"}
+            </button>
           </div>
-        )}
         </>
         )}
       </div>
@@ -6342,6 +6412,16 @@ function App() {
       setSession(currentSession);
       if (currentSession) {
         fetchProfile(currentSession.user.id);
+        // Lien de réinitialisation cliqué depuis l'email : Supabase crée une
+        // session temporaire et émet PASSWORD_RECOVERY. On force l'écran de
+        // saisie du nouveau mot de passe — fiable quel que soit le format du
+        // lien (hash #type=recovery en flow implicite, ?code= en PKCE) et le
+        // timing du nettoyage d'URL par Supabase. C'est LA correction du bug
+        // "le lien de reset renvoie vers la landing".
+        if (event === 'PASSWORD_RECOVERY') {
+          navigate('reset-password');
+          return;
+        }
         // Only redirect to home if we are currently on the auth view and just signed in
         if (event === 'SIGNED_IN' && window.location.hash === '#auth') {
           navigate('shop');
