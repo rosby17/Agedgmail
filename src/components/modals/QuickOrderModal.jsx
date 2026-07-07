@@ -46,7 +46,6 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
           quantity: qty,
           total_price: total,
           status: 'processing',
-          supplier: 'ytseller',
           created_at: new Date().toISOString()
         }).select('id').single();
 

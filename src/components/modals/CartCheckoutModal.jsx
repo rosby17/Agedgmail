@@ -40,7 +40,6 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
             quantity: item.quantity,
             total_price: item.price * item.quantity,
             status: 'processing',
-            supplier: 'ytseller',
             created_at: new Date().toISOString()
           }).select('id').single();
 
