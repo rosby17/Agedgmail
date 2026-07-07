@@ -40,6 +40,25 @@ serve(async (req) => {
       throw new Error(`SMS Provider Error: ${data.Error || 'Unknown error'}`);
     }
 
+    // Apply dynamic margins
+    if (data.Prices && Array.isArray(data.Prices)) {
+      data.Prices = data.Prices.map((country: any) => {
+        if (!country.Price) return country;
+        const cost = parseFloat(country.Price);
+        let margin = 0.50;
+        
+        if (cost < 0.10) margin = 0.75;
+        else if (cost < 0.50) margin = 0.65;
+        else if (cost < 1.00) margin = 0.55;
+        else margin = 0.50;
+
+        return {
+          ...country,
+          Price: (cost + margin).toFixed(2)
+        };
+      });
+    }
+
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
