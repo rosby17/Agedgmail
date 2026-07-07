@@ -4555,10 +4555,10 @@ const CRYPTO_CURRENCIES = [
 // que le client le sache AVANT de cliquer. Binance Pay est le seul à $10 ;
 // les cryptos (via NOWPayments) sont à $18 à cause des frais de réseau.
 const PAYMENT_GATEWAYS = [
-  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5 },
-  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 0.5 },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 0.5 },
-  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 0.5 },
+  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5, recommended: true },
+  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 18.86 },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 18.86 },
+  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 18.86 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
@@ -4846,8 +4846,8 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                       disabled={!g.enabled}
                       className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${!g.enabled ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed' : gateway === g.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
                     >
-                      <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.enabled ? 'text-green-700 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
-                        {g.enabled ? 'Auto' : 'Bientôt'}
+                      <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.recommended ? 'text-white bg-primary animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : g.enabled ? 'text-green-700 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
+                        {g.recommended ? (lang === 'fr' ? 'Recommandé' : 'Recommended') : (g.enabled ? 'Auto' : 'Bientôt')}
                       </span>
                       <span className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 bg-gray-100 text-gray-600">{g.symbol}</span>
                       <span>
