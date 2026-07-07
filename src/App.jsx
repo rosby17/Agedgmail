@@ -6749,7 +6749,7 @@ function App() {
     }
     const path = window.location.pathname.replace(/^\/+/, '');
     if (path === 'myorders') return 'dashboard';
-    if (path === 'sms') return 'shop';
+    if (path === 'sms') return 'sms';
     return path || 'landing';
   });
   const [selectedProduct, setSelectedProduct] = useState(() => {
