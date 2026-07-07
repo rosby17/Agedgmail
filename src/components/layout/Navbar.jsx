@@ -58,7 +58,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
           <button onClick={() => setLang('en')} className={`transition-colors hover:text-primary ${lang === 'en' ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`}>EN</button>
         </div>
 
-        {session && session.user.email === ADMIN_EMAIL && (
+        {(session?.user?.email === ADMIN_EMAIL || profile?.is_admin) && (
           <button onClick={() => navigate('admin')} className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
             <Shield size={14} /> {t('admin')}
           </button>

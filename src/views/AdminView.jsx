@@ -468,6 +468,22 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
     setBusyId(null);
   };
 
+  const toggleAdmin = async (user) => {
+    const next = !user.is_admin;
+    const ok = await window.showConfirm(
+      "Confirmation",
+      next 
+        ? `Nommer ${user.email} comme Administrateur ? Il aura un accès complet au tableau de bord.`
+        : `Révoquer les droits d'administration de ${user.email} ?`
+    );
+    if (!ok) return;
+    setBusyId(user.id);
+    const { error } = await supabase.from('profiles').update({ is_admin: next }).eq('id', user.id);
+    if (error) await window.showAlert("Erreur", 'Erreur : ' + error.message);
+    else await fetchUsers();
+    setBusyId(null);
+  };
+
   const creditBalance = async (user) => {
     const raw = await window.showPrompt(`Créditer le solde de ${user.email} de ($) :`, '10');
     if (raw == null) return;
@@ -544,6 +560,11 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                               Nouveau
                             </span>
                           )}
+                          {user.is_admin && (
+                            <span className="bg-primary/10 text-primary dark:text-primary text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-primary/20 shrink-0">
+                              Admin
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-400 truncate">{user.display_name || '—'}</div>
                       </div>
@@ -562,6 +583,11 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => setViewingClient(user)} title="Voir l'historique" className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"><Eye size={14} /></button>
                       <button onClick={() => creditBalance(user)} disabled={busyId === user.id} title="Créditer le solde" className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all disabled:opacity-40"><DollarSign size={14} /></button>
+                      <button onClick={() => toggleAdmin(user)} disabled={busyId === user.id || user.email === ADMIN_EMAIL}
+                        title={user.is_admin ? 'Révoquer Admin' : 'Nommer Admin'}
+                        className={`p-2 rounded-lg transition-all disabled:opacity-40 ${user.is_admin ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 hover:bg-amber-50 hover:text-amber-600'}`}>
+                        <Shield size={14} />
+                      </button>
                       <button onClick={() => toggleBan(user)} disabled={busyId === user.id}
                         title={user.is_suspended ? 'Réactiver' : 'Bannir'}
                         className={`p-2 rounded-lg transition-all disabled:opacity-40 ${user.is_suspended ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
@@ -909,9 +935,10 @@ const AdminView = ({
         </div>
       </div>
     );
+    );
   }
 
-  if (session.user.email !== ADMIN_EMAIL) {
+  if (session.user.email !== ADMIN_EMAIL && !profile?.is_admin) {
     return (
       <div className="min-h-screen bg-canvas dark:bg-gray-950 flex flex-col items-center justify-center p-6 font-sans">
         <div className="w-full max-w-md bg-white dark:bg-slate-900/40 backdrop-blur-md border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-6 text-center text-gray-900 dark:text-white">
