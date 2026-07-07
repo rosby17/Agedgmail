@@ -1692,6 +1692,14 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           if (!error && data && data.status === 'success') {
             setSmsCode(data.sms);
             setStatus('COMPLETED');
+            
+            // Play a loud notification sound
+            try {
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+              audio.volume = 1.0;
+              audio.play().catch(e => console.log('Audio play failed:', e));
+            } catch(e) {}
+
             if (fetchProfile) fetchProfile();
           }
         } catch (err) {
@@ -1945,10 +1953,21 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               {status === 'WAITING_SMS' && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
               {status === 'COMPLETED' && <CheckCircle size={16} className="text-green-500" />}
             </h3>
-            <p className="text-gray-500 text-sm mb-6">
+            <p className="text-gray-500 text-sm mb-4">
               {isFr ? `Le SMS reçu s'affichera ci-dessous automatiquement.` : `The received SMS will be displayed below automatically.`} 
               {status === 'WAITING_SMS' && <span className="ml-2 font-mono text-primary font-bold">{formatTime(timeLeft)}</span>}
             </p>
+
+            {status === 'WAITING_SMS' && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-xl p-3 mb-6 flex items-start gap-3">
+                <AlertCircle className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" size={16} />
+                <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium leading-relaxed">
+                  {isFr 
+                    ? "Si le SMS n'arrive pas après 2 à 3 minutes, c'est que YouTube (ou le service) n'a pas envoyé le SMS à ce numéro spécifique, ou que l'opérateur local le bloque. Cliquez sur \"Annuler / Remboursement\" pour annuler sans frais et essayer un autre numéro ou un autre pays."
+                    : "If the SMS doesn't arrive after 2-3 minutes, YouTube (or the service) likely didn't send the SMS to this specific number, or the local carrier blocked it. Click \"Cancel / Refund\" to cancel without being charged and try another number or country."}
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-col md:flex-row gap-4 items-stretch">
                <div className="flex-1 relative">
