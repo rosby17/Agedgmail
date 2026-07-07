@@ -1485,7 +1485,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         setStatus('IDLE');
       } catch (err) {
         console.error("Fetch prices error", err);
-        setError(isFr ? "Impossible de charger la liste des pays." : "Could not load the countries list.");
+        setError(isFr ? `Erreur: ${err.message}` : `Error: ${err.message}`);
         setStatus('IDLE');
       }
     };
