@@ -1,11 +1,5 @@
 project_id = "ncjpbkfwhmsispiczzgl"
 
-# Conserve la valeur actuelle du projet distant (fonctionnalité payante,
-# non activée) — sans cette ligne, `config push` tentait de l'activer par
-# défaut et se faisait rejeter (402, plan gratuit) avant même de toucher au SMTP.
-[vector]
-enabled = false
-
 # SMTP Brevo pour les emails d'auth (confirmation d'inscription, reset mot de
 # passe...). Les identifiants ne sont jamais écrits ici en clair : `env(...)`
 # lit les variables d'environnement au moment de `supabase config push`,

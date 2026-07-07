@@ -4555,10 +4555,10 @@ const CRYPTO_CURRENCIES = [
 // que le client le sache AVANT de cliquer. Binance Pay est le seul à $10 ;
 // les cryptos (via NOWPayments) sont à $18 à cause des frais de réseau.
 const PAYMENT_GATEWAYS = [
-  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 10 },
-  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 18 },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 18 },
-  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 18 },
+  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5 },
+  { id: 'btc', name: 'Bitcoin', sub: 'BTC', enabled: true, symbol: '₿', payCurrency: 'btc', min: 0.5 },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', payCurrency: 'usdttrc20', min: 0.5 },
+  { id: 'ltc', name: 'Litecoin', sub: 'LTC', enabled: true, symbol: 'Ł', payCurrency: 'ltc', min: 0.5 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
@@ -4665,9 +4665,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     if (profile?.is_suspended) { setError("Ton compte est suspendu. Contacte le support."); return; }
     if (!gateway) { setError('Choisis une passerelle de paiement.'); return; }
     if (amountUsd <= 0) { setError('Montant invalide.'); return; }
-    // Minimum par méthode (Binance Pay $10, crypto $18) — bloqué dès ici.
-    if (selectedGateway?.min && amountUsd < selectedGateway.min) {
-      setError(`Montant minimum pour ${selectedGateway.name} : $${selectedGateway.min}.`);
+    // Minimum dynamique ou statique appliqué.
+    if (selectedMin && amountUsd < selectedMin) {
+      setError(`Montant minimum pour ${selectedGateway?.name} : $${selectedMin.toFixed(2)}.`);
       return;
     }
 
@@ -4835,28 +4835,33 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('choosePayment')}</label>
               <div className="grid grid-cols-2 gap-3">
-                {PAYMENT_GATEWAYS.map(g => (
-                  <button
-                    key={g.id}
-                    onClick={() => g.enabled && setGateway(g.id)}
-                    disabled={!g.enabled}
-                    className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${!g.enabled ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed' : gateway === g.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
-                  >
-                    <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.enabled ? 'text-green-700 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
-                      {g.enabled ? 'Auto' : 'Bientôt'}
-                    </span>
-                    <span className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 bg-gray-100 text-gray-600">{g.symbol}</span>
-                    <span>
-                      <span className="block text-sm font-bold text-gray-900">{g.name}</span>
-                      <span className="block text-[10px] text-gray-400 font-medium">{g.sub}</span>
-                      {g.enabled && g.min && (
-                        <span className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-primary">
-                          <Info size={9} /> Min. ${g.min}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                ))}
+                {PAYMENT_GATEWAYS.map(g => {
+                  const gDynamic = g.payCurrency ? minAmounts[g.payCurrency] : undefined;
+                  const displayMin = Math.max(g.min || 0, typeof gDynamic === 'number' ? gDynamic : 0);
+                  
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => g.enabled && setGateway(g.id)}
+                      disabled={!g.enabled}
+                      className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${!g.enabled ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed' : gateway === g.id ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-primary/50'}`}
+                    >
+                      <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.enabled ? 'text-green-700 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
+                        {g.enabled ? 'Auto' : 'Bientôt'}
+                      </span>
+                      <span className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 bg-gray-100 text-gray-600">{g.symbol}</span>
+                      <span>
+                        <span className="block text-sm font-bold text-gray-900">{g.name}</span>
+                        <span className="block text-[10px] text-gray-400 font-medium">{g.sub}</span>
+                        {g.enabled && displayMin > 0 && (
+                          <span className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-primary">
+                            <Info size={9} /> Min. ${displayMin.toFixed(2)}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
