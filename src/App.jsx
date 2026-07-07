@@ -1453,8 +1453,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   
   // Default configurations
   const [selectedCountry, setSelectedCountry] = useState('US');
-  // 1 is placeholder for youtube/google in smscodes.io, needs to be verified
-  const [selectedService, setSelectedService] = useState('1'); 
+  // Service ID pour YouTube sur smscodes.io
+  const [selectedService, setSelectedService] = useState('8a97735e-9a14-427e-8a88-e9d999bf3429'); 
 
   useEffect(() => {
     let timer;
