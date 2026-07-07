@@ -1218,7 +1218,7 @@ const AdminView = ({
 
           {activeTab === 'support' && <SupportAdmin session={session} />}
 
-          {activeTab === 'supplier' && <SupplierAdmin />}
+          {activeTab === 'supplier' && <SupplierAdmin products={products} fetchProducts={fetchProducts} />}
 
           {financialDetailType && (
             <FinancialDetailsModal
