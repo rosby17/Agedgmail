@@ -14,11 +14,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as ytseller from '../_shared/ytseller.ts'
 import * as smmshiba from '../_shared/smmshiba.ts'
+import * as agedsmm from '../_shared/agedsmm.ts'
 import { getAdmin, logSupplier, alertAdmin, refundOrder, notifyTelegram, corsHeaders } from '../_shared/supplier-db.ts'
 import { parseAccountDelivery } from '../_shared/parseAccountDelivery.ts'
 
 const ADAPTERS: Record<string, { getOrderStatus: typeof ytseller.getOrderStatus; getResult: typeof ytseller.getResult }> = {
-  ytseller, smmshiba,
+  ytseller, smmshiba, agedsmm,
 }
 
 const BATCH = 25
