@@ -713,7 +713,8 @@ const FinancialDetailsModal = ({ type, onClose, orders = [], mappings = [], lang
   const title = {
     revenue: isFr ? "Détails du Chiffre d'Affaires" : "Turnover / Revenue Details",
     cost: isFr ? "Détails du Coût d'Achat Fournisseur" : "Supplier Cost Details",
-    profit: isFr ? "Détails du Bénéfice Net" : "Net Profit Details"
+    profit: isFr ? "Détails du Bénéfice Net" : "Net Profit Details",
+    deposit: isFr ? "Détails des Dépôts Clients" : "Client Deposits Details"
   }[type];
 
   return (
@@ -756,9 +757,11 @@ const FinancialDetailsModal = ({ type, onClose, orders = [], mappings = [], lang
                     <th className="pb-3 pr-4">Produit</th>
                     <th className="pb-3 pr-4">Client</th>
                     {type === 'cost' && <th className="pb-3 pr-4">Fournisseur</th>}
-                    {type !== 'cost' && <th className="pb-3 pr-4 text-right">Prix Vente</th>}
-                    {type !== 'revenue' && <th className="pb-3 pr-4 text-right">Coût Achat</th>}
+                    {type !== 'cost' && type !== 'deposit' && <th className="pb-3 pr-4 text-right">Prix Vente</th>}
+                    {type !== 'revenue' && type !== 'deposit' && <th className="pb-3 pr-4 text-right">Coût Achat</th>}
+                    {type === 'deposit' && <th className="pb-3 pr-4 text-right">Montant Déposé</th>}
                     {type === 'profit' && <th className="pb-3 pr-4 text-right">Bénéfice</th>}
+                    {type === 'profit' && <th className="pb-3 pr-4 text-right">Marge (%)</th>}
                     <th className="pb-3 text-right">Date</th>
                   </tr>
                 </thead>
@@ -776,11 +779,17 @@ const FinancialDetailsModal = ({ type, onClose, orders = [], mappings = [], lang
                         <td className="py-4 pr-4 font-bold text-gray-900 dark:text-white max-w-xs truncate">{o.product_name}</td>
                         <td className="py-4 pr-4 text-gray-500 dark:text-gray-400 font-mono text-xs">{o.buyer_email || 'API client'}</td>
                         {type === 'cost' && <td className="py-4 pr-4 capitalize text-gray-700 dark:text-gray-300 font-semibold">{supplier}</td>}
-                        {type !== 'cost' && <td className="py-4 pr-4 text-right font-mono font-bold text-gray-900 dark:text-white">${revenue.toFixed(2)}</td>}
-                        {type !== 'revenue' && <td className="py-4 pr-4 text-right font-mono text-red-500 dark:text-red-400 font-semibold">${cost.toFixed(2)}</td>}
+                        {type !== 'cost' && type !== 'deposit' && <td className="py-4 pr-4 text-right font-mono font-bold text-gray-900 dark:text-white">${revenue.toFixed(2)}</td>}
+                        {type !== 'revenue' && type !== 'deposit' && <td className="py-4 pr-4 text-right font-mono text-red-500 dark:text-red-400 font-semibold">${cost.toFixed(2)}</td>}
+                        {type === 'deposit' && <td className="py-4 pr-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">${revenue.toFixed(2)}</td>}
                         {type === 'profit' && (
                           <td className={`py-4 pr-4 text-right font-mono font-black ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-550'}`}>
                             ${profit.toFixed(2)}
+                          </td>
+                        )}
+                        {type === 'profit' && (
+                          <td className={`py-4 pr-4 text-right font-mono font-bold ${revenue > 0 ? 'text-gray-600 dark:text-gray-300' : 'text-gray-400'}`}>
+                            {revenue > 0 ? `${((profit / revenue) * 100).toFixed(1)}%` : '—'}
                           </td>
                         )}
                         <td className="py-4 text-right text-gray-400 dark:text-gray-500 text-xs">{new Date(o.created_at).toLocaleDateString(isFr ? 'fr-FR' : 'en-US')}</td>
@@ -992,7 +1001,7 @@ const AdminView = ({
             {[
               { id: 'dashboard', label: lang === 'fr' ? "Vue d'ensemble" : "Overview", icon: LayoutDashboard },
               { id: 'orders', label: lang === 'fr' ? "Commandes" : "Orders", icon: FileText },
-              { id: 'payments', label: 'Binance Pay', icon: Wallet },
+              { id: 'payments', label: 'Dépôts / Recharges', icon: Wallet },
               { id: 'users', label: lang === 'fr' ? "Clients" : "Client Management", icon: Users },
               { id: 'support', label: 'Support / Chat', icon: MessageCircle },
               { id: 'supplier', label: lang === 'fr' ? "Fournisseur" : "Supplier", icon: Database },
@@ -1109,6 +1118,7 @@ const AdminView = ({
                   subtext="CA / Coût Fournisseur"
                   color="violet"
                   icon={CircleDollarSign}
+                  onClick={() => setFinancialDetailType('profit')}
                 />
               </div>
             </div>
@@ -1117,8 +1127,8 @@ const AdminView = ({
             <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-8 space-y-4">
               <h3 className="text-xs font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">Operational Metrics</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div>
-                  <div className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase">Dépôts Clients (Recharges)</div>
+                <div onClick={() => setFinancialDetailType('deposit')} className="cursor-pointer group hover:bg-gray-50 dark:hover:bg-slate-800/50 p-3 -m-3 rounded-2xl transition-all">
+                  <div className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase group-hover:text-primary transition-colors">Dépôts Clients (Recharges)</div>
                   <div className="text-xl font-bold text-gray-900 dark:text-slate-300 font-mono mt-1">${totalDeposited.toFixed(2)}</div>
                 </div>
                 <div>
@@ -1186,7 +1196,7 @@ const AdminView = ({
             <FinancialDetailsModal
               type={financialDetailType}
               onClose={() => setFinancialDetailType(null)}
-              orders={confirmedPurchases}
+              orders={financialDetailType === 'deposit' ? allOrders.filter(o => o.product_id === 999 && o.status === 'confirmed') : confirmedPurchases}
               mappings={mappings}
               lang={lang}
             />

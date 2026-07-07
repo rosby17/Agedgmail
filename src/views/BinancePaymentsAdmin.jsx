@@ -70,7 +70,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-6 md:p-10 shadow-soft text-gray-900 dark:text-white">
-      <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Dépôts Crypto (Binance & USDT) — Validation</h2>
+      <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Dépôts / Recharges (Validation)</h2>
       <p className="text-xs text-gray-400 dark:text-slate-450 mb-8">Vérifie sur ton wallet ou app Binance qu'un paiement du montant exact est bien arrivé avant de confirmer. L'opération crédite immédiatement le solde client.</p>
       {msg && <div className="mb-6 text-sm font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-800/40 rounded-2xl px-5 py-3 border border-gray-100 dark:border-slate-800">{msg}</div>}
       <div className="overflow-x-auto">

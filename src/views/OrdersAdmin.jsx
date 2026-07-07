@@ -30,13 +30,18 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [cancelPromptOrder, setCancelPromptOrder] = useState(null);
 
-  // Cet écran ne montre que les commandes d'achat réelles. Les recharges de
-  // solde (product_id 999) sont consultables par client dans "Client Management".
-  const purchaseOrders = allOrders.filter(o => o.product_id !== 999);
+  const [productFilter, setProductFilter] = useState('all');
 
-  const filtered = filter === 'all'
-    ? purchaseOrders
-    : purchaseOrders.filter(o => (o.status || 'pending') === filter);
+  const filtered = allOrders.filter(o => {
+    // Filter by Status
+    if (filter !== 'all' && (o.status || 'pending') !== filter) return false;
+    
+    // Filter by Product Category
+    if (productFilter === 'deposits') return o.product_id === 999;
+    if (productFilter === 'sms') return o.product_name?.toLowerCase().includes('sms');
+    if (productFilter === 'accounts') return o.product_id !== 999 && !o.product_name?.toLowerCase().includes('sms');
+    return true;
+  });
 
   const cancelOrder = (order) => {
     setCancelPromptOrder(order);
@@ -105,23 +110,45 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
         </button>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {[
-          { key: 'pending', label: 'En attente', icon: Clock },
-          { key: 'processing', label: 'En cours', icon: RefreshCcw },
-          { key: 'confirmed', label: 'Payées / livrées', icon: CheckCircle },
-          { key: 'cancelled', label: 'Annulées', icon: X },
-          { key: 'all', label: 'Toutes', icon: FileText },
-        ].map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              filter === f.key
-                ? 'bg-gray-900 dark:bg-primary text-white dark:text-gray-900'
-                : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-100 dark:border-slate-800'
-            }`}>
-            <f.icon size={14} /> {f.label}
-          </button>
-        ))}
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        {/* Status Filters */}
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { key: 'all', label: 'Toutes', icon: FileText },
+            { key: 'pending', label: 'En attente', icon: Clock },
+            { key: 'processing', label: 'En cours', icon: RefreshCcw },
+            { key: 'confirmed', label: 'Payées / livrées', icon: CheckCircle },
+            { key: 'cancelled', label: 'Annulées', icon: X },
+          ].map(f => (
+            <button key={f.key} onClick={() => setFilter(f.key)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                filter === f.key
+                  ? 'bg-gray-900 dark:bg-primary text-white dark:text-gray-900 shadow-sm'
+                  : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-100 dark:border-slate-800'
+              }`}>
+              <f.icon size={14} /> {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Product Category Filters */}
+        <div className="flex gap-2 flex-wrap md:ml-auto">
+          {[
+            { key: 'all', label: 'Tous produits' },
+            { key: 'accounts', label: 'Comptes' },
+            { key: 'sms', label: 'SMS' },
+            { key: 'deposits', label: 'Recharges' },
+          ].map(f => (
+            <button key={f.key} onClick={() => setProductFilter(f.key)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                productFilter === f.key
+                  ? 'bg-primary text-white dark:text-gray-900 shadow-sm'
+                  : 'bg-white dark:bg-slate-900 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-200 dark:border-slate-700'
+              }`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
