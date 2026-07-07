@@ -4563,6 +4563,7 @@ const CRYPTO_CURRENCIES = [
 // les cryptos (via NOWPayments) sont à $20 à cause des frais de réseau fluctuants (min ~18.86$).
 const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5, recommended: true },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', manual: true, min: 20 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
 ];
 
@@ -4672,6 +4673,16 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     // Minimum dynamique ou statique appliqué.
     if (selectedMin && amountUsd < selectedMin) {
       setError(`Montant minimum pour ${selectedGateway?.name} : $${selectedMin.toFixed(2)}.`);
+      return;
+    }
+
+    if (gateway === 'usdt_trc20') {
+      setPayment({
+        provider: 'usdt_trc20',
+        expectedAmount: amountUsd,
+        address: 'TFy2DpPjsHhsbTeMVhtAQ8JuYxjUkKTMPu'
+      });
+      setStep('manual_usdt');
       return;
     }
 
@@ -4877,7 +4888,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             )}
 
-            {isCrypto && (
+            {(isCrypto || selectedGateway?.manual) && (
               <div className="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed">
                 Dépôt en {selectedGateway.name} ({selectedGateway.sub}). Une adresse de dépôt et le montant exact te seront indiqués.
                 {typeof selectedMin === 'number' && (
@@ -4911,6 +4922,52 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   : <><Send size={20} /> Créer un dépôt</>}
               </button>
             )}
+          </div>
+        )}
+
+        {step === 'manual_usdt' && (
+          <div className="px-8 pb-8 pt-2 space-y-6">
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-black text-gray-900">Dépôt Manuel USDT</h3>
+              <p className="text-gray-500 text-sm">Transférez exactement le montant ci-dessous via le réseau <span className="font-bold text-gray-900">Tron (TRC20)</span>.</p>
+            </div>
+            
+            <div className="bg-gray-50 rounded-2xl p-6 flex flex-col items-center gap-6 border border-gray-100 shadow-inner">
+              <div className="text-center">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Montant exact à envoyer</span>
+                <p className="text-4xl font-black text-primary font-mono">${Number(payment?.expectedAmount).toFixed(2)}</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${payment?.address}`} alt="QR Code USDT TRC20" className="w-40 h-40" />
+              </div>
+              <div className="w-full space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Adresse USDT (TRC20)</label>
+                <div className="flex bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="flex-1 px-4 py-3 text-xs font-mono font-bold text-gray-600 truncate flex items-center">{payment?.address}</div>
+                  <button onClick={() => { navigator.clipboard.writeText(payment?.address); setCopied('address'); setTimeout(() => setCopied(''), 2000); }} className="bg-gray-100 hover:bg-gray-200 px-4 flex items-center justify-center text-gray-600 transition-colors">
+                    {copied === 'address' ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                  <AlertTriangle size={16} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-amber-900 text-sm mb-1">Étape Finale</h4>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Une fois le transfert effectué, veuillez contacter le support (en bas à droite) avec une capture d'écran ou le hash de la transaction. L'équipe créditera votre solde manuellement.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={onClose} className="w-full py-4 rounded-2xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-all">
+              Fermer (J'ai bien noté l'adresse)
+            </button>
           </div>
         )}
 
