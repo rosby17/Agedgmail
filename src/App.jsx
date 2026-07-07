@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { PRODUCTS as PRODUCTS_RAW } from './productsData';
 import { parseAccountDelivery } from './lib/parseAccountDelivery';
@@ -1733,6 +1733,8 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t }) => {
   const [tfaEnabled, setTfaEnabled] = useState(profile?.two_factor_enabled || false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [uploading, setUploading] = useState(false);
   // Gestion des méthodes de connexion (mot de passe, feedback dédié).
   const [pwLoading, setPwLoading] = useState(false);
@@ -1961,8 +1963,18 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t }) => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={hasPasswordIdentity ? 'Nouveau mot de passe' : 'Mot de passe'} className="w-full px-5 py-3.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-sm" />
-              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmer" className="w-full px-5 py-3.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-sm" />
+              <div className="relative">
+                <input type={showNewPw ? "text" : "password"} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={hasPasswordIdentity ? 'Nouveau mot de passe' : 'Mot de passe'} className="w-full pl-5 pr-12 py-3.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-sm" />
+                <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showNewPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <div className="relative">
+                <input type={showConfirmPw ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmer" className="w-full pl-5 pr-12 py-3.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-sm" />
+                <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showConfirmPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             {pwError && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2 mb-4"><AlertTriangle size={14} /> {pwError}</div>}
             {pwSuccess && <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 flex items-center gap-2 mb-4"><CheckCircle size={14} /> {pwSuccess}</div>}
@@ -5748,6 +5760,8 @@ const friendlyAuthError = (raw = '') => {
 const ResetPasswordView = ({ navigate }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -5791,8 +5805,18 @@ const ResetPasswordView = ({ navigate }) => {
             <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Nouveau mot de passe</h2>
             <p className="text-gray-400 text-sm text-center mb-6">Choisis un nouveau mot de passe pour ton compte.</p>
             <form onSubmit={submit} className="space-y-3.5">
-              <input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" className={inputCls} />
-              <input type="password" required value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirme le mot de passe" className={inputCls} />
+              <div className="relative">
+                <input type={showNewPw ? "text" : "password"} required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" className={inputCls + " pr-12"} />
+                <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showNewPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <div className="relative">
+                <input type={showConfirmPw ? "text" : "password"} required value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirme le mot de passe" className={inputCls + " pr-12"} />
+                <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showConfirmPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               {error && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {error}</div>}
               <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
                 {loading && <RefreshCcw size={15} className="animate-spin" />} Mettre à jour
@@ -5813,6 +5837,7 @@ const AuthView = ({ navigate }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
@@ -5972,7 +5997,12 @@ const AuthView = ({ navigate }) => {
               </>
             )}
             <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder="ton@email.com" />
-            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className={inputCls} placeholder="Mot de passe" />
+            <div className="relative">
+              <input type={showPw ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} className={inputCls + " pr-12"} placeholder="Mot de passe" />
+              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
             {isLogin && (
               <div className="flex justify-end">
