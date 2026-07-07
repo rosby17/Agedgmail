@@ -125,18 +125,36 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
 
   const startEdit = (m) => {
     setEditing(m.id);
-    setEditForm({ supplier_product_id: m.supplier_product_id, margin_percent: m.margin_percent, active: m.active });
+    const p = products.find(prod => prod.id === m.product_id);
+    setEditForm({ 
+      supplier_product_id: m.supplier_product_id, 
+      margin_percent: m.margin_percent, 
+      active: m.active,
+      product_name: p ? p.name : '',
+      image_url: p ? (p.image_url || '') : ''
+    });
   };
 
   const saveEdit = async (id) => {
-    const { error } = await supabase.from('product_supplier_mapping').update({
+    const m = mappings.find(x => x.id === id);
+    const { error: mErr } = await supabase.from('product_supplier_mapping').update({
       supplier_product_id: String(editForm.supplier_product_id).trim(),
       margin_percent: Number(editForm.margin_percent) || 0,
       active: !!editForm.active,
     }).eq('id', id);
-    if (error) { setMsg('Erreur : ' + error.message); return; }
+    if (mErr) { setMsg('Erreur : ' + mErr.message); return; }
+
+    if (m && (editForm.product_name !== undefined || editForm.image_url !== undefined)) {
+      const { error: pErr } = await supabase.from('products').update({
+        name: editForm.product_name,
+        image_url: editForm.image_url
+      }).eq('id', m.product_id);
+      if (pErr) { setMsg('Erreur prod: ' + pErr.message); return; }
+    }
+
     setEditing(null);
     await fetchAll();
+    if (fetchProducts) await fetchProducts();
   };
 
   const handleAdd = async () => {
@@ -233,7 +251,14 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
             <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
               {mappings.map(m => (
                 <tr key={m.id} className="text-gray-700 dark:text-gray-300">
-                  <td className="py-4 font-bold">{productName(m.product_id)}</td>
+                  {editing === m.id ? (
+                    <td className="py-4">
+                      <input value={editForm.product_name} onChange={e => setEditForm({ ...editForm, product_name: e.target.value })} className="w-full px-2 py-1 mb-1 rounded-lg border border-gray-200 dark:border-slate-700 font-bold bg-transparent" placeholder="Product name" />
+                      <input value={editForm.image_url} onChange={e => setEditForm({ ...editForm, image_url: e.target.value })} className="w-full px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs bg-transparent" placeholder="Image URL (optional)" />
+                    </td>
+                  ) : (
+                    <td className="py-4 font-bold">{productName(m.product_id)}</td>
+                  )}
                   <td className="py-4"><span className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 font-bold text-xs">{SUPPLIER_LABEL[m.supplier] || m.supplier}</span></td>
                   {editing === m.id ? (
                     <>
@@ -259,7 +284,7 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
                       <td className="py-4 font-mono">{m.supplier_product_id}</td>
                       <td className="py-4 font-mono">${Number(m.supplier_rate).toFixed(2)}</td>
                       <td className="py-4 font-mono">{Number(m.margin_percent).toFixed(0)}%</td>
-                      <td className="py-4 font-mono font-bold text-gray-900">${sellPrice(m).toFixed(2)}</td>
+                      <td className="py-4 font-mono font-bold text-gray-900 dark:text-white">${sellPrice(m).toFixed(2)}</td>
                       <td className="py-4">
                         <span className={m.supplier_available > 0 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{m.supplier_available}</span>
                         <span className="text-[10px] text-gray-400 ml-1">{m.supplier_status || ''}</span>
