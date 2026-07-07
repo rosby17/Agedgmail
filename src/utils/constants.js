@@ -28,11 +28,10 @@ export const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
 
 export const SUPPLIER_LABEL = { ytseller: 'YTSeller', smmshiba: 'SMMSHIBA' };
 
-
 export const PAYMENT_GATEWAYS = [
-  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5, recommended: true, fee: 0 },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', manual: true, min: 0.5, fee: 0 },
-  { id: 'mobile_money', name: 'Mobile Money', sub: 'Orange, MTN, Wave...', enabled: true, symbol: '📱', min: 2, fee: 8 },
+  { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, recommended: true, manual: false, icons: ['https://cryptologos.cc/logos/bnb-bnb-logo.svg?v=032'], min: 0.5, fee: 0 },
+  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, manual: true, icons: ['https://cryptologos.cc/logos/tether-usdt-logo.svg?v=032'], min: 0.5, fee: 0 },
+  { id: 'mobile_money', name: 'Mobile Money', sub: 'Orange, MTN, Wave...', enabled: true, manual: false, icons: ['https://upload.wikimedia.org/wikipedia/commons/c/c8/Orange_logo.svg', 'https://upload.wikimedia.org/wikipedia/commons/9/93/MTN_Logo.svg'], min: 2, fee: 10 },
 ];
 
 export const BONUS_TIERS = [

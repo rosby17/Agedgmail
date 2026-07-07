@@ -26,7 +26,7 @@ const Footer = ({ navigate, lang }) => (
           <div className="flex flex-wrap gap-6 items-center">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-surface-container-high bg-white/5 opacity-80">
               <span className="material-symbols-outlined text-[14px] text-l-primary">currency_bitcoin</span>
-              <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Crypto / Binance / USDT</span>
+              <span className="font-label-sm text-[9px] uppercase font-bold text-on-surface-variant">Crypto / Binance / USDT / Mobile Money</span>
             </div>
             <div className="flex items-center gap-3 opacity-60">
               <span className="material-symbols-outlined text-l-primary text-lg">verified</span>

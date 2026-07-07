@@ -450,10 +450,20 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                       disabled={!g.enabled}
                       className={`relative text-left p-3 rounded-2xl border transition-all flex items-center gap-3 ${!g.enabled ? 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-800 opacity-60 cursor-not-allowed' : gateway === g.id ? 'bg-primary/5 dark:bg-primary/10 border-primary' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50'} ${g.recommended ? 'ring-2 ring-amber-400 border-amber-400' : ''}`}
                     >
-                      <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.recommended ? 'text-amber-700 bg-amber-100 animate-pulse' : g.enabled ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800'}`}>
-                        {g.recommended ? 'Recommandé' : g.enabled ? 'Auto' : 'Bientôt'}
+                      <span className={`absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${g.recommended ? 'text-amber-700 bg-amber-100 animate-pulse' : g.manual ? 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' : g.enabled ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800'}`}>
+                        {g.recommended ? 'Recommandé' : g.manual ? 'Manuel' : g.enabled ? 'Auto' : 'Bientôt'}
                       </span>
-                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${g.recommended ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>{g.symbol}</span>
+                      <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        {g.icons ? (
+                          <div className={`flex ${g.icons.length > 1 ? 'gap-0.5' : ''} items-center justify-center w-full h-full p-1.5`}>
+                            {g.icons.map((icon, i) => (
+                              <img key={i} src={icon} alt={g.name} className={`${g.icons.length > 1 ? 'w-4 h-4' : 'w-6 h-6'} object-contain`} />
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-lg font-bold text-gray-600 dark:text-gray-300">{g.symbol}</span>
+                        )}
+                      </span>
                       <span>
                         <span className="block text-sm font-bold text-gray-900 dark:text-white">{g.name}</span>
                         <span className="block text-[10px] text-gray-400 dark:text-gray-500 font-medium">{g.sub}</span>

@@ -263,7 +263,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">payments</span>
                     <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Paiement Sécurisé' : 'Secure Payment'}</h5>
-                    <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Recommandé : Binance Pay (0 frais). Dépôt minimum très bas.' : 'Recommended: Binance Pay (0 fees). Very low minimum deposit.'}</p>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Binance Pay, USDT et Mobile Money (Orange, MTN) acceptés.' : 'Binance Pay, USDT, and Mobile Money accepted.'}</p>
                   </div>
                   <div className="group">
                     <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">headset_mic</span>
@@ -286,7 +286,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
             <div className="flex flex-col lg:flex-row justify-between items-end mb-24 gap-10 reveal-target opacity-0">
               <div className="max-w-2xl">
                 <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-8 font-extrabold">{lang === 'fr' ? 'Nos Best-Sellers US' : 'Our US Best Sellers'} <br/>{lang === 'fr' ? 'Livraison immédiate' : 'Instant delivery'}</h2>
-                <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">{lang === 'fr' ? 'Recommandé : Payez par Binance Pay sans limite de minimum. Pas de frais cachés.' : 'Recommended: Pay with Binance Pay with no minimum. No hidden fees.'}</p>
+                <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">{lang === 'fr' ? 'Payez par Crypto (Binance Pay) ou Mobile Money (Orange, MTN).' : 'Pay with Crypto (Binance Pay) or Mobile Money.'}</p>
               </div>
               <button onClick={() => navigate('shop')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white dark:text-gray-900 hover:border-l-primary transition-all duration-500">
                 {lang === 'fr' ? 'Accéder au catalogue complet' : 'Access the full catalog'}
