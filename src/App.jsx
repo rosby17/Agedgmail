@@ -151,7 +151,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                   : 'Get instant access to verified accounts (USA, India, France, Spain, etc.) ready for your international marketing campaigns without shadowbans.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-5">
-                <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-white px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
+                <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-white dark:text-gray-900 px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
                   {lang === 'fr' ? 'Acheter un compte' : 'Buy an Account'}
                   <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </button>
@@ -311,7 +311,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-8 font-extrabold">{lang === 'fr' ? 'Nos Best-Sellers US' : 'Our US Best Sellers'} <br/>{lang === 'fr' ? 'Livraison immédiate' : 'Instant delivery'}</h2>
                 <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">{lang === 'fr' ? 'Recommandé : Payez par Binance Pay sans limite de minimum. Pas de frais cachés.' : 'Recommended: Pay with Binance Pay with no minimum. No hidden fees.'}</p>
               </div>
-              <button onClick={() => navigate('shop')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white hover:border-l-primary transition-all duration-500">
+              <button onClick={() => navigate('shop')} className="bg-white/5 border border-white/10 text-on-surface px-10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white dark:text-gray-900 hover:border-l-primary transition-all duration-500">
                 {lang === 'fr' ? 'Accéder au catalogue complet' : 'Access the full catalog'}
               </button>
             </div>
@@ -331,15 +331,15 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 if (isCenter) {
                   return (
                     <div key={product.id} className="glass glass-glow rounded-[48px] p-12 flex flex-col border-l-primary/40 relative overflow-hidden transform md:scale-105 shadow-[0_0_80px_rgba(78,223,159,0.1)] reveal-target opacity-0" style={{ animationDelay: delay }}>
-                      <div className="absolute top-12 right-[-45px] bg-l-primary text-white px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">{lang === 'fr' ? 'Meilleur Choix' : 'Best Choice'}</div>
+                      <div className="absolute top-12 right-[-45px] bg-l-primary text-white dark:text-gray-900 px-12 py-1.5 rotate-45 font-bold text-[10px] uppercase tracking-widest shadow-xl">{lang === 'fr' ? 'Meilleur Choix' : 'Best Choice'}</div>
                       <div className="mb-10">
-                        <span className="bg-l-primary text-white px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
+                        <span className="bg-l-primary text-white dark:text-gray-900 px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
                       </div>
                       <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
                       <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                       <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Gmail US Premium'}".</p>
                       <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
-                      <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-white py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">{lang === 'fr' ? 'Acheter maintenant' : 'Buy Now'}</button>
+                      <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-white dark:text-gray-900 py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">{lang === 'fr' ? 'Acheter maintenant' : 'Buy Now'}</button>
                     </div>
                   );
                 }
@@ -353,7 +353,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                     <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                     <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Gmail US Ready'}".</p>
                     <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
-                    <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white transition-all duration-300">{lang === 'fr' ? 'Sélectionner' : 'Select'}</button>
+                    <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white dark:text-gray-900 transition-all duration-300">{lang === 'fr' ? 'Sélectionner' : 'Select'}</button>
                   </div>
                 );
               })}
@@ -409,7 +409,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 <h2 className="font-headline-lg text-4xl md:text-6xl text-on-surface mb-10 font-extrabold leading-tight">Aujourd'hui, les créateurs d'élite propulsent leur business digital et encaissent leurs premiers 100 000€.</h2>
                 <p className="font-body-md text-on-surface-variant text-xl mb-16 max-w-2xl mx-auto leading-relaxed">Profitez d'un RPM élevé et d'une croissance fulgurante. Vos comptes 'Aged' n'attendent que vous.</p>
                 <div className="flex flex-col items-center gap-10">
-                  <button onClick={() => navigate('shop')} className="bg-l-primary text-white px-16 py-7 rounded-2xl font-bold text-2xl hover:scale-110 transition-all duration-300 shadow-2xl shadow-l-primary/40 emerald-glow">
+                  <button onClick={() => navigate('shop')} className="bg-l-primary text-white dark:text-gray-900 px-16 py-7 rounded-2xl font-bold text-2xl hover:scale-110 transition-all duration-300 shadow-2xl shadow-l-primary/40 emerald-glow">
                     Acheter maintenant
                   </button>
                   <div className="flex items-center gap-3 bg-white/5 px-6 py-3 rounded-full border border-white/5">
@@ -943,7 +943,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
         ) : (
           <>
             {isUS && product.category === 'email' && (
-              <div className="absolute bottom-4 right-4 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
+              <div className="absolute bottom-4 right-4 bg-primary text-white dark:text-gray-900 text-[10px] font-black px-2 py-1 rounded-md shadow-sm">US</div>
             )}
             <div className="absolute top-4 right-4 bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1">
               <Zap size={10} /> Instant
@@ -985,7 +985,7 @@ const ProductCard = ({ product, addToCart, navigate, setSelectedProduct, onBuyNo
         <button
           onClick={() => onBuyNow(product)}
           disabled={outOfStock}
-          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${outOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primaryDark shadow-lg shadow-primary/20'}`}
+          className={`flex-grow h-12 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${outOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-primary text-white dark:text-gray-900 hover:bg-primaryDark shadow-lg shadow-primary/20'}`}
         >
           {outOfStock ? t('outOfStock') : t('buyNow')}
         </button>
@@ -1048,7 +1048,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
         )}
         
         {/* Cart Button (Now before Profile) */}
-        <button onClick={onCartClick} className="bg-gray-900 dark:bg-primary text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
+        <button onClick={onCartClick} className="bg-gray-900 dark:bg-primary text-white dark:text-gray-900 px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
           <ShoppingCart size={18} />
           {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
           <span className="border-l border-white/20 pl-3">CART / ${cartTotal.toFixed(2)}</span>
@@ -1215,7 +1215,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
           {!session ? (
             <div className="space-y-4">
               <p className="text-sm text-gray-500">Log in to buy this product with your balance.</p>
-              <button onClick={() => { onClose(); navigate('auth'); }} className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white hover:bg-primary transition-all">Log in</button>
+              <button onClick={() => { onClose(); navigate('auth'); }} className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all">Log in</button>
             </div>
           ) : (
             <>
@@ -1235,7 +1235,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
               <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cart</span>
-                  <span className="w-5 h-5 rounded-full bg-gray-900 dark:bg-primary text-white text-[10px] font-black flex items-center justify-center">1</span>
+                  <span className="w-5 h-5 rounded-full bg-gray-900 dark:bg-primary text-white dark:text-gray-900 text-[10px] font-black flex items-center justify-center">1</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0"><ProductVisual product={product} iconSize={20} /></div>
@@ -1279,7 +1279,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
                     setRechargeSuggestedAmount(missing > 0 ? missing : null);
                     onClose(); navigate('recharge');
                   }}
-                  className="w-full py-5 rounded-2xl font-bold text-lg bg-primary text-white hover:bg-primaryDark transition-all shadow-xl flex items-center justify-center gap-3"
+                  className="w-full py-5 rounded-2xl font-bold text-lg bg-primary text-white dark:text-gray-900 hover:bg-primaryDark transition-all shadow-xl flex items-center justify-center gap-3"
                 >
                   <Plus size={20} /> Top up ${Math.max(0, Math.round((total - balance) * 100) / 100).toFixed(2)}
                 </button>
@@ -1287,7 +1287,7 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
                 <button
                   onClick={handlePay}
                   disabled={isProcessing || purchaseSuccess}
-                  className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white' : 'bg-primary text-white hover:bg-primaryDark shadow-primary/20'}`}
+                  className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white dark:text-gray-900' : 'bg-primary text-white dark:text-gray-900 hover:bg-primaryDark shadow-primary/20'}`}
                 >
                   {isProcessing ? <RefreshCcw size={20} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={20} /> : <Zap size={20} />}
                   {isProcessing ? 'Processing...' : purchaseSuccess ? 'Delivered!' : 'Pay & receive'}
@@ -1350,7 +1350,7 @@ const HomeView = ({
           <button
             onClick={() => setActiveCategory('all')}
             className={`shrink-0 w-9 h-9 rounded-full text-xs font-black flex items-center justify-center transition-all ${
-              activeCategory === 'all' ? 'bg-gray-900 dark:bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+              activeCategory === 'all' ? 'bg-gray-900 dark:bg-primary text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
             }`}
             title="Toutes les sous-catégories"
           >
@@ -1548,7 +1548,7 @@ const SmsView = ({ session, profile, lang, navigate }) => {
             <button 
               onClick={requestNumber} 
               disabled={loading}
-              className="w-full bg-primary text-white py-4 rounded-2xl font-black text-lg hover:bg-primaryDark hover:scale-[1.02] transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+              className="w-full bg-primary text-white dark:text-gray-900 py-4 rounded-2xl font-black text-lg hover:bg-primaryDark hover:scale-[1.02] transition-all disabled:opacity-50 flex justify-center items-center gap-2"
             >
               {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Smartphone size={20} />}
               {loading 
@@ -1704,20 +1704,20 @@ const ApiView = ({ navigate, session, lang }) => {
         {!session ? (
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <p className="text-gray-500 text-sm flex-grow">{lang === 'fr' ? 'Connectez-vous pour générer votre clé API et commencer.' : 'Log in to generate your API key and get started.'}</p>
-            <button onClick={() => navigate('auth')} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">{lang === 'fr' ? 'Se connecter' : 'Log in'}</button>
+            <button onClick={() => navigate('auth')} className="bg-primary text-white dark:text-gray-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">{lang === 'fr' ? 'Se connecter' : 'Log in'}</button>
           </div>
         ) : apiKey ? (
           <div>
             <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4">
               <code className="text-primary font-mono text-sm flex-grow break-all">{apiKey}</code>
-              <button onClick={copyKey} className="shrink-0 text-xs font-bold px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all">{copied ? (lang === 'fr' ? 'Copié !' : 'Copied!') : (lang === 'fr' ? 'Copier' : 'Copy')}</button>
+              <button onClick={copyKey} className="shrink-0 text-xs font-bold px-4 py-2 rounded-lg bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all">{copied ? (lang === 'fr' ? 'Copié !' : 'Copied!') : (lang === 'fr' ? 'Copier' : 'Copy')}</button>
             </div>
             <p className="text-gray-400 text-xs mt-3">{lang === 'fr' ? 'Gardez cette clé secrète. Elle donne accès à votre solde et vos commandes.' : 'Keep this key secret. It grants access to your balance and your orders.'}</p>
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <p className="text-gray-500 text-sm flex-grow">{lang === 'fr' ? 'Aucune clé active. Générez-en une pour accéder à l\'API.' : 'No active key. Generate one to access the API.'}</p>
-            <button onClick={generateKey} disabled={loading} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-50">{loading ? (lang === 'fr' ? 'Génération…' : 'Generating…') : (lang === 'fr' ? 'Générer ma clé API' : 'Generate my API Key')}</button>
+            <button onClick={generateKey} disabled={loading} className="bg-primary text-white dark:text-gray-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-50">{loading ? (lang === 'fr' ? 'Génération…' : 'Generating…') : (lang === 'fr' ? 'Générer ma clé API' : 'Generate my API Key')}</button>
           </div>
         )}
       </div>
@@ -2124,7 +2124,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t }) => {
               </div>
               <div className="space-y-3">
                 <input type="file" id="avatar" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
-                <label htmlFor="avatar" className="inline-block bg-white border border-gray-100 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer">
+                <label htmlFor="avatar" className="inline-block bg-white border border-gray-100 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white dark:text-gray-900 hover:border-primary transition-all cursor-pointer">
                   {uploading ? "Loading..." : "Choose a photo"}
                 </label>
                 <p className="text-[10px] text-gray-400 font-medium italic">JPG, PNG supported. Max 2MB.</p>
@@ -2168,7 +2168,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t }) => {
                 {googleLoading ? '…' : 'Désactiver'}
               </button>
             ) : (
-              <button onClick={handleLinkGoogle} disabled={googleLoading} className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all disabled:opacity-50">
+              <button onClick={handleLinkGoogle} disabled={googleLoading} className="px-5 py-2.5 bg-gray-900 text-white dark:text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all disabled:opacity-50">
                 {googleLoading ? '…' : 'Activer'}
               </button>
             )}
@@ -2203,7 +2203,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t }) => {
             </div>
             {pwError && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2 mb-4"><AlertTriangle size={14} /> {pwError}</div>}
             {pwSuccess && <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 flex items-center gap-2 mb-4"><CheckCircle size={14} /> {pwSuccess}</div>}
-            <button onClick={handleUpdatePassword} disabled={pwLoading} className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-xs hover:bg-primary transition-all flex items-center gap-2 disabled:opacity-50">
+            <button onClick={handleUpdatePassword} disabled={pwLoading} className="px-6 py-3 bg-gray-900 text-white dark:text-gray-900 rounded-xl font-bold text-xs hover:bg-primary transition-all flex items-center gap-2 disabled:opacity-50">
               {pwLoading && <RefreshCcw size={14} className="animate-spin" />}
               {hasPasswordIdentity ? 'Mettre à jour' : 'Définir le mot de passe'}
             </button>
@@ -2374,7 +2374,7 @@ const OrderCredentialsModal = ({ order, onClose, lang }) => {
               <div className="flex justify-end">
                 <button
                   onClick={() => navigator.clipboard.writeText(raw)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white dark:text-gray-900 transition-all shadow-sm"
                 >
                   <Copy size={12} /> Tout copier
                 </button>
@@ -2405,7 +2405,7 @@ const OrderCredentialsModal = ({ order, onClose, lang }) => {
           )}
         </div>
 
-        <button onClick={onClose} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10 shrink-0">Fermer</button>
+        <button onClick={onClose} className="w-full bg-gray-900 text-white dark:text-gray-900 py-5 rounded-2xl font-bold hover:bg-primary transition-all shadow-xl shadow-black/10 shrink-0">Fermer</button>
       </div>
     </div>
   );
@@ -2577,7 +2577,7 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t
               <button
                 onClick={handleLookup}
                 disabled={isLoading || !recipientEmail.trim() || amountNum <= 0}
-                className="w-full py-4 rounded-2xl bg-gray-900 text-white font-bold text-base hover:bg-primary transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl bg-gray-900 text-white dark:text-gray-900 font-bold text-base hover:bg-primary transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {isLoading ? <RefreshCcw size={18} className="animate-spin" /> : <ChevronRight size={18} />}
                 {lang === 'fr' ? "Continuer" : "Continue"}
@@ -2603,7 +2603,7 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t
                 <button
                   onClick={handleTransfer}
                   disabled={isLoading}
-                  className="flex-1 py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="flex-1 py-4 rounded-2xl bg-primary text-white dark:text-gray-900 font-bold hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {isLoading ? <RefreshCcw size={18} className="animate-spin" /> : <CheckCircle size={18} />}
                   {lang === 'fr' ? "Confirmer" : "Confirm"}
@@ -2621,7 +2621,7 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t
                 <div className="text-xl font-black text-gray-900">Transfert effectué !</div>
                 <div className="text-sm text-gray-500 mt-1">${amountNum.toFixed(2)} envoyés à <strong>{recipientEmail}</strong></div>
               </div>
-              <button onClick={onClose} className="w-full py-4 rounded-2xl bg-gray-900 text-white font-bold hover:bg-primary transition-all">
+              <button onClick={onClose} className="w-full py-4 rounded-2xl bg-gray-900 text-white dark:text-gray-900 font-bold hover:bg-primary transition-all">
                 Fermer
               </button>
             </div>
@@ -2636,7 +2636,7 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t
                 <div className="text-xl font-black text-gray-900">Transfert échoué</div>
                 <div className="text-sm text-red-500 mt-1">{errorMsg}</div>
               </div>
-              <button onClick={() => { setStep('form'); setErrorMsg(''); }} className="w-full py-4 rounded-2xl bg-gray-900 text-white font-bold hover:bg-primary transition-all">
+              <button onClick={() => { setStep('form'); setErrorMsg(''); }} className="w-full py-4 rounded-2xl bg-gray-900 text-white dark:text-gray-900 font-bold hover:bg-primary transition-all">
                 Réessayer
               </button>
             </div>
@@ -2787,7 +2787,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
             <div className="text-5xl font-black font-price text-white">${profile?.balance?.toFixed(2) || "0.00"}</div>
           </div>
           <div className="relative z-10 flex flex-col sm:flex-row gap-4">
-            <button onClick={() => navigate('recharge')} className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+            <button onClick={() => navigate('recharge')} className="flex-1 bg-primary text-white dark:text-gray-900 py-4 rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
               <Plus size={18} /> {t('topUpBtn')}
             </button>
             <button onClick={() => setShowTransfer(true)} className="flex-1 bg-white/10 border border-white/20 text-white py-4 rounded-2xl font-bold text-sm hover:bg-white/20 transition-all flex items-center justify-center gap-2">
@@ -2917,7 +2917,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
                               title={canDownload ? t('download') : ""}
                               className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${
                                 canDownload
-                                  ? 'border-primary/30 text-primary bg-primary/5 hover:bg-primary hover:text-white cursor-pointer'
+                                  ? 'border-primary/30 text-primary bg-primary/5 hover:bg-primary hover:text-white dark:text-gray-900 cursor-pointer'
                                   : 'border-gray-100 text-gray-300 cursor-not-allowed'
                               }`}
                             >
@@ -3062,7 +3062,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               filter === f.key
-                ? 'bg-gray-900 dark:bg-primary text-white'
+                ? 'bg-gray-900 dark:bg-primary text-white dark:text-gray-900'
                 : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-100 dark:border-slate-800'
             }`}>
             <f.icon size={14} /> {f.label}
@@ -3417,12 +3417,12 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
               )}
               <div className="flex gap-3 flex-wrap">
                 <button onClick={() => handleSync(supplier)} disabled={syncing === supplier}
-                  className="h-11 px-5 rounded-xl bg-gray-900 text-white font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
+                  className="h-11 px-5 rounded-xl bg-gray-900 text-white dark:text-gray-900 font-bold text-sm flex items-center gap-2 hover:bg-primary transition-all disabled:opacity-50">
                   <RefreshCcw size={14} className={syncing === supplier ? 'animate-spin' : ''} /> {syncing === supplier ? 'Syncing…' : 'Sync'}
                 </button>
                 {supplier === 'ytseller' && (
                   <button onClick={handleFullImport} disabled={!!syncing}
-                    className="h-11 px-5 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2 hover:bg-primaryDark transition-all disabled:opacity-50">
+                    className="h-11 px-5 rounded-xl bg-primary text-white dark:text-gray-900 font-bold text-sm flex items-center gap-2 hover:bg-primaryDark transition-all disabled:opacity-50">
                     <Download size={14} /> Full import (reset)
                   </button>
                 )}
@@ -3521,7 +3521,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Margin %</label>
             <input type="number" value={newMap.margin_percent} onChange={e => setNewMap({ ...newMap, margin_percent: e.target.value })} className="px-4 py-3 rounded-xl border border-gray-200 font-mono w-24" />
           </div>
-          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white font-bold text-sm flex items-center gap-2"><Plus size={16} /> Map</button>
+          <button onClick={handleAdd} className="h-12 px-6 rounded-xl bg-primary text-white dark:text-gray-900 font-bold text-sm flex items-center gap-2"><Plus size={16} /> Map</button>
         </div>
       </div>
 
@@ -3551,7 +3551,7 @@ const SupplierAdmin = ({ products, fetchProducts }) => {
                       <button
                         onClick={() => handleRetryDropship(o.id)}
                         disabled={busyRetryId === o.id}
-                        className="px-3 py-1.5 rounded-lg bg-primary text-white font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-lg bg-primary text-white dark:text-gray-900 font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50"
                       >
                         {busyRetryId === o.id ? 'Relance...' : 'Relancer'}
                       </button>
@@ -3775,7 +3775,7 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
         <div className="flex gap-2">
           {rangeOptions.map(opt => (
             <button key={opt.value} onClick={() => { setRange(opt.value); setHoveredPoint(null); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === opt.value ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-800'}`}>
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === opt.value ? 'bg-primary text-white dark:text-gray-900' : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-800'}`}>
               {opt.label}
             </button>
           ))}
@@ -3998,7 +3998,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                   <td className="py-4 text-xs">{expired ? <span className="text-red-500 font-bold">Expiré</span> : new Date(o.expires_at).toLocaleTimeString()}</td>
                   <td className="py-4 flex gap-2">
                     <button onClick={() => handleConfirm(o)} disabled={busyId === o.id}
-                      className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50">
+                      className="px-4 py-2 rounded-xl bg-primary text-white dark:text-gray-900 font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50">
                       {busyId === o.id ? 'Confirmation…' : 'Confirmer'}
                     </button>
                     <button onClick={() => handleReject(o)} disabled={busyId === o.id}
@@ -4071,7 +4071,7 @@ const RecentActivityTable = ({ allOrders }) => {
           <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-xl p-1">
             {['all', 'confirmed', 'processing', 'pending', 'cancelled'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-primary text-white' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'}`}>
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-primary text-white dark:text-gray-900' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white dark:text-gray-900'}`}>
                 {f === 'all' ? 'Toutes' : f}
               </button>
             ))}
@@ -4225,14 +4225,14 @@ const SupportAdmin = ({ session }) => {
             <>
               <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-800 shrink-0">
                 <div className="font-bold text-gray-900 dark:text-white text-sm">{active.user_email}</div>
-                <button onClick={toggleResolved} className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg ${active.status === 'open' ? 'bg-gray-900 text-white hover:bg-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} transition-all`}>
+                <button onClick={toggleResolved} className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg ${active.status === 'open' ? 'bg-gray-900 text-white dark:text-gray-900 hover:bg-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} transition-all`}>
                   {active.status === 'open' ? 'Marquer résolu' : 'Rouvrir'}
                 </button>
               </div>
               <div ref={scrollRef} className="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-slate-950">
                 {messages.map(m => (
                   <div key={m.id} className={`flex ${m.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'admin' ? 'bg-primary text-white rounded-br-sm' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-slate-700 rounded-bl-sm'}`}>
+                    <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'admin' ? 'bg-primary text-white dark:text-gray-900 rounded-br-sm' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-slate-700 rounded-bl-sm'}`}>
                       {m.body}
                       <div className={`text-[9px] mt-1 ${m.sender === 'admin' ? 'text-white/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
@@ -4249,7 +4249,7 @@ const SupportAdmin = ({ session }) => {
                   placeholder="Répondre…"
                   className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                 />
-                <button onClick={reply} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40"><Send size={16} /></button>
+                <button onClick={reply} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40"><Send size={16} /></button>
               </div>
             </>
           )}
@@ -4338,7 +4338,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
           <div className="flex gap-1 bg-gray-50 dark:bg-slate-800 rounded-xl p-1">
             {['all', 'active', 'suspended'].map(f => (
               <button key={f} onClick={() => setStatusFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${statusFilter === f ? 'bg-gray-900 dark:bg-primary text-white' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${statusFilter === f ? 'bg-gray-900 dark:bg-primary text-white dark:text-gray-900' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
                 {f === 'all' ? 'Tous' : f === 'active' ? 'Actifs' : 'Suspendus'}
               </button>
             ))}
@@ -4556,7 +4556,7 @@ const AdminView = ({
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full h-14 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
+              className="w-full h-14 bg-primary text-white dark:text-gray-900 rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
             >
               {loginLoading && <RefreshCcw size={16} className="animate-spin" />}
               Accéder à la console
@@ -4699,8 +4699,8 @@ const AdminView = ({
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${
                   activeTab === item.id
-                    ? 'bg-primary text-white shadow-xl shadow-primary/20'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                    ? 'bg-primary text-white dark:text-gray-900 shadow-xl shadow-primary/20'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <item.icon size={18} /> {item.label}
@@ -5243,7 +5243,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             {error === 'username_required' ? (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
                 <p className="text-sm text-amber-800 font-bold">Configure d'abord un pseudo dans tes paramètres — c'est lui qui sert à identifier tes paiements Binance Pay.</p>
-                <button onClick={() => navigate('settings')} className="w-full py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-primary transition-all">
+                <button onClick={() => navigate('settings')} className="w-full py-3 rounded-xl bg-gray-900 text-white dark:text-gray-900 font-bold text-sm hover:bg-primary transition-all">
                   Configurer mon pseudo
                 </button>
               </div>
@@ -5257,7 +5257,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               <button
                 onClick={handleSubmit}
                 disabled={loading || belowMin}
-                className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
+                className="w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 bg-primary text-white dark:text-gray-900 hover:bg-primaryDark shadow-primary/20 disabled:opacity-40"
               >
                 {loading
                   ? <><RefreshCcw size={20} className="animate-spin" /> Préparation...</>
@@ -5318,14 +5318,14 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             {/* Indicateur d'étapes 1/2, comme les checkouts crypto habituels */}
             <div className="flex items-center justify-center gap-3 py-2">
               <div className="flex flex-col items-center gap-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black ${binanceSubStep === 'pay' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black ${binanceSubStep === 'pay' ? 'bg-primary text-white dark:text-gray-900' : 'bg-primary/10 text-primary'}`}>
                   {binanceSubStep === 'verify' ? <CheckCircle size={16} /> : '1'}
                 </div>
                 <span className={`text-[10px] font-bold ${binanceSubStep === 'pay' ? 'text-gray-900' : 'text-gray-400'}`}>Effectuer le paiement</span>
               </div>
               <div className="w-16 h-px bg-gray-200 mb-5" />
               <div className="flex flex-col items-center gap-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black ${binanceSubStep === 'verify' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>2</div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black ${binanceSubStep === 'verify' ? 'bg-primary text-white dark:text-gray-900' : 'bg-gray-100 text-gray-400'}`}>2</div>
                 <span className={`text-[10px] font-bold ${binanceSubStep === 'verify' ? 'text-gray-900' : 'text-gray-400'}`}>Vérifier le paiement</span>
               </div>
             </div>
@@ -5340,7 +5340,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Envoyer à l'ID Binance</label>
                   <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
                     <code className="text-sm font-mono text-gray-700 flex-grow text-left">{payment.payId}</code>
-                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.payId)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-bold hover:bg-primary transition-all flex items-center gap-1"><Copy size={12} /> Copier</button>
+                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.payId)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-gray-900 text-white dark:text-gray-900 text-xs font-bold hover:bg-primary transition-all flex items-center gap-1"><Copy size={12} /> Copier</button>
                   </div>
                   {copied && <p className="text-xs text-primary font-bold mt-2">Copié !</p>}
                 </div>
@@ -5352,7 +5352,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   </p>
                   <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-4 py-3">
                     <code className="text-lg font-black font-mono text-gray-900 flex-grow text-left tracking-widest">{payment.paymentCode}</code>
-                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.paymentCode)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+                    <button onClick={() => { navigator.clipboard?.writeText(String(payment.paymentCode)); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all"><Copy size={14} /></button>
                   </div>
                 </div>
 
@@ -5369,7 +5369,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
                 <button
                   onClick={() => setBinanceSubStep('verify')}
-                  className="w-full py-4 rounded-2xl font-bold bg-primary text-white hover:bg-primaryDark transition-all"
+                  className="w-full py-4 rounded-2xl font-bold bg-primary text-white dark:text-gray-900 hover:bg-primaryDark transition-all"
                 >
                   Confirmer le paiement
                 </button>
@@ -5433,7 +5433,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                     setVerifying(false);
                   }}
                   disabled={verifying}
-                  className="w-full py-4 rounded-2xl font-bold bg-primary text-white hover:bg-primaryDark transition-all disabled:opacity-50"
+                  className="w-full py-4 rounded-2xl font-bold bg-primary text-white dark:text-gray-900 hover:bg-primaryDark transition-all disabled:opacity-50"
                 >
                   {verifying ? 'Vérification…' : 'Vérifier le paiement'}
                 </button>
@@ -5479,7 +5479,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             {payment.provider === 'mobile_money' ? (
               <button
                 onClick={() => setStep('form')}
-                className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white hover:bg-primary transition-all flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all flex items-center justify-center gap-2"
               >
                 <ArrowLeft size={18} /> Retour aux options
               </button>
@@ -5493,7 +5493,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Adresse de dépôt</p>
                   <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
                     <code className="text-xs font-mono text-gray-700 flex-grow break-all text-left">{payment.payAddress}</code>
-                    <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all"><Copy size={14} /></button>
+                    <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all"><Copy size={14} /></button>
                   </div>
                   {copied && <p className="text-xs text-primary font-bold mt-2">Adresse copiée !</p>}
                 </div>
@@ -5512,7 +5512,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
             </p>
             <button
               onClick={close}
-              className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-primary transition-all"
+              className="w-full bg-gray-900 text-white dark:text-gray-900 py-4 rounded-2xl font-bold hover:bg-primary transition-all"
             >
               Mon compte
             </button>
@@ -5585,7 +5585,7 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
           <div className="w-full h-full flex items-center justify-center p-10">
             <ProductVisual product={product} iconSize={64} />
           </div>
-          {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-5 right-5 bg-primary text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm">US ACCOUNT</div>}
+          {product.name.includes('US') && product.category === 'email' && <div className="absolute bottom-5 right-5 bg-primary text-white dark:text-gray-900 text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm">US ACCOUNT</div>}
         </div>
 
         <div className="flex flex-col justify-center">
@@ -5632,7 +5632,7 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow }) =>
               <button
                 onClick={() => onBuyNow(product)}
                 disabled={product.stock <= 0}
-                className={`flex-grow h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-primary text-white hover:bg-primaryDark shadow-primary/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                className={`flex-grow h-20 rounded-[2rem] font-black text-2xl transition-all shadow-2xl uppercase tracking-widest flex items-center justify-center gap-4 ${product.stock > 0 ? 'bg-primary text-white dark:text-gray-900 hover:bg-primaryDark shadow-primary/30 hover:scale-[1.02]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
               >
                 {product.stock > 0 ? 'Buy now' : 'Out of stock'}
               </button>
@@ -5848,7 +5848,7 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
           <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-5 space-y-3 max-h-64 overflow-y-auto">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Items</span>
-              <span className="w-5 h-5 rounded-full bg-gray-900 dark:bg-primary text-white text-[10px] font-black flex items-center justify-center">{cart.length}</span>
+              <span className="w-5 h-5 rounded-full bg-gray-900 dark:bg-primary text-white dark:text-gray-900 text-[10px] font-black flex items-center justify-center">{cart.length}</span>
             </div>
             {cart.map(item => (
               <div key={item.id} className="flex items-center gap-3">
@@ -5880,7 +5880,7 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
                 setRechargeSuggestedAmount(missing > 0 ? missing : null);
                 onClose(); navigate('recharge');
               }}
-              className="w-full py-5 rounded-2xl font-bold text-lg bg-primary text-white hover:bg-primaryDark transition-all shadow-xl flex items-center justify-center gap-3"
+              className="w-full py-5 rounded-2xl font-bold text-lg bg-primary text-white dark:text-gray-900 hover:bg-primaryDark transition-all shadow-xl flex items-center justify-center gap-3"
             >
               <Plus size={20} /> Top up ${Math.max(0, Math.round((cartTotal - balance) * 100) / 100).toFixed(2)}
             </button>
@@ -5888,7 +5888,7 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
             <button
               onClick={handleBalancePayment}
               disabled={isProcessing || purchaseSuccess || cart.length === 0}
-              className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white' : 'bg-primary text-white hover:bg-primaryDark shadow-primary/20'}`}
+              className={`w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${purchaseSuccess ? 'bg-green-500 text-white dark:text-gray-900' : 'bg-primary text-white dark:text-gray-900 hover:bg-primaryDark shadow-primary/20'}`}
             >
               {isProcessing ? <RefreshCcw size={20} className="animate-spin" /> : purchaseSuccess ? <CheckCircle size={20} /> : <Zap size={20} />}
               {isProcessing ? 'Processing...' : purchaseSuccess ? 'Delivered!' : 'Pay & receive'}
@@ -5959,7 +5959,7 @@ const CartDrawer = ({ open, onClose, cart, updateCartQuantity, removeFromCart, c
           <button
             onClick={() => { onClose(); session ? onCheckout() : navigate('auth'); }}
             disabled={cart.length === 0}
-            className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-base hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-primary text-white dark:text-gray-900 py-4 rounded-2xl font-bold text-base hover:bg-primaryDark transition-all shadow-xl shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {session ? 'Checkout' : 'Log in to pay'}
           </button>
@@ -6053,7 +6053,7 @@ const ResetPasswordView = ({ navigate, lang }) => {
                 </button>
               </div>
               {error && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {error}</div>}
-              <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
+              <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white dark:text-gray-900 rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
                 {loading && <RefreshCcw size={15} className="animate-spin" />} {lang === 'fr' ? 'Mettre à jour' : 'Update'}
               </button>
             </form>
@@ -6188,7 +6188,7 @@ const AuthView = ({ navigate, lang }) => {
             {infoMessage && <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 mb-4">{infoMessage}</div>}
             {errorMessage && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
 
-            <button onClick={handleResendConfirmation} disabled={loading} className="w-full h-12 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-3">
+            <button onClick={handleResendConfirmation} disabled={loading} className="w-full h-12 bg-gray-900 text-white dark:text-gray-900 rounded-xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-3">
               {loading && <RefreshCcw size={15} className="animate-spin" />} {lang === 'fr' ? 'Renvoyer l\'email' : 'Resend email'}
             </button>
             <button onClick={() => { setPendingConfirmEmail(''); setIsLogin(true); setErrorMessage(''); setInfoMessage(''); }} className="text-xs text-gray-400 font-bold hover:text-primary transition-colors">
@@ -6258,7 +6258,7 @@ const AuthView = ({ navigate, lang }) => {
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
+            <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white dark:text-gray-900 rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
               {loading && <RefreshCcw size={15} className="animate-spin" />}
               {isLogin ? (lang === 'fr' ? 'Se connecter' : 'Log in') : (lang === 'fr' ? "S'inscrire" : 'Sign up')}
             </button>
@@ -6546,7 +6546,7 @@ const SupportChatWidget = ({ session, profile }) => {
     <>
       <button
         onClick={() => (open ? setOpen(false) : openPanel())}
-        className="fixed bottom-6 right-6 z-[250] w-14 h-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/30 flex items-center justify-center hover:bg-primaryDark transition-all"
+        className="fixed bottom-6 right-6 z-[250] w-14 h-14 rounded-full bg-primary text-white dark:text-gray-900 shadow-2xl shadow-primary/30 flex items-center justify-center hover:bg-primaryDark transition-all"
         aria-label="Support"
       >
         {open ? <X size={22} /> : <MessageCircle size={24} />}
@@ -6566,7 +6566,7 @@ const SupportChatWidget = ({ session, profile }) => {
             )}
             {messages.map(m => (
               <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'user' ? 'bg-primary text-white rounded-br-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-sm'}`}>
+                <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${m.sender === 'user' ? 'bg-primary text-white dark:text-gray-900 rounded-br-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-sm'}`}>
                   {m.body}
                   <div className={`text-[9px] mt-1 ${m.sender === 'user' ? 'text-white/60' : 'text-gray-400'}`}>{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
@@ -6583,7 +6583,7 @@ const SupportChatWidget = ({ session, profile }) => {
               placeholder="Écris ton message…"
               className="flex-grow px-4 py-2.5 rounded-full bg-gray-50 dark:bg-gray-800 dark:text-white border border-gray-200 dark:border-gray-700 text-sm outline-none focus:ring-2 focus:ring-primary/20"
             />
-            <button onClick={send} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40">
+            <button onClick={send} disabled={sending || !input.trim()} className="w-10 h-10 shrink-0 rounded-full bg-primary text-white dark:text-gray-900 flex items-center justify-center hover:bg-primaryDark transition-all disabled:opacity-40">
               <Send size={16} />
             </button>
           </div>
