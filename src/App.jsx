@@ -1596,6 +1596,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
   if (status === 'LOADING_PRICES') {
     return (
+      <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-300">
         <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm">
           <div className="flex items-start gap-4">
              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse shrink-0"></div>
