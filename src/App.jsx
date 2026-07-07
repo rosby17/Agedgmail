@@ -1398,7 +1398,7 @@ const HomeView = ({
 // ==========================================
 const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
 
-const ApiView = ({ navigate, session }) => {
+const ApiView = ({ navigate, session, lang }) => {
   const [apiKey, setApiKey] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -1421,7 +1421,13 @@ const ApiView = ({ navigate, session }) => {
 
   const copyKey = () => { if (apiKey) { navigator.clipboard?.writeText(apiKey); setCopied(true); setTimeout(() => setCopied(false), 1500); } };
 
-  const actions = [
+  const actions = lang === 'fr' ? [
+    ['balance', 'key, action', '{ "balance": 42.5, "currency": "USD" }', 'Vérifiez votre solde revendeur.'],
+    ['products', 'key, action', '[ { "product": 12, "name": "…", "rate": 6.60, "available": 120, "status": "In stock" } ]', 'Lister le catalogue, vos prix et le stock en temps réel.'],
+    ['add_order', 'key, action, product, quantity', '{ "order": 10231 }', 'Passer une commande. Débite votre solde, livraison automatique.'],
+    ['order_status', 'key, action, order', '{ "status": "Completed", "charge": "6.60", "currency": "USD" }', 'Statuts : Pending, Processing, Completed, Canceled.'],
+    ['result', 'key, action, order', '{ "result": ["mail:pass:recovery", "…"] }', 'Récupérer les comptes livrés (une ligne par compte).'],
+  ] : [
     ['balance', 'key, action', '{ "balance": 42.5, "currency": "USD" }', 'Check your reseller balance.'],
     ['products', 'key, action', '[ { "product": 12, "name": "…", "rate": 6.60, "available": 120, "status": "In stock" } ]', 'List the catalog, your prices, and real-time stock.'],
     ['add_order', 'key, action, product, quantity', '{ "order": 10231 }', 'Place an order. Debits your balance, automatic delivery.'],
@@ -1434,50 +1440,51 @@ const ApiView = ({ navigate, session }) => {
       {/* En-tête */}
       <div className="max-w-3xl mb-12">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
-          <Zap size={14} /> Reseller API
+          <Zap size={14} /> {lang === 'fr' ? 'API Revendeur' : 'Reseller API'}
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-6">
-          Resell our catalog <span className="text-primary">via our API</span>
+          {lang === 'fr' ? 'Revendez notre catalogue ' : 'Resell our catalog '} 
+          <span className="text-primary">{lang === 'fr' ? 'via notre API' : 'via our API'}</span>
         </h1>
         <p className="text-gray-500 text-lg leading-relaxed">
-          Integrate our catalog into your own store. Buy programmatically,
-          place your orders, and deliver to your clients automatically, 24/7. JSON responses,
-          key authentication.
+          {lang === 'fr' 
+            ? 'Intégrez notre catalogue à votre propre boutique. Achetez de manière programmatique, passez vos commandes et livrez vos clients automatiquement, 24/7. Réponses JSON, authentification par clé.' 
+            : 'Integrate our catalog into your own store. Buy programmatically, place your orders, and deliver to your clients automatically, 24/7. JSON responses, key authentication.'}
         </p>
       </div>
 
       {/* Clé API */}
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft mb-10">
-        <h2 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2"><Shield size={18} className="text-primary" /> Your API Key</h2>
+        <h2 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2"><Shield size={18} className="text-primary" /> {lang === 'fr' ? 'Votre Clé API' : 'Your API Key'}</h2>
         {!session ? (
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <p className="text-gray-500 text-sm flex-grow">Log in to generate your API key and get started.</p>
-            <button onClick={() => navigate('auth')} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">Log in</button>
+            <p className="text-gray-500 text-sm flex-grow">{lang === 'fr' ? 'Connectez-vous pour générer votre clé API et commencer.' : 'Log in to generate your API key and get started.'}</p>
+            <button onClick={() => navigate('auth')} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all">{lang === 'fr' ? 'Se connecter' : 'Log in'}</button>
           </div>
         ) : apiKey ? (
           <div>
             <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4">
               <code className="text-primary font-mono text-sm flex-grow break-all">{apiKey}</code>
-              <button onClick={copyKey} className="shrink-0 text-xs font-bold px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all">{copied ? 'Copied!' : 'Copy'}</button>
+              <button onClick={copyKey} className="shrink-0 text-xs font-bold px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-primary transition-all">{copied ? (lang === 'fr' ? 'Copié !' : 'Copied!') : (lang === 'fr' ? 'Copier' : 'Copy')}</button>
             </div>
-            <p className="text-gray-400 text-xs mt-3">Keep this key secret. It grants access to your balance and your orders.</p>
+            <p className="text-gray-400 text-xs mt-3">{lang === 'fr' ? 'Gardez cette clé secrète. Elle donne accès à votre solde et vos commandes.' : 'Keep this key secret. It grants access to your balance and your orders.'}</p>
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <p className="text-gray-500 text-sm flex-grow">No active key. Generate one to access the API.</p>
-            <button onClick={generateKey} disabled={loading} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-50">{loading ? 'Generating…' : 'Generate my API Key'}</button>
+            <p className="text-gray-500 text-sm flex-grow">{lang === 'fr' ? 'Aucune clé active. Générez-en une pour accéder à l\'API.' : 'No active key. Generate one to access the API.'}</p>
+            <button onClick={generateKey} disabled={loading} className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-50">{loading ? (lang === 'fr' ? 'Génération…' : 'Generating…') : (lang === 'fr' ? 'Générer ma clé API' : 'Generate my API Key')}</button>
           </div>
         )}
       </div>
 
       {/* Connexion */}
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft mb-10">
-        <h2 className="text-lg font-black text-gray-900 mb-4">Connection</h2>
+        <h2 className="text-lg font-black text-gray-900 mb-4">{lang === 'fr' ? 'Connexion' : 'Connection'}</h2>
         <div className="space-y-2 text-sm">
           <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Endpoint</span><code className="text-primary font-mono break-all">{API_BASE_URL}</code></div>
-          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Method</span><span className="text-gray-700 font-mono">POST</span></div>
+          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">{lang === 'fr' ? 'Méthode' : 'Method'}</span><span className="text-gray-700 font-mono">POST</span></div>
           <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Content-Type</span><span className="text-gray-700 font-mono">application/x-www-form-urlencoded</span></div>
-          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Response</span><span className="text-gray-700 font-mono">JSON</span></div>
+          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">{lang === 'fr' ? 'Réponse' : 'Response'}</span><span className="text-gray-700 font-mono">JSON</span></div>
         </div>
         <div className="mt-6 bg-gray-900 rounded-2xl p-5 overflow-x-auto">
           <pre className="text-[12px] text-gray-200 font-mono leading-relaxed">{`curl -X POST ${API_BASE_URL} \\
@@ -1488,7 +1495,7 @@ const ApiView = ({ navigate, session }) => {
 
       {/* Actions */}
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-soft">
-        <h2 className="text-lg font-black text-gray-900 mb-6">Available actions</h2>
+        <h2 className="text-lg font-black text-gray-900 mb-6">{lang === 'fr' ? 'Actions disponibles' : 'Available actions'}</h2>
         <div className="space-y-6">
           {actions.map(([name, params, example, desc]) => (
             <div key={name} className="border-b border-gray-50 last:border-0 pb-6 last:pb-0">
@@ -1496,7 +1503,7 @@ const ApiView = ({ navigate, session }) => {
                 <code className="text-primary font-mono font-black text-sm">action={name}</code>
               </div>
               <p className="text-gray-600 text-sm mb-2">{desc}</p>
-              <p className="text-xs text-gray-400 mb-3"><span className="font-bold">Parameters :</span> <code className="font-mono">{params}</code></p>
+              <p className="text-xs text-gray-400 mb-3"><span className="font-bold">{lang === 'fr' ? 'Paramètres :' : 'Parameters :'}</span> <code className="font-mono">{params}</code></p>
               <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
                 <pre className="text-[12px] text-gray-200 font-mono">{example}</pre>
               </div>
@@ -1511,12 +1518,16 @@ const ApiView = ({ navigate, session }) => {
 // ==========================================
 // POLICIES VIEW — CGU / Avertissement / Politique d'achat / Garantie
 // ==========================================
-const POLICY_SECTIONS = [
+const getPolicySections = (lang) => [
   {
     id: 'terms',
-    title: "Terms of Service",
+    title: lang === 'fr' ? "Conditions Générales d'Utilisation" : "Terms of Service",
     icon: FileText,
-    content: [
+    content: lang === 'fr' ? [
+      "Veuillez lire attentivement la description du produit et cette politique avant d'acheter.",
+      "Vous êtes entièrement responsable de toutes les actions effectuées sur le compte après la livraison.",
+      "Dès réception du compte, vous devez vous y connecter et vérifier immédiatement s'il correspond à la description.",
+    ] : [
       "Please read the product description and this policy carefully before purchasing.",
       "You are fully responsible for all actions taken on the account after delivery.",
       "Upon receipt of the account, you must log in and check it immediately to ensure it matches the description.",
@@ -1524,18 +1535,31 @@ const POLICY_SECTIONS = [
   },
   {
     id: 'disclaimer',
-    title: 'Disclaimer',
+    title: lang === 'fr' ? "Clause de non-responsabilité" : "Disclaimer",
     icon: Shield,
-    content: [
+    content: lang === 'fr' ? [
+      "Vous acceptez que l'utilisation d'AgedGmailYT se fait à vos propres risques. AgedGmailYT ne peut être tenu responsable des dommages que vous ou votre entreprise pourriez subir.",
+      "AgedGmailYT ne garantit pas la disponibilité continue du site, car il dépend de services internet tiers.",
+    ] : [
       "You agree that your use of AgedGmailYT is at your own risk. AgedGmailYT cannot be held liable for any damages you or your business may suffer.",
       "AgedGmailYT does not guarantee the continuous availability of the site, as it relies on third-party internet services.",
     ],
   },
   {
     id: 'purchase',
-    title: "Purchase Policy",
+    title: lang === 'fr' ? "Politique d'Achat" : "Purchase Policy",
     icon: ShoppingCart,
-    content: [
+    content: lang === 'fr' ? [
+      "En achetant des crédits ou en rechargeant votre solde, vous confirmez comprendre et accepter votre achat, et vous vous engagez à ne pas ouvrir de litiges frauduleux ou publier des avis de mauvaise foi.",
+      "En cas de tentative de litige frauduleux ou d'avis abusif, nous nous réservons le droit de réinitialiser les crédits, de suspendre le compte et/ou de bannir définitivement l'adresse IP concernée.",
+      "Le solde crédité sur AgedGmailYT n'est pas remboursable tant que le système et le site fonctionnent normalement. La garantie du produit est calculée à partir du moment où il vous est livré ; le fait de ne pas vous connecter ne vous donne pas droit à un remplacement ou remboursement.",
+      "Après achat, veuillez télécharger et conserver vos données. Les commandes sont automatiquement supprimées de nos systèmes après 30 jours pour des raisons de sécurité.",
+      "Lorsqu'un produit est au format EMAIL | MOT DE PASSE | (RÉCUPÉRATION), l'email et le mot de passe sont toujours fournis ; les informations de récupération dépendent des stocks disponibles.",
+      "Les crédits ne sont pas transférables entre différents produits ou services.",
+      "Le produit est livré immédiatement après l'achat ; c'est à vous de l'utiliser, même si vous ne vous connectez pas tout de suite.",
+      "Après la première connexion, et uniquement après quelques jours, changez systématiquement le mot de passe, l'email de récupération, le numéro de téléphone, et activez la validation en deux étapes.",
+      "Utilisez toujours une adresse IP résidentielle/propre pour vous connecter. Ne jamais utiliser de proxy gratuit ou VPN. Aucun remplacement ne sera effectué si vous avez utilisé un VPN ou proxy gratuit."
+    ] : [
       "By purchasing credits or topping up your balance, you confirm you understand and accept your purchase, and agree not to open fraudulent disputes or post bad faith reviews.",
       "In case of an attempted fraudulent dispute or abusive review, we reserve the right to reset credits, suspend the account, and/or permanently ban the relevant IP address.",
       "The balance credited on AgedGmailYT is non-refundable as long as the system and site are operating normally. The product warranty is calculated from the moment it is delivered to you; your failure to log in does not entitle you to a replacement or refund.",
@@ -1549,16 +1573,21 @@ const POLICY_SECTIONS = [
   },
   {
     id: 'warranty',
-    title: 'Warranty Policy',
+    title: lang === 'fr' ? "Politique de Garantie et Retours" : 'Warranty & Returns Policy',
     icon: CheckCircle,
     content: [],
   },
 ];
 
-const WARRANTY_BLOCKS = [
+const getWarrantyBlocks = (lang) => [
   {
-    label: 'Warranty',
-    items: [
+    label: lang === 'fr' ? 'Garantie' : 'Warranty',
+    items: lang === 'fr' ? [
+      "Nous garantissons uniquement la première connexion réussie et que le produit est livré tel que décrit.",
+      "Nous ne garantissons pas que les informations du compte peuvent être modifiées immédiatement (de nombreuses plateformes exigent une utilisation prolongée depuis la même IP/appareil).",
+      "Nous ne pouvons garantir la réception des codes de vérification envoyés à un ancien email ou ancien numéro. Ajoutez votre propre email et numéro si nécessaire.",
+      "Aucune garantie ne s'applique si : vous avez modifié le mot de passe, l'email de récupération, activé la 2FA avant la période conseillée ; vous vous êtes connecté via un VPN ou proxy gratuit ; ou si la connexion fonctionne de notre côté mais pas du vôtre (problème lié à votre configuration).",
+    ] : [
       "We only guarantee the first successful login and that the product is delivered as described.",
       "We do not guarantee that account information can be changed immediately (many platforms require prolonged use from the same IP and device).",
       "We cannot guarantee the receipt of verification codes sent to an old email or old number. Add your own email and number if needed.",
@@ -1566,17 +1595,25 @@ const WARRANTY_BLOCKS = [
     ],
   },
   {
-    label: 'Recommendations',
-    items: [
+    label: lang === 'fr' ? 'Recommandations' : 'Recommendations',
+    items: lang === 'fr' ? [
+      "Modifiez le mot de passe, l'email de récupération, vérifiez l'activité de l'appareil, ajoutez un numéro de téléphone et activez la 2FA pour sécuriser votre compte.",
+      "Il est recommandé d'effectuer ces changements au moins 7 jours après la première connexion, avec le même profil de navigateur et la même IP/proxy.",
+      "Si vous débutez ou ne savez pas gérer plusieurs comptes ou chaînes, contactez le support pour être guidé.",
+    ] : [
       "Change the password, recovery email, check device activity, add a phone number, and enable 2FA to secure your account.",
       "It is recommended to make these changes at least 7 days after the first login, with the same browser profile and IP/proxy.",
       "If you are a beginner or unsure about managing multiple accounts or channels, contact support for guidance.",
-      "For certain regions (China, Nigeria, Russia...), using a suitable proxy for Gmail/YouTube is recommended.",
     ],
   },
   {
-    label: 'Refund & Return Policy',
-    items: [
+    label: lang === 'fr' ? 'Politique de Remboursement et Retours' : 'Refund & Return Policy',
+    items: lang === 'fr' ? [
+      "Les clients disposent d'un délai de 5 jours maximum après la livraison pour signaler un problème lié à un compte. Passé ce délai de 5 jours, nous ne sommes plus responsables du compte.",
+      "Aucun remboursement ne sera accordé pour une erreur de la part du client (ex: acheter un compte Facebook au lieu d'un compte Gmail). Vous êtes responsable de choisir le bon produit.",
+      "Les remboursements ou remplacements ne sont accordés QUE s'il y a un réel problème technique lié à notre service (ex: impossible de se connecter à cause d'un problème d'authentification, ou compte gelé/banni au moment de la livraison).",
+      "Si vous vous connectez avec succès au compte et que le service promis fonctionne tel que décrit à ce moment-là, aucun retour ou remboursement ultérieur ne sera accepté."
+    ] : [
       "Customers have a maximum window of 5 days after delivery to report any issues with an account. After this 5-day period, we are no longer responsible for the account.",
       "No refunds will be issued for customer mistakes (e.g., purchasing a Facebook account instead of a Gmail account). You are responsible for ensuring you purchase the correct product.",
       "Refunds or replacements will ONLY be granted if there is a genuine problem related to our service (e.g., impossible to log in due to authentication issues, or the account is frozen/banned upon delivery).",
@@ -1585,18 +1622,20 @@ const WARRANTY_BLOCKS = [
   },
 ];
 
-const PoliciesView = ({ navigate }) => {
+const PoliciesView = ({ navigate, lang }) => {
+  const POLICY_SECTIONS = getPolicySections(lang);
+  const WARRANTY_BLOCKS = getWarrantyBlocks(lang);
   const [active, setActive] = useState('terms');
-  const activeSection = POLICY_SECTIONS.find(s => s.id === active);
+  const activeSection = POLICY_SECTIONS.find(s => s.id === active) || POLICY_SECTIONS[0];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
       <div className="mb-12">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primaryDark px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
-          <Shield size={14} /> Politiques
+          <Shield size={14} /> {lang === 'fr' ? 'Politiques Légal' : 'Policies'}
         </div>
-        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">Terms of Service, Warranty, and Purchase Policies</h1>
-        <p className="text-gray-500 text-lg leading-relaxed">Please read these policies carefully before any purchase on AgedGmailYT.</p>
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">{lang === 'fr' ? 'Conditions d\'Utilisation et Garanties' : 'Terms of Service, Warranty, and Purchase Policies'}</h1>
+        <p className="text-gray-500 text-lg leading-relaxed">{lang === 'fr' ? 'Veuillez lire attentivement ces politiques avant tout achat sur AgedGmailYT.' : 'Please read these policies carefully before any purchase on AgedGmailYT.'}</p>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-10">
@@ -1647,7 +1686,7 @@ const PoliciesView = ({ navigate }) => {
       </div>
 
       <div className="text-center mt-12">
-        <button onClick={() => navigate('shop')} className="text-sm font-bold text-primary hover:underline">Back to catalog</button>      </div>
+        <button onClick={() => navigate('shop')} className="text-sm font-bold text-primary hover:underline">{lang === 'fr' ? 'Retour au catalogue' : 'Back to catalog'}</button>      </div>
     </div>
   );
 };
@@ -5698,7 +5737,7 @@ const friendlyAuthError = (raw = '') => {
 
 // Écran de définition d'un nouveau mot de passe, atteint via le lien de
 // réinitialisation reçu par email (Supabase a créé une session temporaire).
-const ResetPasswordView = ({ navigate }) => {
+const ResetPasswordView = ({ navigate, lang }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showNewPw, setShowNewPw] = useState(false);
@@ -5710,8 +5749,8 @@ const ResetPasswordView = ({ navigate }) => {
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    if (newPassword.length < 6) { setError('Le mot de passe doit contenir au moins 6 caractères.'); return; }
-    if (newPassword !== confirm) { setError('Les deux mots de passe ne correspondent pas.'); return; }
+    if (newPassword.length < 6) { setError(lang === 'fr' ? 'Le mot de passe doit contenir au moins 6 caractères.' : 'Password must be at least 6 characters long.'); return; }
+    if (newPassword !== confirm) { setError(lang === 'fr' ? 'Les deux mots de passe ne correspondent pas.' : 'Passwords do not match.'); return; }
     setLoading(true);
     try {
       const { error: err } = await supabase.auth.updateUser({ password: newPassword });
@@ -5738,32 +5777,32 @@ const ResetPasswordView = ({ navigate }) => {
         {done ? (
           <div className="text-center animate-in fade-in zoom-in duration-300">
             <CheckCircle size={48} className="text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Mot de passe mis à jour</h2>
-            <p className="text-gray-400 text-sm">Redirection en cours…</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">{lang === 'fr' ? 'Mot de passe mis à jour' : 'Password updated'}</h2>
+            <p className="text-gray-400 text-sm">{lang === 'fr' ? 'Redirection en cours…' : 'Redirecting…'}</p>
           </div>
         ) : (
           <>
-            <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Nouveau mot de passe</h2>
-            <p className="text-gray-400 text-sm text-center mb-6">Choisis un nouveau mot de passe pour ton compte.</p>
+            <h2 className="text-xl font-bold text-gray-900 text-center mb-1">{lang === 'fr' ? 'Nouveau mot de passe' : 'New password'}</h2>
+            <p className="text-gray-400 text-sm text-center mb-6">{lang === 'fr' ? 'Choisis un nouveau mot de passe pour ton compte.' : 'Choose a new password for your account.'}</p>
             <form onSubmit={submit} className="space-y-3.5">
               <div className="relative">
-                <input type={showNewPw ? "text" : "password"} required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" className={inputCls + " pr-12"} />
+                <input type={showNewPw ? "text" : "password"} required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={lang === 'fr' ? 'Nouveau mot de passe' : 'New password'} className={inputCls + " pr-12"} />
                 <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showNewPw ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               <div className="relative">
-                <input type={showConfirmPw ? "text" : "password"} required value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirme le mot de passe" className={inputCls + " pr-12"} />
+                <input type={showConfirmPw ? "text" : "password"} required value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={lang === 'fr' ? 'Confirme le mot de passe' : 'Confirm password'} className={inputCls + " pr-12"} />
                 <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showConfirmPw ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {error && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2"><AlertTriangle size={14} /> {error}</div>}
               <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
-                {loading && <RefreshCcw size={15} className="animate-spin" />} Mettre à jour
+                {loading && <RefreshCcw size={15} className="animate-spin" />} {lang === 'fr' ? 'Mettre à jour' : 'Update'}
               </button>
             </form>
-            <button onClick={() => navigate('auth')} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-5">← Retour à la connexion</button>
+            <button onClick={() => navigate('auth')} className="w-full text-center text-xs text-gray-400 font-bold hover:text-primary transition-colors mt-5">{lang === 'fr' ? '← Retour à la connexion' : '← Back to login'}</button>
           </>
         )}
       </div>
@@ -5771,7 +5810,7 @@ const ResetPasswordView = ({ navigate }) => {
   );
 };
 
-const AuthView = ({ navigate }) => {
+const AuthView = ({ navigate, lang }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -5834,7 +5873,7 @@ const AuthView = ({ navigate }) => {
         options: { emailRedirectTo: window.location.origin },
       });
       if (error) throw error;
-      setInfoMessage("Email de confirmation renvoyé. Vérifie ta boîte mail.");
+      setInfoMessage(lang === 'fr' ? "Email de confirmation renvoyé. Vérifie ta boîte mail." : "Confirmation email sent. Check your inbox.");
     } catch (err) {
       setErrorMessage(friendlyAuthError(err.message));
     } finally {
@@ -5844,7 +5883,7 @@ const AuthView = ({ navigate }) => {
 
   const handleResetPassword = async () => {
     if (!email) {
-      setErrorMessage("Entre d'abord ton adresse email pour réinitialiser le mot de passe.");
+      setErrorMessage(lang === 'fr' ? "Entre d'abord ton adresse email pour réinitialiser le mot de passe." : "Please enter your email address first to reset your password.");
       return;
     }
     setLoading(true);
@@ -5855,7 +5894,7 @@ const AuthView = ({ navigate }) => {
         redirectTo: window.location.origin,
       });
       if (error) throw error;
-      setInfoMessage("Un email de réinitialisation a été envoyé. Vérifie ta boîte mail.");
+      setInfoMessage(lang === 'fr' ? "Un email de réinitialisation a été envoyé. Vérifie ta boîte mail." : "A reset email has been sent. Check your inbox.");
     } catch (err) {
       setErrorMessage(friendlyAuthError(err.message));
     } finally {
@@ -5884,21 +5923,21 @@ const AuthView = ({ navigate }) => {
             <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Mail size={28} className="text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Confirme ton email</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{lang === 'fr' ? 'Confirme ton email' : 'Confirm your email'}</h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-1">
-              Un lien de confirmation a été envoyé à<br />
+              {lang === 'fr' ? 'Un lien de confirmation a été envoyé à' : 'A confirmation link has been sent to'}<br />
               <span className="font-bold text-gray-900">{pendingConfirmEmail}</span>
             </p>
-            <p className="text-gray-400 text-xs mb-6">Clique dessus pour activer ton compte (pense aux spams).</p>
+            <p className="text-gray-400 text-xs mb-6">{lang === 'fr' ? 'Clique dessus pour activer ton compte (pense aux spams).' : 'Click on it to activate your account (check your spam folder).'}</p>
 
             {infoMessage && <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 mb-4">{infoMessage}</div>}
             {errorMessage && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
 
             <button onClick={handleResendConfirmation} disabled={loading} className="w-full h-12 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-3">
-              {loading && <RefreshCcw size={15} className="animate-spin" />} Renvoyer l'email
+              {loading && <RefreshCcw size={15} className="animate-spin" />} {lang === 'fr' ? 'Renvoyer l\'email' : 'Resend email'}
             </button>
             <button onClick={() => { setPendingConfirmEmail(''); setIsLogin(true); setErrorMessage(''); setInfoMessage(''); }} className="text-xs text-gray-400 font-bold hover:text-primary transition-colors">
-              ← Retour à la connexion
+              {lang === 'fr' ? '← Retour à la connexion' : '← Back to login'}
             </button>
           </div>
         ) : (
@@ -5908,8 +5947,8 @@ const AuthView = ({ navigate }) => {
             <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
               <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{isLogin ? 'Content de te revoir' : 'Crée ton compte'}</h2>
-            <p className="text-gray-400 text-sm mt-1">{isLogin ? 'Connecte-toi pour continuer.' : 'Rejoins la marketplace n°1 de comptes certifiés.'}</p>
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{isLogin ? (lang === 'fr' ? 'Content de te revoir' : 'Welcome back') : (lang === 'fr' ? 'Crée ton compte' : 'Create an account')}</h2>
+            <p className="text-gray-400 text-sm mt-1">{isLogin ? (lang === 'fr' ? 'Connecte-toi pour continuer.' : 'Log in to continue.') : (lang === 'fr' ? 'Rejoins la marketplace n°1 de comptes certifiés.' : 'Join the #1 marketplace for certified accounts.')}</p>
           </div>
 
           {/* Google — toujours visible, en haut */}
@@ -5918,12 +5957,12 @@ const AuthView = ({ navigate }) => {
             className="w-full h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-50 hover:border-gray-300 transition-all group mb-5"
           >
             <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-            <span className="text-gray-700 font-bold text-sm">Continuer avec Google</span>
+            <span className="text-gray-700 font-bold text-sm">{lang === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}</span>
           </button>
 
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-grow h-px bg-gray-100" />
-            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">ou</span>
+            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{lang === 'fr' ? 'ou' : 'or'}</span>
             <div className="flex-grow h-px bg-gray-100" />
           </div>
 
@@ -5931,15 +5970,15 @@ const AuthView = ({ navigate }) => {
             {!isLogin && (
               <>
                 <div className="grid grid-cols-2 gap-3">
-                  <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} className={inputCls} placeholder="Prénom" />
-                  <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} className={inputCls} placeholder="Nom" />
+                  <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} className={inputCls} placeholder={lang === 'fr' ? 'Prénom' : 'First Name'} />
+                  <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} className={inputCls} placeholder={lang === 'fr' ? 'Nom' : 'Last Name'} />
                 </div>
-                <input type="text" required value={username} onChange={e => setUsername(e.target.value)} className={inputCls} placeholder="Pseudo" />
+                <input type="text" required value={username} onChange={e => setUsername(e.target.value)} className={inputCls} placeholder={lang === 'fr' ? 'Pseudo' : 'Username'} />
               </>
             )}
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder="ton@email.com" />
+            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder={lang === 'fr' ? 'ton@email.com' : 'your@email.com'} />
             <div className="relative">
-              <input type={showPw ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} className={inputCls + " pr-12"} placeholder="Mot de passe" />
+              <input type={showPw ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} className={inputCls + " pr-12"} placeholder={lang === 'fr' ? 'Mot de passe' : 'Password'} />
               <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -5948,7 +5987,7 @@ const AuthView = ({ navigate }) => {
             {isLogin && (
               <div className="flex justify-end">
                 <button type="button" onClick={handleResetPassword} className="text-xs font-bold text-gray-400 hover:text-primary transition-colors">
-                  Mot de passe oublié ?
+                  {lang === 'fr' ? 'Mot de passe oublié ?' : 'Forgot password?'}
                 </button>
               </div>
             )}
@@ -5966,14 +6005,14 @@ const AuthView = ({ navigate }) => {
 
             <button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 !mt-5">
               {loading && <RefreshCcw size={15} className="animate-spin" />}
-              {isLogin ? 'Se connecter' : "S'inscrire"}
+              {isLogin ? (lang === 'fr' ? 'Se connecter' : 'Log in') : (lang === 'fr' ? "S'inscrire" : 'Sign up')}
             </button>
           </form>
 
           <div className="text-center mt-6 text-sm text-gray-400">
-            {isLogin ? "Pas encore de compte ?" : "Déjà un compte ?"}{' '}
+            {isLogin ? (lang === 'fr' ? "Pas encore de compte ?" : "Don't have an account?") : (lang === 'fr' ? "Déjà un compte ?" : "Already have an account?")}{' '}
             <button onClick={() => { setIsLogin(!isLogin); setErrorMessage(''); setInfoMessage(''); }} className="font-bold text-primary hover:underline">
-              {isLogin ? "S'inscrire" : "Se connecter"}
+              {isLogin ? (lang === 'fr' ? "S'inscrire" : "Sign up") : (lang === 'fr' ? "Se connecter" : "Log in")}
             </button>
           </div>
         </>
@@ -6737,10 +6776,10 @@ function App() {
         {currentView === 'landing' && <LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} />}
         {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
-        {currentView === 'api' && <ApiView navigate={navigate} session={session} />}
-        {currentView === 'policies' && <PoliciesView navigate={navigate} />}
-        {currentView === 'auth' && <AuthView navigate={navigate} />}
-        {currentView === 'reset-password' && <ResetPasswordView navigate={navigate} />}
+        {currentView === 'api' && <ApiView navigate={navigate} session={session} lang={lang} />}
+        {currentView === 'policies' && <PoliciesView navigate={navigate} lang={lang} />}
+        {currentView === 'auth' && <AuthView navigate={navigate} lang={lang} />}
+        {currentView === 'reset-password' && <ResetPasswordView navigate={navigate} lang={lang} />}
         {currentView === 'dashboard' && <MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} />}
         {currentView === 'settings' && <SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} />}
         {currentView === 'recharge' && <RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} />}
