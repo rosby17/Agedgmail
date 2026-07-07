@@ -184,7 +184,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               console.log("Audio notification failed:", e);
             }
 
-            if (fetchProfile) fetchProfile();
+             if (fetchProfile && session?.user?.id) fetchProfile(session.user.id);
           }
         } catch (err) {
           console.error("Polling error", err);
@@ -326,26 +326,21 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
       
-      {/* Header Dashboard style */}
+      {/* Service Selection */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm">
-        <div className="flex items-start gap-4">
-           <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 shrink-0">
-             <MessageSquare size={24} />
-           </div>
-           <div className="flex-1 w-full">
-             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Service' : 'Service'}</label>
-             <select 
-                value={selectedService} 
-                onChange={(e) => setSelectedService(e.target.value)}
-                disabled={status !== 'IDLE' && status !== 'LOADING_PRICES'}
-                className="w-full max-w-sm text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 font-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 mb-3"
-             >
-                <option value="8a97735e-9a14-427e-8a88-e9d999bf3429">YouTube</option>
-             </select>
-             <p className="text-sm text-gray-500">
-               {isFr ? 'Vérifier le numéro de sa chaîne YouTube pour activer les fonctionnalités intermédiaires.' : 'Verify the number of your YouTube channel to activate intermediate features.'}
-             </p>
-           </div>
+        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{isFr ? 'Service' : 'Service'}</label>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 max-w-sm border-2 border-primary bg-primary/5 dark:bg-primary/5 rounded-[2rem] p-6 flex items-start gap-4 transition-all duration-300">
+             <div className="w-12 h-12 bg-red-600 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-red-600/10">
+               <YouTubeLogo className="w-6 h-6 fill-current text-white" />
+             </div>
+             <div>
+               <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-sm mb-1">YouTube Verification</h4>
+               <p className="text-xs text-gray-500 leading-normal">
+                 {isFr ? 'Vérifier le numéro de sa chaîne YouTube pour activer les fonctionnalités intermédiaires.' : 'Verify the number of your YouTube channel to activate intermediate features.'}
+               </p>
+             </div>
+          </div>
         </div>
       </div>
       

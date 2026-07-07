@@ -92,13 +92,13 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
   // Couleur d'un badge d'option selon le contenu
   const optionBadgeClass = (opt = '') => {
     const o = opt.toLowerCase();
-    if (o.includes('2fa') || o.includes('backup')) return 'bg-purple-50 text-purple-700 border-purple-200';
-    if (o.includes('app password') || o.includes('app pass')) return 'bg-blue-50 text-blue-700 border-blue-200';
-    if (o.includes('mix ip') || o.includes(' ip')) return 'bg-orange-50 text-orange-700 border-orange-200';
-    if (o.includes('random') || o.includes('name') || o.includes('gender')) return 'bg-teal-50 text-teal-700 border-teal-200';
-    if (o.includes('month') || o.includes('year') || o.includes('day')) return 'bg-gray-100 text-gray-600 border-gray-200';
-    if (o.includes('fresh') || o.includes('aged')) return 'bg-green-50 text-green-700 border-green-200';
-    return 'bg-gray-50 text-gray-600 border-gray-200';
+    if (o.includes('2fa') || o.includes('backup')) return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20';
+    if (o.includes('app password') || o.includes('app pass')) return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20';
+    if (o.includes('mix ip') || o.includes(' ip')) return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20';
+    if (o.includes('random') || o.includes('name') || o.includes('gender')) return 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/10 dark:text-teal-400 dark:border-teal-500/20';
+    if (o.includes('month') || o.includes('year') || o.includes('day')) return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+    if (o.includes('fresh') || o.includes('aged')) return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20';
+    return 'bg-gray-50 text-gray-600 border-gray-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
   };
 
   // Télécharge les credentials d'une commande en .txt
@@ -160,13 +160,13 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
         <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('myOrders')}</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <div className="md:col-span-2 bg-gray-900 rounded-[2rem] p-8 relative overflow-hidden flex flex-col justify-between">
+      <div className="grid grid-cols-1 gap-6 mb-10">
+        <div className="bg-gray-900 rounded-[2rem] p-8 relative overflow-hidden flex flex-col justify-between">
           <div className="relative z-10 mb-8">
             <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">{t('currentBalance')}</div>
             <div className="text-5xl font-black font-price text-white">${profile?.balance?.toFixed(2) || "0.00"}</div>
           </div>
-          <div className="relative z-10 flex flex-col sm:flex-row gap-4">
+          <div className="relative z-10 flex flex-col sm:flex-row gap-4 max-w-xl">
             <button onClick={() => navigate('recharge')} className="flex-1 bg-primary text-white dark:text-gray-900 py-4 rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
               <Plus size={18} /> {t('topUpBtn')}
             </button>
@@ -175,15 +175,6 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
             </button>
           </div>
           <Wallet size={180} className="absolute -bottom-10 -right-10 text-white/5 pointer-events-none" />
-        </div>
-        
-        <div className="bg-primary/10 border border-primary/20 rounded-[2rem] p-8 flex flex-col justify-center items-center text-center relative overflow-hidden">
-          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm z-10">
-            <TrendingUp size={24} className="text-primary" />
-          </div>
-          <h3 className="font-bold text-gray-900 text-lg mb-2 z-10">Statut Compte</h3>
-          <p className="text-sm text-gray-600 z-10 leading-relaxed">Votre compte est actif et prêt pour vos commandes.</p>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
         </div>
       </div>
 

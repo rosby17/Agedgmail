@@ -171,7 +171,8 @@ serve(async (req) => {
         .insert({
           user_id: user.id,
           product_name: description || `SMS Verification (${providerName})`,
-          price_usd: smsPrice,
+          total_price: smsPrice,
+          quantity: 1,
           buyer_email: user.email,
           status: 'confirmed',
           delivery_data: { number: number, code: smsCode, provider: providerName },
