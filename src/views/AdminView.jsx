@@ -418,6 +418,13 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
   const [viewingClient, setViewingClient] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
+  const isNewClient = (u) => {
+    if (!u.created_at) return false;
+    const createdTime = new Date(u.created_at).getTime();
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    return createdTime > sevenDaysAgo;
+  };
+
   // Stats par client, calculées une fois depuis toutes les commandes.
   const statsByUser = (() => {
     const map = new Map();
@@ -525,8 +532,15 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                   <td className="py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-black text-xs flex items-center justify-center shrink-0">{initial(user)}</div>
-                      <div className="min-w-0">
-                        <div className="font-bold text-gray-900 dark:text-white truncate">{user.email}</div>
+                      <div className="min-w-0 font-sans">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900 dark:text-white truncate">{user.email}</span>
+                          {isNewClient(user) && (
+                            <span className="bg-blue-500/10 text-blue-500 dark:text-blue-400 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-500/20 shrink-0">
+                              Nouveau
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-gray-400 truncate">{user.display_name || '—'}</div>
                       </div>
                     </div>
@@ -1118,7 +1132,7 @@ const AdminView = ({
               </div>
             </div>
 
-            <RevenueChart confirmedOrders={confirmedOrders} allUsers={allUsers} mappings={mappings} lang={lang} />
+            <RevenueChart confirmedOrders={confirmedPurchases} allUsers={allUsers} mappings={mappings} lang={lang} />
 
             {/* Top products & Activity side-by-side */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
