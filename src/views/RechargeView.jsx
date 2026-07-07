@@ -81,13 +81,15 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
         .select('*')
         .eq('user_id', session.user.id)
         .eq('status', 'pending')
-        .in('payment_method', ['usdt_trc20', 'binance_pay'])
+        .in('payment_method', ['usdt_trc20', 'binance_pay', 'mobile_money'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (data) {
-        if (data.payment_method === 'usdt_trc20') {
+        if (data.payment_method === 'mobile_money') {
+          await supabase.from('orders').update({ status: 'cancelled' }).eq('id', data.id);
+        } else if (data.payment_method === 'usdt_trc20') {
           setPayment({
             provider: 'usdt_trc20',
             orderId: data.id,

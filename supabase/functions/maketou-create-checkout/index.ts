@@ -84,7 +84,7 @@ serve(async (req) => {
         user_id: userId,
         buyer_email: email,
         product_id: 999,
-        product_name: 'Dépôt Mobile Money (Maketou)',
+        product_name: 'Dépôt Mobile Money',
         quantity: 1,
         total_price: totalUsd,
         expected_amount: totalUsd,
