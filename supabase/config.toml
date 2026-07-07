@@ -42,3 +42,25 @@ content_path = "./supabase/templates/recovery.html"
 [auth.email.template.confirmation]
 subject = "Confirme ton email — AgedGmailYT"
 content_path = "./supabase/templates/confirmation.html"
+
+[functions.sms-get-number]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sms-get-number/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/sms-get-number/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/sms-get-number/*.html" ]
+
+[functions.sms-check-code]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sms-check-code/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/sms-check-code/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/sms-check-code/*.html" ]

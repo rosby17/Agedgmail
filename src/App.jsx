@@ -1439,27 +1439,62 @@ const HomeView = ({
 const API_BASE_URL = 'https://agedgmail.tools-cl.com/api/v2';
 
 
-const SmsView = ({ session, profile, lang, navigate }) => {
+
+const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const isFr = lang === 'fr';
   const SMS_PRICE = 1.00;
   const [status, setStatus] = useState('IDLE');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [securityId, setSecurityId] = useState('');
   const [smsCode, setSmsCode] = useState('');
   const [timeLeft, setTimeLeft] = useState(900);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Default configurations
+  const [selectedCountry, setSelectedCountry] = useState('US');
+  // 1 is placeholder for youtube/google in smscodes.io, needs to be verified
+  const [selectedService, setSelectedService] = useState('1'); 
 
   useEffect(() => {
     let timer;
+    let pollInterval;
+    
     if (status === 'WAITING_SMS' && timeLeft > 0) {
       timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+      
+      pollInterval = setInterval(async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('sms-check-code', {
+            body: { 
+              securityId, 
+              number: phoneNumber, 
+              price: SMS_PRICE, 
+              description: `SMS Verification (Service ${selectedService}, ${selectedCountry})` 
+            }
+          });
+          
+          if (!error && data && data.status === 'success') {
+            setSmsCode(data.sms);
+            setStatus('COMPLETED');
+            if (fetchProfile) fetchProfile();
+          }
+        } catch (err) {
+          console.error("Polling error", err);
+        }
+      }, 8000);
     } else if (timeLeft === 0 && status === 'WAITING_SMS') {
       setStatus('IDLE');
-      setError(isFr ? "Délai d'attente expiré. Aucun code reçu." : "Timeout expired. No code received.");
+      setError(isFr ? "Délai d'attente expiré. Aucun code reçu. Vous n'avez pas été débité." : "Timeout expired. No code received. You were not charged.");
       setPhoneNumber('');
+      setSecurityId('');
     }
-    return () => clearInterval(timer);
-  }, [status, timeLeft, isFr]);
+    
+    return () => {
+      clearInterval(timer);
+      clearInterval(pollInterval);
+    };
+  }, [status, timeLeft, isFr, securityId, phoneNumber, fetchProfile, selectedService, selectedCountry]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -1479,22 +1514,31 @@ const SmsView = ({ session, profile, lang, navigate }) => {
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      setPhoneNumber('+1 (202) 555-0198');
+    try {
+      const { data, error } = await supabase.functions.invoke('sms-get-number', {
+        body: { iso: selectedCountry, serviceId: selectedService, price: SMS_PRICE }
+      });
+
+      if (error) throw new Error(error.message);
+      if (data.error) throw new Error(data.error);
+      if (data.Status !== "200") throw new Error(data.Error || 'Provider Error');
+
+      setPhoneNumber(data.Number);
+      setSecurityId(data.SecurityId);
       setStatus('WAITING_SMS');
       setTimeLeft(900);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || (isFr ? 'Une erreur est survenue' : 'An error occurred'));
+    } finally {
       setLoading(false);
-
-      setTimeout(() => {
-        setSmsCode('G-847291');
-        setStatus('COMPLETED');
-      }, 8000);
-    }, 1500);
+    }
   };
 
   const cancelRequest = () => {
     setStatus('IDLE');
     setPhoneNumber('');
+    setSecurityId('');
     setSmsCode('');
     setTimeLeft(900);
     setError('');
@@ -1510,7 +1554,7 @@ const SmsView = ({ session, profile, lang, navigate }) => {
         <div className="inline-flex items-center gap-2 bg-red-500/10 text-red-600 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
           <MessageSquare size={14} /> {isFr ? 'Service SMS YouTube' : 'YouTube SMS Service'}
         </div>
-        <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-4">
           {isFr ? 'Vérification de chaîne YouTube' : 'YouTube Channel Verification'}
         </h1>
         <p className="text-gray-500 text-lg leading-relaxed max-w-xl mx-auto">
@@ -1520,24 +1564,35 @@ const SmsView = ({ session, profile, lang, navigate }) => {
         </p>
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 md:p-12 shadow-soft">
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] p-8 md:p-12 shadow-soft">
         
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 mb-8">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 mb-8">
             <AlertCircle size={20} /> {error}
           </div>
         )}
 
         {status === 'IDLE' && (
           <div className="text-center space-y-8">
-            <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 transform rotate-3">
+            <div className="w-24 h-24 bg-gray-50 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mx-auto mb-6 transform rotate-3">
               <Smartphone className="text-gray-400" size={40} />
             </div>
             
-            <div className="bg-gray-50 rounded-2xl p-6 flex items-center justify-between">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 flex items-center justify-between border border-gray-100 dark:border-gray-700">
               <div className="text-left">
-                <p className="font-bold text-gray-900">{isFr ? 'Vérification YouTube' : 'YouTube Verification'}</p>
-                <p className="text-sm text-gray-500">{isFr ? '1 numéro pour 1 code SMS' : '1 number for 1 SMS code'}</p>
+                <p className="font-bold text-gray-900 dark:text-white">{isFr ? 'Vérification YouTube' : 'YouTube Verification'}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <select 
+                    value={selectedCountry}
+                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 text-gray-700 dark:text-gray-300 outline-none"
+                  >
+                    <option value="US">USA (US)</option>
+                    <option value="FR">France (FR)</option>
+                    <option value="GB">Royaume-Uni (GB)</option>
+                    <option value="IN">Inde (IN)</option>
+                  </select>
+                </div>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-black text-primary">${SMS_PRICE.toFixed(2)}</p>
@@ -1548,9 +1603,9 @@ const SmsView = ({ session, profile, lang, navigate }) => {
             <button 
               onClick={requestNumber} 
               disabled={loading}
-              className="w-full bg-primary text-white dark:text-gray-900 py-4 rounded-2xl font-black text-lg hover:bg-primaryDark hover:scale-[1.02] transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+              className="w-full bg-primary text-white dark:text-gray-900 py-4 rounded-2xl font-black text-lg hover:bg-primaryDark hover:scale-[1.02] transition-all disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-primary/20"
             >
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Smartphone size={20} />}
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white dark:border-gray-900/30 dark:border-t-gray-900 rounded-full animate-spin" /> : <Smartphone size={20} />}
               {loading 
                 ? (isFr ? 'Génération du numéro...' : 'Generating number...') 
                 : (isFr ? 'Obtenir un numéro' : 'Get a number')}
@@ -1568,10 +1623,10 @@ const SmsView = ({ session, profile, lang, navigate }) => {
                 {isFr ? 'Votre numéro' : 'Your number'}
               </p>
               <div className="flex justify-center items-center gap-4">
-                <span className="text-4xl md:text-5xl font-black text-gray-900 font-mono tracking-tight">{phoneNumber}</span>
+                <span className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white font-mono tracking-tight">{phoneNumber}</span>
                 <button 
                   onClick={() => copyToClipboard(phoneNumber)}
-                  className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                  className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors"
                 >
                   <Copy size={20} />
                 </button>
@@ -1583,13 +1638,13 @@ const SmsView = ({ session, profile, lang, navigate }) => {
                 <div className="h-full bg-primary animate-pulse" style={{ width: '100%' }}></div>
               </div>
               <div className="flex flex-col items-center justify-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center">
                   <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </div>
                 <p className="font-bold text-primary text-lg">
                   {isFr ? 'En attente du SMS Google...' : 'Waiting for Google SMS...'}
                 </p>
-                <p className="text-2xl font-black text-gray-900 font-mono">{formatTime(timeLeft)}</p>
+                <p className="text-2xl font-black text-gray-900 dark:text-white font-mono">{formatTime(timeLeft)}</p>
               </div>
             </div>
 
@@ -1604,7 +1659,7 @@ const SmsView = ({ session, profile, lang, navigate }) => {
 
         {status === 'COMPLETED' && (
           <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-24 h-24 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-green-500" size={48} />
             </div>
             
@@ -1612,7 +1667,7 @@ const SmsView = ({ session, profile, lang, navigate }) => {
               <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">
                 {isFr ? 'Code de validation' : 'Verification Code'}
               </p>
-              <div className="inline-flex flex-col items-center gap-4 bg-gray-900 text-white p-8 rounded-3xl shadow-2xl relative">
+              <div className="inline-flex flex-col items-center gap-4 bg-gray-900 dark:bg-black text-white p-8 rounded-3xl shadow-2xl relative border border-gray-800">
                 <span className="text-5xl md:text-6xl font-black tracking-[0.2em]">{smsCode}</span>
                 <button 
                   onClick={() => copyToClipboard(smsCode)}
@@ -1623,14 +1678,14 @@ const SmsView = ({ session, profile, lang, navigate }) => {
               </div>
             </div>
 
-            <p className="text-green-600 font-bold bg-green-50 py-3 px-6 rounded-full inline-block">
-              {isFr ? `Succès ! ${SMS_PRICE.toFixed(2)} ont été débités.` : `Success! ${SMS_PRICE.toFixed(2)} has been charged.`}
+            <p className="text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/30 py-3 px-6 rounded-full inline-block">
+              {isFr ? `Succès ! $${SMS_PRICE.toFixed(2)} ont été débités.` : `Success! $${SMS_PRICE.toFixed(2)} has been charged.`}
             </p>
 
             <div>
               <button 
                 onClick={cancelRequest} 
-                className="w-full bg-gray-100 text-gray-900 py-4 rounded-2xl font-black text-lg hover:bg-gray-200 transition-colors mt-4"
+                className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white py-4 rounded-2xl font-black text-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors mt-4"
               >
                 {isFr ? 'Effectuer une autre vérification' : 'Verify another channel'}
               </button>
@@ -1641,8 +1696,6 @@ const SmsView = ({ session, profile, lang, navigate }) => {
     </div>
   );
 };
-
-
 const ApiView = ({ navigate, session, lang }) => {
   const [apiKey, setApiKey] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -7028,7 +7081,7 @@ function App() {
       )}
       <div className="flex-grow">
         {currentView === 'landing' && <LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} />}
-        {currentView === 'sms' && <SmsView session={session} profile={profile} lang={lang} navigate={navigate} />}
+        {currentView === 'sms' && <SmsView session={session} profile={profile} lang={lang} navigate={navigate} fetchProfile={fetchProfile} />}
         {currentView === 'shop' && <HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} />}
         {currentView === 'product' && selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} />}
         {currentView === 'api' && <ApiView navigate={navigate} session={session} lang={lang} />}
