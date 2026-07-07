@@ -30,17 +30,17 @@
   @media (prefers-color-scheme: dark) {
     :root {
       /* Shop Colors */
-      --color-primary: #6ffcba;
-      --color-primary-dark: #4edf9f;
-      --color-primary-light: #b4fce2;
-      --color-primary-soft: rgba(111, 252, 186, 0.15);
-      --color-primary-mist: rgba(111, 252, 186, 0.05);
+      --color-primary: #0D7A52;
+      --color-primary-dark: #0A5F40;
+      --color-primary-light: #189464;
+      --color-primary-soft: rgba(13, 122, 82, 0.2);
+      --color-primary-mist: rgba(13, 122, 82, 0.1);
       --color-dark: #d9e4f1;
       --color-canvas: #050f18;
       --color-background: #0a141d;
 
       /* Landing Colors (Original Dark Mode) */
-      --color-l-primary: #6ffcba;
+      --color-l-primary: #0D7A52;
       --color-l-background: #0a141d;
       --color-surface: #0a141d;
       --color-on-surface: #d9e4f1;
