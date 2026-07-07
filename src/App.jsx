@@ -799,7 +799,7 @@ function App() {
           setRechargeSuggestedAmount={setRechargeSuggestedAmount}
         />
       )}
-      {!isAdmin && quickOrderProduct && (
+      {!isDashboardLayout && quickOrderProduct && (
         <QuickOrderModal
           product={quickOrderProduct}
           session={session}
