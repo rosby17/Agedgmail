@@ -61,8 +61,12 @@ serve(async (req) => {
       dataObj = await res.json();
 
       if ((dataObj.Status === "200" || dataObj.Status === "Success") && dataObj.SMS) {
-        status = "success";
-        smsCode = dataObj.SMS;
+        if (dataObj.SMS.toLowerCase().includes('not received') || dataObj.SMS.toLowerCase().includes('waiting')) {
+          status = "waiting";
+        } else {
+          status = "success";
+          smsCode = dataObj.SMS;
+        }
       }
     } else if (providerName === '5sim') {
       const apiKey = Deno.env.get('FIVESIM_API_KEY');
