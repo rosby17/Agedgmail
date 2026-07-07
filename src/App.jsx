@@ -613,6 +613,12 @@ const AmazonLogo = ({ className = brandBox }) => (
     <path fill="#fff" d="M9.5 9.6c0-.5.1-.9.4-1.2.3-.3.7-.5 1.3-.5.5 0 1 .1 1.3.4.3.3.4.6.4 1.1v2.3c0 .2 0 .3.1.4l.1.2c0 .1-.1.1-.1.2l-.5.4h-.2l-.4-.5c-.1.1-.3.3-.5.4-.2.1-.4.1-.7.1-.5 0-.8-.1-1.1-.4-.3-.3-.4-.6-.4-1.1 0-.5.2-.9.5-1.2.4-.3.9-.4 1.6-.4h.5v-.3c0-.3-.1-.5-.2-.6-.1-.1-.3-.2-.6-.2-.2 0-.4 0-.6.1-.1.1-.2.2-.3.4 0 .1-.1.1-.2.1l-.7-.1c-.1 0-.1-.1-.1-.2zm2.2 1.6h-.3c-.4 0-.7.1-.9.2-.2.1-.3.3-.3.6 0 .2.1.4.2.5.1.1.3.2.5.2.3 0 .5-.1.6-.2.2-.2.2-.4.2-.7v-.6z"/>
   </svg>
 );
+const GithubLogo = ({ className = brandBox }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="24" height="24" rx="6" fill="#181717"/>
+    <path fill="#fff" d="M12 5.5c-3.6 0-6.5 2.9-6.5 6.5 0 2.9 1.9 5.3 4.5 6.2.3.1.4-.1.4-.3v-1.1c-1.8.4-2.2-.9-2.2-.9-.3-.8-.7-1-.7-1-.6-.4.1-.4.1-.4.7.1 1.1.7 1.1.7.6 1.1 1.6.8 2 .6.1-.5.2-.8.4-1-1.4-.2-2.9-.7-2.9-3.2 0-.7.3-1.3.7-1.7-.1-.2-.3-.8.1-1.7 0 0 .6-.2 1.9.7.6-.2 1.2-.2 1.8-.2s1.2.1 1.8.2c1.3-.9 1.9-.7 1.9-.7.4.9.2 1.5.1 1.7.4.5.7 1.1.7 1.7 0 2.5-1.5 3-2.9 3.2.3.2.5.7.5 1.4v2.1c0 .2.1.4.5.3 2.6-.9 4.5-3.3 4.5-6.2 0-3.6-2.9-6.5-6.5-6.5z"/>
+  </svg>
+);
 
 // ==========================================
 // COMPOSANT SUPPORT CHAT — retiré (plus de contact WhatsApp)
@@ -644,9 +650,9 @@ const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat ||
 const GROUP_LABELS = {
   gmail: 'Gmail', mail: 'Outlook & Mail', youtube: 'Youtube', discord: 'Discord', facebook: 'Facebook',
   instagram: 'Instagram', twitter: 'Twitter X', reddit: 'Reddit', tiktok: 'Tiktok', apple: 'Apple ID',
-  telegram: 'Telegram', sms: 'SMS', snapchat: 'Snapchat', amazon: 'Amazon', other: 'Others',
+  telegram: 'Telegram', sms: 'SMS', snapchat: 'Snapchat', github: 'GitHub', amazon: 'Amazon', other: 'Others',
 };
-const GROUP_ORDER = ['gmail', 'mail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'reddit', 'tiktok', 'apple', 'telegram', 'sms', 'snapchat', 'amazon', 'other'];
+const GROUP_ORDER = ['gmail', 'mail', 'youtube', 'discord', 'facebook', 'instagram', 'twitter', 'reddit', 'tiktok', 'apple', 'telegram', 'sms', 'snapchat', 'github', 'amazon', 'other'];
 
 // Palette stable pour l'avatar générique (basée sur le nom de catégorie, pas aléatoire).
 const AVATAR_COLORS = ['#0D7A52', '#B45309', '#1D4ED8', '#BE185D', '#4338CA', '#0E7490', '#7C3AED'];
@@ -668,6 +674,7 @@ const detectFromText = (text) => {
   // un produit Twitter, pas un produit Outlook.
   if (t.includes('youtube')) return 'youtube';
   if (t.includes('facebook')) return 'facebook';
+  if (t.includes('github')) return 'github';
   if (t.includes('instagram')) return 'instagram';
   if (t.includes('tiktok') || t.includes('tik tok')) return 'tiktok';
   if (t.includes('reddit')) return 'reddit';
@@ -693,6 +700,10 @@ const categoryVisual = (product = {}) => {
   if (typeof product === 'string') product = { category: product };
   const cat = String(product.category || '').toLowerCase();
   const name = String(product.name || '').toLowerCase();
+  
+  // Correction forcée : si le fournisseur s'est trompé de catégorie (ex: GitHub mis dans "email")
+  if (name.includes('github')) return 'github';
+
   const isJunkCategory = JUNK_CATEGORIES.some(j => cat === j || cat.includes(j));
 
   if (isJunkCategory) {
@@ -751,6 +762,7 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
     case 'outlook':   return <OutlookLogo />;
     case 'snapchat':  return <SnapchatLogo />;
     case 'amazon':    return <AmazonLogo />;
+    case 'github':    return <GithubLogo />;
     default: {
       const label = displayCategoryLabel(product) || 'Others';
       const color = AVATAR_COLORS[hashStr(label) % AVATAR_COLORS.length];
@@ -769,8 +781,9 @@ const ProductVisual = ({ product = {}, iconSize = 48 }) => {
 // et de tags séparés par des pipes/backslashes, longs de 100-250 caractères
 // — ça ressemble à du spam pour un visiteur. On ne modifie jamais la donnée
 // stockée (utile pour les regex de getProductDetails), seulement l'affichage.
-const cleanProductName = (raw) => {
+const cleanProductName = (raw, lang) => {
   if (!raw) return raw;
+  if (!lang) lang = typeof window !== 'undefined' ? (localStorage.getItem('agedgmail_lang') || 'fr') : 'fr';
   let s = String(raw).trim();
 
   // Le fournisseur répète parfois le titre deux fois, séparé par " - ".
@@ -785,6 +798,38 @@ const cleanProductName = (raw) => {
   // Retire les emojis/symboles décoratifs (spam visuel).
   s = s.replace(/[\u{1F300}-\u{1FAFF}☀-➿←-⇿⬀-⯿]/gu, '').trim();
   s = s.replace(/\s{2,}/g, ' ').trim();
+
+  // Traduction pour rendre les noms compréhensibles
+  if (lang === 'fr') {
+    s = s.replace(/month old/gi, "Mois d'ancienneté");
+    s = s.replace(/months old/gi, "Mois d'ancienneté");
+    s = s.replace(/year old/gi, "An d'ancienneté");
+    s = s.replace(/years old/gi, "Ans d'ancienneté");
+    s = s.replace(/verified/gi, "Vérifié");
+    s = s.replace(/with/gi, "avec");
+    s = s.replace(/accounts/gi, "Comptes");
+    s = s.replace(/account/gi, "Compte");
+    s = s.replace(/active/gi, "Actif");
+    s = s.replace(/\band\b/gi, "et");
+    s = s.replace(/aged/gi, "Ancien");
+    s = s.replace(/not monetized/gi, "Non Monétisé");
+    s = s.replace(/monetized/gi, "Monétisé");
+    s = s.replace(/channels/gi, "Chaînes");
+    s = s.replace(/channel/gi, "Chaîne");
+    s = s.replace(/subscribers/gi, "Abonnés");
+    s = s.replace(/followers/gi, "Abonnés");
+  } else {
+    // Nettoyage esthétique pour l'anglais
+    s = s.replace(/month old/gi, "Months Old");
+    s = s.replace(/months old/gi, "Months Old");
+    s = s.replace(/year old/gi, "Years Old");
+    s = s.replace(/years old/gi, "Years Old");
+    s = s.replace(/verified/gi, "Verified");
+    s = s.replace(/with/gi, "with");
+    s = s.replace(/accounts/gi, "Accounts");
+    s = s.replace(/account/gi, "Account");
+    s = s.replace(/active/gi, "Active");
+  }
 
   const MAX = 70;
   if (s.length > MAX) {
