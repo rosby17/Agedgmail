@@ -75,6 +75,14 @@ serve(async (req) => {
           status: 'confirmed',
           delivery_data: { number: data.Number, code: data.SMS }
         });
+
+      // Notification
+      await supabaseAdmin.from('notifications').insert({
+        user_id: user.id,
+        type: 'info',
+        title: 'SMS Reçu',
+        message: `Votre code SMS pour le numéro terminant par ${String(data.Number || '').slice(-4)} est arrivé !`,
+      });
         
       return new Response(JSON.stringify({
         status: 'success',

@@ -58,6 +58,13 @@ serve(async (req) => {
       confirmed_at: new Date().toISOString(),
     }).eq('id', orderId)
 
+    await admin.from('notifications').insert({
+      user_id: order.user_id,
+      type: 'success',
+      title: 'Recharge confirmée',
+      message: `Votre recharge de $${Number(credit).toFixed(2)} a été validée avec succès.`,
+    })
+
     await notifyTelegram(
       `✅ <b>Recharge Binance Pay validée manuellement (Admin)</b>\n\n` +
       `• <b>Client :</b> ${order.buyer_email || '—'}\n` +

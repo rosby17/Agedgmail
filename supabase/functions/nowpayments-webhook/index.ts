@@ -105,6 +105,13 @@ serve(async (req) => {
         `• <b>Statut :</b> ${status}`
       )
 
+      await admin.from('notifications').insert({
+        user_id: order.user_id,
+        type: 'success',
+        title: 'Recharge confirmée',
+        message: `Votre recharge de $${Number(creditedAmount).toFixed(2)} (NOWPayments) a été validée avec succès.`,
+      })
+
     } else if (FINAL_FAILURE.has(status)) {
       await admin.from('orders').update({ status: 'cancelled' }).eq('id', orderId)
     }

@@ -108,6 +108,13 @@ serve(async (req) => {
 
       console.log(`Recharge confirmée : +$${amountUsd} pour user ${userId} (commande ${orderId})`)
 
+      await supabaseAdmin.from('notifications').insert({
+        user_id: userId,
+        type: 'success',
+        title: 'Recharge confirmée',
+        message: `Votre recharge de $${Number(amountUsd).toFixed(2)} (Moneroo) a été validée avec succès.`,
+      })
+
     } else if (event === 'payment.failed' || event === 'payment.cancelled') {
       await supabaseAdmin.from('orders').update({ status: 'cancelled' }).eq('id', orderId)
     }
