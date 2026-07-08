@@ -65,6 +65,9 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const [currentRawPrice, setCurrentRawPrice] = useState(initialState?.currentRawPrice || 0.50);
   const [currentProvider, setCurrentProvider] = useState(initialState?.currentProvider || 'smscodes');
   
+  // Failover state: tracks which providers failed for which country in this session
+  const [failedProviders, setFailedProviders] = useState({});
+  
   // Service ID pour YouTube sur smscodes.io
   const [selectedService, setSelectedService] = useState('8a97735e-9a14-427e-8a88-e9d999bf3429'); 
 
@@ -124,15 +127,27 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     }
     setSelectedCountry(iso);
     const country = countries.find(c => c.Iso === iso);
-    if (country) {
-      const priceVal = parseFloat(country.Price);
-      const rawPriceVal = parseFloat(country.RawPrice || 0.50);
-      const providerVal = country.Provider || 'smscodes';
-      setCurrentPrice(priceVal);
-      setCurrentRawPrice(rawPriceVal);
-      setCurrentProvider(providerVal);
-      // Automatically request the number
-      requestNumber(iso, priceVal, providerVal);
+    if (country && country.Providers) {
+      // Find the first available provider that hasn't failed yet for this country
+      const failed = failedProviders[iso] || [];
+      const availableProviders = country.Providers.filter(p => !failed.includes(p.Name));
+      
+      if (availableProviders.length > 0) {
+        const selected = availableProviders[0];
+        const priceVal = parseFloat(selected.Price);
+        const rawPriceVal = parseFloat(selected.RawPrice);
+        const providerVal = selected.Name;
+        
+        setCurrentPrice(priceVal);
+        setCurrentRawPrice(rawPriceVal);
+        setCurrentProvider(providerVal);
+        
+        // Automatically request the number
+        requestNumber(iso, priceVal, providerVal, rawPriceVal);
+      } else {
+        // All providers failed for this country
+        setError(isFr ? "Aucun numéro n'est disponible pour ce pays. Veuillez choisir un autre pays." : "No number is available for this country. Please try another.");
+      }
     }
   };
 
@@ -209,7 +224,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider) => {
+  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider, rawPriceVal = currentRawPrice) => {
     if (!session) {
       navigate('auth');
       return;
@@ -250,9 +265,34 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         lowerErr.includes('out of stock') || 
         lowerErr.includes('no number')
       ) {
+        // Add to failedProviders and try next available
+        const currentFailed = [...(failedProviders[isoVal] || []), providerVal];
+        setFailedProviders(prev => ({ ...prev, [isoVal]: currentFailed }));
+        
+        const country = countries.find(c => c.Iso === isoVal);
+        if (country && country.Providers) {
+           const availableProviders = country.Providers.filter(p => !currentFailed.includes(p.Name));
+           if (availableProviders.length > 0) {
+              const next = availableProviders[0];
+              const nextPrice = parseFloat(next.Price);
+              const nextRawPrice = parseFloat(next.RawPrice);
+              
+              setCurrentPrice(nextPrice);
+              setCurrentRawPrice(nextRawPrice);
+              setCurrentProvider(next.Name);
+              
+              // Small delay to retry with the next provider
+              setTimeout(() => {
+                 requestNumber(isoVal, nextPrice, next.Name, nextRawPrice);
+              }, 50);
+              
+              return; // Exit early since we are retrying
+           }
+        }
+        
         errMsg = isFr 
-          ? "Aucun numéro n'est disponible pour ce pays actuellement. Veuillez réessayer plus tard ou choisir un autre pays."
-          : "No number is currently available for this country. Please try again later or choose another country.";
+          ? "Aucun numéro n'est disponible pour ce pays actuellement (Tous les fournisseurs ont échoué). Veuillez réessayer plus tard ou choisir un autre pays."
+          : "No number is currently available for this country (All providers failed). Please try again later or choose another country.";
       } else if (lowerErr.includes('insufficient balance') || lowerErr.includes('solde insuffisant')) {
         errMsg = isFr 
           ? "Solde insuffisant pour cette opération. Veuillez recharger votre compte."
@@ -266,7 +306,12 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   };
 
   const cancelRequest = () => {
+    if (selectedCountry && currentProvider) {
+      setFailedProviders(prev => ({ ...prev, [selectedCountry]: [...(prev[selectedCountry] || []), currentProvider] }));
+    }
+    
     setStatus('IDLE');
+    setSelectedCountry('');
     setPhoneNumber('');
     setSecurityId('');
     setSmsCode('');

@@ -182,8 +182,7 @@ serve(async (req) => {
           SecurityId: `pvapins:${parsedNum}:${countryName}`
         };
       } catch (pvpError) {
-        console.error("PVAPins failed:", pvpError.message, "Falling back to smscodes...");
-        providerData = await getSmsCodesNumber();
+        throw new Error(`PVAPins failed: ${pvpError.message}`);
       }
     } else {
       throw new Error(`Unknown provider: ${currentProvider}`);
