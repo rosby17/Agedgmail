@@ -30,10 +30,13 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
   const [msg, setMsg] = useState('');
   const [codeByUser, setCodeByUser] = useState({});
 
-  const pending = allOrders.filter(o => o.product_id === 999 && (o.payment_method === 'binance_pay' || o.payment_method === 'usdt_trc20' || o.payment_method === 'mobile_money' || (!o.payment_method && o.product_name?.includes('Mobile Money'))) && o.status === 'pending');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  const deposits = allOrders.filter(o => o.product_id === 999);
+  const filteredDeposits = deposits.filter(o => filterStatus === 'all' || o.status === filterStatus);
 
   useEffect(() => {
-    const userIds = [...new Set(pending.map(o => o.user_id))];
+    const userIds = [...new Set(deposits.map(o => o.user_id))];
     if (userIds.length === 0) return;
     supabase.from('profiles').select('id, display_name').in('id', userIds).then(({ data }) => {
       const map = {};
@@ -70,8 +73,28 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-6 md:p-10 shadow-soft text-gray-900 dark:text-white">
-      <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Dépôts / Recharges (Validation)</h2>
-      <p className="text-xs text-gray-400 dark:text-slate-450 mb-8">Vérifie sur ton wallet ou app Binance qu'un paiement du montant exact est bien arrivé avant de confirmer. L'opération crédite immédiatement le solde client.</p>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dépôts / Recharges</h2>
+      </div>
+      <p className="text-xs text-gray-400 dark:text-slate-450 mb-6">Gestion de tous les dépôts : historique, validation en attente, annulations.</p>
+      
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {[
+          { key: 'all', label: 'Tous', icon: FileText },
+          { key: 'pending', label: 'En attente', icon: Clock },
+          { key: 'confirmed', label: 'Validés', icon: CheckCircle },
+          { key: 'cancelled', label: 'Annulés', icon: X },
+        ].map(f => (
+          <button key={f.key} onClick={() => setFilterStatus(f.key)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              filterStatus === f.key
+                ? 'bg-primary text-white dark:text-gray-900 shadow-sm'
+                : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-100 dark:border-slate-800'
+            }`}>
+            <f.icon size={14} /> {f.label}
+          </button>
+        ))}
+      </div>
       {msg && <div className="mb-6 text-sm font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-800/40 rounded-2xl px-5 py-3 border border-gray-100 dark:border-slate-800">{msg}</div>}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -82,7 +105,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
-            {pending.map(o => {
+            {filteredDeposits.map(o => {
               const expired = o.expires_at && new Date(o.expires_at).getTime() < Date.now();
               const isBinance = o.payment_method === 'binance_pay';
               const isMobileMoney = o.payment_method === 'mobile_money' || (!o.payment_method && o.product_name?.includes('Mobile Money'));
@@ -102,20 +125,28 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                     {new Date(o.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     {isBinance && expired && <span className="ml-2 text-[9px] text-red-500 font-bold bg-red-50 dark:bg-red-950/30 px-1 py-0.5 rounded">Expiré</span>}
                   </td>
-                  <td className="py-4 flex gap-2">
-                    <button onClick={() => handleConfirm(o)} disabled={busyId === o.id}
-                      className="px-4 py-2 rounded-xl bg-primary text-white dark:text-gray-900 font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50">
-                      {busyId === o.id ? 'Confirmation…' : 'Confirmer'}
-                    </button>
-                    <button onClick={() => handleReject(o)} disabled={busyId === o.id}
-                      className="px-4 py-2 rounded-xl bg-red-100 dark:bg-red-950/20 text-red-700 dark:text-red-400 font-bold text-xs hover:bg-red-200 dark:hover:bg-red-900/30 transition-all disabled:opacity-50">
-                      Rejeter
-                    </button>
+                  <td className="py-4 flex gap-2 items-center">
+                    {o.status === 'pending' ? (
+                      <>
+                        <button onClick={() => handleConfirm(o)} disabled={busyId === o.id}
+                          className="px-4 py-2 rounded-xl bg-primary text-white dark:text-gray-900 font-bold text-xs hover:bg-primaryDark transition-all disabled:opacity-50">
+                          {busyId === o.id ? '...' : 'Confirmer'}
+                        </button>
+                        <button onClick={() => handleReject(o)} disabled={busyId === o.id}
+                          className="px-4 py-2 rounded-xl bg-red-100 dark:bg-red-950/20 text-red-700 dark:text-red-400 font-bold text-xs hover:bg-red-200 dark:hover:bg-red-900/30 transition-all disabled:opacity-50">
+                          Rejeter
+                        </button>
+                      </>
+                    ) : (
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${o.status === 'confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                        {o.status === 'confirmed' ? 'Validé' : o.status === 'cancelled' ? 'Annulé' : o.status}
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
             })}
-            {pending.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400 dark:text-slate-550">Aucun dépôt crypto en attente.</td></tr>}
+            {filteredDeposits.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400 dark:text-slate-550">Aucun dépôt trouvé.</td></tr>}
           </tbody>
         </table>
       </div>
