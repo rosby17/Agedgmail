@@ -1,4 +1,5 @@
-import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
@@ -116,15 +117,38 @@ serve(async (req) => {
       const apiKey = Deno.env.get('PVAPINS_API_KEY');
       if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
       
-      const pvaCountryMap: Record<string, string> = {
-        'US': 'USA',
-        'GB': 'UK',
-        'FR': 'France',
-        'DE': 'Germany',
-        'RU': 'Russia',
-        'CA': 'Canada'
-      };
-      const countryName = pvaCountryMap[targetIso] || targetIso;
+      let countryName = targetIso;
+      try {
+        const res = await fetch('https://api.pvapins.com/user/api/load_countries.php');
+        const countries = await res.json();
+        for (const c of countries) {
+          let iso = getCode(c.full_name);
+          if (!iso) {
+            if (c.full_name === 'UK') iso = 'GB';
+            else if (c.full_name === 'USA') iso = 'US';
+            else if (c.full_name === 'Russia') iso = 'RU';
+            else if (c.full_name === 'Vietnam') iso = 'VN';
+            else if (c.full_name === 'South Korea') iso = 'KR';
+            else if (c.full_name === 'Iran') iso = 'IR';
+            else if (c.full_name === 'Syria') iso = 'SY';
+            else if (c.full_name === 'Taiwan') iso = 'TW';
+            else if (c.full_name === 'Venezuela') iso = 'VE';
+            else if (c.full_name === 'Bolivia') iso = 'BO';
+            else if (c.full_name === 'Tanzania') iso = 'TZ';
+          }
+          if (iso === targetIso) {
+            countryName = c.full_name;
+            break;
+          }
+        }
+      } catch(e) {
+        // Fallback to hardcoded map if fetch fails
+        const pvaCountryMap: Record<string, string> = {
+          'US': 'USA', 'GB': 'UK', 'FR': 'France', 'DE': 'Germany', 'RU': 'Russia', 'CA': 'Canada'
+        };
+        countryName = pvaCountryMap[targetIso] || targetIso;
+      }
+      
       const appName = "google"; 
       
       const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${encodeURIComponent(countryName)}`;

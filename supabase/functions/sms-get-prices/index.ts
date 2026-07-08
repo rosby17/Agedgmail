@@ -1,4 +1,5 @@
-import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
@@ -138,17 +139,44 @@ serve(async (req) => {
       }
     }
 
-    // 3. (Mock) Fetch from PVAPins for US/UK
+    // 3. Fetch from PVAPins dynamically
     const pvaPinsKey = Deno.env.get('PVAPINS_API_KEY');
     if (pvaPinsKey) {
-      // Mocked forced prices
-      const usExisting = bestPrices.get('US');
-      if (usExisting) {
-        bestPrices.set('US', { ...usExisting, Price: 0.25, Provider: 'pvapins' });
-      }
-      const gbExisting = bestPrices.get('GB');
-      if (gbExisting) {
-        bestPrices.set('GB', { ...gbExisting, Price: 0.35, Provider: 'pvapins' });
+      try {
+        const res = await fetch('https://api.pvapins.com/user/api/load_countries.php');
+        const countries = await res.json();
+        
+        for (const c of countries) {
+          let iso = getCode(c.full_name);
+          if (!iso) {
+            if (c.full_name === 'UK') iso = 'GB';
+            else if (c.full_name === 'USA') iso = 'US';
+            else if (c.full_name === 'Russia') iso = 'RU';
+            else if (c.full_name === 'Vietnam') iso = 'VN';
+            else if (c.full_name === 'South Korea') iso = 'KR';
+            else if (c.full_name === 'Iran') iso = 'IR';
+            else if (c.full_name === 'Syria') iso = 'SY';
+            else if (c.full_name === 'Taiwan') iso = 'TW';
+            else if (c.full_name === 'Venezuela') iso = 'VE';
+            else if (c.full_name === 'Bolivia') iso = 'BO';
+            else if (c.full_name === 'Tanzania') iso = 'TZ';
+          }
+          
+          if (iso) {
+            const existing = bestPrices.get(iso);
+            // PVAPins is preferred, so we override or set it.
+            // We use the existing smscodes price, or a fallback of 0.30 if no existing price.
+            // The exact price isn't shown to the user in the UI dropdown anyway.
+            bestPrices.set(iso, {
+              Country: existing ? existing.Country : c.full_name,
+              Iso: iso,
+              Price: existing ? existing.Price : 0.30,
+              Provider: 'pvapins'
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching PVAPins countries", e);
       }
     }
 
