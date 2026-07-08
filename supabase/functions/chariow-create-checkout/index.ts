@@ -33,25 +33,14 @@ serve(async (req) => {
     const chariowKey = Deno.env.get('CHARIOW_API_KEY');
     if (!chariowKey) throw new Error('La clé API Chariow n\'est pas configurée (CHARIOW_API_KEY)');
 
+    const productId = Deno.env.get('CHARIOW_PRODUCT_ID');
+    if (!productId) throw new Error('L\'ID du produit Chariow n\'est pas configuré (CHARIOW_PRODUCT_ID). Créez un produit à 1$ et ajoutez son ID.');
+
     const client = new Chariow(chariowKey);
 
-    // Create a temporary product for this specific top-up amount
-    const product = await client.products.create({
-      name: `Recharge Compte - $${amountUsd}`,
-      description: `Recharge de compte AgedGmail (${email})`,
-      pricing: {
-        type: 'one_time',
-        current_price: {
-          value: amountUsd,
-          currency: 'USD'
-        }
-      },
-      status: 'published'
-    });
-
-    // Create a checkout session for this product
+    // Create a checkout session using the 1$ product and multiplying quantity by the top-up amount
     const payment = await client.pay.checkout({
-      items: [{ product_id: product.id, quantity: 1 }],
+      items: [{ product_id: productId, quantity: Math.round(amountUsd) }],
       customer_email: email,
       currency: 'USD',
       payment_method: { type: 'card' },
