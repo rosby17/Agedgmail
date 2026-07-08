@@ -27,31 +27,52 @@ serve(async (req) => {
     // Map of Iso to lowest price info
     const bestPrices = new Map<string, FormattedPrice>();
 
-    // 1. Fetch from smscodes.io
-    const smsCodesKey = Deno.env.get('SMSCODES_API_KEY');
-    if (smsCodesKey) {
+    // 1. Fetch from 5sim.net
+    const fivesimKey = Deno.env.get('FIVESIM_API_KEY');
+    if (fivesimKey) {
       try {
-        const url = `https://code.smscodes.io/api/sms/GetServicePrices?key=${smsCodesKey}&serviceId=${targetService}`;
-        const res = await fetch(url);
+        const fivesimCountryToIso: Record<string, string> = {
+          'usa': 'US', 'england': 'GB', 'france': 'FR', 'germany': 'DE', 'russia': 'RU',
+          'canada': 'CA', 'spain': 'ES', 'italy': 'IT', 'ukraine': 'UA', 'poland': 'PL',
+          'india': 'IN', 'indonesia': 'ID', 'brazil': 'BR', 'mexico': 'MX', 'vietnam': 'VN',
+          'romania': 'RO', 'egypt': 'EG',
+        };
+
+        const res = await fetch('https://5sim.net/v1/guest/prices');
         const data = await res.json();
-        if (data.Status === "200" || data.Status === "Success") {
-          data.Prices.forEach((c: any) => {
-            if (!c.Iso || !c.Price) return;
-            const price = parseFloat(c.Price);
-            bestPrices.set(c.Iso, {
-              Country: c.Country,
-              Iso: c.Iso,
-              Price: price,
-              Provider: 'smscodes'
-            });
-          });
+
+        if (data) {
+          for (const [countryName, products] of Object.entries(data as any)) {
+            if (products && (products as any).google) {
+              const operators = (products as any).google;
+              let lowest = Infinity;
+              for (const [opName, opData] of Object.entries(operators as any)) {
+                if (opData.cost && opData.cost < lowest && opData.count > 0) {
+                  lowest = opData.cost;
+                }
+              }
+              if (lowest < Infinity) {
+                // 5SIM cost is in RUB, convert to USD approx
+                // 1 RUB is ~0.011 USD currently. Update this exchange rate if needed.
+                const costUsd = lowest * 0.011; 
+                let targetIso = fivesimCountryToIso[countryName.toLowerCase()];
+                // If we don't have a mapped ISO, generate a dummy one to still show the country
+                if (!targetIso) { targetIso = `XX_${countryName.substring(0,3).toUpperCase()}`; }
+                
+                bestPrices.set(targetIso, {
+                  Country: countryName.charAt(0).toUpperCase() + countryName.slice(1),
+                  Iso: targetIso,
+                  Price: costUsd,
+                  Provider: '5sim'
+                });
+              }
+            }
+          }
         }
       } catch (e) {
-        console.error("Error fetching smscodes prices", e);
+        console.error("Error fetching 5sim prices", e);
       }
     }
-
-
 
     // Apply Margins and Format Response
     const finalPrices = Array.from(bestPrices.values()).map(c => {
