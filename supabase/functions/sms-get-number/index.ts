@@ -154,7 +154,7 @@ serve(async (req) => {
           countryName = pvaCountryMap[targetIso] || targetIso;
         }
         
-        const appName = "google"; 
+        const appName = "YouTube"; 
         
         const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${encodeURIComponent(countryName)}`;
         const res = await fetch(url);

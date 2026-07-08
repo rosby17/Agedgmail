@@ -112,7 +112,7 @@ serve(async (req) => {
       
       const parts = securityId.split(':');
       const pvaCountry = parts[2] || 'usa';
-      const appName = "google";
+      const appName = "YouTube";
       
       const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${encodeURIComponent(pvaCountry)}&app=${appName}`;
       const res = await fetch(url);
