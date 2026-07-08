@@ -87,7 +87,7 @@ serve(async (req) => {
       };
       
       const countryName = fivesimCountryMap[targetIso] || targetIso.toLowerCase();
-      const appName = "youtube";
+      const appName = "google";
       
       const url = `https://5sim.net/v1/user/buy/activation/${countryName}/any/${appName}`;
       const res = await fetch(url, {

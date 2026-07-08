@@ -85,44 +85,47 @@ serve(async (req) => {
         'egypt': 'EG',
       };
 
-      // product=youtube
-      const res = await fetch('https://5sim.net/v1/guest/prices?product=youtube');
+      // 5sim guest prices API returns ALL prices. The product we want is "google"
+      const res = await fetch('https://5sim.net/v1/guest/prices');
       const data = await res.json();
-      if (data && data.youtube) {
-        const countries = data.youtube;
-        for (const [countryName, operators] of Object.entries(countries)) {
-          // get lowest price among operators
-          let lowest = Infinity;
-          for (const [opName, opData] of Object.entries(operators as any)) {
-            if (opData.cost && opData.cost < lowest) {
-              lowest = opData.cost;
-            }
-          }
-          if (lowest < Infinity) {
-            // 5sim returns prices in RUB. 1 RUB = ~0.011 USD. Let's convert roughly.
-            const costUsd = lowest * 0.011; 
-            
-            let targetIso = fivesimCountryToIso[countryName.toLowerCase()];
-            if (!targetIso) {
-              // Try matching by exact name
-              for (const [iso, existing] of bestPrices.entries()) {
-                if (existing.Country.toLowerCase() === countryName.toLowerCase()) {
-                  targetIso = iso;
-                  break;
-                }
+      
+      if (data) {
+        for (const [countryName, products] of Object.entries(data as any)) {
+          if (products && (products as any).google) {
+            const operators = (products as any).google;
+            let lowest = Infinity;
+            // find lowest cost among operators that have stock
+            for (const [opName, opData] of Object.entries(operators as any)) {
+              if (opData.cost && opData.cost < lowest && opData.count > 0) {
+                lowest = opData.cost;
               }
             }
+            if (lowest < Infinity) {
+              // 5sim returns prices in RUB. 1 RUB = ~0.011 USD. Let's convert roughly.
+              const costUsd = lowest * 0.011; 
+              
+              let targetIso = fivesimCountryToIso[countryName.toLowerCase()];
+              if (!targetIso) {
+                // Try matching by exact name
+                for (const [iso, existing] of bestPrices.entries()) {
+                  if (existing.Country.toLowerCase() === countryName.toLowerCase()) {
+                    targetIso = iso;
+                    break;
+                  }
+                }
+              }
 
-            if (targetIso) {
-              const existing = bestPrices.get(targetIso);
-              if (!existing || costUsd < existing.Price) {
-                const displayName = existing ? existing.Country : (countryName.charAt(0).toUpperCase() + countryName.slice(1));
-                bestPrices.set(targetIso, {
-                  Country: displayName,
-                  Iso: targetIso,
-                  Price: costUsd,
-                  Provider: '5sim'
-                });
+              if (targetIso) {
+                const existing = bestPrices.get(targetIso);
+                if (!existing || costUsd < existing.Price) {
+                  const displayName = existing ? existing.Country : (countryName.charAt(0).toUpperCase() + countryName.slice(1));
+                  bestPrices.set(targetIso, {
+                    Country: displayName,
+                    Iso: targetIso,
+                    Price: costUsd,
+                    Provider: '5sim'
+                  });
+                }
               }
             }
           }
