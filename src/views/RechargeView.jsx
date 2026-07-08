@@ -172,6 +172,45 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     return () => clearInterval(retry);
   }, [binanceSubStep, payment]);
 
+  // Vérification synchrone du retour Chariow
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const statusParam = searchParams.get('status');
+    const sessionId = searchParams.get('session_id');
+
+    if (statusParam === 'success' && sessionId) {
+      setStep('awaiting');
+      setLoading(true);
+      setError('');
+      
+      const verifyChariowPayment = async () => {
+        try {
+          const { data, error: fnError } = await supabase.functions.invoke('chariow-verify-payment', {
+            body: { sessionId }
+          });
+          
+          if (fnError) throw new Error(await extractFnErrorMessage(fnError));
+          if (!data?.success && !data?.alreadyConfirmed) throw new Error(data?.error || "Erreur de vérification du paiement.");
+          
+          if (fetchProfile) await fetchProfile(session.user.id);
+          setStep('success');
+          
+          // Nettoyer l'URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (err) {
+          setError(err.message || 'La vérification de ton paiement a échoué. Si tu as été débité, contacte le support.');
+          setStep('form');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      verifyChariowPayment();
+    } else if (statusParam === 'cancelled') {
+      setError('Paiement annulé.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [session, fetchProfile]);
 
 
   const close = () => navigate('dashboard');
@@ -276,6 +315,29 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
         setStep('awaiting');
       } catch (err) {
         setError(err.message || 'Une erreur est survenue.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (gateway === 'credit_card') {
+      setLoading(true);
+      setError('');
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('chariow-create-checkout', {
+          body: { userId: session.user.id, email: session.user.email, amountUsd, bonusPct },
+        });
+
+        if (fnError) throw new Error(await extractFnErrorMessage(fnError));
+        if (fnData?.error) throw new Error(fnData.error);
+        if (fnData?.checkoutUrl) {
+          window.location.href = fnData.checkoutUrl;
+          return;
+        }
+        throw new Error('Aucun lien de paiement reçu de Chariow.');
+      } catch (err) {
+        setError(err.message || 'Une erreur est survenue avec la passerelle Carte Bancaire.');
       } finally {
         setLoading(false);
       }
