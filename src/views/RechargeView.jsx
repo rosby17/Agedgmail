@@ -110,6 +110,14 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           });
           setBinanceSubStep(data.binance_tx_id ? 'submitted' : 'pay');
           setStep('awaiting');
+        } else if (data.payment_method === 'mobile_money') {
+          setPayment({
+            provider: 'mobile_money',
+            orderId: data.id,
+            expectedAmount: data.expected_amount,
+            creditAmount: data.credit_amount,
+          });
+          setStep('awaiting');
         }
       }
       setCheckingPending(false);
@@ -333,23 +341,17 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       setLoading(true);
       setError('');
       try {
-        const { data: orderData, error: orderErr } = await supabase.from('orders').insert({
-          user_id: session.user.id,
-          buyer_email: session.user.email,
-          product_id: 999,
-          product_name: 'Recharge Mobile Money',
-          quantity: 1,
-          total_price: amountUsd,
-          status: 'pending'
-        }).select().single();
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('moneroo-initialize', {
+          body: { userId: session.user.id, email: session.user.email, name: profile?.display_name || 'Client', amountUsd, creditAmount: amountUsd * (1 + bonusPct / 100) },
+        });
 
-        if (orderErr) throw orderErr;
+        if (fnError) throw new Error(await extractFnErrorMessage(fnError));
+        if (fnData?.error) throw new Error(fnData.error);
+        if (!fnData?.url) throw new Error('Impossible d\'obtenir le lien de paiement Mobile Money.');
 
-        setPayment({ provider: 'mobile_money', orderId: orderData.id, expectedAmount: amountUsd, creditAmount: amountUsd * (1 + bonusPct / 100), bonusPct });
-        setStep('awaiting');
+        window.location.href = fnData.url;
       } catch (err) {
         setError(err.message || 'Une erreur est survenue.');
-      } finally {
         setLoading(false);
       }
       return;
@@ -793,10 +795,10 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
             {payment.provider === 'mobile_money' ? (
               <button
-                onClick={() => setStep('form')}
-                className="w-full py-4 rounded-2xl font-bold bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all flex items-center justify-center gap-2"
+                onClick={cancelPendingOrder}
+                className="w-full mt-4 py-3 rounded-2xl font-bold text-red-500 hover:bg-red-50 transition-all flex items-center justify-center gap-2"
               >
-                <ArrowLeft size={18} /> Retour aux options
+                Annuler ce dépôt
               </button>
             ) : (
               <div className="bg-gray-50 rounded-2xl p-6 space-y-4">

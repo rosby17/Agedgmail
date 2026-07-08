@@ -18,7 +18,7 @@ serve(async (req) => {
   try {
     if (!MONEROO_SECRET_KEY) throw new Error('MONEROO_SECRET_KEY non configurée')
 
-    const { userId, email, name, phone, amountUsd } = await req.json()
+    const { userId, email, name, phone, amountUsd, creditAmount } = await req.json()
 
     if (!userId || !email) {
       return new Response(JSON.stringify({ error: 'userId et email requis' }), {
@@ -50,6 +50,9 @@ serve(async (req) => {
         product_name: 'Recharge Mobile Money',
         quantity: 1,
         total_price: amountUsd,
+        expected_amount: amountUsd,
+        credit_amount: creditAmount || amountUsd,
+        payment_method: 'mobile_money',
         status: 'pending',
       })
       .select('id')

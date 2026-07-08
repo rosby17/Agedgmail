@@ -1247,7 +1247,7 @@ const CRYPTO_CURRENCIES = [
 const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, symbol: '🅑', min: 0.5, recommended: true },
   { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, symbol: '₮', manual: true, min: 0.5 },
-  { id: 'mobile_money', name: 'Mobile Money', sub: 'Bientôt', enabled: false, symbol: '📱' },
+  { id: 'mobile_money', name: 'Mobile Money', sub: 'Afrique', enabled: true, symbol: '📱' },
 ];
 
 const BONUS_TIERS = [

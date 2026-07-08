@@ -65,8 +65,7 @@ serve(async (req) => {
       message: `Votre recharge de $${Number(credit).toFixed(2)} a été validée avec succès.`,
     })
 
-    const isUSDT = order.payment_method === 'usdt_trc20';
-    const methodLabel = isUSDT ? 'USDT (TRC20)' : 'Binance Pay';
+    const methodLabel = order.payment_method === 'usdt_trc20' ? 'USDT (TRC20)' : order.payment_method === 'mobile_money' ? 'Mobile Money' : 'Binance Pay';
 
     await notifyTelegram(
       `✅ <b>Recharge ${methodLabel} validée manuellement</b>\n\n` +

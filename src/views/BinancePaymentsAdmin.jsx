@@ -30,7 +30,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
   const [msg, setMsg] = useState('');
   const [codeByUser, setCodeByUser] = useState({});
 
-  const pending = allOrders.filter(o => o.product_id === 999 && (o.payment_method === 'binance_pay' || o.payment_method === 'usdt_trc20') && o.status === 'pending');
+  const pending = allOrders.filter(o => o.product_id === 999 && (o.payment_method === 'binance_pay' || o.payment_method === 'usdt_trc20' || o.payment_method === 'mobile_money' || (!o.payment_method && o.product_name?.includes('Mobile Money'))) && o.status === 'pending');
 
   useEffect(() => {
     const userIds = [...new Set(pending.map(o => o.user_id))];
@@ -85,12 +85,13 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
             {pending.map(o => {
               const expired = o.expires_at && new Date(o.expires_at).getTime() < Date.now();
               const isBinance = o.payment_method === 'binance_pay';
+              const isMobileMoney = o.payment_method === 'mobile_money' || (!o.payment_method && o.product_name?.includes('Mobile Money'));
               return (
                 <tr key={o.id} className="text-gray-700 dark:text-gray-350 hover:bg-gray-50/50 dark:hover:bg-slate-800/20 transition-colors">
                   <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email}</td>
                   <td className="py-4">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold ${isBinance ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
-                      {isBinance ? 'Binance' : 'USDT TRC20'}
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold ${isBinance ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : isMobileMoney ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                      {isBinance ? 'Binance' : isMobileMoney ? 'Mobile Money' : 'USDT TRC20'}
                     </span>
                   </td>
                   <td className="py-4 font-mono font-black text-primary tracking-widest">{isBinance ? (codeByUser[o.user_id] || '—') : '—'}</td>
