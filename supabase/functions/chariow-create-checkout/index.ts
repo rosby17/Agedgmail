@@ -34,19 +34,37 @@ serve(async (req) => {
     if (!chariowKey) throw new Error('La clé API Chariow n\'est pas configurée (CHARIOW_API_KEY)');
 
     const productId = Deno.env.get('CHARIOW_PRODUCT_ID');
-    if (!productId) throw new Error('L\'ID du produit Chariow n\'est pas configuré (CHARIOW_PRODUCT_ID). Créez un produit à 1$ et ajoutez son ID.');
+    if (!productId) throw new Error('L\'ID du produit Chariow n\'est pas configuré (CHARIOW_PRODUCT_ID).');
 
-    const client = new Chariow(chariowKey);
-
-    // Create a checkout session using the 1$ product and multiplying quantity by the top-up amount
-    const payment = await client.pay.checkout({
-      items: [{ product_id: productId, quantity: Math.round(amountUsd) }],
-      customer_email: email,
-      currency: 'USD',
-      payment_method: { type: 'card' },
-      success_url: `https://agedgmail.tools-cl.com/dashboard/topup?status=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `https://agedgmail.tools-cl.com/dashboard/topup?status=cancelled`
+    // Chariow SDK is currently broken for v1/checkout, using raw fetch
+    const response = await fetch('https://api.chariow.com/v1/checkout', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${chariowKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        product_id: productId,
+        quantity: Math.max(1, Math.round(amountUsd)),
+        email: email,
+        first_name: "Client",
+        last_name: "AgedGmail",
+        phone: { number: "0600000000", country_code: "FR" },
+        success_url: `https://agedgmail.tools-cl.com/dashboard/topup?status=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `https://agedgmail.tools-cl.com/dashboard/topup?status=cancelled`
+      })
     });
+
+    const data = await response.json();
+
+    if (!response.ok || !data?.data?.payment?.checkout_url) {
+      console.error('Chariow API Error:', data);
+      throw new Error(data?.message || 'Erreur lors de la création du paiement Chariow');
+    }
+
+    const payment = {
+      checkout_url: data.data.payment.checkout_url
+    };
 
     // Save the order to track the payment
     const { data: orderData, error: orderErr } = await supabase.from('orders').insert({
