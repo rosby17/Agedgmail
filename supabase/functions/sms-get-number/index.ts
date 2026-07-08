@@ -46,7 +46,7 @@ serve(async (req) => {
 
     let providerData = { Status: "Error", Error: "Provider not implemented", SecurityId: "", Number: "" };
 
-    if (currentProvider === 'smscodes') {
+    const getSmsCodesNumber = async () => {
       const apiKey = Deno.env.get('SMSCODES_API_KEY');
       if (!apiKey) throw new Error('SMSCODES_API_KEY is not configured');
 
@@ -58,11 +58,15 @@ serve(async (req) => {
         throw new Error(`SMS Provider Error: ${data.Error || 'Unknown error'}`);
       }
 
-      providerData = {
+      return {
         Status: "200",
         Number: data.Number,
         SecurityId: `smscodes:${data.SecurityId}` // Prefix with provider
       };
+    };
+
+    if (currentProvider === 'smscodes') {
+      providerData = await getSmsCodesNumber();
     } else if (currentProvider === '5sim') {
       const apiKey = Deno.env.get('FIVESIM_API_KEY');
       if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
@@ -114,67 +118,73 @@ serve(async (req) => {
         SecurityId: `5sim:${data.id}:${countryName}`
       };
     } else if (currentProvider === 'pvapins') {
-      const apiKey = Deno.env.get('PVAPINS_API_KEY');
-      if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
-      
-      let countryName = targetIso;
       try {
-        const res = await fetch('https://api.pvapins.com/user/api/load_countries.php');
-        const countries = await res.json();
-        for (const c of countries) {
-          let iso = getCode(c.full_name);
-          if (!iso) {
-            if (c.full_name === 'UK') iso = 'GB';
-            else if (c.full_name === 'USA') iso = 'US';
-            else if (c.full_name === 'Russia') iso = 'RU';
-            else if (c.full_name === 'Vietnam') iso = 'VN';
-            else if (c.full_name === 'South Korea') iso = 'KR';
-            else if (c.full_name === 'Iran') iso = 'IR';
-            else if (c.full_name === 'Syria') iso = 'SY';
-            else if (c.full_name === 'Taiwan') iso = 'TW';
-            else if (c.full_name === 'Venezuela') iso = 'VE';
-            else if (c.full_name === 'Bolivia') iso = 'BO';
-            else if (c.full_name === 'Tanzania') iso = 'TZ';
+        const apiKey = Deno.env.get('PVAPINS_API_KEY');
+        if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
+        
+        let countryName = targetIso;
+        try {
+          const res = await fetch('https://api.pvapins.com/user/api/load_countries.php');
+          const countries = await res.json();
+          for (const c of countries) {
+            let iso = getCode(c.full_name);
+            if (!iso) {
+              if (c.full_name === 'UK') iso = 'GB';
+              else if (c.full_name === 'USA') iso = 'US';
+              else if (c.full_name === 'Russia') iso = 'RU';
+              else if (c.full_name === 'Vietnam') iso = 'VN';
+              else if (c.full_name === 'South Korea') iso = 'KR';
+              else if (c.full_name === 'Iran') iso = 'IR';
+              else if (c.full_name === 'Syria') iso = 'SY';
+              else if (c.full_name === 'Taiwan') iso = 'TW';
+              else if (c.full_name === 'Venezuela') iso = 'VE';
+              else if (c.full_name === 'Bolivia') iso = 'BO';
+              else if (c.full_name === 'Tanzania') iso = 'TZ';
+            }
+            if (iso === targetIso) {
+              countryName = c.full_name;
+              break;
+            }
           }
-          if (iso === targetIso) {
-            countryName = c.full_name;
-            break;
+        } catch(e) {
+          // Fallback to hardcoded map if fetch fails
+          const pvaCountryMap: Record<string, string> = {
+            'US': 'USA', 'GB': 'UK', 'FR': 'France', 'DE': 'Germany', 'RU': 'Russia', 'CA': 'Canada'
+          };
+          countryName = pvaCountryMap[targetIso] || targetIso;
+        }
+        
+        const appName = "google"; 
+        
+        const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${encodeURIComponent(countryName)}`;
+        const res = await fetch(url);
+        const text = await res.text();
+        
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes('not found') || lowerText.includes('error') || lowerText.includes('progress') || lowerText.includes('no free channels')) {
+          throw new Error(`${text.trim()}`);
+        }
+        
+        let parsedNum = text.trim();
+        try {
+          const jsonObj = JSON.parse(text);
+          if (jsonObj.number) parsedNum = String(jsonObj.number);
+          else if (jsonObj.Number) parsedNum = String(jsonObj.Number);
+        } catch (e) {
+          if (parsedNum.includes(':')) {
+             parsedNum = parsedNum.split(':').pop()!.trim();
           }
         }
-      } catch(e) {
-        // Fallback to hardcoded map if fetch fails
-        const pvaCountryMap: Record<string, string> = {
-          'US': 'USA', 'GB': 'UK', 'FR': 'France', 'DE': 'Germany', 'RU': 'Russia', 'CA': 'Canada'
+        
+        providerData = {
+          Status: "200",
+          Number: parsedNum,
+          SecurityId: `pvapins:${parsedNum}:${countryName}`
         };
-        countryName = pvaCountryMap[targetIso] || targetIso;
+      } catch (pvpError) {
+        console.error("PVAPins failed:", pvpError.message, "Falling back to smscodes...");
+        providerData = await getSmsCodesNumber();
       }
-      
-      const appName = "google"; 
-      
-      const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${encodeURIComponent(countryName)}`;
-      const res = await fetch(url);
-      const text = await res.text();
-      
-      if (text.toLowerCase().includes('not found') || text.toLowerCase().includes('error') || text.toLowerCase().includes('progress')) {
-        throw new Error(`${text.trim()}`);
-      }
-      
-      let parsedNum = text.trim();
-      try {
-        const jsonObj = JSON.parse(text);
-        if (jsonObj.number) parsedNum = String(jsonObj.number);
-        else if (jsonObj.Number) parsedNum = String(jsonObj.Number);
-      } catch (e) {
-        if (parsedNum.includes(':')) {
-           parsedNum = parsedNum.split(':').pop()!.trim();
-        }
-      }
-      
-      providerData = {
-        Status: "200",
-        Number: parsedNum,
-        SecurityId: `pvapins:${parsedNum}:${countryName}`
-      };
     } else {
       throw new Error(`Unknown provider: ${currentProvider}`);
     }
