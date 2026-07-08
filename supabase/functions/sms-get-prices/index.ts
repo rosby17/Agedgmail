@@ -64,8 +64,10 @@ serve(async (req) => {
     }
 
     // 2. Fetch from 5sim.net (Guest API for prices)
-    try {
-      const fivesimCountryToIso: Record<string, string> = {
+    const fiveSimKey = Deno.env.get('FIVESIM_API_KEY');
+    if (fiveSimKey) {
+      try {
+        const fivesimCountryToIso: Record<string, string> = {
         'usa': 'US',
         'england': 'GB',
         'france': 'FR',
@@ -131,8 +133,9 @@ serve(async (req) => {
           }
         }
       }
-    } catch(e) {
-      console.error("Error fetching 5sim prices", e);
+      } catch(e) {
+        console.error("Error fetching 5sim prices", e);
+      }
     }
 
     // 3. (Mock) Fetch from PVAPins for US/UK
