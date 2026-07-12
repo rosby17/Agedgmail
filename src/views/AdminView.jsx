@@ -721,11 +721,11 @@ const FinancialDetailsModal = ({ type, onClose, orders = [], mappings = [], lang
     const groups = {};
     orders.forEach(o => {
       const sup = getSupplierName(o);
-      const cost = o.supplier_cost !== undefined && o.supplier_cost !== null 
-        ? o.supplier_cost 
-        : (mappings.find(map => map.product_id === o.product_id)?.supplier_rate || 0) * (o.quantity || 1);
+      const cost = o.supplier_cost !== undefined && o.supplier_cost !== null && o.supplier_cost !== ''
+        ? Number(o.supplier_cost) 
+        : Number(mappings.find(map => Number(map.product_id) === Number(o.product_id))?.supplier_rate || 0) * Number(o.quantity || 1);
       
-      const rev = o.total_price || 0;
+      const rev = Number(o.total_price || 0);
       if (!groups[sup]) {
         groups[sup] = { name: sup, cost: 0, revenue: 0, count: 0 };
       }
@@ -793,10 +793,10 @@ const FinancialDetailsModal = ({ type, onClose, orders = [], mappings = [], lang
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
                   {orders.map(o => {
-                    const cost = o.supplier_cost !== undefined && o.supplier_cost !== null 
-                      ? o.supplier_cost 
-                      : (mappings.find(map => map.product_id === o.product_id)?.supplier_rate || 0) * (o.quantity || 1);
-                    const revenue = o.total_price || 0;
+                    const cost = o.supplier_cost !== undefined && o.supplier_cost !== null && o.supplier_cost !== ''
+                      ? Number(o.supplier_cost) 
+                      : Number(mappings.find(map => Number(map.product_id) === Number(o.product_id))?.supplier_rate || 0) * Number(o.quantity || 1);
+                    const revenue = Number(o.total_price || 0);
                     const profit = revenue - cost;
                     const supplier = getSupplierName(o);
 
@@ -965,8 +965,8 @@ const AdminView = ({
   const confirmedOrders = allOrders.filter(o => o.status === 'confirmed');
   
   // Ventes de produits réelles (exclure product_id=999 recharges et 998 transferts)
-  const confirmedPurchases = confirmedOrders.filter(o => o.product_id !== 999 && o.product_id !== 998);
-  const totalSold = confirmedPurchases.reduce((s, o) => s + (o.total_price || 0), 0);
+  const confirmedPurchases = confirmedOrders.filter(o => Number(o.product_id) !== 999 && Number(o.product_id) !== 998);
+  const totalSold = confirmedPurchases.reduce((s, o) => s + Number(o.total_price || 0), 0);
 
   // Coût total d'achat fournisseur — même fonction partagée que le graphique
   // (orderSupplierCost), donc carte et courbe affichent TOUJOURS le même chiffre.
@@ -978,8 +978,8 @@ const AdminView = ({
 
   // Dépôts réels (recharges de solde confirmées)
   const totalDeposited = confirmedOrders
-    .filter(o => o.product_id === 999)
-    .reduce((s, o) => s + (o.total_price || 0), 0);
+    .filter(o => Number(o.product_id) === 999)
+    .reduce((s, o) => s + Number(o.total_price || 0), 0);
 
   // Compteurs opérationnels secondaires
   const processingCount = allOrders.filter(o => o.status === 'processing').length;

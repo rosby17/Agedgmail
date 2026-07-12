@@ -145,14 +145,14 @@ export function sanitizeDescriptionHtml(html) {
 }
 
 export const orderSupplierCost = (order, mappings = []) => {
-  if (order.supplier_cost !== undefined && order.supplier_cost !== null) return order.supplier_cost;
-  const m = mappings.find(map => map.product_id === order.product_id);
-  if (m) return (m.supplier_rate || 0) * (order.quantity || 1);
+  if (order.supplier_cost !== undefined && order.supplier_cost !== null && order.supplier_cost !== '') return Number(order.supplier_cost);
+  const m = mappings.find(map => String(map.product_id) === String(order.product_id));
+  if (m) return Number(m.supplier_rate || 0) * Number(order.quantity || 1);
   return 0;
 };
 
 export const netProfitOf = (ordersList, mappings = []) => {
-  return ordersList.reduce((sum, o) => sum + (o.total_price || 0) - orderSupplierCost(o, mappings), 0);
+  return ordersList.reduce((sum, o) => sum + Number(o.total_price || 0) - orderSupplierCost(o, mappings), 0);
 };
 
 export const bonusPercentFor = (amountUsd) => {
