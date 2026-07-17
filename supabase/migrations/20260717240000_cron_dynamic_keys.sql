@@ -7,14 +7,18 @@
 -- 1. Activer l'extension Vault si ce n'est pas déjà fait
 CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault;
 
--- 2. Insérer la clé anon dans le coffre-fort (Vault)
--- Cette commande créera un doublon inoffensif si exécutée plusieurs fois,
--- mais vous pouvez utiliser vault.update_secret pour la modifier plus tard.
-SELECT vault.create_secret(
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janBia2Z3aG1zaXNwaWN6emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyODIwNjIsImV4cCI6MjA5Mzg1ODA2Mn0.YTQFZVUN0C4YNdfEQx9znnox6XZyxEvl_2U7qHTfn54',
-  'supabase_anon_key',
-  'Clé publique pour les requêtes HTTP des crons'
-);
+-- 2. Insérer la clé anon dans le coffre-fort (Vault) s'il n'existe pas
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'supabase_anon_key') THEN
+    PERFORM vault.create_secret(
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janBia2Z3aG1zaXNwaWN6emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyODIwNjIsImV4cCI6MjA5Mzg1ODA2Mn0.YTQFZVUN0C4YNdfEQx9znnox6XZyxEvl_2U7qHTfn54',
+      'supabase_anon_key',
+      'Clé publique pour les requêtes HTTP des crons'
+    );
+  END IF;
+END
+$$;
 
 -- 3. Fonction pour lire le secret au moment de l'exécution
 CREATE SCHEMA IF NOT EXISTS private;
