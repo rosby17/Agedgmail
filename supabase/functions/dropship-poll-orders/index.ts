@@ -161,10 +161,7 @@ serve(async (req) => {
           const refund = Math.round((Number(order.total_price) || 0) * (remains / qty) * 100) / 100
 
           if (refund > 0) {
-            const { data: profile } = await admin.from('profiles').select('balance').eq('id', order.user_id).single()
-            if (profile) {
-              await admin.from('profiles').update({ balance: (profile.balance || 0) + refund }).eq('id', order.user_id)
-            }
+            await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: refund })
           }
           await admin.from('orders').update({
             status: 'confirmed', credentials: creds, data: creds, supplier_status: 'Partial',

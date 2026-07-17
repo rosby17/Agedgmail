@@ -490,8 +490,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
     const amount = parseFloat(raw);
     if (isNaN(amount) || amount === 0) return;
     setBusyId(user.id);
-    const { data } = await supabase.from('profiles').select('balance').eq('id', user.id).single();
-    const { error } = await supabase.from('profiles').update({ balance: (data?.balance || 0) + amount }).eq('id', user.id);
+    const { error } = await supabase.rpc('credit_balance', { p_user_id: user.id, p_amount: amount });
     if (error) await window.showAlert("Erreur", 'Erreur : ' + error.message);
     else await fetchUsers();
     setBusyId(null);

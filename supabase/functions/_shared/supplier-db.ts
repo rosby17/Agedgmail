@@ -137,18 +137,7 @@ export async function refundOrder(
   if (error || !order) return
   if (order.status === 'cancelled') return // déjà remboursé/annulé
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('balance')
-    .eq('id', order.user_id)
-    .single()
-
-  if (profile) {
-    await admin
-      .from('profiles')
-      .update({ balance: (profile.balance || 0) + (order.total_price || 0) })
-      .eq('id', order.user_id)
-  }
+  await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: order.total_price || 0 })
 
   await admin.from('orders').update({
     status: 'cancelled',

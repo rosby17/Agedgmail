@@ -87,21 +87,7 @@ serve(async (req) => {
         return new Response('Payment not verified', { status: 400 })
       }
 
-      const { data: profile, error: profileErr } = await supabaseAdmin
-        .from('profiles')
-        .select('balance')
-        .eq('id', userId)
-        .single()
-
-      if (profileErr) throw new Error(profileErr.message)
-
-      const newBalance = (profile.balance || 0) + amountUsd
-
-      const { error: updateErr } = await supabaseAdmin
-        .from('profiles')
-        .update({ balance: newBalance })
-        .eq('id', userId)
-
+      const { error: updateErr } = await supabaseAdmin.rpc('credit_balance', { p_user_id: userId, p_amount: amountUsd })
       if (updateErr) throw new Error(updateErr.message)
 
       await supabaseAdmin.from('orders').update({ status: 'confirmed' }).eq('id', orderId)

@@ -109,30 +109,21 @@ serve(async (req) => {
 
     if (cartStatus === "completed") {
       // Le paiement est reçu, on crédite l'utilisateur !
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
-        .select('balance')
-        .eq('id', order.user_id)
-        .single();
-        
-      const newBalance = (profile?.balance || 0) + order.credit_amount;
-      
+      // Créditer l'utilisateur de manière atomique (TOCTOU fix)
+      await supabaseAdmin.rpc('credit_balance', { 
+        p_user_id: order.user_id, 
+        p_amount: order.credit_amount 
+      });
+
       // Mettre à jour le statut de l'ordre
       await supabaseAdmin
         .from("orders")
         .update({ status: "confirmed", updated_at: new Date().toISOString() })
         .eq("id", order.id);
         
-      // Créditer l'utilisateur
-      await supabaseAdmin
-        .from("profiles")
-        .update({ balance: newBalance })
-        .eq("id", order.user_id);
-        
       return new Response(JSON.stringify({ 
         status: "success", 
-        message: "Payment verified and account credited",
-        newBalance
+        message: "Payment verified and account credited"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

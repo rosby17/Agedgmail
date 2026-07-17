@@ -72,13 +72,8 @@ serve(async (req) => {
     }
 
     if (FINAL_SUCCESS.has(status)) {
-      const { data: profile, error: profileErr } = await admin
-        .from('profiles').select('balance').eq('id', order.user_id).single()
-      if (profileErr) throw new Error(profileErr.message)
-
       const creditedAmount = order.credit_amount ?? order.total_price ?? 0
-      const newBalance = (profile.balance || 0) + creditedAmount
-      const { error: updErr } = await admin.from('profiles').update({ balance: newBalance }).eq('id', order.user_id)
+      const { error: updErr } = await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: creditedAmount })
       if (updErr) throw new Error(updErr.message)
 
       await admin.from('orders').update({ status: 'confirmed' }).eq('id', orderId)

@@ -154,17 +154,15 @@ serve(async (req) => {
         .eq('id', user.id)
         .single();
 
-      if (!profile || profile.balance < smsPrice) {
-        throw new Error('Insufficient balance at time of charge');
-      }
-
-      const newBalance = profile.balance - smsPrice;
-      
       // Update balance
-      await supabaseAdmin
-        .from('profiles')
-        .update({ balance: newBalance })
-        .eq('id', user.id);
+      const { error: deductErr } = await supabaseAdmin.rpc('deduct_balance', { 
+        p_user_id: user.id, 
+        p_amount: smsPrice 
+      });
+
+      if (deductErr) {
+        throw new Error('Insufficient balance at time of charge or user not found');
+      }
 
       // Log order
       await supabaseAdmin

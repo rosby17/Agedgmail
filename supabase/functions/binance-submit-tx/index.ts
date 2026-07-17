@@ -55,11 +55,8 @@ serve(async (req) => {
     try {
       const match = await findMatchingIncomingPayment(submittedId, Number(order.expected_amount))
       if (match) {
-        const { data: profile } = await admin
-          .from('profiles').select('balance').eq('id', order.user_id).maybeSingle()
-        if (profile) {
-          const credit = order.credit_amount ?? order.total_price
-          await admin.from('profiles').update({ balance: (profile.balance || 0) + credit }).eq('id', order.user_id)
+        const credit = order.credit_amount ?? order.total_price
+        await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: credit })
            await admin.from('orders').update({
             status: 'confirmed',
             confirmed_at: new Date().toISOString(),

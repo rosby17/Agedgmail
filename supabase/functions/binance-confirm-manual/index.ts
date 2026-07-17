@@ -45,13 +45,9 @@ serve(async (req) => {
       return json({ error: `Commande déjà en statut "${order.status}"` }, 409)
     }
 
-    const { data: profile, error: profileErr } = await admin
-      .from('profiles').select('balance').eq('id', order.user_id).maybeSingle()
-    if (profileErr || !profile) return json({ error: 'Profil introuvable' }, 404)
-
     const credit = order.credit_amount ?? order.total_price
 
-    await admin.from('profiles').update({ balance: (profile.balance || 0) + credit }).eq('id', order.user_id)
+    await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: credit })
     await admin.from('orders').update({
       status: 'confirmed',
       binance_tx_id: txRef ? String(txRef) : 'manual-confirm',
