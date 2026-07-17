@@ -28,8 +28,23 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
     setErrorMessage('');
 
     try {
-      if (balance < cartTotal) throw new Error("Insufficient balance.");
+      // ── DÉDUCTION ATOMIQUE DU SOLDE (RPC avec verrou FOR UPDATE) ──────────
+      // La RPC deduct_balance vérifie le solde ET déduit en une seule
+      // transaction atomique → impossible de dépenser deux fois le même solde
+      // même avec deux onglets / double-clic simultané.
+      const { error: rpcErr } = await supabase.rpc('deduct_balance', {
+        p_user_id: session.user.id,
+        p_amount: cartTotal,
+      });
 
+      if (rpcErr) {
+        if (rpcErr.message?.includes('insufficient_balance')) {
+          throw new Error("Solde insuffisant.");
+        }
+        throw new Error(rpcErr.message || "Erreur de paiement.");
+      }
+
+      // ── CRÉATION DES COMMANDES (solde déjà sécurisé) ─────────────────────
       for (const item of cart) {
         if (item.is_dropship) {
           const { data: dsOrder, error: dsErr } = await supabase.from('orders').insert({
@@ -98,11 +113,7 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
         }
       }
 
-      const { error: balanceErr } = await supabase
-        .from('profiles')
-        .update({ balance: balance - cartTotal })
-        .eq('id', session.user.id);
-      if (balanceErr) throw balanceErr;
+
 
       setPurchaseSuccess(true);
       await fetchProfile(session.user.id);

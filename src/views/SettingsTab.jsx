@@ -511,7 +511,8 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                   <div className="border-t border-gray-150 dark:border-slate-800 pt-6 space-y-4">
                     <h5 className="font-bold text-sm text-gray-900 dark:text-white">Configuration de l'authentificateur</h5>
                     <p className="text-xs text-gray-500 dark:text-slate-400">1. Scannez ce QR Code avec votre application (Google Authenticator, Authy, etc.).</p>
-                    <div className="bg-white p-4 rounded-xl inline-block" dangerouslySetInnerHTML={{ __html: mfaQrCode }} />
+                    {/* QR code MFA : SVG fourni par Supabase Auth — sanitisé par précaution */}
+                    <div className="bg-white p-4 rounded-xl inline-block" dangerouslySetInnerHTML={{ __html: (mfaQrCode || '').replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+="[^"]*"/gi, '').replace(/on\w+='[^']*'/gi, '') }} />
                     <p className="text-xs text-gray-500 dark:text-slate-400">2. Saisissez le code à 6 chiffres généré par l'application.</p>
                     <div className="flex items-center gap-2 max-w-xs">
                       <input 

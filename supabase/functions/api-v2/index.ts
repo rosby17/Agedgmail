@@ -124,12 +124,10 @@ serve(async (req) => {
 
       const total = Number(product.price) * quantity
 
-      // Solde revendeur
-      const { data: profile } = await db.from('profiles').select('balance, email').eq('id', userId).maybeSingle()
-      const balance = Number(profile?.balance || 0)
-      if (balance < total) return json({ error: 'Solde insuffisant', balance, required: total }, 402)
+      // Solde revendeur (récupération email seulement — la déduction est atomique)
+      const { data: profile } = await db.from('profiles').select('email').eq('id', userId).maybeSingle()
 
-      // Créer la commande (dropship) puis débiter
+      // Créer la commande (dropship) avant la déduction atomique
       const { data: order, error: oErr } = await db.from('orders').insert({
         user_id: userId,
         buyer_email: profile?.email || null,
@@ -142,7 +140,16 @@ serve(async (req) => {
       }).select('id').single()
       if (oErr || !order) return json({ error: 'Création commande échouée' }, 500)
 
-      await db.from('profiles').update({ balance: balance - total }).eq('id', userId)
+      // Déduction atomique (FOR UPDATE — élimine la race condition TOCTOU)
+      const { error: deductErr } = await db.rpc('deduct_balance', { p_user_id: userId, p_amount: total })
+      if (deductErr) {
+        // Annuler la commande créée si le paiement échoue
+        await db.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
+        if (deductErr.message?.includes('insufficient_balance')) {
+          return json({ error: 'Solde insuffisant', required: total }, 402)
+        }
+        return json({ error: 'Erreur de déduction du solde' }, 500)
+      }
 
       // Fulfilment fournisseur (rembourse automatiquement en cas d'échec)
       const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/dropship-place-order`, {
@@ -474,16 +481,15 @@ serve(async (req) => {
       }
 
       if (gotCode) {
-        // Débiter le solde du revendeur
-        const { data: profile } = await db.from('profiles').select('balance').eq('id', userId).single()
-        const balance = Number(profile?.balance || 0)
+        // Déduction atomique SMS (FOR UPDATE — élimine la race condition)
         const price = Number(order.total_price || 0)
-
-        if (balance < price) {
-          return json({ error: 'Solde insuffisant lors du prélèvement', required: price }, 402)
+        const { error: deductErr } = await db.rpc('deduct_balance', { p_user_id: userId, p_amount: price })
+        if (deductErr) {
+          if (deductErr.message?.includes('insufficient_balance')) {
+            return json({ error: 'Solde insuffisant lors du prélèvement', required: price }, 402)
+          }
+          return json({ error: 'Erreur de déduction du solde' }, 500)
         }
-
-        await db.from('profiles').update({ balance: balance - price }).eq('id', userId)
 
         await db.from('orders').update({
           status: 'confirmed',

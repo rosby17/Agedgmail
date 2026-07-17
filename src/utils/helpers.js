@@ -136,13 +136,58 @@ export const shortOrderId = (uuid = '') => {
   return String(num % 1000000).padStart(6, '0');
 };
 
+
+// Allowlist des balises et attributs autorisés dans les descriptions produit.
+// Tout ce qui n'est pas listé ici est purgé — aucun event handler possible.
+const ALLOWED_TAGS = new Set(['p','br','ul','ol','li','strong','em','u','b','i','span']);
+const ALLOWED_ATTRS = new Set(['class']);
+
+/**
+ * Sanitise du HTML produit avant affichage via dangerouslySetInnerHTML.
+ * Stratégie : parse avec DOMParser (natif navigateur), parcours l'arbre,
+ * supprime tout tag/attribut hors allowlist → impossible d'injecter du JS.
+ * Pas de dépendance externe.
+ */
 export function sanitizeDescriptionHtml(html) {
   if (!html) return '';
-  return String(html)
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/on\w+="[^"]*"/gi, '')
-    .replace(/javascript:/gi, '');
+  if (typeof window === 'undefined' || !window.DOMParser) {
+    // Environnement SSR ou test : fallback texte brut
+    return String(html).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  const parser = new window.DOMParser();
+  const doc = parser.parseFromString(`<div id="__root">${html}</div>`, 'text/html');
+  const root = doc.getElementById('__root');
+
+  function walk(node) {
+    if (!node) return;
+
+    const children = Array.from(node.childNodes);
+    for (const child of children) {
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = child.tagName.toLowerCase();
+        if (!ALLOWED_TAGS.has(tag)) {
+          // Remplacer le tag interdit par son contenu texte brut
+          const text = doc.createTextNode(child.textContent || '');
+          node.replaceChild(text, child);
+          continue;
+        }
+        // Purger tous les attributs hors allowlist (élimine onXxx, href, src…)
+        const attrs = Array.from(child.attributes);
+        for (const attr of attrs) {
+          if (!ALLOWED_ATTRS.has(attr.name.toLowerCase())) {
+            child.removeAttribute(attr.name);
+          }
+        }
+        walk(child);
+      }
+    }
+  }
+
+  walk(root);
+  return root.innerHTML;
 }
+
 
 export const orderSupplierCost = (order, mappings = []) => {
   if (order.supplier_cost !== undefined && order.supplier_cost !== null && order.supplier_cost !== '') return Number(order.supplier_cost);

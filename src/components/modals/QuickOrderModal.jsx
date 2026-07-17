@@ -35,7 +35,14 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
     setErrorMessage('');
 
     try {
-      if (balance < total) throw new Error("Insufficient balance.");
+      // Déduction atomique (verrou FOR UPDATE — anti race condition)
+      const { error: rpcErr } = await supabase.rpc('deduct_balance', {
+        p_user_id: session.user.id,
+        p_amount: total,
+      });
+      if (rpcErr) {
+        throw new Error(rpcErr.message?.includes('insufficient_balance') ? 'Solde insuffisant.' : (rpcErr.message || 'Erreur de paiement.'));
+      }
 
       if (product.is_dropship) {
         const { data: dsOrder, error: dsErr } = await supabase.from('orders').insert({
@@ -99,12 +106,6 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
             .catch(e => console.error('send-delivery-email error:', e));
         }
       }
-
-      const { error: balanceErr } = await supabase
-        .from('profiles')
-        .update({ balance: balance - total })
-        .eq('id', session.user.id);
-      if (balanceErr) throw balanceErr;
 
       setPurchaseSuccess(true);
       await fetchProfile(session.user.id);

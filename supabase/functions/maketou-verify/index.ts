@@ -12,7 +12,31 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Initialiser le client Supabase avec la clé service_role pour outrepasser la RLS et mettre à jour les soldes
+    // ── 1. VÉRIFICATION DU JWT APPELANT ──────────────────────────
+    // On crée d'abord un client "utilisateur" pour valider son identité.
+    // getUser() vérifie le JWT côté serveur Supabase (pas juste localStorage).
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authErr } = await supabaseUser.auth.getUser();
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    // ── 2. CLIENT ADMIN pour les opérations critiques (bypass RLS) ──
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -31,7 +55,7 @@ serve(async (req) => {
       throw new Error("Maketou API credentials are not configured.");
     }
 
-    // 2. Trouver l'ordre dans notre BD
+    // ── 3. TROUVER L'ORDRE ────────────────────────────────────────
     const query = supabaseAdmin.from("orders").select("*");
     if (cartId) {
       query.eq("pay_id", cartId);
@@ -45,7 +69,16 @@ serve(async (req) => {
       throw new Error("Order not found");
     }
 
-    if (order.status === "completed") {
+    // ── 4. CONTRÔLE D'OWNERSHIP ──────────────────────────────────
+    // Un utilisateur ne peut vérifier QUE ses propres commandes.
+    if (order.user_id !== user.id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
+    if (order.status === "completed" || order.status === "confirmed") {
       return new Response(JSON.stringify({ status: "already_completed", message: "Order is already completed" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -57,7 +90,7 @@ serve(async (req) => {
       throw new Error("No cartId associated with this order");
     }
 
-    // 3. Vérifier le statut sur Maketou
+    // ── 5. VÉRIFICATION CÔTÉ MAKETOU ─────────────────────────────
     const maketouResponse = await fetch(`https://api.maketou.net/api/v1/stores/cart/${cartIdToVerify}`, {
       method: "GET",
       headers: {
@@ -87,7 +120,7 @@ serve(async (req) => {
       // Mettre à jour le statut de l'ordre
       await supabaseAdmin
         .from("orders")
-        .update({ status: "completed", updated_at: new Date().toISOString() })
+        .update({ status: "confirmed", updated_at: new Date().toISOString() })
         .eq("id", order.id);
         
       // Créditer l'utilisateur
@@ -123,3 +156,4 @@ serve(async (req) => {
     });
   }
 });
+

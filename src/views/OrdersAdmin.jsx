@@ -56,12 +56,11 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
     if (order.status === 'cancelled') { fetchAllOrders(); return; }
 
     if (refund) {
-      const { data: profile, error: profileErr } = await supabase
-        .from('profiles').select('balance').eq('id', order.user_id).single();
-      if (profileErr || !profile) { await window.showAlert("Erreur", "Profil client introuvable, remboursement impossible."); return; }
-
-      const { error: creditErr } = await supabase
-        .from('profiles').update({ balance: (profile.balance || 0) + (order.total_price || 0) }).eq('id', order.user_id);
+      // Remboursement atomique via RPC (verrou FOR UPDATE — anti double-crédit)
+      const { error: creditErr } = await supabase.rpc('credit_balance', {
+        p_user_id: order.user_id,
+        p_amount: order.total_price || 0,
+      });
       if (creditErr) { await window.showAlert("Erreur", "Erreur lors du remboursement : " + creditErr.message); return; }
 
       const updatePayload = { status: 'cancelled', is_refunded: true };
@@ -257,17 +256,29 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
             <div className="space-y-4">
               <label className="block text-[10px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">Contenu livré au client</label>
               <div className="bg-white dark:bg-slate-950 border border-gray-100 dark:border-slate-800 rounded-3xl p-1 shadow-inner">
-                <div
-                  className="font-mono text-xs text-gray-600 dark:text-slate-300 p-6 leading-relaxed whitespace-pre-wrap break-all max-h-[400px] overflow-y-auto custom-scrollbar"
-                  dangerouslySetInnerHTML={{
-                    __html: (() => {
-                      const creds = selectedOrder.credentials || selectedOrder.data || "Identifiants introuvables.";
-                      return creds.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi, '<span class="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">$1</span>');
-                    })()
-                  }}
-                />
+                {/* SECURITE : rendu JSX pur, zéro dangerouslySetInnerHTML.
+                    Les emails sont surlignés par split/map — aucun HTML injecté. */}
+                <div className="font-mono text-xs text-gray-600 dark:text-slate-300 p-6 leading-relaxed break-all max-h-[400px] overflow-y-auto custom-scrollbar">
+                  {(selectedOrder.credentials || selectedOrder.data || 'Identifiants introuvables.')
+                    .split('\n')
+                    .map((line, lineIdx) => {
+                      const EMAIL_RE = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
+                      const parts = line.split(EMAIL_RE);
+                      return (
+                        <div key={lineIdx}>
+                          {parts.map((part, partIdx) =>
+                            EMAIL_RE.test(part)
+                              ? <span key={partIdx} className="bg-primary/10 text-primary font-black px-1.5 py-0.5 rounded-md">{part}</span>
+                              : <span key={partIdx}>{part}</span>
+                          )}
+                        </div>
+                      );
+                    })
+                  }
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       )}

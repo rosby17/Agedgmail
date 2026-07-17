@@ -53,36 +53,38 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t
     setIsLoading(true);
     setErrorMsg('');
     try {
-      // 1. Vérification solde en temps réel (anti race-condition)
-      const { data: freshProfile } = await supabase
-        .from('profiles').select('balance').eq('id', session.user.id).single();
-      if (!freshProfile || (freshProfile.balance || 0) < amountNum) {
-        throw new Error('Solde insuffisant au moment du transfert.');
+      // 1. Récupérer l'ID du destinataire
+      const { data: recipient, error: rErr } = await supabase
+        .from('profiles').select('id, display_name').eq('email', recipientEmail.trim().toLowerCase()).single();
+      if (rErr || !recipient) throw new Error('Destinataire introuvable.');
+
+      if (recipient.id === session.user.id) throw new Error('Impossible de vous transférer des crédits à vous-même.');
+
+      // 2. Débiter l'expéditeur de façon atomique (verrou FOR UPDATE)
+      //    → lève 'insufficient_balance' si solde insuffisant
+      const { error: debitErr } = await supabase.rpc('deduct_balance', {
+        p_user_id: session.user.id,
+        p_amount: amountNum,
+      });
+      if (debitErr) {
+        if (debitErr.message?.includes('insufficient_balance')) {
+          throw new Error('Solde insuffisant au moment du transfert.');
+        }
+        throw debitErr;
       }
 
-      // 2. Récupérer le destinataire
-      const { data: recipient } = await supabase
-        .from('profiles').select('id, balance').eq('email', recipientEmail.trim().toLowerCase()).single();
-      if (!recipient) throw new Error('Destinataire introuvable.');
-
-      // 3. Débiter l'expéditeur
-      const { error: debitErr } = await supabase
-        .from('profiles')
-        .update({ balance: Math.round((freshProfile.balance - amountNum) * 100) / 100 })
-        .eq('id', session.user.id);
-      if (debitErr) throw debitErr;
-
-      // 4. Créditer le destinataire (rollback si ça échoue)
-      const { error: creditErr } = await supabase
-        .from('profiles')
-        .update({ balance: Math.round(((recipient.balance || 0) + amountNum) * 100) / 100 })
-        .eq('id', recipient.id);
+      // 3. Créditer le destinataire de façon atomique
+      const { error: creditErr } = await supabase.rpc('credit_balance', {
+        p_user_id: recipient.id,
+        p_amount: amountNum,
+      });
       if (creditErr) {
-        // Rollback : recréditer l'expéditeur
-        await supabase.from('profiles')
-          .update({ balance: Math.round((freshProfile.balance) * 100) / 100 })
-          .eq('id', session.user.id);
-        throw creditErr;
+        // Remboursement automatique de l'expéditeur si le crédit échoue
+        await supabase.rpc('credit_balance', {
+          p_user_id: session.user.id,
+          p_amount: amountNum,
+        });
+        throw new Error('Échec du crédit du destinataire. Votre solde a été restauré.');
       }
 
       // 5. Logger le transfert dans orders (product_id=998 = code transfert)
