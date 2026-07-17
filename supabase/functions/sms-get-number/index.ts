@@ -1,16 +1,12 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { checkRateLimit, getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const corsOpts = handleCors(req);
+  if (corsOpts) return corsOpts;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -25,6 +21,19 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
+
+    // ── RATE LIMITING : 15 numéros par heure par utilisateur ────────────
+    // Protège les crédits fournisseurs SMS (SMSCodes, 5sim, PVAPins) contre
+    // les appels massifs accidentels ou malveillants.
+    const allowed = await checkRateLimit(user.id, 'sms_get_number', 15, 3600);
+    if (!allowed) {
+      return new Response(JSON.stringify({
+        error: 'Trop de requêtes. Limite : 15 numéros par heure. Réessayez plus tard.'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 429,
+      });
+    }
 
     const { iso, serviceId, price, provider } = await req.json();
     const smsPrice = price || 1.00;
