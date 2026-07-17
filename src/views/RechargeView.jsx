@@ -110,14 +110,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           });
           setBinanceSubStep(data.binance_tx_id ? 'submitted' : 'pay');
           setStep('awaiting');
-        } else if (data.payment_method === 'mobile_money') {
-          setPayment({
-            provider: 'mobile_money',
-            orderId: data.id,
-            expectedAmount: data.expected_amount,
-            creditAmount: data.credit_amount,
-          });
-          setStep('awaiting');
         }
       }
       setCheckingPending(false);

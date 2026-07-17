@@ -836,7 +836,7 @@ const FinancialDetailsModal = ({ type, onClose, orders = [], mappings = [], lang
 };
 
 const AdminView = ({
-  session, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
+  session, profile, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
   actionStatus, setActionStatus, lang, setLang, t, dataLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
