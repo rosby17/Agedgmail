@@ -158,10 +158,15 @@ const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'f
   const paddingX = 25;
   const paddingY = 25;
 
+  const denom = dataPoints.length > 1 ? dataPoints.length - 1 : 1; // évite /0 si un seul point
   const points = dataPoints.map((p, i) => {
     const val = activeMetric === 'revenue' ? p.revenue : p.users;
-    const x = paddingX + (i / (dataPoints.length - 1)) * (width - 2 * paddingX);
-    const y = height - paddingY - (val / max) * (height - 2 * paddingY);
+    const x = paddingX + (i / denom) * (width - 2 * paddingX);
+    // Borne la coordonnée dans le cadre : une valeur négative (bénéfice en perte)
+    // ne doit pas faire piquer la courbe hors du graphique. Elle se pose sur la
+    // ligne de base ; le montant réel (négatif) reste visible dans l'infobulle.
+    const rawY = height - paddingY - (val / max) * (height - 2 * paddingY);
+    const y = Math.max(paddingY, Math.min(height - paddingY, rawY));
     return { x, y, amount: val, date: p.date, label: p.label, index: i };
   });
 
