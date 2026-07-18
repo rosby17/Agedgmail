@@ -462,7 +462,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
     );
     if (!ok) return;
     setBusyId(user.id);
-    const { error } = await supabase.from('profiles').update({ is_suspended: next }).eq('id', user.id);
+    const { error } = await supabase.rpc('admin_set_suspended', { p_user_id: user.id, p_suspended: next });
     if (error) await window.showAlert("Erreur", 'Erreur : ' + error.message);
     else await fetchUsers();
     setBusyId(null);
@@ -478,7 +478,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
     );
     if (!ok) return;
     setBusyId(user.id);
-    const { error } = await supabase.from('profiles').update({ is_admin: next }).eq('id', user.id);
+    const { error } = await supabase.rpc('admin_set_admin', { p_user_id: user.id, p_is_admin: next });
     if (error) await window.showAlert("Erreur", 'Erreur : ' + error.message);
     else await fetchUsers();
     setBusyId(null);
