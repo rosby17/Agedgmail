@@ -113,6 +113,12 @@ serve(async (req) => {
 
     // -------- add_order --------
     if (action === 'add_order' || action === 'add_product_order') {
+      // Rate limit anti-abus de coûts (appelle un fournisseur payant)
+      const { data: rlOk } = await db.rpc('check_rate_limit', {
+        p_user_id: userId, p_action: 'api_add_order', p_max_per_window: 30, p_window_seconds: 60,
+      })
+      if (rlOk === false) return json({ error: 'Trop de requêtes, réessayez dans une minute' }, 429)
+
       const productId = Number(params.product)
       const quantity = Math.max(1, Number(params.quantity) || 0)
       if (!productId || quantity < 1) return json({ error: 'product et quantity requis' }, 400)
@@ -302,6 +308,15 @@ serve(async (req) => {
 
     // -------- sms_get_number --------
     if (action === 'sms_get_number') {
+      // Rate limit anti-abus de coûts : chaque réservation engage un numéro
+      // RÉEL et payant chez le fournisseur amont. Le solde est vérifié mais
+      // débité seulement à réception du code — sans plafond de débit, un
+      // revendeur pourrait réserver en masse et faire exploser la facture.
+      const { data: rlOk } = await db.rpc('check_rate_limit', {
+        p_user_id: userId, p_action: 'api_sms_get_number', p_max_per_window: 15, p_window_seconds: 60,
+      })
+      if (rlOk === false) return json({ error: 'Trop de requêtes, réessayez dans une minute' }, 429)
+
       const iso = params.iso || 'US'
       const service = params.service || 'youtube'
       const provider = params.provider || 'pvapins'
