@@ -84,9 +84,10 @@ async function main() {
   record('credit_balance direct bloqué', r.status === 403 || r.status === 404, `HTTP ${r.status} (attendu 403/404)`);
 
   // ---- 3. deduct_balance sur autrui (griefing) -------------------------------
-  await rest('rpc/deduct_balance', aTok, { method: 'POST', body: JSON.stringify({ p_user_id: vId, p_amount: 100 }) });
-  row = await (await rest(`profiles?id=eq.${vId}&select=balance`, vTok)).json();
-  record('deduct_balance cross-user bloqué', Number(row?.[0]?.balance) === 100, `solde victime=${row?.[0]?.balance} (attendu 100)`);
+  // Après correctif, la RPC paramétrée est révoquée pour `authenticated` :
+  // l'appel doit être refusé (403 permission denied), quel que soit le solde.
+  r = await rest('rpc/deduct_balance', aTok, { method: 'POST', body: JSON.stringify({ p_user_id: vId, p_amount: 1 }) });
+  record('deduct_balance cross-user bloqué', r.status === 403 || r.status === 404, `HTTP ${r.status} (attendu 403/404)`);
 
   // ---- 4. Isolation lecture profiles -----------------------------------------
   row = await (await rest(`profiles?id=eq.${vId}&select=id`, aTok)).json();
