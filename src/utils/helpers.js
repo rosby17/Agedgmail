@@ -1,7 +1,20 @@
 import { BONUS_TIERS } from './constants';
 import { CATEGORIES, GROUP_LABELS, AVATAR_COLORS, JUNK_CATEGORIES } from './constants';
 
-export const categoryName = (cat) => CATEGORIES.find(c => c.id === cat)?.name || cat || 'Others';
+// Décode les entités HTML doublement encodées présentes dans les données
+// fournisseur (ex: "AGED &amp; NEW" -> "AGED & NEW") avant affichage.
+export const decodeEntities = (s) => {
+  if (s == null) return s;
+  return String(s)
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+};
+
+export const categoryName = (cat) => decodeEntities(CATEGORIES.find(c => c.id === cat)?.name || cat || 'Others');
 
 export const hashStr = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
 
@@ -50,7 +63,8 @@ export const displayCategoryLabel = (product = {}) => {
 export const cleanProductName = (raw, lang) => {
   if (!raw) return raw;
   if (!lang) lang = typeof window !== 'undefined' ? (localStorage.getItem('agedgmail_lang') || 'fr') : 'fr';
-  let s = String(raw).trim();
+  // Décode les entités HTML et corrige les parenthèses dupliquées ("(1 Year+))" -> "(1 Year+)")
+  let s = decodeEntities(String(raw)).trim().replace(/\)\s*\)+/g, ')').replace(/\(\s*\(+/g, '(');
 
   const toRemove = [
     /【[^】]+】/g,

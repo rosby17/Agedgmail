@@ -637,6 +637,11 @@ function App() {
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .filter(p => !searchTerm.trim() || p.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
     .sort((a, b) => {
+      // Toujours remonter les produits EN STOCK avant les ruptures, quel que
+      // soit le tri choisi — évite d'accueillir le client sur un mur de « Rupture ».
+      const aOut = (a.stock || 0) > 0 ? 0 : 1;
+      const bOut = (b.stock || 0) > 0 ? 0 : 1;
+      if (aOut !== bOut) return aOut - bOut;
       if (sortBy === 'price_desc') return b.price - a.price;
       if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
       return a.price - b.price;

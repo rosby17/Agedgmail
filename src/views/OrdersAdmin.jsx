@@ -183,7 +183,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                     <div className="font-bold text-gray-900 dark:text-white">
                       ${order.total_price?.toFixed(2)}
                     </div>
-                    {order.status === 'cancelled' && order.is_refunded !== false && (
+                    {order.status === 'cancelled' && order.is_refunded === true && (
                       <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
                         <span>↩</span>
                         <span>${order.total_price?.toFixed(2)}</span>

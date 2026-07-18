@@ -304,6 +304,8 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                   badgeText = "Top 1 des ventes";
                   subtitle = "Choix N°1 des créateurs";
                 }
+                // Slogan neutre par défaut (le produit n'est pas toujours un Gmail)
+                const tagline = product.details?.note || (lang === 'fr' ? 'Qualité premium vérifiée' : 'Verified premium quality');
 
                 if (isCenter) {
                   return (
@@ -314,7 +316,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                       </div>
                       <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
                       <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
-                      <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Gmail US Premium'}".</p>
+                      <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{tagline}".</p>
                       <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
                       <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-white dark:text-gray-900 py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">{lang === 'fr' ? 'Acheter maintenant' : 'Buy Now'}</button>
                     </div>
@@ -328,7 +330,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                     </div>
                     <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
                     <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
-                    <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{product.details?.note || 'Gmail US Ready'}".</p>
+                    <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{tagline}".</p>
                     <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
                     <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white dark:text-gray-900 transition-all duration-300">{lang === 'fr' ? 'Sélectionner' : 'Select'}</button>
                   </div>
