@@ -33,19 +33,12 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t
     if (amountNum > balance) { setErrorMsg(`Solde insuffisant. Vous avez $${balance.toFixed(2)}.`); return; }
     if (amountNum < 0.01) { setErrorMsg("Montant minimum : $0.01."); return; }
 
-    setIsLoading(true);
-    const { data: recipient, error } = await supabase
-      .from('profiles')
-      .select('id, display_name, email')
-      .eq('email', recipientEmail.trim().toLowerCase())
-      .maybeSingle();
-    setIsLoading(false);
-
-    if (error || !recipient) {
-      setErrorMsg("Aucun compte trouvé avec cet email. Vérifiez l'adresse.");
-      return;
-    }
-    setRecipientName(recipient.display_name || recipient.email);
+    // La résolution du destinataire (+ débit/crédit) est faite côté serveur par
+    // la RPC transfer_credits, sous SECURITY DEFINER : la RLS "own-row-only" de
+    // profiles ne permet pas de rechercher un autre compte par email depuis le
+    // client. On passe directement à la confirmation ; l'existence réelle du
+    // destinataire est validée atomiquement au moment du transfert.
+    setRecipientName(recipientEmail.trim());
     setStep('confirm');
   };
 
@@ -53,41 +46,26 @@ const TransferCreditsModal = ({ profile, session, fetchProfile, onClose, lang, t
     setIsLoading(true);
     setErrorMsg('');
     try {
-      // 1. Récupérer l'ID du destinataire
-      const { data: recipient, error: rErr } = await supabase
-        .from('profiles').select('id, display_name').eq('email', recipientEmail.trim().toLowerCase()).single();
-      if (rErr || !recipient) throw new Error('Destinataire introuvable.');
-
-      if (recipient.id === session.user.id) throw new Error('Impossible de vous transférer des crédits à vous-même.');
-
-      // 2. Débiter l'expéditeur de façon atomique (verrou FOR UPDATE)
-      //    → lève 'insufficient_balance' si solde insuffisant
-      const { error: debitErr } = await supabase.rpc('deduct_balance', {
-        p_user_id: session.user.id,
+      // Transfert atomique côté serveur : l'expéditeur est dérivé de auth.uid(),
+      // le destinataire est résolu par email, débit + crédit dans une seule
+      // transaction (verrou FOR UPDATE). Le client ne peut cibler aucun autre
+      // solde ni créditer sans débiter.
+      const { data, error } = await supabase.rpc('transfer_credits', {
+        p_recipient_email: recipientEmail.trim().toLowerCase(),
         p_amount: amountNum,
       });
-      if (debitErr) {
-        if (debitErr.message?.includes('insufficient_balance')) {
-          throw new Error('Solde insuffisant au moment du transfert.');
-        }
-        throw debitErr;
+      if (error) {
+        const m = error.message || '';
+        if (m.includes('insufficient_balance')) throw new Error('Solde insuffisant au moment du transfert.');
+        if (m.includes('recipient_not_found')) throw new Error("Aucun compte trouvé avec cet email. Vérifiez l'adresse.");
+        if (m.includes('self_transfer')) throw new Error('Impossible de vous transférer des crédits à vous-même.');
+        if (m.includes('invalid_amount')) throw new Error('Montant invalide.');
+        throw new Error(m || 'Une erreur est survenue.');
       }
+      const res = Array.isArray(data) ? data[0] : data;
+      if (res?.recipient_name) setRecipientName(res.recipient_name);
 
-      // 3. Créditer le destinataire de façon atomique
-      const { error: creditErr } = await supabase.rpc('credit_balance', {
-        p_user_id: recipient.id,
-        p_amount: amountNum,
-      });
-      if (creditErr) {
-        // Remboursement automatique de l'expéditeur si le crédit échoue
-        await supabase.rpc('credit_balance', {
-          p_user_id: session.user.id,
-          p_amount: amountNum,
-        });
-        throw new Error('Échec du crédit du destinataire. Votre solde a été restauré.');
-      }
-
-      // 5. Logger le transfert dans orders (product_id=998 = code transfert)
+      // Journaliser le transfert dans orders (product_id=998 = code transfert)
       await supabase.from('orders').insert({
         user_id: session.user.id,
         buyer_email: session.user.email,

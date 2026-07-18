@@ -56,10 +56,11 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
     if (order.status === 'cancelled') { fetchAllOrders(); return; }
 
     if (refund) {
-      // Remboursement atomique via RPC (verrou FOR UPDATE — anti double-crédit)
-      const { error: creditErr } = await supabase.rpc('credit_balance', {
+      // Remboursement atomique via RPC admin (verrou FOR UPDATE — anti double-
+      // crédit). admin_adjust_balance vérifie la claim email admin côté serveur.
+      const { error: creditErr } = await supabase.rpc('admin_adjust_balance', {
         p_user_id: order.user_id,
-        p_amount: order.total_price || 0,
+        p_delta: order.total_price || 0,
       });
       if (creditErr) { await window.showAlert("Erreur", "Erreur lors du remboursement : " + creditErr.message); return; }
 

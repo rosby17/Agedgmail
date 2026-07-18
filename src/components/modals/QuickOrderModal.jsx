@@ -35,9 +35,10 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
     setErrorMessage('');
 
     try {
-      // Déduction atomique (verrou FOR UPDATE — anti race condition)
-      const { error: rpcErr } = await supabase.rpc('deduct_balance', {
-        p_user_id: session.user.id,
+      // Débit atomique de SON PROPRE solde (verrou FOR UPDATE — anti race).
+      // spend_own_balance dérive l'acteur de auth.uid() : impossible de cibler
+      // le solde d'un autre utilisateur depuis le client.
+      const { error: rpcErr } = await supabase.rpc('spend_own_balance', {
         p_amount: total,
       });
       if (rpcErr) {

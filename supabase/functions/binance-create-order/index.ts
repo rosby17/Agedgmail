@@ -58,6 +58,17 @@ serve(async (req) => {
       return json({ error: 'Cette méthode arrive bientôt, utilise Binance Pay pour le moment.' }, 400)
     }
 
+    // ── AUTH : le JWT doit correspondre au userId (la clé anon publique passe
+    //    le gateway verify_jwt — ne jamais faire confiance au body seul). ──
+    const authJwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '')
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    )
+    const { data: authData, error: authErr } = await authClient.auth.getUser(authJwt)
+    if (authErr || !authData?.user) return json({ error: 'Authentification requise' }, 401)
+    if (userId !== authData.user.id) return json({ error: 'Forbidden: userId mismatch' }, 403)
+
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',

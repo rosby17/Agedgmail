@@ -490,7 +490,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
     const amount = parseFloat(raw);
     if (isNaN(amount) || amount === 0) return;
     setBusyId(user.id);
-    const { error } = await supabase.rpc('credit_balance', { p_user_id: user.id, p_amount: amount });
+    const { error } = await supabase.rpc('admin_adjust_balance', { p_user_id: user.id, p_delta: amount });
     if (error) await window.showAlert("Erreur", 'Erreur : ' + error.message);
     else await fetchUsers();
     setBusyId(null);

@@ -26,6 +26,25 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+
+    // ── AUTH : le JWT doit correspondre au userId (ne jamais faire confiance
+    //    au body seul — la clé anon publique passe le gateway verify_jwt). ──
+    const authJwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '')
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    )
+    const { data: authData, error: authErr } = await authClient.auth.getUser(authJwt)
+    if (authErr || !authData?.user) {
+      return new Response(JSON.stringify({ error: 'Authentification requise' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    if (userId !== authData.user.id) {
+      return new Response(JSON.stringify({ error: 'Forbidden: userId mismatch' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
     if (!amountUsd || amountUsd <= 0) {
       return new Response(JSON.stringify({ error: 'Montant invalide' }), {
         status: 400,

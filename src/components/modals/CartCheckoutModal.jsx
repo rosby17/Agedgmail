@@ -28,12 +28,11 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
     setErrorMessage('');
 
     try {
-      // ── DÉDUCTION ATOMIQUE DU SOLDE (RPC avec verrou FOR UPDATE) ──────────
-      // La RPC deduct_balance vérifie le solde ET déduit en une seule
-      // transaction atomique → impossible de dépenser deux fois le même solde
-      // même avec deux onglets / double-clic simultané.
-      const { error: rpcErr } = await supabase.rpc('deduct_balance', {
-        p_user_id: session.user.id,
+      // ── DÉBIT ATOMIQUE DE SON PROPRE SOLDE (RPC avec verrou FOR UPDATE) ───
+      // spend_own_balance dérive l'acteur de auth.uid() côté serveur : le
+      // client ne peut PAS cibler le solde d'un autre utilisateur. Vérifie le
+      // solde ET déduit en une transaction atomique (anti double-dépense).
+      const { error: rpcErr } = await supabase.rpc('spend_own_balance', {
         p_amount: cartTotal,
       });
 
