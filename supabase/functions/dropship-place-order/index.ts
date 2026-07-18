@@ -120,6 +120,11 @@ serve(async (req) => {
       supplier_status: 'Pending',
       supplier_attempts: 0,
       supplier_last_checked_at: new Date().toISOString(),
+      // Fige le coût fournisseur RÉEL au moment de la vente. Sans ça, le
+      // dashboard ré-estime le coût des anciennes commandes avec le mapping
+      // ACTUEL → la marge « historique » bouge quand on change un tarif, et
+      // peut afficher une fausse perte. Ici on grave le coût pour de bon.
+      supplier_cost: cost,
       status: 'processing',
     }).eq('id', orderId)
 

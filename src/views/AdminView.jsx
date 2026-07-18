@@ -1119,15 +1119,15 @@ const AdminView = ({
                   onClick={() => setFinancialDetailType('cost')}
                 />
                 <FinanceCard
-                  label="Bénéfice Net"
+                  label="Bénéfice Net (estimé)"
                   value={`$${netProfit.toFixed(2)}`}
-                  subtext="Marge réelle en dollar"
+                  subtext="Coût figé si connu, sinon estimé"
                   color="profit-accent"
                   icon={TrendingUp}
                   onClick={() => setFinancialDetailType('profit')}
                 />
                 <FinanceCard
-                  label="Marge Réelle (%)"
+                  label="Marge estimée (%)"
                   value={`${realMarginPercent.toFixed(1)}%`}
                   subtext="CA / Coût Fournisseur"
                   color="violet"
