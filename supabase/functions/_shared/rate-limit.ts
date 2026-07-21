@@ -51,9 +51,11 @@ export async function checkRateLimit(
  * pas ce helper — ils gardent '*' car CORS ne s'applique pas aux appels S2S.
  */
 const ALLOWED_ORIGINS = new Set([
+  'https://agedgmail.tools-cl.com',
+  'https://www.agedgmail.tools-cl.com',
+  'https://app.agedgmail.tools-cl.com',
   'https://agedgmail.com',
   'https://www.agedgmail.com',
-  'https://app.agedgmail.tools-cl.com',
   // Ajouter ici les previews Vercel si nécessaire
 ])
 

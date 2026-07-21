@@ -26,11 +26,21 @@ interface FormattedCountry {
 // sous-facturation). Les fournisseurs ne facturent que sur code reçu, donc
 // cette marge est quasi du profit net. Modifier ces 2 constantes suffit à
 // ajuster tous les prix de la boutique.
-const MARGIN_PCT = 0.40;
-const MARGIN_FLOOR = 0.20;
+// Marge DYNAMIQUE :
+//   marge = borne( 20 % du coût, entre un plancher $0.75 et un plafond $1.00 )
+//   prix  = coût + marge, arrondi au centime supérieur.
+// → petits numéros : grosse marge relative (plancher $0.75, ex: $0.13 → $0.88)
+// → numéros moyens : au moins +20 %
+// → gros numéros  : marge plafonnée à $1 (ex: coût $7 → $8), jamais exclus.
+// Bénéfice garanti par numéro : entre $0.75 et $1.00. Ajuster ces 3 constantes
+// suffit à retoucher toute la grille.
+const MARGIN_PCT = 0.20;   // marge cible en % du coût
+const MARKUP_MIN = 0.75;   // marge absolue minimale (petits numéros)
+const MARKUP_MAX = 1.00;   // marge absolue maximale (gros numéros)
+
 const applyMargin = (cost: number): number => {
-  const priced = Math.max(cost * (1 + MARGIN_PCT), cost + MARGIN_FLOOR);
-  return Math.ceil(priced * 100) / 100;
+  const markup = Math.min(MARKUP_MAX, Math.max(cost * MARGIN_PCT, MARKUP_MIN));
+  return Math.ceil((cost + markup) * 100) / 100;
 };
 
 // ── PVAPins : pays comparés (ISO -> nom PVAPins) ───────────────────────────
@@ -131,14 +141,10 @@ serve(async (req) => {
 
     await Promise.allSettled(promises);
 
-    // 2. PVAPins — get_rates.php est PAR pays (pas d'endpoint global), mais le
-    //    tarif YouTube PVAPins est quasi plat : USA plus cher, tous les autres
-    //    pays au même prix. On lit donc seulement 2 pays de référence pour rester
-    //    à jour sans 223 appels, avec repli sur constantes si l'appel échoue.
-    //    PVAPins est ajouté comme ALTERNATIVE/FAILOVER à chaque pays déjà listé
-    //    par SMSCodes : le tri « moins cher gagne » choisit SMSCodes quand il est
-    //    moins cher (le cas usuel pour YouTube), et bascule sur PVAPins si SMSCodes
-    //    n'a pas de numéro. RawPrice = coût fournisseur ; la marge est ajoutée après.
+    // 2. PVAPins — variante YouTube la MOINS chère par pays (getPvaRates : panel
+    //    populaire interrogé en parallèle, cache 10 min). Ajouté comme alternative
+    //    comparée à SMSCodes : « moins cher gagne » par pays, avec failover si le
+    //    1er fournisseur n'a pas de numéro. RawPrice = coût ; marge ajoutée après.
     const pvaPinsKey = Deno.env.get('PVAPINS_API_KEY');
     if (pvaPinsKey) {
       const pvaRates = await getPvaRates(pvaPinsKey);
@@ -150,21 +156,22 @@ serve(async (req) => {
       }
     }
 
-    // Apply Margins, Sort, and Format Response
-    const finalPrices = Array.from(countriesMap.values()).map(c => {
-      // Trier par PRIX croissant : le fournisseur le moins cher est choisi en
-      // premier (c'est Providers[0] que le frontend sélectionne). Le failover
-      // essaiera ensuite le suivant le moins cher si le 1er n'a pas de numéro.
-      c.Providers.sort((a, b) => a.RawPrice - b.RawPrice);
+    // Tri (moins cher d'abord), marge dynamique, puis formatage.
+    const finalPrices = Array.from(countriesMap.values())
+      .map(c => {
+        // Trier par PRIX croissant : le moins cher est choisi en premier
+        // (Providers[0]). Le failover essaiera ensuite le suivant le moins cher.
+        c.Providers.sort((a, b) => a.RawPrice - b.RawPrice);
 
-      // Appliquer la marge (+40 %, plancher +$0.20) à chaque fournisseur.
-      c.Providers = c.Providers.map(p => ({
-        ...p,
-        Price: applyMargin(p.RawPrice).toFixed(2)
-      }));
+        // Appliquer la marge dynamique à chaque fournisseur.
+        c.Providers = c.Providers.map(p => ({
+          ...p,
+          Price: applyMargin(p.RawPrice).toFixed(2)
+        }));
 
-      return c;
-    });
+        return c;
+      })
+      .filter(c => c.Providers.length > 0);
 
     return new Response(JSON.stringify({ Status: "200", Prices: finalPrices }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

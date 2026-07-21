@@ -48,12 +48,18 @@ async function parseParams(req: Request): Promise<Record<string, string>> {
   return Object.fromEntries(p.entries())
 }
 
-// Marge revendeur : +40 % avec plancher +$0.20, arrondi au centime supérieur
-// (aligné sur la boutique). Modifier ces 2 constantes suffit.
-const MARGIN_PCT = 0.40
-const MARGIN_FLOOR = 0.20
-const applyMargin = (cost: number): number =>
-  Math.ceil(Math.max(cost * (1 + MARGIN_PCT), cost + MARGIN_FLOOR) * 100) / 100
+// Marge DYNAMIQUE (alignée sur la boutique) :
+//   marge = borne( 20 % du coût, entre $0.75 et $1.00 ) ; prix = coût + marge.
+// Petits numéros : grosse marge relative (plancher $0.75). Moyens : ≥ +20 %.
+// Gros numéros : marge plafonnée à $1 (ex: coût $7 → $8), jamais exclus.
+const MARGIN_PCT = 0.20   // marge cible en % du coût
+const MARKUP_MIN = 0.75   // marge absolue minimale (petits numéros)
+const MARKUP_MAX = 1.00   // marge absolue maximale (gros numéros)
+
+const applyMargin = (cost: number): number => {
+  const markup = Math.min(MARKUP_MAX, Math.max(cost * MARGIN_PCT, MARKUP_MIN))
+  return Math.ceil((cost + markup) * 100) / 100
+}
 
 // PVAPins : nom de pays par ISO (get_rates.php prend un nom de pays, pas un ISO).
 const PVA_ISO_TO_NAME: Record<string, string> = {
@@ -287,13 +293,14 @@ serve(async (req) => {
         }
       }
 
-      // Appliquer la marge revendeur (+40 %, plancher +$0.20)
-      const list = Array.from(bestPrices.values()).map((c) => ({
-        country: c.country,
-        iso: c.iso,
-        rate: applyMargin(c.price),
-        provider: c.provider,
-      }))
+      // Appliquer la marge dynamique (numéros chers vendus à coût + $1, non exclus).
+      const list = Array.from(bestPrices.values())
+        .map((c) => ({
+          country: c.country,
+          iso: c.iso,
+          rate: applyMargin(c.price),
+          provider: c.provider,
+        }))
       return json(list)
     }
 
