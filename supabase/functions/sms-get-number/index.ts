@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { checkRateLimit, getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
+import { notifyTelegram } from '../_shared/supplier-db.ts';
 
 serve(async (req) => {
   const corsOpts = handleCors(req);
@@ -206,7 +207,18 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    let errorMessage = error.message;
+    const lower = errorMessage.toLowerCase();
+    
+    if (lower.includes('nocreditsinaccount') || lower.includes('insufficient funds') || lower.includes('not enough balance') || lower.includes('balance too low')) {
+       // Alert admin in background
+       notifyTelegram(`⚠️ *Alerte Fournisseur SMS* ⚠️\n\nLe compte de l'API SMS n'a plus de crédits !\nErreur exacte : ${errorMessage}`).catch(console.error);
+       
+       // Hide error from user
+       errorMessage = 'Une erreur technique est survenue chez le fournisseur. Veuillez réessayer plus tard ou choisir un autre pays.';
+    }
+
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
