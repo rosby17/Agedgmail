@@ -31,7 +31,7 @@ serve(async (req) => {
         error: 'Trop de requêtes. Limite : 15 numéros par heure. Réessayez plus tard.'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 429,
+        status: 200,
       });
     }
 

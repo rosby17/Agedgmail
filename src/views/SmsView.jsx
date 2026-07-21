@@ -249,7 +249,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         body: { iso: isoVal, serviceId: selectedService, price: priceVal, provider: providerVal, app: appVal }
       });
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
       if (data.error) throw new Error(data.error);
       if (data.Status !== "200" && data.Status !== "Success") throw new Error(data.Error || 'Provider Error');
 
