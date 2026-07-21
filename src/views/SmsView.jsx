@@ -118,7 +118,20 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
   const handleCountryChange = (e) => {
     const iso = e.target.value;
+
+    if (status === 'WAITING_SMS' && securityId && phoneNumber) {
+      releaseNumber();
+    }
+
+    setPhoneNumber('');
+    setSecurityId('');
+    setSmsCode('');
+    setTimeLeft(900);
+    setEndTime(0);
+    setError('');
+
     if (!iso) {
+      setStatus('IDLE');
       setSelectedCountry('');
       setCurrentPrice(1.00);
       setCurrentRawPrice(0.50);
@@ -454,7 +467,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                   <select 
                     value={selectedCountry}
                     onChange={handleCountryChange}
-                    disabled={status !== 'IDLE' && status !== 'LOADING_PRICES'}
+                    disabled={status === 'LOADING_PRICES' || loading}
                     className="w-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 font-medium disabled:opacity-50"
                   >
                     <option value="">{isFr ? '-- Choisir un pays --' : '-- Choose a country --'}</option>
