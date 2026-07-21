@@ -268,6 +268,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
       setPhoneNumber(data.Number);
       setSecurityId(data.SecurityId);
+      // Prix réellement débité = celui calculé et signé par le serveur.
+      if (data.Price) setCurrentPrice(Number(data.Price));
       setStatus('WAITING_SMS');
       setTimeLeft(900);
       setEndTime(Date.now() + 900000);

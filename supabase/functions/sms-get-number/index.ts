@@ -3,6 +3,7 @@ import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { checkRateLimit, getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 import { notifyTelegram } from '../_shared/supplier-db.ts';
+import { applyMargin, getPvaCheapestYt, signSecurityId } from '../_shared/sms-pricing.ts';
 
 serve(async (req) => {
   const corsOpts = handleCors(req);
@@ -53,7 +54,7 @@ serve(async (req) => {
     const targetIso = iso || 'US';
     const targetServ = serviceId || '1'; // Placeholder
 
-    let providerData = { Status: "Error", Error: "Provider not implemented", SecurityId: "", Number: "" };
+    let providerData = { Status: "Error", Error: "Provider not implemented", SecurityId: "", Number: "", Price: 0 };
 
     const getSmsCodesNumber = async () => {
       const apiKey = Deno.env.get('SMSCODES_API_KEY');
@@ -67,10 +68,16 @@ serve(async (req) => {
         throw new Error(`SMS Provider Error: ${data.Error || 'Unknown error'}`);
       }
 
+      // Prix calculé SERVEUR à partir du coût réel renvoyé par SMSCodes (Rate),
+      // puis signé dans le securityId. Le client ne fixe jamais le montant.
+      const cost = parseFloat(data.Rate) || 0.50;
+      const sellingPrice = applyMargin(cost);
+      const base = `smscodes:${data.SecurityId}`;
       return {
         Status: "200",
         Number: data.Number,
-        SecurityId: `smscodes:${data.SecurityId}` // Prefix with provider
+        SecurityId: await signSecurityId(base, sellingPrice),
+        Price: sellingPrice,
       };
     };
 
@@ -113,20 +120,23 @@ serve(async (req) => {
           countryName = pvaCountryMap[targetIso] || targetIso;
         }
         
-        // Variante YouTube la moins chère pour ce pays (ex: "Youtube1",
-        // "Youtube22"), déterminée par sms-get-prices et transmise ici. Repli
-        // sur "YouTube" si absente (ancien comportement).
-        const appName = app || "YouTube";
+        // Variante YouTube la moins chère + coût réel : RECALCULÉS serveur
+        // (on ne fait PAS confiance au `app`/`price` du client). Le prix de
+        // vente est ensuite signé dans le securityId.
+        const best = await getPvaCheapestYt(targetIso, countryName);
+        const appName = best?.app || app || "YouTube";
+        const cost = best?.cost ?? 1.60;
+        const sellingPrice = applyMargin(cost);
 
         const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${encodeURIComponent(appName)}&country=${encodeURIComponent(countryName)}`;
         const res = await fetch(url);
         const text = await res.text();
-        
+
         const lowerText = text.toLowerCase();
         if (lowerText.includes('not found') || lowerText.includes('error') || lowerText.includes('progress') || lowerText.includes('no free channels')) {
           throw new Error(`${text.trim()}`);
         }
-        
+
         let parsedNum = text.trim();
         try {
           const jsonObj = JSON.parse(text);
@@ -137,13 +147,15 @@ serve(async (req) => {
              parsedNum = parsedNum.split(':').pop()!.trim();
           }
         }
-        
+
+        // base = pvapins:num:pays:variante  (la variante sert à sms-check-code) ;
+        // le prix de vente signé y est ajouté par signSecurityId.
+        const base = `pvapins:${parsedNum}:${countryName}:${appName}`;
         providerData = {
           Status: "200",
           Number: parsedNum,
-          // On encode la variante d'app en 4e segment pour que sms-check-code
-          // interroge get_sms.php avec la bonne app.
-          SecurityId: `pvapins:${parsedNum}:${countryName}:${appName}`
+          SecurityId: await signSecurityId(base, sellingPrice),
+          Price: sellingPrice,
         };
       } catch (pvpError) {
         throw new Error(`PVAPins failed: ${pvpError.message}`);

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { verifySignedSecurityId } from '../_shared/sms-pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,26 +30,22 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
-    const { securityId, number, price, supplier_cost, description, provider } = await req.json();
+    const { securityId, number, supplier_cost, description } = await req.json();
     if (!securityId || !number) throw new Error('Missing parameters');
-    
-    const smsPrice = price || 1.00;
-    const supplierCost = supplier_cost || 0.50;
-    const currentProvider = provider || 'smscodes';
 
-    // Parse securityId
-    // It should look like "smscodes:12345" or "pvapins:12345:usa"
-    let providerName = currentProvider;
-    let externalSecurityId = securityId;
-
-    if (securityId.includes(':')) {
-      const parts = securityId.split(':');
-      providerName = parts[0];
-      externalSecurityId = parts[1];
-    } else {
-      // Legacy support for ongoing smscodes orders before this update
-      providerName = 'smscodes';
+    // SÉCURITÉ : le montant débité vient du securityId SIGNÉ (HMAC serveur),
+    // jamais du client. On vérifie la signature et on extrait le prix + le base.
+    const verified = await verifySignedSecurityId(securityId);
+    if (!verified) {
+      throw new Error('Session invalide ou expirée. Reprenez la demande de numéro.');
     }
+    const { base, price: smsPrice } = verified;
+    const supplierCost = supplier_cost || 0.50; // purement informatif (log commande)
+
+    // Parse le base signé : "smscodes:SID" ou "pvapins:num:pays:variante".
+    const baseParts = base.split(':');
+    const providerName = baseParts[0];
+    const externalSecurityId = baseParts[1] || '';
 
     let status = "waiting";
     let smsCode = null;
@@ -74,11 +71,9 @@ serve(async (req) => {
       const apiKey = Deno.env.get('PVAPINS_API_KEY');
       if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');
       
-      const parts = securityId.split(':');
-      const pvaCountry = parts[2] || 'usa';
-      // Variante d'app encodée à l'achat (4e segment), ex: "Youtube1". Repli
-      // sur "YouTube" pour les anciennes commandes sans ce segment.
-      const appName = parts[3] || "YouTube";
+      const pvaCountry = baseParts[2] || 'usa';
+      // Variante d'app encodée à l'achat (4e segment du base), ex: "Youtube1".
+      const appName = baseParts[3] || "YouTube";
 
       const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${encodeURIComponent(pvaCountry)}&app=${encodeURIComponent(appName)}`;
       const res = await fetch(url);
@@ -113,17 +108,28 @@ serve(async (req) => {
     if (status === "success" && smsCode) {
       // Use service role to update balance
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-      
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
-        .select('balance')
-        .eq('id', user.id)
-        .single();
+
+      // Idempotence : si ce numéro a déjà été facturé (commande confirmée pour
+      // cet utilisateur), on renvoie le code SANS re-débiter. Évite le double
+      // débit quand deux polls se chevauchent (le code reste dispo côté fournisseur).
+      const { data: existing } = await supabaseAdmin
+        .from('orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'confirmed')
+        .filter('delivery_data->>number', 'eq', String(number))
+        .limit(1)
+        .maybeSingle();
+      if (existing) {
+        return new Response(JSON.stringify({ status: 'success', sms: smsCode, number: number }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       // Update balance
-      const { error: deductErr } = await supabaseAdmin.rpc('deduct_balance', { 
-        p_user_id: user.id, 
-        p_amount: smsPrice 
+      const { error: deductErr } = await supabaseAdmin.rpc('deduct_balance', {
+        p_user_id: user.id,
+        p_amount: smsPrice
       });
 
       if (deductErr) {
