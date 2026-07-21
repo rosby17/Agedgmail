@@ -343,6 +343,14 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     navigator.clipboard.writeText(text);
   };
 
+  const extractCode = (text) => {
+    if (!text) return '';
+    const match = text.match(/\b\d{4,8}\b/);
+    return match ? match[0] : text;
+  };
+
+  const extractedCode = extractCode(smsCode);
+
   if (status === 'LOADING_PRICES') {
     return (
       <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-300">
@@ -405,13 +413,20 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
       
       {/* Service Selection */}
-      <div className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent border border-red-500/20 rounded-[2.5rem] p-8 mb-8 relative overflow-hidden flex flex-col md:flex-row items-center gap-6 shadow-sm">
-        <div className="w-16 h-16 bg-red-600 text-white rounded-3xl flex items-center justify-center shrink-0 shadow-lg shadow-red-600/20 z-10">
-          <YouTubeLogo className="w-8 h-8 fill-current text-white" />
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-500/10 blur-3xl rounded-full"></div>
+        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full"></div>
+        
+        <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-xl shadow-red-600/20 z-10">
+          <YouTubeLogo className="w-10 h-10 fill-current text-white" />
         </div>
-        <div className="flex-1 text-center md:text-left space-y-1.5 z-10">
-          <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-sm">{isFr ? 'Service Actif : YouTube Verification' : 'Active Service: YouTube Verification'}</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl">
+        <div className="flex-1 text-center md:text-left space-y-2 z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-1">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            {isFr ? 'Service Actif' : 'Active Service'}
+          </div>
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">YouTube Verification</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl">
             {isFr ? "Vérifiez le numéro de votre chaîne YouTube pour débloquer immédiatement les fonctionnalités intermédiaires (vidéos de plus de 15 minutes, miniatures personnalisées, diffusion en direct)." : "Verify your YouTube channel number to immediately unlock intermediate features (videos over 15 minutes, custom thumbnails, live streaming)."}
           </p>
         </div>
@@ -540,9 +555,15 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                   </p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 border border-green-500/20 px-10 py-6 rounded-2xl shadow-inner relative group select-all">
-                  <span className="text-4xl md:text-5xl font-mono font-black tracking-widest text-gray-900 dark:text-white select-all">{smsCode}</span>
+                  <span className="text-4xl md:text-5xl font-mono font-black tracking-widest text-gray-900 dark:text-white select-all">{extractedCode}</span>
                 </div>
-                <button onClick={() => copyToClipboard(smsCode)} className="bg-green-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-green-700 transition-all flex items-center gap-2 active:scale-95 shadow-md">
+                {smsCode !== extractedCode && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 max-w-md break-words border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+                    <span className="font-bold">{isFr ? 'Message complet : ' : 'Full message: '}</span>
+                    {smsCode}
+                  </div>
+                )}
+                <button onClick={() => copyToClipboard(extractedCode)} className="bg-green-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-green-700 transition-all flex items-center gap-2 active:scale-95 shadow-md">
                   <Copy size={16} /> {isFr ? 'Copier le code' : 'Copy Code'}
                 </button>
               </div>
