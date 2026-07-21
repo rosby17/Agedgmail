@@ -283,7 +283,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         lowerErr.includes('not found') || 
         lowerErr.includes('not_found') || 
         lowerErr.includes('out of stock') || 
-        lowerErr.includes('no number')
+        lowerErr.includes('no number') ||
+        lowerErr.includes('erreur technique est survenue') ||
+        lowerErr.includes('technical error occurred') ||
+        lowerErr.includes('provider error')
       ) {
         // Add to failedProviders and try next available
         const currentFailed = [...(failedProviders[isoVal] || []), providerVal];

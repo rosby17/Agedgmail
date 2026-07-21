@@ -55,7 +55,11 @@ const PVA_POPULAR: Record<string, string> = {
   KE: 'Kenya', NG: 'Nigeria', ZA: 'South Africa', GH: 'Ghana', EG: 'Egypt',
   IN: 'India', ID: 'Indonesia', PH: 'Philippines', PK: 'Pakistan', BD: 'Bangladesh',
   VN: 'Vietnam', TH: 'Thailand', MY: 'Malaysia', BR: 'Brazil', MX: 'Mexico',
-  AR: 'Argentina', CO: 'Colombia', RU: 'Russia', UA: 'Ukraine',
+  AR: 'Argentina', CO: 'Colombia', RU: 'Russia', UA: 'Ukraine', UY: 'Uruguay',
+  CL: 'Chile', PE: 'Peru', EC: 'Ecuador', BO: 'Bolivia', PY: 'Paraguay',
+  MA: 'Morocco', DZ: 'Algeria', TN: 'Tunisia', SN: 'Senegal', CI: 'Ivory Coast',
+  CM: 'Cameroon', MG: 'Madagascar', CD: 'Congo', AO: 'Angola', MZ: 'Mozambique',
+  AE: 'United Arab Emirates', SA: 'Saudi Arabia', TR: 'Turkey', KZ: 'Kazakhstan'
 };
 
 interface PvaRate { iso: string; name: string; rate: number; app: string; }
