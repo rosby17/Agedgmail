@@ -22,18 +22,17 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
-    // ── RATE LIMITING : 15 numéros par heure par utilisateur ────────────
-    // Protège les crédits fournisseurs SMS (SMSCodes, 5sim, PVAPins) contre
-    // les appels massifs accidentels ou malveillants.
-    const allowed = await checkRateLimit(user.id, 'sms_get_number', 15, 3600);
-    if (!allowed) {
-      return new Response(JSON.stringify({
-        error: 'Trop de requêtes. Limite : 15 numéros par heure. Réessayez plus tard.'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      });
-    }
+    // ── RATE LIMITING : Désactivé à la demande du client ────────────
+    // (Anciennement 15 numéros par heure par utilisateur)
+    // const allowed = await checkRateLimit(user.id, 'sms_get_number', 15, 3600);
+    // if (!allowed) {
+    //   return new Response(JSON.stringify({
+    //     error: 'Trop de requêtes. Limite : 15 numéros par heure. Réessayez plus tard.'
+    //   }), {
+    //     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    //     status: 200,
+    //   });
+    // }
 
     const { iso, serviceId, price, provider, app } = await req.json();
     const smsPrice = price || 1.00;
