@@ -44,31 +44,35 @@ serve(async (req) => {
     // Déterminer le fournisseur depuis le préfixe du securityId
     // (ex: "pvapins:441234:UK"), avec repli sur le champ `provider`.
     let providerName = provider || 'smscodes';
-    let country = '';
     if (typeof securityId === 'string' && securityId.includes(':')) {
-      const parts = securityId.split(':');
-      providerName = parts[0];
-      country = parts[2] || '';
+      providerName = securityId.split(':')[0];
     }
 
     let released = false;
+    let detail = '';
 
     if (providerName === 'pvapins') {
       const apiKey = Deno.env.get('PVAPINS_API_KEY');
       if (apiKey && number) {
-        // Même schéma d'appel que get_number.php / get_sms.php (clé `customer`).
-        const url = `https://api.pvapins.com/user/api/get_reject_number.php?customer=${apiKey}&number=${encodeURIComponent(number)}&country=${encodeURIComponent(country || 'USA')}&app=YouTube`;
+        // get_reject_number.php : ne se base que sur le NUMÉRO (country/app sont
+        // ignorés). Réponse en texte brut ("Number Rejected." = succès).
+        // Contrainte PVAPins : annulable uniquement APRÈS 2 min et AVANT l'arrivée
+        // d'un code — sinon "Not able to reject." (sans gravité : auto-libération
+        // à 20 min, et jamais facturé sans code reçu).
+        const url = `https://api.pvapins.com/user/api/get_reject_number.php?customer=${apiKey}&number=${encodeURIComponent(number)}`;
         try {
-          await fetch(url);
-          released = true; // best-effort : à défaut, PVAPins libère seul après 20 min
+          const res = await fetch(url);
+          detail = (await res.text()).trim();
+          released = detail.toLowerCase().includes('rejected');
         } catch (_e) {
           // Non bloquant : l'auto-libération prendra le relais.
+          detail = 'request_failed';
         }
       }
     }
     // smscodes : rien à faire (pas d'endpoint, auto-libération, jamais facturé).
 
-    return new Response(JSON.stringify({ status: 'ok', released, provider: providerName }), {
+    return new Response(JSON.stringify({ status: 'ok', released, provider: providerName, detail }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
