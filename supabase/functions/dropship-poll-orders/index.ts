@@ -29,9 +29,40 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   const admin = getAdmin()
-  const summary = { checked: 0, completed: 0, partial: 0, canceled: 0, timed_out: 0, waiting: 0, errors: 0 }
+  const summary = { checked: 0, completed: 0, partial: 0, canceled: 0, timed_out: 0, waiting: 0, recovered: 0, errors: 0 }
 
   try {
+    // ── Rattrapage des commandes dropship "orphelines" ─────────────────────
+    // status=processing mais supplier NULL : l'appel dropship-place-order du
+    // checkout a échoué (fire-and-forget). Le filtre principal .in('supplier',…)
+    // les exclurait → bloquées à vie. On relance la passation, en ne ciblant QUE
+    // les commandes dont le produit a un mapping fournisseur — donc jamais un
+    // SMS revendeur (product_id non mappé) qu'on rembourserait à tort.
+    try {
+      const { data: mapped } = await admin.from('product_supplier_mapping').select('product_id')
+      const mappedIds = [...new Set((mapped ?? []).map((m) => m.product_id).filter((x) => x != null))]
+      if (mappedIds.length > 0) {
+        const { data: orphans } = await admin
+          .from('orders')
+          .select('id')
+          .eq('status', 'processing')
+          .is('supplier', null)
+          .in('product_id', mappedIds)
+          .order('created_at', { ascending: true })
+          .limit(BATCH)
+        for (const o of orphans ?? []) {
+          try {
+            await admin.functions.invoke('dropship-place-order', { body: { orderId: String(o.id) } })
+            summary.recovered++
+          } catch (e) {
+            console.error(`[poll] recovery place-order failed for ${o.id}:`, (e as Error).message)
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[poll] orphan recovery error:', (e as Error).message)
+    }
+
     const { data: orders, error } = await admin
       .from('orders')
       .select('id, user_id, buyer_email, product_name, quantity, total_price, created_at, supplier, supplier_order_id, supplier_attempts')
