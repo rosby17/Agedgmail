@@ -75,3 +75,14 @@ entrypoint = "./functions/sms-get-prices/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/sms-get-prices/*.html" ]
+
+[functions.sms-cancel]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sms-cancel/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/sms-cancel/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/sms-cancel/*.html" ]

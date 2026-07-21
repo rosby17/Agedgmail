@@ -158,6 +158,12 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       timer = setInterval(() => {
         const remaining = Math.floor((endTime - Date.now()) / 1000);
         if (remaining <= 0) {
+          // Libère le numéro côté fournisseur avant de réinitialiser (best-effort).
+          if (securityId && phoneNumber) {
+            supabase.functions.invoke('sms-cancel', {
+              body: { securityId, number: phoneNumber, provider: currentProvider }
+            }).catch(e => console.warn('sms-cancel (timeout):', e));
+          }
           setStatus('IDLE');
           setError(isFr ? "Délai d'attente expiré. Aucun code reçu. Vous n'avez pas été débité." : "Timeout expired. No code received. You were not charged.");
           setPhoneNumber('');
@@ -305,11 +311,21 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     }
   };
 
+  // Libère le numéro côté fournisseur (best-effort, non bloquant). PVAPins a un
+  // vrai endpoint de rejet ; SMSCodes se libère seul (jamais facturé sans code).
+  const releaseNumber = () => {
+    if (!securityId || !phoneNumber) return;
+    supabase.functions.invoke('sms-cancel', {
+      body: { securityId, number: phoneNumber, provider: currentProvider }
+    }).catch(e => console.warn('sms-cancel:', e));
+  };
+
   const cancelRequest = () => {
+    releaseNumber();
     if (selectedCountry && currentProvider) {
       setFailedProviders(prev => ({ ...prev, [selectedCountry]: [...(prev[selectedCountry] || []), currentProvider] }));
     }
-    
+
     setStatus('IDLE');
     setSelectedCountry('');
     setPhoneNumber('');
@@ -393,7 +409,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         </div>
         <div className="flex-1 text-center md:text-left space-y-1.5 z-10">
           <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-sm">{isFr ? 'Service Actif : YouTube Verification' : 'Active Service: YouTube Verification'}</h4>
-          <p className="text-xs text-gray-550 dark:text-gray-400 leading-relaxed max-w-2xl">
+          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl">
             {isFr ? "Vérifiez le numéro de votre chaîne YouTube pour débloquer immédiatement les fonctionnalités intermédiaires (vidéos de plus de 15 minutes, miniatures personnalisées, diffusion en direct)." : "Verify your YouTube channel number to immediately unlock intermediate features (videos over 15 minutes, custom thumbnails, live streaming)."}
           </p>
         </div>

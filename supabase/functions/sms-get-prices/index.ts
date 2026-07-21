@@ -42,46 +42,7 @@ serve(async (req) => {
     // Parallel fetch
     const promises = [];
 
-    // 1. Fetch from 5sim.net
-    const fivesimKey = Deno.env.get('FIVESIM_API_KEY');
-    if (fivesimKey) {
-      promises.push((async () => {
-        try {
-          const fivesimCountryToIso: Record<string, string> = {
-            'usa': 'US', 'england': 'GB', 'france': 'FR', 'germany': 'DE', 'russia': 'RU',
-            'canada': 'CA', 'spain': 'ES', 'italy': 'IT', 'ukraine': 'UA', 'poland': 'PL',
-            'india': 'IN', 'indonesia': 'ID', 'brazil': 'BR', 'mexico': 'MX', 'vietnam': 'VN',
-            'romania': 'RO', 'egypt': 'EG', 'kenya': 'KE', 'southafrica': 'ZA', 'nigeria': 'NG'
-          };
-          const res = await fetch('https://5sim.net/v1/guest/prices');
-          const data = await res.json();
-          if (data) {
-            for (const [countryName, products] of Object.entries(data as any)) {
-              if (products && (products as any).google) {
-                const operators = (products as any).google;
-                let lowest = Infinity;
-                for (const [opName, opData] of Object.entries(operators as any)) {
-                  if (opData.cost && opData.cost < lowest && opData.count > 0) {
-                    lowest = opData.cost;
-                  }
-                }
-                if (lowest < Infinity) {
-                  const costUsd = lowest * 0.011; // Approx RUB to USD
-                  let targetIso = fivesimCountryToIso[countryName.toLowerCase()];
-                  if (!targetIso) { targetIso = `XX_${countryName.substring(0,3).toUpperCase()}`; }
-                  const countryObj = getCountry(targetIso, countryName.charAt(0).toUpperCase() + countryName.slice(1));
-                  countryObj.Providers.push({ Name: '5sim', RawPrice: costUsd });
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Error fetching 5sim prices", e);
-        }
-      })());
-    }
-
-    // 2. Fetch from smscodes.io
+    // 1. SMSCodes — endpoint de prix global par pays (source principale).
     const smsCodesKey = Deno.env.get('SMSCODES_API_KEY');
     if (smsCodesKey) {
       promises.push((async () => {
@@ -103,32 +64,36 @@ serve(async (req) => {
       })());
     }
 
-    // 3. Fetch from pvapins.com
+    await Promise.allSettled(promises);
+
+    // 2. PVAPins — pas d'endpoint de prix global. On l'expose comme fournisseur
+    //    alternatif uniquement pour les pays dont on connaît le COÛT RÉEL
+    //    (grille statique ci-dessous, à étendre au fur et à mesure). Le failover
+    //    du frontend passe automatiquement à l'autre fournisseur si PVAPins n'a
+    //    pas de numéro. RawPrice = coût fournisseur ; la marge est ajoutée après.
+    //    ⚠️ N'ajouter un pays ici QUE si son coût PVAPins réel est connu, sinon
+    //    on risque de vendre à perte.
     const pvaPinsKey = Deno.env.get('PVAPINS_API_KEY');
     if (pvaPinsKey) {
-      promises.push((async () => {
-        try {
-          // PVAPins prices are not easily aggregatable by single endpoint, they require specific country query.
-          // Since it's heavy to fetch all, we might skip global PVA prices or use a static map.
-          // For now, if we have a static list or if PVA gives all countries...
-          // PVAPins provides /load_countries.php but it doesn't give prices. We skip PVA global prices for now, 
-          // or we can add it later if needed. SMSCodes and 5SIM provide global endpoints.
-        } catch (e) {}
-      })());
+      const PVA_STATIC_COST: Record<string, number> = {
+        US: 0.25,
+        GB: 0.35,
+      };
+      const PVA_ISO_TO_NAME: Record<string, string> = {
+        US: 'United States', GB: 'United Kingdom',
+      };
+      for (const [iso, cost] of Object.entries(PVA_STATIC_COST)) {
+        const countryObj = getCountry(iso, PVA_ISO_TO_NAME[iso] || iso);
+        countryObj.Providers.push({ Name: 'pvapins', RawPrice: cost });
+      }
     }
-
-    await Promise.allSettled(promises);
 
     // Apply Margins, Sort, and Format Response
     const finalPrices = Array.from(countriesMap.values()).map(c => {
-      // Sort providers by priority: 5sim first, then smscodes, then others
-      c.Providers.sort((a, b) => {
-        if (a.Name === '5sim') return -1;
-        if (b.Name === '5sim') return 1;
-        if (a.Name === 'smscodes') return -1;
-        if (b.Name === 'smscodes') return 1;
-        return a.RawPrice - b.RawPrice;
-      });
+      // Trier par PRIX croissant : le fournisseur le moins cher est choisi en
+      // premier (c'est Providers[0] que le frontend sélectionne). Le failover
+      // essaiera ensuite le suivant le moins cher si le 1er n'a pas de numéro.
+      c.Providers.sort((a, b) => a.RawPrice - b.RawPrice);
 
       // Apply margin to each provider
       c.Providers = c.Providers.map(p => {
