@@ -11,6 +11,18 @@ import { notifyTelegram } from '../_shared/supplier-db.ts'
 
 const ADMIN_EMAIL = 'rooseveltmkr@gmail.com'
 
+// Bonus de recharge par palier — DOIT rester identique à nowpayments-create /
+// cryptomus-create. Le crédit est recalculé ici côté serveur pour ne jamais
+// faire confiance au `credit_amount` inséré par le client (falsifiable).
+const BONUS_TIERS = [
+  { min: 10000, pct: 4 },
+  { min: 1000, pct: 3 },
+  { min: 500, pct: 2 },
+  { min: 100, pct: 1 },
+]
+const bonusPercentFor = (amountUsd: number): number =>
+  BONUS_TIERS.find((t) => amountUsd >= t.min)?.pct ?? 0
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -33,7 +45,7 @@ serve(async (req) => {
       return json({ error: 'Réservé à l’administrateur' }, 403)
     }
 
-    const { orderId, txRef } = await req.json()
+    const { orderId, txRef, verifiedAmount } = await req.json()
     if (!orderId) return json({ error: 'orderId requis' }, 400)
 
     const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
@@ -45,7 +57,18 @@ serve(async (req) => {
       return json({ error: `Commande déjà en statut "${order.status}"` }, 409)
     }
 
-    const credit = order.credit_amount ?? order.total_price
+    // SÉCURITÉ (anti-fraude recharge manuelle) : le montant crédité est calculé
+    // ICI, côté serveur, à partir du montant réellement vérifié par l'admin
+    // (verifiedAmount) — JAMAIS à partir de order.credit_amount / order.total_price
+    // qui sont insérés par le client au moment du dépôt et donc falsifiables.
+    // Le bonus par palier est ré-appliqué serveur pour rester cohérent.
+    const base = Number(verifiedAmount) > 0
+      ? Number(verifiedAmount)
+      : Number(order.expected_amount ?? 0)
+    if (!base || base <= 0) {
+      return json({ error: 'Montant vérifié requis (montant réellement reçu).' }, 400)
+    }
+    const credit = Math.round(base * (1 + bonusPercentFor(base) / 100) * 100) / 100
 
     await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: credit })
     await admin.from('orders').update({

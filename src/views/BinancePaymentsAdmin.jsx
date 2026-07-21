@@ -46,9 +46,20 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
   }, [allOrders]);
 
   const handleConfirm = async (order) => {
+    // Le crédit est recalculé côté serveur à partir du montant RÉELLEMENT reçu,
+    // saisi ici par l'admin. On ne fait pas confiance au credit_amount de la
+    // commande (inséré par le client, donc falsifiable).
+    const raw = await window.showPrompt(
+      `Montant RÉELLEMENT reçu de ${order.buyer_email} ($)`,
+      'Le crédit final (bonus de palier inclus) sera calculé sur ce montant.',
+      String(Number(order.expected_amount ?? order.total_price ?? 0))
+    );
+    if (raw == null) return;
+    const verifiedAmount = parseFloat(raw);
+    if (isNaN(verifiedAmount) || verifiedAmount <= 0) { setMsg('Montant invalide.'); return; }
     setBusyId(order.id);
     setMsg('');
-    const { data, error } = await supabase.functions.invoke('binance-confirm-manual', { body: { orderId: order.id } });
+    const { data, error } = await supabase.functions.invoke('binance-confirm-manual', { body: { orderId: order.id, verifiedAmount } });
     if (error || data?.error) {
       setMsg('Erreur : ' + (data?.error || error?.message));
     } else {
