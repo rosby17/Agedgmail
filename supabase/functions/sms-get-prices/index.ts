@@ -78,7 +78,9 @@ async function getPvaRates(apiKey: string): Promise<PvaRate[]> {
       if (!Array.isArray(arr)) return null;
       let best: PvaRate | null = null;
       for (const x of arr) {
-        if (!x || !String(x.app).toLowerCase().includes('youtube')) continue;
+        if (!x || !x.app) continue;
+        const appName = String(x.app).toLowerCase();
+        if (!appName.includes('youtube') && !appName.includes('google')) continue;
         const rate = parseFloat(x.rate);
         if (!Number.isFinite(rate) || rate <= 0) continue;
         if (!best || rate < best.rate) best = { iso, name, rate, app: String(x.app) };
