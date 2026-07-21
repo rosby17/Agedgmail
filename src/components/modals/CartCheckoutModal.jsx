@@ -60,9 +60,9 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
           if (dsErr) throw dsErr;
           if (!dsOrder) throw new Error("The order could not be created.");
 
-          supabase.functions.invoke('dropship-place-order', { body: { orderId: dsOrder.id } })
-            .catch(e => console.error('dropship-place-order invoke:', e));
-
+          // Fulfillment MANUEL : on n'achète plus automatiquement chez le
+          // fournisseur. La commande reste en 'processing' jusqu'à ce que l'admin
+          // colle les identifiants achetés à la main (dashboard → « Livrer »).
           continue;
         }
 

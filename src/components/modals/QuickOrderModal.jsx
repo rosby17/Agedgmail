@@ -60,8 +60,8 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
         if (dsErr) throw dsErr;
         if (!dsOrder) throw new Error("The order could not be created.");
 
-        supabase.functions.invoke('dropship-place-order', { body: { orderId: dsOrder.id } })
-          .catch(e => console.error('dropship-place-order invoke:', e));
+        // Fulfillment MANUEL : plus d'achat automatique. La commande reste en
+        // 'processing' jusqu'à la livraison manuelle par l'admin.
 
       } else {
         const { data: stockRows, error: stockErr } = await supabase

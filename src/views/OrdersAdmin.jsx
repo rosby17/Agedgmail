@@ -32,6 +32,35 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
 
   const [productFilter, setProductFilter] = useState('all');
 
+  // Livraison manuelle
+  const [deliverOrder, setDeliverOrder] = useState(null);
+  const [deliverText, setDeliverText] = useState('');
+  const [delivering, setDelivering] = useState(false);
+
+  const submitManualDelivery = async () => {
+    if (!deliverOrder) return;
+    const creds = deliverText.trim();
+    if (!creds) { await window.showAlert('Erreur', 'Colle au moins un identifiant à livrer.'); return; }
+    setDelivering(true);
+    const { data, error } = await supabase.functions.invoke('admin-deliver-order', {
+      body: { orderId: deliverOrder.id, credentials: creds },
+    });
+    setDelivering(false);
+    if (error || data?.error) {
+      await window.showAlert('Erreur', 'Livraison échouée : ' + (data?.error || error?.message));
+      return;
+    }
+    setDeliverOrder(null);
+    setDeliverText('');
+    fetchAllOrders();
+  };
+
+  // Commande de compte livrable manuellement (pas une recharge, pas un SMS, pas déjà finalisée)
+  const canDeliver = (o) =>
+    o.product_id !== 999 &&
+    !o.product_name?.toLowerCase().includes('sms') &&
+    (o.status === 'pending' || o.status === 'processing');
+
   const filtered = allOrders.filter(o => {
     // Exclude deposits from the general Orders view
     if (o.product_id === 999) return false;
@@ -105,7 +134,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Commandes</h2>
-          <p className="text-xs text-gray-400 dark:text-slate-400 font-medium mt-1">Suivi uniquement — le paiement et la livraison se font automatiquement.</p>
+          <p className="text-xs text-gray-400 dark:text-slate-400 font-medium mt-1">Livraison manuelle — colle les identifiants achetés dans la commande du client via « Livrer ».</p>
         </div>
         <button onClick={fetchAllOrders} className="p-2 rounded-xl border border-gray-100 dark:border-slate-800 text-gray-400 dark:text-slate-500 hover:text-primary transition-all">
           <RefreshCcw size={16} />
@@ -196,6 +225,12 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                   </td>
                   <td className="py-5">
                     <div className="flex gap-2">
+                      {canDeliver(order) && (
+                        <button onClick={() => { setDeliverOrder(order); setDeliverText(''); }}
+                          className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all" title="Livrer manuellement (coller les identifiants)" aria-label="Livrer manuellement">
+                          <Package size={14} /> Livrer
+                        </button>
+                      )}
                       {!isRecharge(order) && order.status === 'confirmed' && (
                         <button onClick={() => setSelectedOrder(order)}
                           className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-all" title="Voir les accès livrés" aria-label="Voir les accès livrés">
@@ -280,6 +315,42 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal de livraison manuelle */}
+      {deliverOrder && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 text-gray-900 dark:text-white">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !delivering && setDeliverOrder(null)} />
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-2xl space-y-6 animate-in fade-in zoom-in duration-200">
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold flex items-center gap-2"><Package size={20} className="text-emerald-600" /> Livrer manuellement</h3>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {cleanProductName(deliverOrder.product_name, lang)} — {deliverOrder.buyer_email} — ${deliverOrder.total_price?.toFixed(2)}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Identifiants achetés (une ligne par compte)</label>
+              <textarea
+                value={deliverText}
+                onChange={e => setDeliverText(e.target.value)}
+                rows={6}
+                placeholder={"email:motdepasse:recovery\nemail2:motdepasse2:recovery2"}
+                className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm font-mono outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
+              />
+              <p className="text-[11px] text-gray-400">Ce contenu sera visible par le client dans « Mes commandes » et la commande passera en <b>Payé / livré</b>.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setDeliverOrder(null)} disabled={delivering}
+                className="flex-1 py-3.5 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50">
+                Annuler
+              </button>
+              <button onClick={submitManualDelivery} disabled={delivering}
+                className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                {delivering ? 'Livraison…' : (<><CheckCircle size={16} /> Livrer au client</>)}
+              </button>
+            </div>
           </div>
         </div>
       )}
