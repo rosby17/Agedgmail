@@ -244,7 +244,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider, rawPriceVal = currentRawPrice, appVal = null) => {
+  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider, rawPriceVal = currentRawPrice, appVal = null, currentFailedList = failedProviders[selectedCountry] || []) => {
     if (!session) {
       navigate('auth');
       return;
@@ -289,12 +289,12 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         lowerErr.includes('provider error')
       ) {
         // Add to failedProviders and try next available
-        const currentFailed = [...(failedProviders[isoVal] || []), providerVal];
-        setFailedProviders(prev => ({ ...prev, [isoVal]: currentFailed }));
+        const newFailed = [...currentFailedList, providerVal];
+        setFailedProviders(prev => ({ ...prev, [isoVal]: newFailed }));
         
         const country = countries.find(c => c.Iso === isoVal);
         if (country && country.Providers) {
-           const availableProviders = country.Providers.filter(p => !currentFailed.includes(p.Name));
+           const availableProviders = country.Providers.filter(p => !newFailed.includes(p.Name));
            if (availableProviders.length > 0) {
               const next = availableProviders[0];
               const nextPrice = parseFloat(next.Price);
@@ -307,7 +307,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
               // Small delay to retry with the next provider
               setTimeout(() => {
-                 requestNumber(isoVal, nextPrice, next.Name, nextRawPrice, nextApp);
+                 requestNumber(isoVal, nextPrice, next.Name, nextRawPrice, nextApp, newFailed);
               }, 50);
               
               return; // Exit early since we are retrying
