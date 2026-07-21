@@ -48,23 +48,54 @@ async function parseParams(req: Request): Promise<Record<string, string>> {
   return Object.fromEntries(p.entries())
 }
 
-async function getSmsPrice(iso: string, provider: string): Promise<{ price: number, cost: number }> {
-  let cost = 0.50; // fallback
+// Marge revendeur : +40 % avec plancher +$0.20, arrondi au centime supérieur
+// (aligné sur la boutique). Modifier ces 2 constantes suffit.
+const MARGIN_PCT = 0.40
+const MARGIN_FLOOR = 0.20
+const applyMargin = (cost: number): number =>
+  Math.ceil(Math.max(cost * (1 + MARGIN_PCT), cost + MARGIN_FLOOR) * 100) / 100
+
+// PVAPins : nom de pays par ISO (get_rates.php prend un nom de pays, pas un ISO).
+const PVA_ISO_TO_NAME: Record<string, string> = {
+  US: 'USA', GB: 'UK', FR: 'France', DE: 'Germany', ES: 'Spain', IT: 'Italy',
+  CA: 'Canada', NL: 'Netherlands', PL: 'Poland', RO: 'Romania', PT: 'Portugal',
+  KE: 'Kenya', NG: 'Nigeria', ZA: 'South Africa', GH: 'Ghana', EG: 'Egypt',
+  IN: 'India', ID: 'Indonesia', PH: 'Philippines', PK: 'Pakistan', BD: 'Bangladesh',
+  VN: 'Vietnam', TH: 'Thailand', MY: 'Malaysia', BR: 'Brazil', MX: 'Mexico',
+  AR: 'Argentina', CO: 'Colombia', RU: 'Russia', UA: 'Ukraine',
+}
+
+// Variante YouTube la MOINS chère d'un pays PVAPins (ex: "Youtube1") + son coût.
+// get_rates.php est par pays et les variantes diffèrent fortement en prix.
+async function getPvaCheapestYt(iso: string): Promise<{ cost: number, app: string } | null> {
+  const apiKey = Deno.env.get('PVAPINS_API_KEY')
+  if (!apiKey) return null
+  const name = PVA_ISO_TO_NAME[iso] || iso
+  try {
+    const r = await fetch(`https://api.pvapins.com/user/api/get_rates.php?customer=${apiKey}&country=${encodeURIComponent(name)}`)
+    const arr = await r.json()
+    if (!Array.isArray(arr)) return null
+    let best: { cost: number, app: string } | null = null
+    for (const x of arr) {
+      if (!x || !String(x.app).toLowerCase().includes('youtube')) continue
+      const rate = parseFloat(x.rate)
+      if (!Number.isFinite(rate) || rate <= 0) continue
+      if (!best || rate < best.cost) best = { cost: rate, app: String(x.app) }
+    }
+    return best
+  } catch { return null }
+}
+
+async function getSmsPrice(iso: string, provider: string): Promise<{ price: number, cost: number, app?: string }> {
   if (provider === 'pvapins') {
-    cost = iso === 'US' ? 0.25 : 0.35;
-  } else if (provider === '5sim') {
-    cost = 0.40; 
-  } else if (provider === 'smscodes') {
-    cost = 0.50;
+    const best = await getPvaCheapestYt(iso)
+    if (best) return { price: applyMargin(best.cost), cost: best.cost, app: best.app }
+    const cost = 1.60 // repli si l'API ne répond pas
+    return { price: applyMargin(cost), cost, app: 'YouTube' }
   }
-  
-  let margin = 0.50;
-  if (cost < 0.10) margin = 0.85;
-  else if (cost < 0.50) margin = 0.65;
-  else if (cost < 1.00) margin = 0.55;
-  else margin = 0.50;
-  
-  return { price: Number((cost + margin).toFixed(2)), cost };
+  // smscodes / 5sim : coûts indicatifs. Marge identique appliquée.
+  const cost = provider === '5sim' ? 0.40 : 0.50
+  return { price: applyMargin(cost), cost }
 }
 
 serve(async (req) => {
@@ -231,78 +262,38 @@ serve(async (req) => {
         }
       }
 
-      // 2. Fetch 5sim
-      try {
-        const fivesimCountryToIso: Record<string, string> = {
-          'usa': 'US', 'england': 'GB', 'france': 'FR', 'germany': 'DE', 'russia': 'RU',
-          'canada': 'CA', 'spain': 'ES', 'italy': 'IT', 'ukraine': 'UA', 'poland': 'PL',
-          'india': 'IN', 'indonesia': 'ID', 'brazil': 'BR', 'mexico': 'MX', 'vietnam': 'VN',
-          'romania': 'RO', 'egypt': 'EG'
-        }
-        const appName = targetService === 'youtube' ? 'youtube' : 'google'
-        const res = await fetch(`https://5sim.net/v1/guest/prices?product=${appName}`)
-        const data = await res.json()
-        if (data && data[appName]) {
-          const countries = data[appName]
-          for (const [countryName, operators] of Object.entries(countries)) {
-            let lowest = Infinity
-            for (const [opName, opData] of Object.entries(operators as any)) {
-              if (opData.cost && opData.cost < lowest) {
-                lowest = opData.cost
-              }
-            }
-            if (lowest < Infinity) {
-              const costUsd = lowest * 0.011
-              let targetIso = fivesimCountryToIso[countryName.toLowerCase()]
-              if (!targetIso) {
-                for (const [iso, existing] of bestPrices.entries()) {
-                  if (existing.country.toLowerCase() === countryName.toLowerCase()) {
-                    targetIso = iso
-                    break
-                  }
-                }
-              }
-              if (targetIso) {
-                const existing = bestPrices.get(targetIso)
-                if (!existing || costUsd < existing.price) {
-                  bestPrices.set(targetIso, {
-                    country: existing ? existing.country : (countryName.charAt(0).toUpperCase() + countryName.slice(1)),
-                    iso: targetIso,
-                    price: costUsd,
-                    provider: '5sim'
-                  })
-                }
-              }
-            }
+      // 2. PVAPins : variante YouTube la MOINS chère par pays (panel populaire),
+      //    comparée à SMSCodes — le moins cher gagne. (5sim retiré.)
+      const pvaPinsKey = Deno.env.get('PVAPINS_API_KEY')
+      if (pvaPinsKey && targetService === 'youtube') {
+        const results = await Promise.allSettled(
+          Object.keys(PVA_ISO_TO_NAME).map(async (iso) => {
+            const best = await getPvaCheapestYt(iso)
+            return best ? { iso, cost: best.cost } : null
+          })
+        )
+        for (const r of results) {
+          if (r.status !== 'fulfilled' || !r.value) continue
+          const { iso, cost } = r.value
+          const existing = bestPrices.get(iso)
+          if (!existing || cost < existing.price) {
+            bestPrices.set(iso, {
+              country: existing ? existing.country : (PVA_ISO_TO_NAME[iso] || iso),
+              iso,
+              price: cost,
+              provider: 'pvapins',
+            })
           }
         }
-      } catch (e) {
-        console.error("Error 5sim api-v2:", e)
       }
 
-      // 3. PVAPins US/GB overrides
-      const pvaPinsKey = Deno.env.get('PVAPINS_API_KEY')
-      if (pvaPinsKey) {
-        const usExisting = bestPrices.get('US')
-        if (usExisting) bestPrices.set('US', { ...usExisting, price: 0.25, provider: 'pvapins' })
-        const gbExisting = bestPrices.get('GB')
-        if (gbExisting) bestPrices.set('GB', { ...gbExisting, price: 0.35, provider: 'pvapins' })
-      }
-
-      // Appliquer marges revendeur
-      const list = Array.from(bestPrices.values()).map((c) => {
-        let margin = 0.50
-        if (c.price < 0.10) margin = 0.85
-        else if (c.price < 0.50) margin = 0.65
-        else if (c.price < 1.00) margin = 0.55
-        else margin = 0.50
-        return {
-          country: c.country,
-          iso: c.iso,
-          rate: Number((c.price + margin).toFixed(2)),
-          provider: c.provider
-        }
-      })
+      // Appliquer la marge revendeur (+40 %, plancher +$0.20)
+      const list = Array.from(bestPrices.values()).map((c) => ({
+        country: c.country,
+        iso: c.iso,
+        rate: applyMargin(c.price),
+        provider: c.provider,
+      }))
       return json(list)
     }
 
@@ -321,7 +312,7 @@ serve(async (req) => {
       const service = params.service || 'youtube'
       const provider = params.provider || 'pvapins'
 
-      const { price: sellingPrice, cost: supplierCost } = await getSmsPrice(iso, provider)
+      const { price: sellingPrice, cost: supplierCost, app: pvaApp } = await getSmsPrice(iso, provider)
 
       // Solde revendeur
       const { data: profile } = await db.from('profiles').select('balance, email').eq('id', userId).maybeSingle()
@@ -370,8 +361,9 @@ serve(async (req) => {
           'US': 'USA', 'GB': 'UK', 'FR': 'France', 'DE': 'Germany', 'RU': 'Russia', 'CA': 'Canada'
         }
         const countryName = pvaCountryMap[targetIso] || targetIso
-        const appName = service === 'youtube' ? 'youtube' : 'google'
-        const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${encodeURIComponent(countryName)}`
+        // Variante YouTube la moins chère déterminée par getSmsPrice (ex: "Youtube1").
+        const appName = pvaApp || (service === 'youtube' ? 'YouTube' : 'google')
+        const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${encodeURIComponent(appName)}&country=${encodeURIComponent(countryName)}`
         const res = await fetch(url)
         const text = await res.text()
         if (text.toLowerCase().includes('not found') || text.toLowerCase().includes('error')) {
@@ -381,7 +373,7 @@ serve(async (req) => {
         if (parsedNum.includes(':')) {
           parsedNum = parsedNum.split(':').pop()!.trim()
         }
-        providerData = { Status: "200", Number: parsedNum, SecurityId: `pvapins:${parsedNum}:${countryName}`, Error: "" }
+        providerData = { Status: "200", Number: parsedNum, SecurityId: `pvapins:${parsedNum}:${countryName}:${appName}`, Error: "" }
       } else {
         return json({ error: 'Fournisseur inconnu' }, 400)
       }
@@ -479,7 +471,9 @@ serve(async (req) => {
         const apiKey = Deno.env.get('PVAPINS_API_KEY')
         if (apiKey) {
           const country = securityId.split(':')[2] || 'usa'
-          const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${encodeURIComponent(country)}&app=youtube`
+          // Variante d'app encodée à l'achat (4e segment), ex: "Youtube1".
+          const appName = securityId.split(':')[3] || 'YouTube'
+          const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${encodeURIComponent(country)}&app=${encodeURIComponent(appName)}`
           const res = await fetch(url)
           const text = await res.text()
           if (!text.toLowerCase().includes('not received') && !text.toLowerCase().includes('waiting') && !text.toLowerCase().includes('error') && !text.toLowerCase().includes('expired')) {

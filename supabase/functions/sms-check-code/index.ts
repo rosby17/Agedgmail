@@ -110,9 +110,11 @@ serve(async (req) => {
       
       const parts = securityId.split(':');
       const pvaCountry = parts[2] || 'usa';
-      const appName = "YouTube";
-      
-      const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${encodeURIComponent(pvaCountry)}&app=${appName}`;
+      // Variante d'app encodée à l'achat (4e segment), ex: "Youtube1". Repli
+      // sur "YouTube" pour les anciennes commandes sans ce segment.
+      const appName = parts[3] || "YouTube";
+
+      const url = `https://api.pvapins.com/user/api/get_sms.php?customer=${apiKey}&number=${number}&country=${encodeURIComponent(pvaCountry)}&app=${encodeURIComponent(appName)}`;
       const res = await fetch(url);
       const text = await res.text();
       

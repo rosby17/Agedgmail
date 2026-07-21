@@ -137,13 +137,14 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         const priceVal = parseFloat(selected.Price);
         const rawPriceVal = parseFloat(selected.RawPrice);
         const providerVal = selected.Name;
-        
+        const appVal = selected.App || null; // (pvapins) variante YouTube la moins chère
+
         setCurrentPrice(priceVal);
         setCurrentRawPrice(rawPriceVal);
         setCurrentProvider(providerVal);
-        
+
         // Automatically request the number
-        requestNumber(iso, priceVal, providerVal, rawPriceVal);
+        requestNumber(iso, priceVal, providerVal, rawPriceVal, appVal);
       } else {
         // All providers failed for this country
         setError(isFr ? "Aucun numéro n'est disponible pour ce pays. Veuillez choisir un autre pays." : "No number is available for this country. Please try another.");
@@ -230,7 +231,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider, rawPriceVal = currentRawPrice) => {
+  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider, rawPriceVal = currentRawPrice, appVal = null) => {
     if (!session) {
       navigate('auth');
       return;
@@ -245,7 +246,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
     try {
       const { data, error } = await supabase.functions.invoke('sms-get-number', {
-        body: { iso: isoVal, serviceId: selectedService, price: priceVal, provider: providerVal }
+        body: { iso: isoVal, serviceId: selectedService, price: priceVal, provider: providerVal, app: appVal }
       });
 
       if (error) throw new Error(error.message);
@@ -282,14 +283,15 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               const next = availableProviders[0];
               const nextPrice = parseFloat(next.Price);
               const nextRawPrice = parseFloat(next.RawPrice);
-              
+              const nextApp = next.App || null;
+
               setCurrentPrice(nextPrice);
               setCurrentRawPrice(nextRawPrice);
               setCurrentProvider(next.Name);
-              
+
               // Small delay to retry with the next provider
               setTimeout(() => {
-                 requestNumber(isoVal, nextPrice, next.Name, nextRawPrice);
+                 requestNumber(isoVal, nextPrice, next.Name, nextRawPrice, nextApp);
               }, 50);
               
               return; // Exit early since we are retrying

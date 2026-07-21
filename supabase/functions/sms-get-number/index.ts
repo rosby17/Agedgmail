@@ -35,7 +35,7 @@ serve(async (req) => {
       });
     }
 
-    const { iso, serviceId, price, provider } = await req.json();
+    const { iso, serviceId, price, provider, app } = await req.json();
     const smsPrice = price || 1.00;
     const currentProvider = provider || 'smscodes';
 
@@ -163,9 +163,12 @@ serve(async (req) => {
           countryName = pvaCountryMap[targetIso] || targetIso;
         }
         
-        const appName = "YouTube"; 
-        
-        const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${appName}&country=${encodeURIComponent(countryName)}`;
+        // Variante YouTube la moins chère pour ce pays (ex: "Youtube1",
+        // "Youtube22"), déterminée par sms-get-prices et transmise ici. Repli
+        // sur "YouTube" si absente (ancien comportement).
+        const appName = app || "YouTube";
+
+        const url = `https://api.pvapins.com/user/api/get_number.php?customer=${apiKey}&app=${encodeURIComponent(appName)}&country=${encodeURIComponent(countryName)}`;
         const res = await fetch(url);
         const text = await res.text();
         
@@ -188,7 +191,9 @@ serve(async (req) => {
         providerData = {
           Status: "200",
           Number: parsedNum,
-          SecurityId: `pvapins:${parsedNum}:${countryName}`
+          // On encode la variante d'app en 4e segment pour que sms-check-code
+          // interroge get_sms.php avec la bonne app.
+          SecurityId: `pvapins:${parsedNum}:${countryName}:${appName}`
         };
       } catch (pvpError) {
         throw new Error(`PVAPins failed: ${pvpError.message}`);

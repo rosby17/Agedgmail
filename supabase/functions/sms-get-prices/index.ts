@@ -12,12 +12,77 @@ interface ProviderInfo {
   Name: string;
   RawPrice: number;
   Price?: string;
+  App?: string; // (PVAPins) nom exact de la variante YouTube la moins chère à acheter
 }
 
 interface FormattedCountry {
   Country: string;
   Iso: string;
   Providers: ProviderInfo[];
+}
+
+// ── Marge appliquée sur le coût fournisseur ────────────────────────────────
+// +40 % avec un plancher de +$0.20, arrondi au centime SUPÉRIEUR (jamais de
+// sous-facturation). Les fournisseurs ne facturent que sur code reçu, donc
+// cette marge est quasi du profit net. Modifier ces 2 constantes suffit à
+// ajuster tous les prix de la boutique.
+const MARGIN_PCT = 0.40;
+const MARGIN_FLOOR = 0.20;
+const applyMargin = (cost: number): number => {
+  const priced = Math.max(cost * (1 + MARGIN_PCT), cost + MARGIN_FLOOR);
+  return Math.ceil(priced * 100) / 100;
+};
+
+// ── PVAPins : pays comparés (ISO -> nom PVAPins) ───────────────────────────
+// get_rates.php est PAR pays et la variante YouTube la moins chère (Youtube1,
+// Youtube22, …) varie selon le pays. On interroge ce panel en parallèle et on
+// garde, par pays, la variante la MOINS chère + son nom d'app (requis pour
+// acheter le bon numéro ensuite via sms-get-number).
+const PVA_POPULAR: Record<string, string> = {
+  US: 'USA', GB: 'UK', FR: 'France', DE: 'Germany', ES: 'Spain', IT: 'Italy',
+  CA: 'Canada', NL: 'Netherlands', PL: 'Poland', RO: 'Romania', PT: 'Portugal',
+  SE: 'Sweden', IE: 'Ireland', FI: 'Finland', AT: 'Austria',
+  KE: 'Kenya', NG: 'Nigeria', ZA: 'South Africa', GH: 'Ghana', EG: 'Egypt',
+  IN: 'India', ID: 'Indonesia', PH: 'Philippines', PK: 'Pakistan', BD: 'Bangladesh',
+  VN: 'Vietnam', TH: 'Thailand', MY: 'Malaysia', BR: 'Brazil', MX: 'Mexico',
+  AR: 'Argentina', CO: 'Colombia', RU: 'Russia', UA: 'Ukraine',
+};
+
+interface PvaRate { iso: string; name: string; rate: number; app: string; }
+// Cache mémoire (par isolate warm) pour éviter de rappeler PVAPins à chaque
+// visite. TTL 10 min : largement suffisant, les tarifs bougent lentement.
+let pvaCache: { at: number; rates: PvaRate[] } | null = null;
+const PVA_CACHE_TTL_MS = 10 * 60 * 1000;
+
+async function getPvaRates(apiKey: string): Promise<PvaRate[]> {
+  if (pvaCache && Date.now() - pvaCache.at < PVA_CACHE_TTL_MS) return pvaCache.rates;
+
+  const fetchCheapest = async (iso: string, name: string): Promise<PvaRate | null> => {
+    try {
+      const r = await fetch(`https://api.pvapins.com/user/api/get_rates.php?customer=${apiKey}&country=${encodeURIComponent(name)}`);
+      const arr = await r.json();
+      if (!Array.isArray(arr)) return null;
+      let best: PvaRate | null = null;
+      for (const x of arr) {
+        if (!x || !String(x.app).toLowerCase().includes('youtube')) continue;
+        const rate = parseFloat(x.rate);
+        if (!Number.isFinite(rate) || rate <= 0) continue;
+        if (!best || rate < best.rate) best = { iso, name, rate, app: String(x.app) };
+      }
+      return best;
+    } catch { return null; }
+  };
+
+  const results = await Promise.allSettled(
+    Object.entries(PVA_POPULAR).map(([iso, name]) => fetchCheapest(iso, name))
+  );
+  const rates: PvaRate[] = [];
+  for (const r of results) {
+    if (r.status === 'fulfilled' && r.value) rates.push(r.value);
+  }
+  // On ne met en cache que si on a obtenu quelque chose (sinon on réessaiera).
+  if (rates.length > 0) pvaCache = { at: Date.now(), rates };
+  return rates;
 }
 
 serve(async (req) => {
@@ -66,25 +131,22 @@ serve(async (req) => {
 
     await Promise.allSettled(promises);
 
-    // 2. PVAPins — pas d'endpoint de prix global. On l'expose comme fournisseur
-    //    alternatif uniquement pour les pays dont on connaît le COÛT RÉEL
-    //    (grille statique ci-dessous, à étendre au fur et à mesure). Le failover
-    //    du frontend passe automatiquement à l'autre fournisseur si PVAPins n'a
-    //    pas de numéro. RawPrice = coût fournisseur ; la marge est ajoutée après.
-    //    ⚠️ N'ajouter un pays ici QUE si son coût PVAPins réel est connu, sinon
-    //    on risque de vendre à perte.
+    // 2. PVAPins — get_rates.php est PAR pays (pas d'endpoint global), mais le
+    //    tarif YouTube PVAPins est quasi plat : USA plus cher, tous les autres
+    //    pays au même prix. On lit donc seulement 2 pays de référence pour rester
+    //    à jour sans 223 appels, avec repli sur constantes si l'appel échoue.
+    //    PVAPins est ajouté comme ALTERNATIVE/FAILOVER à chaque pays déjà listé
+    //    par SMSCodes : le tri « moins cher gagne » choisit SMSCodes quand il est
+    //    moins cher (le cas usuel pour YouTube), et bascule sur PVAPins si SMSCodes
+    //    n'a pas de numéro. RawPrice = coût fournisseur ; la marge est ajoutée après.
     const pvaPinsKey = Deno.env.get('PVAPINS_API_KEY');
     if (pvaPinsKey) {
-      const PVA_STATIC_COST: Record<string, number> = {
-        US: 0.25,
-        GB: 0.35,
-      };
-      const PVA_ISO_TO_NAME: Record<string, string> = {
-        US: 'United States', GB: 'United Kingdom',
-      };
-      for (const [iso, cost] of Object.entries(PVA_STATIC_COST)) {
-        const countryObj = getCountry(iso, PVA_ISO_TO_NAME[iso] || iso);
-        countryObj.Providers.push({ Name: 'pvapins', RawPrice: cost });
+      const pvaRates = await getPvaRates(pvaPinsKey);
+      for (const pr of pvaRates) {
+        // Crée le pays s'il n'était pas listé par SMSCodes (couverture élargie),
+        // sinon ajoute PVAPins comme alternative comparée au même pays.
+        const countryObj = getCountry(pr.iso, pr.name);
+        countryObj.Providers.push({ Name: 'pvapins', RawPrice: pr.rate, App: pr.app });
       }
     }
 
@@ -95,19 +157,11 @@ serve(async (req) => {
       // essaiera ensuite le suivant le moins cher si le 1er n'a pas de numéro.
       c.Providers.sort((a, b) => a.RawPrice - b.RawPrice);
 
-      // Apply margin to each provider
-      c.Providers = c.Providers.map(p => {
-        let margin = 0.50;
-        if (p.RawPrice < 0.10) margin = 0.85;
-        else if (p.RawPrice < 0.50) margin = 0.65;
-        else if (p.RawPrice < 1.00) margin = 0.55;
-        else margin = 0.50;
-        
-        return {
-          ...p,
-          Price: (p.RawPrice + margin).toFixed(2)
-        };
-      });
+      // Appliquer la marge (+40 %, plancher +$0.20) à chaque fournisseur.
+      c.Providers = c.Providers.map(p => ({
+        ...p,
+        Price: applyMargin(p.RawPrice).toFixed(2)
+      }));
 
       return c;
     });
