@@ -315,8 +315,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         }
         
         errMsg = isFr 
-          ? "Aucun numéro n'est disponible pour ce pays actuellement (Tous les fournisseurs ont échoué). Veuillez réessayer plus tard ou choisir un autre pays."
-          : "No number is currently available for this country (All providers failed). Please try again later or choose another country.";
+          ? "Aucun numéro n'est disponible pour ce pays actuellement. Veuillez réessayer plus tard ou choisir un autre pays."
+          : "No number is currently available for this country. Please try again later or choose another country.";
       } else if (lowerErr.includes('insufficient balance') || lowerErr.includes('solde insuffisant')) {
         errMsg = isFr 
           ? "Solde insuffisant pour cette opération. Veuillez recharger votre compte."
