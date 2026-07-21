@@ -2,7 +2,7 @@ export const TRANSLATIONS = {
   fr: {
     // Navbar
     products: "Produits",
-    sms: "SMS",
+    sms: "SMS YouTube",
     api: "API",
     myOrders: "Mes commandes",
     balance: "Mon Solde",
@@ -62,7 +62,7 @@ export const TRANSLATIONS = {
   en: {
     // Navbar
     products: "Products",
-    sms: "SMS",
+    sms: "SMS YouTube",
     api: "API",
     myOrders: "My orders",
     balance: "My Balance",

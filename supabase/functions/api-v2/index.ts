@@ -99,8 +99,8 @@ async function getSmsPrice(iso: string, provider: string): Promise<{ price: numb
     const cost = 1.60 // repli si l'API ne répond pas
     return { price: applyMargin(cost), cost, app: 'YouTube' }
   }
-  // smscodes / 5sim : coûts indicatifs. Marge identique appliquée.
-  const cost = provider === '5sim' ? 0.40 : 0.50
+  // smscodes : coûts indicatifs. Marge identique appliquée.
+  const cost = 0.50
   return { price: applyMargin(cost), cost }
 }
 
@@ -341,26 +341,6 @@ serve(async (req) => {
         } else {
           return json({ error: data.Error || 'Fournisseur indisponible' }, 502)
         }
-      } else if (provider === '5sim') {
-        const apiKey = Deno.env.get('FIVESIM_API_KEY')
-        if (!apiKey) return json({ error: 'Fournisseur non disponible (API key manquante)' }, 503)
-        const fivesimCountryMap: Record<string, string> = {
-          'US': 'usa', 'GB': 'england', 'FR': 'france', 'DE': 'germany', 'RU': 'russia',
-          'CA': 'canada', 'ES': 'spain', 'IT': 'italy', 'UA': 'ukraine', 'PL': 'poland',
-          'IN': 'india', 'ID': 'indonesia', 'BR': 'brazil', 'MX': 'mexico', 'VN': 'vietnam',
-          'RO': 'romania', 'EG': 'egypt'
-        }
-        const countryName = fivesimCountryMap[targetIso] || targetIso.toLowerCase()
-        const appName = service === 'youtube' ? 'youtube' : 'google'
-        const url = `https://5sim.net/v1/user/buy/activation/${countryName}/any/${appName}`
-        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' } })
-        if (!res.ok) return json({ error: `Erreur 5sim: ${res.statusText}` }, 502)
-        const data = await res.json()
-        if (data.id && data.phone) {
-          providerData = { Status: "200", Number: data.phone, SecurityId: `5sim:${data.id}:${countryName}`, Error: "" }
-        } else {
-          return json({ error: 'Fournisseur indisponible' }, 502)
-        }
       } else if (provider === 'pvapins') {
         const apiKey = Deno.env.get('PVAPINS_API_KEY')
         if (!apiKey) return json({ error: 'Fournisseur non disponible (API key manquante)' }, 503)
@@ -459,21 +439,6 @@ serve(async (req) => {
             }
           }
         }
-      } else if (providerName === '5sim') {
-        const apiKey = Deno.env.get('FIVESIM_API_KEY')
-        if (apiKey) {
-          const url = `https://5sim.net/v1/user/check/${externalSecurityId}`
-          const res = await fetch(url, { headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' } })
-          if (res.ok) {
-            const dataObj = await res.json()
-            if (dataObj.sms && Array.isArray(dataObj.sms) && dataObj.sms.length > 0) {
-              gotCode = dataObj.sms[0].code || dataObj.sms[0].text
-            } else if (dataObj.status === 'CANCELED' || dataObj.status === 'TIMEOUT') {
-              await db.from('orders').update({ status: 'cancelled' }).eq('id', orderId)
-              return json({ status: 'Canceled', error: 'expired' })
-            }
-          }
-        }
       } else if (providerName === 'pvapins') {
         const apiKey = Deno.env.get('PVAPINS_API_KEY')
         if (apiKey) {
@@ -529,19 +494,6 @@ serve(async (req) => {
 
       if (order.status === 'confirmed') return json({ error: 'Impossible d\'annuler une commande déjà complétée' }, 400)
       if (order.status === 'cancelled') return json({ status: 'Canceled' })
-
-      // Annuler sur le fournisseur si 5sim
-      const delivery = order.delivery_data || {}
-      const securityId = delivery.securityId || ''
-      if (securityId.startsWith('5sim:')) {
-        const apiKey = Deno.env.get('FIVESIM_API_KEY')
-        const externalId = securityId.split(':')[1]
-        if (apiKey && externalId) {
-          await fetch(`https://5sim.net/v1/user/ban/${externalId}`, {
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-          }).catch(() => {})
-        }
-      }
 
       await db.from('orders').update({ status: 'cancelled' }).eq('id', orderId)
       return json({ status: 'Canceled' })

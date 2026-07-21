@@ -70,40 +70,6 @@ serve(async (req) => {
           smsCode = dataObj.SMS;
         }
       }
-    } else if (providerName === '5sim') {
-      const apiKey = Deno.env.get('FIVESIM_API_KEY');
-      if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
-      
-      const url = `https://5sim.net/v1/user/check/${externalSecurityId}`;
-      const res = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`5sim Check API Error: ${errText || res.statusText}`);
-      }
-      
-      dataObj = await res.json();
-      
-      if (dataObj.sms && Array.isArray(dataObj.sms) && dataObj.sms.length > 0) {
-        status = "success";
-        smsCode = dataObj.sms[0].code || dataObj.sms[0].text;
-      } else if (dataObj.status === 'PENDING') {
-        status = "waiting";
-      } else if (dataObj.status === 'FINISHED' || dataObj.status === 'RECEIVED') {
-        if (dataObj.sms && dataObj.sms.length > 0) {
-          status = "success";
-          smsCode = dataObj.sms[0].code || dataObj.sms[0].text;
-        } else {
-          status = "waiting";
-        }
-      } else if (dataObj.status === 'CANCELED' || dataObj.status === 'TIMEOUT') {
-        throw new Error(`Activation was canceled or timed out: ${dataObj.status}`);
-      }
     } else if (providerName === 'pvapins') {
       const apiKey = Deno.env.get('PVAPINS_API_KEY');
       if (!apiKey) throw new Error('PVAPINS_API_KEY is not configured');

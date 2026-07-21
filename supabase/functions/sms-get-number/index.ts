@@ -76,56 +76,6 @@ serve(async (req) => {
 
     if (currentProvider === 'smscodes') {
       providerData = await getSmsCodesNumber();
-    } else if (currentProvider === '5sim') {
-      const apiKey = Deno.env.get('FIVESIM_API_KEY');
-      if (!apiKey) throw new Error('FIVESIM_API_KEY is not configured');
-
-      const fivesimCountryMap: Record<string, string> = {
-        'US': 'usa',
-        'GB': 'england',
-        'FR': 'france',
-        'DE': 'germany',
-        'RU': 'russia',
-        'CA': 'canada',
-        'ES': 'spain',
-        'IT': 'italy',
-        'UA': 'ukraine',
-        'PL': 'poland',
-        'IN': 'india',
-        'ID': 'indonesia',
-        'BR': 'brazil',
-        'MX': 'mexico',
-        'VN': 'vietnam',
-        'RO': 'romania',
-        'EG': 'egypt',
-      };
-      
-      const countryName = fivesimCountryMap[targetIso] || targetIso.toLowerCase();
-      const appName = "google";
-      
-      const url = `https://5sim.net/v1/user/buy/activation/${countryName}/any/${appName}`;
-      const res = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`5sim API Error: ${errText || res.statusText}`);
-      }
-      
-      const data = await res.json();
-      if (!data.id || !data.phone) {
-        throw new Error(`5sim API Error: ${JSON.stringify(data)}`);
-      }
-      
-      providerData = {
-        Status: "200",
-        Number: data.phone,
-        SecurityId: `5sim:${data.id}:${countryName}`
-      };
     } else if (currentProvider === 'pvapins') {
       try {
         const apiKey = Deno.env.get('PVAPINS_API_KEY');
@@ -215,7 +165,7 @@ serve(async (req) => {
        notifyTelegram(`⚠️ *Alerte Fournisseur SMS* ⚠️\n\nLe compte de l'API SMS n'a plus de crédits !\nErreur exacte : ${errorMessage}`).catch(console.error);
        
        // Hide error from user
-       errorMessage = 'Une erreur technique est survenue chez le fournisseur. Veuillez réessayer plus tard ou choisir un autre pays.';
+       errorMessage = 'Une erreur technique est survenue chez Agedgmail. Veuillez réessayer plus tard ou choisir un autre pays.';
     }
 
     return new Response(JSON.stringify({ error: errorMessage }), {
