@@ -2,11 +2,47 @@ import { sanitizeDescriptionHtml, displayCategoryLabel, cleanProductName } from 
 import { Package, Minus, Plus, ShieldAlert } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Share2, Copy, CheckCircle, Info, Hash, Star } from 'lucide-react';
-import { hashStr, getProductDetails } from '../utils/helpers';
+import { hashStr, getProductDetails, buildProductInfoLines, buildProductNote } from '../utils/helpers';
 import ProductVisual from '../components/ui/ProductVisual';
+
+const isFrLang = (lang) => lang === 'fr';
+
+// Résumé des CGV (extrait de PoliciesView, section Garantie/Sécurité) — pas de
+// texte inventé : ce sont les mêmes règles, juste condensées ici avec un lien
+// vers la page complète pour éviter toute divergence future.
+const TERMS_BULLETS = {
+  fr: [
+    "La garantie couvre la livraison, la conformité à la description, et la première connexion réussie.",
+    "Dès la première connexion, la gestion et la sécurisation du compte deviennent la responsabilité du client.",
+    "Attendre au moins 72h (idéalement 7 jours) avant de modifier mot de passe, email de récupération, 2FA ou numéro.",
+    "Utiliser une connexion fiable (idéalement IP résidentielle) ; VPN publics/proxys gratuits déconseillés.",
+  ],
+  en: [
+    "The warranty covers delivery, conformity to the description, and the first successful login.",
+    "From the first login, managing and securing the account becomes the customer's responsibility.",
+    "Wait at least 72h (ideally 7 days) before changing the password, recovery email, 2FA, or phone number.",
+    "Use a reliable connection (ideally a residential IP); public VPNs/free proxies are discouraged.",
+  ],
+};
+
+const WARRANTY_TEXT = {
+  fr: [
+    "Garantie de remplacement de 48h incluse sur tous les comptes.",
+    "La garantie couvre exclusivement la livraison du produit, sa conformité à la description, et la possibilité d'effectuer une première connexion réussie.",
+    "Le fait de ne pas utiliser immédiatement le compte n'a aucun effet sur la durée de cette garantie.",
+  ],
+  en: [
+    "48h replacement warranty included on all accounts.",
+    "The warranty exclusively covers the delivery of the product, its conformity to the description, and the ability to make a first successful login.",
+    "Not using the account immediately has no effect on the duration of this warranty.",
+  ],
+};
 
 const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow, lang }) => {
   const [quantity, setQuantity] = useState(1);
+  const [activeTab, setActiveTab] = useState(0);
+  const isFr = isFrLang(lang);
+  const infoLines = buildProductInfoLines(product, lang);
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-24">
@@ -85,47 +121,64 @@ const ProductView = ({ product, addToCart, navigate, onCartClick, onBuyNow, lang
       {/* Tabs / Details */}
       <div className="border-t border-slate-800 pt-20">
         <div className="flex gap-10 border-b border-slate-800 mb-12 overflow-x-auto pb-4">
-          {['Information', 'Warranty policy'].map((tab, i) => (
-            <button key={tab} className={`text-sm font-black uppercase tracking-[0.2em] pb-4 relative whitespace-nowrap transition-colors ${i === 0 ? 'text-primary' : 'text-slate-500 hover:text-gray-300'}`}>
+          {[isFr ? 'Informations' : 'Information', isFr ? 'Garantie' : 'Warranty policy'].map((tab, i) => (
+            <button key={tab} onClick={() => setActiveTab(i)} className={`text-sm font-black uppercase tracking-[0.2em] pb-4 relative whitespace-nowrap transition-colors ${activeTab === i ? 'text-primary' : 'text-slate-500 hover:text-gray-300'}`}>
               {tab}
-              {i === 0 && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-full"></div>}
+              {activeTab === i && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-full"></div>}
             </button>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 space-y-8">
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Information</h3>
-              <div className="divide-y divide-slate-700/50">
-                {product.details?.info?.split(' | ').map((line, i) => (
-                  <div key={i} className="flex items-center justify-between py-2.5 text-sm">
-                    <span className="text-gray-400 font-medium">{line.split(' : ')[0]}</span>
-                    <span className="text-white font-bold">{line.split(' : ')[1]}</span>
+            {activeTab === 0 ? (
+              <>
+                <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">{isFr ? 'Informations' : 'Information'}</h3>
+                  <div className="divide-y divide-slate-700/50">
+                    {infoLines.map((line, i) => (
+                      <div key={i} className="flex items-center justify-between py-2.5 text-sm">
+                        <span className="text-gray-400 font-medium">{line.label}</span>
+                        <span className="text-white font-bold">{line.value}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-              <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4"><Info size={14} className="text-primary" /> Additional Description</h4>
-              {product.description ? (
-                <div
-                  className="text-gray-300 leading-relaxed text-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1.5 [&_p]:mb-3 [&_strong]:font-bold [&_strong]:text-white [&_u]:underline"
-                  dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(product.description) }}
-                />
-              ) : (
-                <p className="text-gray-400 leading-relaxed italic text-sm">{product.details?.note}</p>
-              )}
-            </div>
+                <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                  <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4"><Info size={14} className="text-primary" /> {isFr ? 'Description additionnelle' : 'Additional Description'}</h4>
+                  {product.description ? (
+                    <div
+                      className="text-gray-300 leading-relaxed text-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1.5 [&_p]:mb-3 [&_strong]:font-bold [&_strong]:text-white [&_u]:underline"
+                      dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(product.description) }}
+                    />
+                  ) : (
+                    <p className="text-gray-400 leading-relaxed italic text-sm">{buildProductNote(product, lang)}</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4"><ShieldAlert size={14} className="text-primary" /> {isFr ? 'Garantie' : 'Warranty policy'}</h4>
+                <div className="text-sm text-gray-300 leading-relaxed space-y-3">
+                  {WARRANTY_TEXT[isFr ? 'fr' : 'en'].map((t, i) => <p key={i}>{t}</p>)}
+                </div>
+                <button onClick={() => { window.scrollTo(0, 0); navigate('policies'); }} className="mt-4 text-xs font-black uppercase tracking-widest text-primary hover:underline">
+                  {isFr ? 'Voir les conditions complètes →' : 'See full terms →'}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-8">
             <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-              <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4"><ShieldAlert size={14} className="text-primary" /> Terms of Service</h4>
+              <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4"><ShieldAlert size={14} className="text-primary" /> {isFr ? 'Conditions générales' : 'Terms of Service'}</h4>
               <div className="text-xs text-gray-400 leading-relaxed space-y-3">
-                {product.details?.terms?.split('. ').map((t, i) => <p key={i}>• {t}.</p>)}
+                {TERMS_BULLETS[isFr ? 'fr' : 'en'].map((t, i) => <p key={i}>• {t}</p>)}
               </div>
+              <button onClick={() => { window.scrollTo(0, 0); navigate('policies'); }} className="mt-4 text-[11px] font-black uppercase tracking-widest text-primary hover:underline">
+                {isFr ? 'CGV complètes →' : 'Full ToS →'}
+              </button>
             </div>
           </div>
         </div>

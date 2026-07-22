@@ -98,6 +98,63 @@ export const cleanProductName = (raw, lang) => {
   return s || raw;
 };
 
+/**
+ * Fiche technique lisible d'un produit (onglet "Information" de ProductView),
+ * dérivée des mêmes signaux que getProductDetails (nom/catégorie) — aucune
+ * donnée fournisseur supplémentaire requise. Retourne un tableau {label, value}
+ * plutôt qu'une chaîne encodée : plus robuste (le format contient déjà des ':').
+ */
+export const buildProductInfoLines = (product = {}, lang = 'fr') => {
+  const isFr = lang === 'fr';
+  const d = getProductDetails(product);
+  const c = String(product.category || '').toLowerCase();
+  const n = String(product.name || '').toLowerCase();
+  const looksLikeChannel = c.includes('channel') || n.includes('channel') || c.includes('youtube');
+  const yesNo = (b) => (b ? (isFr ? 'Oui' : 'Yes') : (isFr ? 'Non' : 'No'));
+
+  const lines = [
+    { label: isFr ? 'Format de livraison' : 'Delivery format', value: d.format },
+    { label: isFr ? 'Année / Ancienneté' : 'Year / Age', value: d.year },
+  ];
+  if (looksLikeChannel) {
+    lines.push({ label: isFr ? 'Abonnés' : 'Subscribers', value: d.subscribers });
+    lines.push({ label: isFr ? 'Chaîne monétisée' : 'Monetized channel', value: yesNo(d.monetized) });
+  }
+  lines.push({ label: isFr ? 'Numéro vérifié (PVA)' : 'Phone verified (PVA)', value: yesNo(d.phoneVerified) });
+  lines.push({ label: isFr ? 'Email de récupération vérifié' : 'Recovery email verified', value: yesNo(d.emailVerified) });
+  lines.push({ label: isFr ? 'Double authentification (2FA)' : 'Two-factor authentication (2FA)', value: yesNo(d.twoFa) });
+  lines.push({ label: isFr ? 'Cookies de session inclus' : 'Session cookies included', value: yesNo(d.cookies) });
+  return lines;
+};
+
+/**
+ * Description de secours quand le fournisseur ne fournit aucun texte pour ce
+ * produit précis (product.description vide) — reste honnête (ne prétend pas
+ * un descriptif qu'on n'a pas) tout en donnant les faits techniques connus.
+ */
+export const buildProductNote = (product = {}, lang = 'fr') => {
+  const isFr = lang === 'fr';
+  const d = getProductDetails(product);
+  const cat = displayCategoryLabel(product) || (isFr ? 'ce produit' : 'this product');
+  const extras = [];
+  if (d.twoFa) extras.push(isFr ? 'la double authentification (2FA)' : 'two-factor authentication (2FA)');
+  if (d.phoneVerified) extras.push(isFr ? 'un numéro vérifié' : 'a verified phone number');
+  if (d.emailVerified) extras.push(isFr ? 'un email de récupération vérifié' : 'a verified recovery email');
+  if (d.cookies) extras.push(isFr ? 'les cookies de session' : 'session cookies');
+
+  const base = isFr
+    ? `Compte ${cat} livré au format ${d.format}.`
+    : `${cat} account delivered in ${d.format} format.`;
+  const extraLine = extras.length > 0
+    ? (isFr ? ` Inclut ${extras.join(', ')}.` : ` Includes ${extras.join(', ')}.`)
+    : '';
+  const disclaimer = isFr
+    ? " Aucune description additionnelle spécifique n'a été fournie par le fournisseur pour cette référence ; les caractéristiques ci-dessus reflètent les informations techniques connues du produit."
+    : " No additional description was provided by the supplier for this specific reference; the characteristics above reflect the known technical information for the product.";
+
+  return base + extraLine + disclaimer;
+};
+
 export const getProductDetails = (product = {}) => {
   const c = String(product.category || '').toLowerCase();
   const n = String(product.name || '').toLowerCase();
