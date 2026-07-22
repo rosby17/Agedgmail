@@ -106,7 +106,9 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
   const downloadCredentials = (order) => {
     let raw = order.credentials || order.data || '';
     if (!raw.trim() && order.delivery_data && typeof order.delivery_data === 'object') {
-      raw = `Phone: ${order.delivery_data.number || ''}\nSMS Code: ${order.delivery_data.code || order.delivery_data.sms || ''}\nProvider: ${order.delivery_data.provider || ''}`;
+      // Pas de champ "Provider" côté client : information interne (fournisseur
+      // amont), sans utilité pour le client et à ne jamais afficher/exporter.
+      raw = `Phone: ${order.delivery_data.number || ''}\nSMS Code: ${order.delivery_data.code || order.delivery_data.sms || ''}`;
     }
     if (!raw.trim()) return;
     const blob = new Blob([raw], { type: 'text/plain' });

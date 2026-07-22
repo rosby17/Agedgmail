@@ -3,7 +3,7 @@ import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { checkRateLimit, getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 import { notifyTelegram } from '../_shared/supplier-db.ts';
-import { applyMargin, getPvaCheapestYt, signSecurityId } from '../_shared/sms-pricing.ts';
+import { applyMargin, getPvaCheapestYt, signSecurityId, aliasForProvider, providerForAlias } from '../_shared/sms-pricing.ts';
 
 serve(async (req) => {
   const corsOpts = handleCors(req);
@@ -38,7 +38,9 @@ serve(async (req) => {
 
     const { iso, serviceId, price, provider, app } = await req.json();
     const smsPrice = price || 1.00;
-    const currentProvider = provider || 'smscodes';
+    // Le client envoie un alias opaque ('p1'/'p2'), jamais le vrai nom du
+    // fournisseur — converti ici, côté serveur uniquement (voir sms-pricing.ts).
+    const currentProvider = providerForAlias(provider || 'p2');
 
     // Check balance
     const { data: profile } = await supabase
@@ -72,7 +74,8 @@ serve(async (req) => {
       // puis signé dans le securityId. Le client ne fixe jamais le montant.
       const cost = parseFloat(data.Rate) || 0.50;
       const sellingPrice = applyMargin(cost);
-      const base = `smscodes:${data.SecurityId}`;
+      // Alias opaque dans le base (jamais le vrai nom du fournisseur côté client).
+      const base = `${aliasForProvider('smscodes')}:${data.SecurityId}`;
       return {
         Status: "200",
         Number: data.Number,
@@ -148,9 +151,10 @@ serve(async (req) => {
           }
         }
 
-        // base = pvapins:num:pays:variante  (la variante sert à sms-check-code) ;
-        // le prix de vente signé y est ajouté par signSecurityId.
-        const base = `pvapins:${parsedNum}:${countryName}:${appName}`;
+        // base = alias:num:pays:variante (alias opaque, jamais le vrai nom
+        // fournisseur) ; la variante sert à sms-check-code ; le prix de vente
+        // signé y est ajouté par signSecurityId.
+        const base = `${aliasForProvider('pvapins')}:${parsedNum}:${countryName}:${appName}`;
         providerData = {
           Status: "200",
           Number: parsedNum,

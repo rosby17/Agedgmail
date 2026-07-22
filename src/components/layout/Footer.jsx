@@ -52,6 +52,17 @@ const Footer = ({ navigate, lang }) => (
               <Mail size={16} className="text-primary shrink-0" />
               <a href="mailto:support@tools-cl.com" className="hover:text-primary transition-colors truncate">support@tools-cl.com</a>
             </li>
+            <li>
+              <a
+                href="https://chat.whatsapp.com/DiQ6InUNSDeFDbEjQAu6Ax?mode=gi_t"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-bold hover:brightness-110 transition-all shadow-md shadow-[#25D366]/20"
+              >
+                <MessageCircle size={16} />
+                {lang === 'fr' ? 'Rejoindre le groupe WhatsApp' : 'Join our WhatsApp group'}
+              </a>
+            </li>
           </ul>
         </div>
       </div>

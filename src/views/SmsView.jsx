@@ -57,6 +57,11 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const [endTime, setEndTime] = useState(initialState?.endTime || 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Catégorise l'erreur de demande de numéro pour afficher un message clair,
+  // non technique, à la place du champ numéro : 'balance' | 'unavailable'
+  // (aucun fournisseur en stock pour ce pays) | 'technical' (souci de notre
+  // côté). Ne révèle jamais de nom de fournisseur au client.
+  const [errorKind, setErrorKind] = useState('');
   
   // Dynamic pricing states
   const [countries, setCountries] = useState([]);
@@ -129,6 +134,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     setTimeLeft(900);
     setEndTime(0);
     setError('');
+    setErrorKind('');
 
     if (!iso) {
       setStatus('IDLE');
@@ -160,7 +166,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         requestNumber(iso, priceVal, providerVal, rawPriceVal, appVal);
       } else {
         // All providers failed for this country
-        setError(isFr ? "Aucun numéro n'est disponible pour ce pays. Veuillez choisir un autre pays." : "No number is available for this country. Please try another.");
+        setErrorKind('unavailable');
+        setError(isFr ? "Ce pays n'est pas disponible pour le moment. Merci d'essayer un autre pays." : "This country isn't available right now. Please try another country.");
       }
     }
   };
@@ -250,11 +257,14 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       return;
     }
     if (!isoVal) return;
-    if (profile?.balance < priceVal) {
-      setError(isFr ? `Solde insuffisant ($${profile?.balance?.toFixed(2)}). Veuillez recharger votre compte.` : `Insufficient balance ($${profile?.balance?.toFixed(2)}). Please top up.`);
+    const balanceNow = Number(profile?.balance || 0);
+    if (balanceNow < priceVal) {
+      setErrorKind('balance');
+      setError(isFr ? `Solde insuffisant ($${balanceNow.toFixed(2)}) pour obtenir ce numéro. Rechargez votre compte pour continuer.` : `Insufficient balance ($${balanceNow.toFixed(2)}) to get this number. Top up your account to continue.`);
       return;
     }
     setError('');
+    setErrorKind('');
     setLoading(true);
 
     try {
@@ -275,57 +285,70 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       setEndTime(Date.now() + 900000);
     } catch (err) {
       console.error(err);
-      let errMsg = err.message || (isFr ? 'Une erreur est survenue' : 'An error occurred');
-      
-      const lowerErr = errMsg.toLowerCase();
-      if (
-        lowerErr.includes('nonumberavailable') || 
-        lowerErr.includes('no free channels') || 
-        lowerErr.includes('no_numbers') || 
-        lowerErr.includes('not found') || 
-        lowerErr.includes('not_found') || 
-        lowerErr.includes('out of stock') || 
-        lowerErr.includes('no number') ||
-        lowerErr.includes('erreur technique est survenue') ||
-        lowerErr.includes('technical error occurred') ||
-        lowerErr.includes('provider error')
-      ) {
-        // Add to failedProviders and try next available
-        const newFailed = [...currentFailedList, providerVal];
-        setFailedProviders(prev => ({ ...prev, [isoVal]: newFailed }));
-        
-        const country = countries.find(c => c.Iso === isoVal);
-        if (country && country.Providers) {
-           const availableProviders = country.Providers.filter(p => !newFailed.includes(p.Name));
-           if (availableProviders.length > 0) {
-              const next = availableProviders[0];
-              const nextPrice = parseFloat(next.Price);
-              const nextRawPrice = parseFloat(next.RawPrice);
-              const nextApp = next.App || null;
+      const rawMsg = err.message || '';
+      const lowerErr = rawMsg.toLowerCase();
 
-              setCurrentPrice(nextPrice);
-              setCurrentRawPrice(nextRawPrice);
-              setCurrentProvider(next.Name);
+      // Le solde du CLIENT est insuffisant (vérifié aussi côté serveur) :
+      // message clair, pas de retry fournisseur, on l'invite à recharger.
+      const isBalanceErr = lowerErr.includes('insufficient balance') || lowerErr.includes('solde insuffisant');
+      // Le fournisseur signale explicitement "pas de numéro en stock" pour ce
+      // pays (jamais un vrai nom de fournisseur dans ces mots-clés).
+      const isStockOut = !isBalanceErr && (
+        lowerErr.includes('nonumberavailable') ||
+        lowerErr.includes('no free channels') ||
+        lowerErr.includes('no_numbers') ||
+        lowerErr.includes('not found') ||
+        lowerErr.includes('not_found') ||
+        lowerErr.includes('out of stock') ||
+        lowerErr.includes('no number')
+      );
 
-              // Small delay to retry with the next provider
-              setTimeout(() => {
-                 requestNumber(isoVal, nextPrice, next.Name, nextRawPrice, nextApp, newFailed);
-              }, 50);
-              
-              return; // Exit early since we are retrying
-           }
-        }
-        
-        errMsg = isFr 
-          ? "Aucun numéro n'est disponible pour ce pays actuellement. Veuillez réessayer plus tard ou choisir un autre pays."
-          : "No number is currently available for this country. Please try again later or choose another country.";
-      } else if (lowerErr.includes('insufficient balance') || lowerErr.includes('solde insuffisant')) {
-        errMsg = isFr 
-          ? "Solde insuffisant pour cette opération. Veuillez recharger votre compte."
-          : "Insufficient balance for this operation. Please top up your account.";
+      if (isBalanceErr) {
+        setErrorKind('balance');
+        setError(isFr
+          ? "Solde insuffisant pour obtenir ce numéro. Rechargez votre compte pour continuer."
+          : "Insufficient balance to get this number. Top up your account to continue.");
+        setLoading(false);
+        return;
       }
-      
-      setError(errMsg);
+
+      // Stock épuisé OU souci technique : on tente automatiquement le
+      // fournisseur suivant avant d'abandonner (transparent pour le client).
+      const newFailed = [...currentFailedList, providerVal];
+      setFailedProviders(prev => ({ ...prev, [isoVal]: newFailed }));
+
+      const country = countries.find(c => c.Iso === isoVal);
+      const availableProviders = (country?.Providers || []).filter(p => !newFailed.includes(p.Name));
+      if (availableProviders.length > 0) {
+        const next = availableProviders[0];
+        const nextPrice = parseFloat(next.Price);
+        const nextRawPrice = parseFloat(next.RawPrice);
+        const nextApp = next.App || null;
+
+        setCurrentPrice(nextPrice);
+        setCurrentRawPrice(nextRawPrice);
+        setCurrentProvider(next.Name);
+
+        // Small delay to retry with the next provider
+        setTimeout(() => {
+          requestNumber(isoVal, nextPrice, next.Name, nextRawPrice, nextApp, newFailed);
+        }, 50);
+        return; // Exit early since we are retrying
+      }
+
+      // Plus aucun fournisseur disponible : message final selon la vraie cause,
+      // formulé en langage courant, sans jamais mentionner un fournisseur.
+      if (isStockOut) {
+        setErrorKind('unavailable');
+        setError(isFr
+          ? "Ce pays n'est pas disponible pour le moment. Merci d'essayer un autre pays."
+          : "This country isn't available right now. Please try another country.");
+      } else {
+        setErrorKind('technical');
+        setError(isFr
+          ? "Une erreur technique empêche l'envoi du numéro pour le moment. Réessayez dans quelques instants."
+          : "A technical issue is preventing the number from being sent right now. Please try again shortly.");
+      }
     } finally {
       setLoading(false);
     }
@@ -354,6 +377,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     setTimeLeft(900);
     setEndTime(0);
     setError('');
+    setErrorKind('');
     localStorage.removeItem('smsViewState');
   };
 
@@ -450,7 +474,9 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         </div>
       </div>
       
-      {error && (
+      {/* Erreurs catégorisées (solde / pays indisponible / technique) : affichées
+          uniquement à la place du numéro à l'étape 2, pas ici (évite le doublon). */}
+      {error && !errorKind && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 mb-8 shadow-sm">
           <AlertCircle size={20} className="shrink-0" /> <span className="flex-1">{error}</span>
         </div>
@@ -507,6 +533,26 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
             {!selectedCountry ? (
               <div className="text-center py-6 text-yellow-600 dark:text-yellow-400 font-bold bg-yellow-50/50 dark:bg-yellow-950/10 rounded-2xl border border-dashed border-yellow-200/50 dark:border-yellow-900/20">
                 {isFr ? "⚠️ Veuillez d'abord sélectionner un pays à l'étape 1" : "⚠️ Please select a country in step 1 first"}
+              </div>
+            ) : errorKind && !phoneNumber && !loading ? (
+              // Message clair à la place du numéro (jamais de jargon technique
+              // ni de nom de fournisseur) : solde / pays indisponible / technique.
+              <div className={`rounded-2xl p-5 flex items-start gap-3 border animate-in fade-in duration-300 ${
+                errorKind === 'balance'
+                  ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-400'
+                  : errorKind === 'unavailable'
+                  ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-900/30 text-orange-700 dark:text-orange-400'
+                  : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400'
+              }`}>
+                <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-sm">{error}</p>
+                  {errorKind === 'balance' && (
+                    <button onClick={() => navigate('recharge')} className="mt-3 text-xs font-black uppercase tracking-widest underline hover:no-underline">
+                      {isFr ? 'Recharger mon solde →' : 'Top up my balance →'}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col md:flex-row gap-4 items-end animate-in fade-in slide-in-from-bottom-2 duration-300">

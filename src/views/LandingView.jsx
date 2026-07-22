@@ -28,20 +28,23 @@ import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
 const LandingView = ({ navigate, session, products = [], setSelectedProduct, lang, setLang }) => {
-  const topProductsRaw = [...products]
-    .sort((a, b) => (b.sales || 0) - (a.sales || 0))
-    .slice(0, 3)
-    .sort((a, b) => b.price - a.price);
-  const topProducts = [];
-  if (topProductsRaw.length > 0) {
-    if (topProductsRaw.length === 1) topProducts.push(topProductsRaw[0]);
-    if (topProductsRaw.length === 2) { topProducts.push(topProductsRaw[1]); topProducts.push(topProductsRaw[0]); }
-    if (topProductsRaw.length >= 3) {
-      topProducts.push(topProductsRaw[1]); // #2 seller
-      topProducts.push(topProductsRaw[0]); // #1 seller
-      topProducts.push(topProductsRaw[2]); // #3 seller
-    }
-  }
+  // Vitrine "Best-Sellers" : les 2 offres les plus demandées (comptes Gmail US
+  // 2FA, en priorité les moins chers pour l'accroche) + le service de
+  // vérification SMS YouTube en 3e position (pseudo-produit, prix variable
+  // selon le pays — redirige vers /sms au lieu du flux d'achat produit).
+  const gmailUsPool = [...products].filter(p => p.category === 'Gmail US');
+  const gmailUsWith2FA = gmailUsPool.filter(p => /2fa/i.test(p.name || ''));
+  const gmailUsPicks = (gmailUsWith2FA.length >= 2 ? gmailUsWith2FA : gmailUsPool)
+    .sort((a, b) => a.price - b.price)
+    .slice(0, 2);
+
+  const smsService = {
+    id: 'sms-youtube-service',
+    isSmsService: true,
+    name: lang === 'fr' ? 'Vérification SMS YouTube' : 'YouTube SMS Verification',
+  };
+
+  const topProducts = [...gmailUsPicks, smsService];
 
   const handleProductSelect = (product) => {
     if (setSelectedProduct) setSelectedProduct(product);
@@ -283,7 +286,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
 
         <section className="py-section-gap relative" id="catalogue">
           <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
-            <div className="flex flex-col lg:flex-row justify-between items-end mb-24 gap-10 reveal-target opacity-0">
+            <div className="flex flex-col lg:flex-row justify-between items-center lg:items-end text-center lg:text-left mb-24 gap-10 reveal-target opacity-0">
               <div className="max-w-2xl">
                 <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-8 font-extrabold">{lang === 'fr' ? 'Nos Best-Sellers US' : 'Our US Best Sellers'} <br/>{lang === 'fr' ? 'Livraison immédiate' : 'Instant delivery'}</h2>
                 <p className="font-body-md text-on-surface-variant text-lg leading-relaxed">{lang === 'fr' ? 'Payez par Crypto (Binance Pay) ou Mobile Money.' : 'Pay with Crypto (Binance Pay) or Mobile Money.'}</p>
@@ -296,16 +299,28 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
               {topProducts.map((product, idx) => {
                 const isCenter = topProducts.length >= 3 ? idx === 1 : idx === 0;
                 const delay = `${0.1 * (idx + 1)}s`;
-                
-                const rank = topProductsRaw.indexOf(product) + 1;
+                const rank = idx + 1;
+
                 let badgeText = `Top Vente #${rank}`;
                 let subtitle = "Très demandé";
                 if (rank === 1) {
                   badgeText = "Top 1 des ventes";
                   subtitle = "Choix N°1 des créateurs";
                 }
+                if (product.isSmsService) {
+                  badgeText = lang === 'fr' ? 'Service le + demandé' : 'Most requested service';
+                  subtitle = lang === 'fr' ? 'Débloquez votre chaîne en 1 min' : 'Unlock your channel in 1 min';
+                }
                 // Slogan neutre par défaut (le produit n'est pas toujours un Gmail)
-                const tagline = product.details?.note || (lang === 'fr' ? 'Qualité premium vérifiée' : 'Verified premium quality');
+                const tagline = product.isSmsService
+                  ? (lang === 'fr' ? 'Recevez le code SMS YouTube instantanément, tous pays' : 'Get the YouTube SMS code instantly, all countries')
+                  : (product.details?.note || (lang === 'fr' ? 'Qualité premium vérifiée' : 'Verified premium quality'));
+
+                const priceNode = product.isSmsService
+                  ? <div className="text-3xl font-extrabold text-on-surface mb-12">{lang === 'fr' ? 'Dès' : 'From'} $0.88</div>
+                  : <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>;
+                const onSelect = product.isSmsService ? () => navigate('sms') : () => handleProductSelect(product);
+                const displayName = product.isSmsService ? (lang === 'fr' ? 'Vérification SMS YouTube' : 'YouTube SMS Verification') : cleanProductName(product.name, lang);
 
                 if (isCenter) {
                   return (
@@ -314,11 +329,11 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                       <div className="mb-10">
                         <span className="bg-l-primary text-white dark:text-gray-900 px-5 py-2 rounded-full text-[11px] font-bold font-label-sm uppercase tracking-widest">{badgeText}</span>
                       </div>
-                      <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
+                      <h3 className="font-headline-lg text-3xl mb-3 font-bold">{displayName}</h3>
                       <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                       <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{tagline}".</p>
-                      <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
-                      <button onClick={() => handleProductSelect(product)} className="w-full bg-l-primary text-white dark:text-gray-900 py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">{lang === 'fr' ? 'Acheter maintenant' : 'Buy Now'}</button>
+                      {priceNode}
+                      <button onClick={onSelect} className="w-full bg-l-primary text-white dark:text-gray-900 py-5 rounded-2xl font-bold transition-all duration-300 emerald-glow shadow-xl">{product.isSmsService ? (lang === 'fr' ? 'Vérifier ma chaîne' : 'Verify my channel') : (lang === 'fr' ? 'Acheter maintenant' : 'Buy Now')}</button>
                     </div>
                   );
                 }
@@ -328,11 +343,11 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                     <div className="mb-6 flex justify-between items-start">
                       <span className="font-label-sm text-[10px] uppercase tracking-widest text-on-surface-variant font-bold bg-white/5 px-3 py-1.5 rounded-full">{badgeText}</span>
                     </div>
-                    <h3 className="font-headline-lg text-3xl mb-3 font-bold">{cleanProductName(product.name, lang)}</h3>
+                    <h3 className="font-headline-lg text-3xl mb-3 font-bold">{displayName}</h3>
                     <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                     <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{tagline}".</p>
-                    <div className="text-5xl font-extrabold text-on-surface mb-12">${product.price}</div>
-                    <button onClick={() => handleProductSelect(product)} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white dark:text-gray-900 transition-all duration-300">{lang === 'fr' ? 'Sélectionner' : 'Select'}</button>
+                    {priceNode}
+                    <button onClick={onSelect} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white dark:text-gray-900 transition-all duration-300">{product.isSmsService ? (lang === 'fr' ? 'Vérifier ma chaîne' : 'Verify my channel') : (lang === 'fr' ? 'Sélectionner' : 'Select')}</button>
                   </div>
                 );
               })}

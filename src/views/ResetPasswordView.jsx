@@ -56,7 +56,9 @@ const ResetPasswordView = ({ navigate, lang }) => {
     }
   };
 
-  const inputCls = "w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-medium text-sm transition-all";
+  // text-gray-900 explicite : cette carte reste toujours claire (bg-white),
+  // sans quoi le texte hérite du blanc du thème sombre global (illisible).
+  const inputCls = "w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-medium text-sm text-gray-900 placeholder:text-gray-400 transition-all";
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-16 px-6 font-sans">

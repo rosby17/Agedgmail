@@ -13,6 +13,7 @@
 // ============================================================
 import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { providerForAlias } from '../_shared/sms-pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,12 +42,14 @@ serve(async (req) => {
     const { securityId, number, provider } = await req.json();
     if (!securityId && !number) throw new Error('Missing parameters');
 
-    // Déterminer le fournisseur depuis le préfixe du securityId
-    // (ex: "pvapins:441234:UK"), avec repli sur le champ `provider`.
-    let providerName = provider || 'smscodes';
+    // Déterminer le fournisseur depuis le préfixe du securityId (alias opaque,
+    // ex: "p1:441234:UK"), avec repli sur le champ `provider`. Conversion en
+    // vrai nom fournisseur côté serveur uniquement — jamais renvoyé au client.
+    let providerAlias = provider || 'p2';
     if (typeof securityId === 'string' && securityId.includes(':')) {
-      providerName = securityId.split(':')[0];
+      providerAlias = securityId.split(':')[0];
     }
+    const providerName = providerForAlias(providerAlias);
 
     let released = false;
     let detail = '';
@@ -72,7 +75,8 @@ serve(async (req) => {
     }
     // smscodes : rien à faire (pas d'endpoint, auto-libération, jamais facturé).
 
-    return new Response(JSON.stringify({ status: 'ok', released, provider: providerName, detail }), {
+    // Ne jamais renvoyer le vrai nom fournisseur au client : on renvoie l'alias.
+    return new Response(JSON.stringify({ status: 'ok', released, provider: providerAlias, detail }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { aliasForProvider } from '../_shared/sms-pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -136,7 +137,7 @@ serve(async (req) => {
               if (!c.Iso || !c.Price) return;
               const price = parseFloat(c.Price);
               const countryObj = getCountry(c.Iso, c.Country);
-              countryObj.Providers.push({ Name: 'smscodes', RawPrice: price });
+              countryObj.Providers.push({ Name: aliasForProvider('smscodes'), RawPrice: price });
             });
           }
         } catch (e) {
@@ -158,7 +159,7 @@ serve(async (req) => {
         // Crée le pays s'il n'était pas listé par SMSCodes (couverture élargie),
         // sinon ajoute PVAPins comme alternative comparée au même pays.
         const countryObj = getCountry(pr.iso, pr.name);
-        countryObj.Providers.push({ Name: 'pvapins', RawPrice: pr.rate, App: pr.app });
+        countryObj.Providers.push({ Name: aliasForProvider('pvapins'), RawPrice: pr.rate, App: pr.app });
       }
     }
 

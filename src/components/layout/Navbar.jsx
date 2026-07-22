@@ -24,8 +24,8 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
   const linkCls = (active) => `text-sm font-bold transition-colors ${active ? 'text-primary' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}`;
   return (
   <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 font-sans">
-    <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
-      <div className="flex items-center gap-4">
+    <div className="max-w-7xl mx-auto px-3 md:px-6 py-3 md:py-4 flex items-center justify-between gap-2 md:gap-6">
+      <div className="flex items-center gap-2 md:gap-4">
         {/* Mobile Hamburger Button */}
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
@@ -50,9 +50,9 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
         )}
       </nav>
 
-      <div className="flex items-center gap-4">
-        {/* Language selector */}
-        <div className="flex items-center text-sm font-bold font-sans tracking-wide">
+      <div className="flex items-center gap-2 md:gap-4">
+        {/* Language selector — masqué sur mobile (déplacé dans le menu burger) pour gagner de l'espace */}
+        <div className="hidden lg:flex items-center text-sm font-bold font-sans tracking-wide">
           <button onClick={() => setLang('fr')} className={`transition-colors hover:text-primary ${lang === 'fr' ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`}>FR</button>
           <span className="mx-3 text-gray-300 dark:text-gray-600">|</span>
           <button onClick={() => setLang('en')} className={`transition-colors hover:text-primary ${lang === 'en' ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`}>EN</button>
@@ -99,8 +99,8 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             </button>
           </div>
         ) : (
-          <button onClick={() => navigate('auth')} className="text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px]">
-            <User size={18} /> LOGIN/SIGNUP
+          <button onClick={() => navigate('auth')} aria-label="Login / Signup" className="text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-primary flex items-center gap-2 uppercase tracking-wider text-[11px] w-10 h-10 md:w-auto md:h-auto justify-center rounded-full bg-gray-50 dark:bg-gray-800 md:bg-transparent md:dark:bg-transparent border border-gray-100 dark:border-gray-700 md:border-0">
+            <User size={18} /> <span className="hidden md:inline">LOGIN/SIGNUP</span>
           </button>
         )}
       </div>
@@ -124,6 +124,16 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
               {t('myOrders')}
             </button>
           )}
+
+          {/* Sélecteur de langue — vit ici sur mobile pour libérer la barre du haut */}
+          <div className="flex items-center gap-2 pt-2 mt-2 border-t border-gray-100 dark:border-gray-800">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{lang === 'fr' ? 'Langue' : 'Language'}</span>
+            <div className="flex items-center text-sm font-bold font-sans tracking-wide ml-auto">
+              <button onClick={() => setLang('fr')} className={`transition-colors hover:text-primary ${lang === 'fr' ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`}>FR</button>
+              <span className="mx-3 text-gray-300 dark:text-gray-600">|</span>
+              <button onClick={() => setLang('en')} className={`transition-colors hover:text-primary ${lang === 'en' ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`}>EN</button>
+            </div>
+          </div>
         </div>
       </div>
     )}

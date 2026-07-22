@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { verifySignedSecurityId } from '../_shared/sms-pricing.ts';
+import { verifySignedSecurityId, providerForAlias } from '../_shared/sms-pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,9 +42,12 @@ serve(async (req) => {
     const { base, price: smsPrice } = verified;
     const supplierCost = supplier_cost || 0.50; // purement informatif (log commande)
 
-    // Parse le base signé : "smscodes:SID" ou "pvapins:num:pays:variante".
+    // Parse le base signé : "alias:SID" ou "alias:num:pays:variante". L'alias
+    // opaque ('p1'/'p2') est converti ici en vrai nom fournisseur, côté
+    // serveur uniquement — jamais exposé au client (voir sms-pricing.ts).
     const baseParts = base.split(':');
-    const providerName = baseParts[0];
+    const providerAlias = baseParts[0];
+    const providerName = providerForAlias(providerAlias);
     const externalSecurityId = baseParts[1] || '';
 
     let status = "waiting";
@@ -136,19 +139,22 @@ serve(async (req) => {
         throw new Error('Insufficient balance at time of charge or user not found');
       }
 
-      // Log order
+      // Log order — le vrai nom fournisseur ne doit jamais atterrir dans un
+      // champ que le client peut lire (MyOrdersView télécharge delivery_data/
+      // credentials tels quels) : on stocke l'alias opaque, jamais "pvapins"/
+      // "smscodes" en clair.
       await supabaseAdmin
         .from('orders')
         .insert({
           user_id: user.id,
-          product_name: description || `SMS Verification (${providerName})`,
+          product_name: description || `SMS Verification`,
           total_price: smsPrice,
           supplier_cost: supplierCost,
           quantity: 1,
           buyer_email: user.email,
           status: 'confirmed',
-          delivery_data: { number: number, code: smsCode, provider: providerName },
-          credentials: `Phone: ${number}\nSMS Code: ${smsCode}\nProvider: ${providerName}`
+          delivery_data: { number: number, code: smsCode, provider: providerAlias },
+          credentials: `Phone: ${number}\nSMS Code: ${smsCode}`
         });
 
       // Notification
