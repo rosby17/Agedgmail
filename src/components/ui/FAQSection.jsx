@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 const FAQSection = () => {
   const [openIndex, setOpenIndex] = useState(null);
@@ -58,9 +59,7 @@ const FAQSection = () => {
                 <span className={`font-bold text-lg transition-colors ${openIndex === idx ? 'text-l-primary' : 'text-on-surface'}`}>
                   {faq.q}
                 </span>
-                <span className={`material-symbols-outlined text-l-primary transition-transform duration-300 ${openIndex === idx ? 'rotate-180' : ''}`}>
-                  expand_more
-                </span>
+                <ChevronDown size={20} className={`text-l-primary shrink-0 transition-transform duration-300 ${openIndex === idx ? 'rotate-180' : ''}`} />
               </button>
               <div 
                 className={`px-8 overflow-hidden transition-all duration-500 ease-in-out ${openIndex === idx ? 'max-h-96 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}

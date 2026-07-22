@@ -1,6 +1,6 @@
 import FAQSection from '../components/ui/FAQSection';
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, ArrowRight, BadgeCheck, Globe, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 import { ADMIN_EMAIL, CATEGORIES, GROUP_LABELS, GROUP_ORDER, AVATAR_COLORS, JUNK_CATEGORIES, SUPPLIERS, API_BASE_URL } from '../utils/constants';
@@ -130,7 +130,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
               <div className="flex flex-col sm:flex-row gap-5">
                 <button onClick={() => navigate('shop')} className="btn-magnetic group flex items-center justify-center gap-3 bg-l-primary text-white dark:text-gray-900 px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300 emerald-glow shadow-2xl">
                   {lang === 'fr' ? 'Acheter un compte' : 'Buy an Account'}
-                  <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button onClick={() => navigate('shop')} className="btn-magnetic flex items-center justify-center gap-2 border border-white/10 glass text-on-surface hover:bg-white/5 px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300">
                   {lang === 'fr' ? 'Voir le catalogue' : 'View Catalog'}
@@ -182,7 +182,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 p-3 bg-l-primary/5 rounded-xl border border-l-primary/20">
                         <div className="w-8 h-8 rounded-lg bg-l-primary/20 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-l-primary text-sm">verified</span>
+                          <BadgeCheck size={16} className="text-l-primary" />
                         </div>
                         <div className="flex-1">
                           <div className="h-2 w-24 bg-l-primary/30 rounded-full mb-1"></div>
@@ -220,21 +220,21 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.1s' }}>
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
-                  <span className="material-symbols-outlined text-l-primary text-4xl">public</span>
+                  <Globe size={36} className="text-l-primary" />
                 </div>
                 <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">{lang === 'fr' ? 'Audience Internationale' : 'Global Audience'}</h4>
                 <p className="text-on-surface-variant leading-relaxed">{lang === 'fr' ? 'Des comptes géo-localisés (US, Inde, Espagne, etc.) pour cibler précisément les audiences les plus monétisables sans restrictions.' : 'Geo-localized accounts (US, India, Spain, etc.) to accurately target the most monetizable audiences without restrictions.'}</p>
               </div>
               <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.2s' }}>
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
-                  <span className="material-symbols-outlined text-l-primary text-4xl">shield_person</span>
+                  <ShieldCheck size={36} className="text-l-primary" />
                 </div>
                 <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">{lang === 'fr' ? 'Haute Autorité' : 'High Authority'}</h4>
                 <p className="text-on-surface-variant leading-relaxed">{lang === 'fr' ? 'Un historique solide qui évite les shadowbans systématiques des nouveaux comptes.' : 'A solid history that avoids the systematic shadowbans of new accounts.'}</p>
               </div>
               <div className="glass p-12 rounded-[40px] hover:border-l-primary/30 transition-all duration-500 reveal-target opacity-0 group" style={{ animationDelay: '0.3s' }}>
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/5 group-hover:border-l-primary/20 group-hover:bg-l-primary/5 transition-all">
-                  <span className="material-symbols-outlined text-l-primary text-4xl">verified</span>
+                  <BadgeCheck size={36} className="text-l-primary" />
                 </div>
                 <h4 className="font-headline-lg text-2xl text-on-surface mb-5 font-bold">{lang === 'fr' ? 'Sécurité 2FA Incluse' : '2FA Security Included'}</h4>
                 <p className="text-on-surface-variant leading-relaxed">{lang === 'fr' ? 'Livrés avec les codes de secours ou clé TOTP pour vous garantir l\'accès exclusif à vie.' : 'Delivered with backup codes or TOTP keys to ensure exclusive lifetime access.'}</p>
@@ -251,22 +251,22 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                 <h2 className="font-headline-lg text-4xl md:text-5xl text-on-surface mb-10 leading-tight font-extrabold">{lang === 'fr' ? 'La puissance d\'un compte établi entre vos mains.' : 'The power of an established account in your hands.'}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
                   <div className="group">
-                    <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">verified_user</span>
+                    <ShieldCheck size={30} className="text-l-primary mb-5 group-hover:scale-110 transition-transform block" />
                     <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Historique Propre' : 'Clean History'}</h5>
                     <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Comptes sans aucune infraction passée, prêts pour l\'usage pro.' : 'Accounts with no past violations, ready for pro use.'}</p>
                   </div>
                   <div className="group">
-                    <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">bolt</span>
+                    <Zap size={30} className="text-l-primary mb-5 group-hover:scale-110 transition-transform block" />
                     <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Livraison Instantanée' : 'Instant Delivery'}</h5>
                     <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Vos accès sont envoyés automatiquement après validation du paiement.' : 'Your access is sent automatically after payment validation.'}</p>
                   </div>
                   <div className="group">
-                    <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">payments</span>
+                    <CreditCard size={30} className="text-l-primary mb-5 group-hover:scale-110 transition-transform block" />
                     <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Paiement Sécurisé' : 'Secure Payment'}</h5>
                     <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Binance Pay, USDT et Mobile Money acceptés.' : 'Binance Pay, USDT, and Mobile Money accepted.'}</p>
                   </div>
                   <div className="group">
-                    <span className="material-symbols-outlined text-l-primary text-3xl mb-5 group-hover:scale-110 transition-transform block">headset_mic</span>
+                    <Headphones size={30} className="text-l-primary mb-5 group-hover:scale-110 transition-transform block" />
                     <h5 className="font-headline-lg font-bold text-lg text-on-surface mb-3">{lang === 'fr' ? 'Support 24/7' : '24/7 Support'}</h5>
                     <p className="text-on-surface-variant text-sm leading-relaxed">{lang === 'fr' ? 'Une équipe technique à votre écoute pour toute intégration.' : 'A technical team at your disposal for any integration.'}</p>
                   </div>
@@ -392,7 +392,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                     Acheter maintenant
                   </button>
                   <div className="flex items-center gap-3 bg-white/5 px-6 py-3 rounded-full border border-white/5">
-                    <span className="material-symbols-outlined text-l-primary text-xl">verified</span>
+                    <BadgeCheck size={20} className="text-l-primary" />
                     <p className="font-label-sm text-on-surface-variant text-[11px] uppercase tracking-[0.15em] font-bold">Garantie de remplacement de 48h incluse</p>
                   </div>
                 </div>
