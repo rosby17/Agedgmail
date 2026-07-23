@@ -420,6 +420,7 @@ const RecentActivityTable = ({ allOrders }) => {
 const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // all | active | suspended
+  const [sortBy, setSortBy] = useState('recent'); // recent | oldest | balance | spent | orders
   const [viewingClient, setViewingClient] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
@@ -453,6 +454,18 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
       if (!q) return true;
       return (u.email || '').toLowerCase().includes(q) || (u.display_name || '').toLowerCase().includes(q);
     });
+
+  const sorted = [...filtered].sort((a, b) => {
+    const sa = statsByUser.get(a.id) || { spent: 0, orders: 0 };
+    const sb = statsByUser.get(b.id) || { spent: 0, orders: 0 };
+    switch (sortBy) {
+      case 'balance': return Number(b.balance || 0) - Number(a.balance || 0);
+      case 'spent': return sb.spent - sa.spent;
+      case 'orders': return sb.orders - sa.orders;
+      case 'oldest': return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+      default: return new Date(b.created_at || 0) - new Date(a.created_at || 0); // recent
+    }
+  });
 
   const activeCount = allUsers.filter(u => !u.is_suspended).length;
   const suspendedCount = allUsers.filter(u => u.is_suspended).length;
@@ -524,6 +537,18 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
               </button>
             ))}
           </div>
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            title="Trier les clients"
+            className="px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+          >
+            <option value="recent">Plus récents</option>
+            <option value="oldest">Plus anciens</option>
+            <option value="balance">Solde (élevé → bas)</option>
+            <option value="spent">Montant dépensé</option>
+            <option value="orders">Nombre d'achats</option>
+          </select>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={15} />
             <input
@@ -549,7 +574,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
-            {filtered.map(user => {
+            {sorted.map(user => {
               const s = statsByUser.get(user.id) || { orders: 0, spent: 0, deposited: 0 };
               return (
                 <tr key={user.id} className={user.is_suspended ? 'opacity-60' : ''}>
@@ -587,11 +612,6 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => setViewingClient(user)} title="Voir l'historique" className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"><Eye size={14} /></button>
                       <button onClick={() => creditBalance(user)} disabled={busyId === user.id} title="Créditer le solde" className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all disabled:opacity-40"><DollarSign size={14} /></button>
-                      <button onClick={() => toggleAdmin(user)} disabled={busyId === user.id || user.email === ADMIN_EMAIL}
-                        title={user.is_admin ? 'Révoquer Admin' : 'Nommer Admin'}
-                        className={`p-2 rounded-lg transition-all disabled:opacity-40 ${user.is_admin ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 hover:bg-amber-50 hover:text-amber-600'}`}>
-                        <Shield size={14} />
-                      </button>
                       <button onClick={() => toggleBan(user)} disabled={busyId === user.id}
                         title={user.is_suspended ? 'Réactiver' : 'Bannir'}
                         className={`p-2 rounded-lg transition-all disabled:opacity-40 ${user.is_suspended ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
@@ -602,7 +622,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-gray-400">Aucun client trouvé.</td></tr>}
+            {sorted.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-gray-400">Aucun client trouvé.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -997,19 +1017,6 @@ const AdminView = ({
     (Date.now() - new Date(o.created_at).getTime()) / 60000 > STUCK_MIN
   );
 
-  // Top produits vendus (hors recharges)
-  const topProducts = (() => {
-    const counts = new Map();
-    confirmedPurchases.forEach(o => {
-      const key = o.product_name || 'Produit';
-      const cur = counts.get(key) || { count: 0, revenue: 0 };
-      counts.set(key, { count: cur.count + (o.quantity || 1), revenue: cur.revenue + (o.total_price || 0) });
-    });
-    return [...counts.entries()].sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 5);
-  })();
-
-
-
   return (
     <div className="min-h-screen bg-canvas dark:bg-gray-950 text-gray-900 dark:text-white font-sans flex flex-col lg:flex-row">
       {/* Sidebar Standalone */}
@@ -1167,38 +1174,9 @@ const AdminView = ({
 
             <RevenueChart confirmedOrders={confirmedPurchases} allUsers={allUsers} mappings={mappings} lang={lang} />
 
-            {/* Top products & Activity side-by-side */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-              {/* Recent Activity (takes 2 cols) */}
-              <div className="xl:col-span-2">
-                <RecentActivityTable allOrders={allOrders} />
-              </div>
-
-              {/* Top Products */}
-              <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 shadow-2xl h-fit">
-                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-6">Top produits vendus</h3>
-                {topProducts.length === 0 ? (
-                  <p className="text-gray-500 dark:text-slate-500 text-sm italic">Aucune vente confirmée pour l'instant.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {topProducts.map(([name, stats], i) => (
-                      <div key={name} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-800 last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 font-bold flex items-center justify-center text-xs shrink-0">
-                            {i + 1}
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug">{name}</div>
-                            <div className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase mt-1 tracking-widest">{stats.count} vendu(s)</div>
-                          </div>
-                        </div>
-                        <div className="text-sm font-black text-primary font-mono shrink-0 pl-4">${stats.revenue.toFixed(2)}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Activité récente — pleine largeur (section "Top produits" retirée
+                pour aérer le dashboard). */}
+            <RecentActivityTable allOrders={allOrders} />
           </div>
         )}
           {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} lang={lang} loading={dataLoading} />}

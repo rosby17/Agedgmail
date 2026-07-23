@@ -32,7 +32,13 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
 
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const deposits = allOrders.filter(o => o.product_id === 999);
+  // File de validation MANUELLE : uniquement les recharges qui exigent une
+  // action de l'admin (Binance Pay & USDT TRC20). Mobile Money (Maketou) est
+  // crédité AUTOMATIQUEMENT par maketou-verify → on l'exclut de cette file
+  // pour ne pas encombrer (il n'y a rien à valider à la main dessus).
+  const deposits = allOrders.filter(o =>
+    o.product_id === 999 && o.payment_method !== 'mobile_money'
+  );
   const filteredDeposits = deposits.filter(o => filterStatus === 'all' || o.status === filterStatus);
 
   useEffect(() => {
