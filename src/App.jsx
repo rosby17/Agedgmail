@@ -560,8 +560,20 @@ function App() {
 
   const fetchUsers = async () => {
     if (!supabase) return;
-    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (data) setAllUsers(data);
+    // PostgREST plafonne une requête à ~1000 lignes : on pagine pour récupérer
+    // TOUS les clients même au-delà de 1000 (sinon les plus anciens disparaissent).
+    const PAGE = 1000;
+    let all = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('profiles').select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error || !data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+    }
+    setAllUsers(all);
   };
 
   const fetchProfile = async (userId) => {
