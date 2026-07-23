@@ -38,7 +38,7 @@ export default {
       },
       fontFamily: {
         sans: ["'Plus Jakarta Sans'", "Inter", "sans-serif"],
-        mono: ["'IBM Plex Mono'", "monospace"],
+        mono: ["'JetBrains Mono'", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
         "body-md": ["Inter", "sans-serif"],
         "headline-lg": ["'Plus Jakarta Sans'", "sans-serif"],
         "label-sm": ["'JetBrains Mono'", "monospace"],
