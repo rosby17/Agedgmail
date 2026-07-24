@@ -420,7 +420,20 @@ const RecentActivityTable = ({ allOrders }) => {
 const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // all | active | suspended
-  const [sortBy, setSortBy] = useState('recent'); // recent | oldest | balance | spent | orders
+  const [sortBy, setSortBy] = useState('created'); // client | balance | orders | spent | created | status
+  const [sortDir, setSortDir] = useState('desc'); // 'asc' | 'desc'
+
+  // Clic sur un en-tête de colonne : trie par cette colonne ; re-cliquer
+  // inverse le sens. Défaut : plus récents d'abord.
+  const toggleSort = (col) => {
+    if (sortBy === col) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(col);
+      // Défauts logiques par colonne : texte ascendant, chiffres descendants.
+      setSortDir(col === 'client' ? 'asc' : 'desc');
+    }
+  };
   const [viewingClient, setViewingClient] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
@@ -458,13 +471,27 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
   const sorted = [...filtered].sort((a, b) => {
     const sa = statsByUser.get(a.id) || { spent: 0, orders: 0 };
     const sb = statsByUser.get(b.id) || { spent: 0, orders: 0 };
+    let cmp = 0;
     switch (sortBy) {
-      case 'balance': return Number(b.balance || 0) - Number(a.balance || 0);
-      case 'spent': return sb.spent - sa.spent;
-      case 'orders': return sb.orders - sa.orders;
-      case 'oldest': return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-      default: return new Date(b.created_at || 0) - new Date(a.created_at || 0); // recent
+      case 'client':
+        cmp = (a.email || '').localeCompare(b.email || '');
+        break;
+      case 'balance':
+        cmp = Number(a.balance || 0) - Number(b.balance || 0);
+        break;
+      case 'spent':
+        cmp = sa.spent - sb.spent;
+        break;
+      case 'orders':
+        cmp = sa.orders - sb.orders;
+        break;
+      case 'status':
+        cmp = (a.is_suspended ? 1 : 0) - (b.is_suspended ? 1 : 0);
+        break;
+      default: // created (inscrit)
+        cmp = new Date(a.created_at || 0) - new Date(b.created_at || 0);
     }
+    return sortDir === 'asc' ? cmp : -cmp;
   });
 
   const activeCount = allUsers.filter(u => !u.is_suspended).length;
@@ -537,18 +564,6 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
               </button>
             ))}
           </div>
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
-            title="Trier les clients"
-            className="px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
-          >
-            <option value="recent">Plus récents</option>
-            <option value="oldest">Plus anciens</option>
-            <option value="balance">Solde (élevé → bas)</option>
-            <option value="spent">Montant dépensé</option>
-            <option value="orders">Nombre d'achats</option>
-          </select>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={15} />
             <input
@@ -570,7 +585,26 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
-              <th className="pb-4">Client</th><th className="pb-4">Solde</th><th className="pb-4">Achats</th><th className="pb-4">Dépensé</th><th className="pb-4">Inscrit</th><th className="pb-4">Statut</th><th className="pb-4 text-right">Actions</th>
+              {[
+                { key: 'client', label: 'Client' },
+                { key: 'balance', label: 'Solde' },
+                { key: 'orders', label: 'Achats' },
+                { key: 'spent', label: 'Dépensé' },
+                { key: 'created', label: 'Inscrit' },
+                { key: 'status', label: 'Statut' },
+              ].map(col => (
+                <th key={col.key} className="pb-4">
+                  <button
+                    onClick={() => toggleSort(col.key)}
+                    className={`flex items-center gap-1 uppercase tracking-widest transition-colors hover:text-gray-700 dark:hover:text-white ${sortBy === col.key ? 'text-primary' : ''}`}
+                    title={`Trier par ${col.label}`}
+                  >
+                    {col.label}
+                    <span className="text-[8px]">{sortBy === col.key ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                  </button>
+                </th>
+              ))}
+              <th className="pb-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
@@ -599,7 +633,16 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 font-mono font-black text-primary">${Number(user.balance || 0).toFixed(2)}</td>
+                  <td className="py-4">
+                    <button
+                      onClick={() => creditBalance(user)}
+                      disabled={busyId === user.id}
+                      title="Cliquer pour modifier le solde"
+                      className="font-mono font-black text-primary hover:underline decoration-dotted underline-offset-4 disabled:opacity-40 transition-all"
+                    >
+                      ${Number(user.balance || 0).toFixed(2)}
+                    </button>
+                  </td>
                   <td className="py-4 text-gray-600 dark:text-gray-300">{s.orders}</td>
                   <td className="py-4 font-mono text-gray-600 dark:text-gray-300">${s.spent.toFixed(2)}</td>
                   <td className="py-4 text-xs text-gray-400">{user.created_at ? new Date(user.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
@@ -611,7 +654,6 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                   <td className="py-4">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => setViewingClient(user)} title="Voir l'historique" className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"><Eye size={14} /></button>
-                      <button onClick={() => creditBalance(user)} disabled={busyId === user.id} title="Créditer le solde" className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all disabled:opacity-40"><DollarSign size={14} /></button>
                       <button onClick={() => toggleBan(user)} disabled={busyId === user.id}
                         title={user.is_suspended ? 'Réactiver' : 'Bannir'}
                         className={`p-2 rounded-lg transition-all disabled:opacity-40 ${user.is_suspended ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
