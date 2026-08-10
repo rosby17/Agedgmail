@@ -32,12 +32,13 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
 
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // File de validation MANUELLE : uniquement les recharges qui exigent une
-  // action de l'admin (Binance Pay & USDT TRC20). Mobile Money (Maketou) est
-  // crédité AUTOMATIQUEMENT par maketou-verify → on l'exclut de cette file
-  // pour ne pas encombrer (il n'y a rien à valider à la main dessus).
+  // Vue complète de tous les dépôts (Binance Pay + Mobile Money) — le gateway
+  // USDT manuel a été retiré, on masque donc les vieux dépôts USDT de
+  // l'historique ici. Mobile Money est crédité automatiquement par le cron
+  // maketou-poll-pending, mais reste affiché ici avec un bouton de
+  // confirmation/rejet manuel en filet de sécurité si l'automatisation rate.
   const deposits = allOrders.filter(o =>
-    o.product_id === 999 && o.payment_method !== 'mobile_money'
+    o.product_id === 999 && o.payment_method !== 'usdt_trc20'
   );
   const filteredDeposits = deposits.filter(o => filterStatus === 'all' || o.status === filterStatus);
 
@@ -131,7 +132,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                   <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email}</td>
                   <td className="py-4">
                     <span className={`px-2 py-1 rounded text-[10px] font-bold ${isBinance ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : isMobileMoney ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
-                      {isBinance ? 'Binance' : isMobileMoney ? 'Mobile Money' : 'USDT TRC20'}
+                      {isBinance ? 'Binance' : isMobileMoney ? 'Mobile Money' : 'Autre'}
                     </span>
                   </td>
                   <td className="py-4 font-mono font-black text-primary tracking-widest">{isBinance ? (codeByUser[o.user_id] || '—') : '—'}</td>
