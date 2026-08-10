@@ -48,7 +48,9 @@ serve(async (req) => {
     const { error: updErr } = await admin.from('orders').update({
       credentials: creds,
       data: creds,
-      status: 'confirmed',
+      status: 'delivered',
+      delivered_at: new Date().toISOString(),
+      handled_by: userData.user.email,
     }).eq('id', orderId)
     if (updErr) return json({ error: updErr.message }, 500)
 

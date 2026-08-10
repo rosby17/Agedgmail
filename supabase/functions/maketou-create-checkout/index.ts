@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 import { checkRateLimit, getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
+import { notifyTelegram } from '../_shared/supplier-db.ts';
 
 serve(async (req) => {
   // Préflight CORS — restreint à l'origine de prod
@@ -31,6 +32,17 @@ serve(async (req) => {
         status: 401,
       });
     }
+
+    // Client admin (service role) pour les écritures qui DOIVENT réussir
+    // (insert + pose du pay_id) — le client utilisateur est soumis aux
+    // policies RLS, qui peuvent bloquer silencieusement un update sans
+    // renvoyer d'erreur exploitable (c'est ce qui a laissé des commandes
+    // avec pay_id NULL, jamais reprises par le poller de vérification).
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
 
     // ── 2. RATE LIMITING : 10 initiations de paiement par heure ──────────
     const allowed = await checkRateLimit(user.id, 'maketou_checkout', 10, 3600);
@@ -97,7 +109,7 @@ serve(async (req) => {
     }
 
     // 1. Enregistrer la commande comme "pending"
-    const { data: order, error: dbError } = await supabaseClient
+    const { data: order, error: dbError } = await supabaseAdmin
       .from("orders")
       .insert({
         user_id: userId,
@@ -146,8 +158,16 @@ serve(async (req) => {
       throw new Error("Invalid response from Maketou API.");
     }
 
-    await supabaseClient
+    const { error: payIdErr } = await supabaseAdmin
       .from("orders").update({ pay_id: maketouData.cart.id }).eq("id", order.id);
+    if (payIdErr) {
+      // Le panier Maketou existe déjà et le client va être redirigé pour payer —
+      // on ne peut plus annuler proprement, mais on doit savoir que ce dépôt ne
+      // sera JAMAIS repris par le poller automatique (il filtre sur pay_id non
+      // nul). Alerte Telegram pour suivi manuel plutôt qu'échec silencieux.
+      console.error(`CRITICAL: failed to save pay_id ${maketouData.cart.id} on order ${order.id}:`, payIdErr.message);
+      notifyTelegram(`⚠️ Dépôt Mobile Money : impossible d'enregistrer le pay_id sur la commande ${order.id} (cart Maketou ${maketouData.cart.id}). Vérifier manuellement — ce dépôt ne sera pas repris automatiquement.`).catch(() => {});
+    }
 
     return new Response(JSON.stringify({
       redirectUrl: maketouData.redirectUrl,

@@ -126,6 +126,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
     const isSpecial = order.product_id === 999 || order.product_id === 998;
     const map = {
       confirmed: { label: isSpecial ? 'Succès' : t('completed'), cls: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' },
+      delivered: { label: t('completed'), cls: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' },
       cancelled:  { label: t('failed'),    cls: 'bg-red-100 text-red-600 border-red-200 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400' },
       processing: { label: t('processing'), cls: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400' },
       pending:    { label: t('pending'),   cls: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:border-yellow-500/20 dark:text-yellow-400' },

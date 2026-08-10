@@ -120,7 +120,8 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
     const map = {
       pending: { label: 'En attente', icon: Clock, cls: 'bg-yellow-100 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/30' },
       processing: { label: 'En cours', icon: RefreshCcw, cls: 'bg-blue-100 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900/30' },
-      confirmed: { label: 'Payé / livré', icon: CheckCircle, cls: 'bg-green-100 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/30' },
+      confirmed: { label: 'Payé (non livré)', icon: AlertTriangle, cls: 'bg-amber-100 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/30' },
+      delivered: { label: 'Livrée', icon: CheckCircle, cls: 'bg-green-100 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/30' },
       cancelled: { label: 'Annulé', icon: X, cls: 'bg-red-100 dark:bg-red-950/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/30' },
     };
     const { label, icon: Icon, cls } = map[s] || map.pending;
@@ -148,7 +149,8 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
             { key: 'all', label: 'Toutes', icon: FileText },
             { key: 'pending', label: 'En attente', icon: Clock },
             { key: 'processing', label: 'En cours', icon: RefreshCcw },
-            { key: 'confirmed', label: 'Payées / livrées', icon: CheckCircle },
+            { key: 'confirmed', label: 'Payées non livrées', icon: AlertTriangle },
+            { key: 'delivered', label: 'Livrées', icon: CheckCircle },
             { key: 'cancelled', label: 'Annulées', icon: X },
           ].map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)}
@@ -231,7 +233,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                           <Package size={14} /> Livrer
                         </button>
                       )}
-                      {!isRecharge(order) && order.status === 'confirmed' && (
+                      {!isRecharge(order) && order.status === 'delivered' && (
                         <button onClick={() => setSelectedOrder(order)}
                           className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-all" title="Voir les accès livrés" aria-label="Voir les accès livrés">
                           <Eye size={14} />
@@ -282,6 +284,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                 ['Email Client', selectedOrder.buyer_email || '—', Mail],
                 ['Montant', `$${selectedOrder.total_price?.toFixed(2)}`, Wallet],
                 ['Date', new Date(selectedOrder.created_at).toLocaleString(), Clock],
+                ...(selectedOrder.handled_by ? [['Traité par', selectedOrder.handled_by, UserCheck]] : []),
               ].map(([label, val, Icon]) => (
                 <div key={label} className="flex justify-between items-center group">
                   <span className="text-gray-400 dark:text-slate-400 font-medium text-xs flex items-center gap-2">
@@ -342,7 +345,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                 placeholder={"email:motdepasse:recovery\nemail2:motdepasse2:recovery2"}
                 className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm font-mono outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
               />
-              <p className="text-[11px] text-gray-400">Ce contenu sera visible par le client dans « Mes commandes » et la commande passera en <b>Payé / livré</b>.</p>
+              <p className="text-[11px] text-gray-400">Ce contenu sera visible par le client dans « Mes commandes » et la commande passera en <b>Livrée</b>.</p>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setDeliverOrder(null)} disabled={delivering}

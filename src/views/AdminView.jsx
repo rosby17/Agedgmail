@@ -449,7 +449,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
     const map = new Map();
     allOrders.forEach(o => {
       const cur = map.get(o.user_id) || { orders: 0, spent: 0, deposited: 0, lastActivity: null };
-      if (o.status === 'confirmed') {
+      if (o.status === 'confirmed' || o.status === 'delivered') {
         if (o.product_id === 999) cur.deposited += o.total_price || 0;
         else { cur.orders += 1; cur.spent += o.total_price || 0; }
       }
@@ -711,8 +711,8 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-black text-gray-900 dark:text-white font-mono">${o.total_price?.toFixed(2)}</div>
-                        <div className={`text-[10px] font-bold uppercase mt-1 ${o.status === 'confirmed' ? 'text-green-600' : o.status === 'cancelled' ? 'text-red-500' : o.status === 'processing' ? 'text-blue-600' : 'text-yellow-600'}`}>
-                          {o.status === 'confirmed' ? 'Payé' : o.status === 'cancelled' ? 'Annulé' : o.status === 'processing' ? 'En cours' : 'En attente'}
+                        <div className={`text-[10px] font-bold uppercase mt-1 ${o.status === 'confirmed' || o.status === 'delivered' ? 'text-green-600' : o.status === 'cancelled' ? 'text-red-500' : o.status === 'processing' ? 'text-blue-600' : 'text-yellow-600'}`}>
+                          {o.status === 'delivered' ? 'Livré' : o.status === 'confirmed' ? 'Payé' : o.status === 'cancelled' ? 'Annulé' : o.status === 'processing' ? 'En cours' : 'En attente'}
                         </div>
                       </div>
                     </div>
@@ -1028,7 +1028,7 @@ const AdminView = ({
   }
 
   // --- CALCULS DES METRIQUES FINANCIERES ---
-  const confirmedOrders = allOrders.filter(o => o.status === 'confirmed');
+  const confirmedOrders = allOrders.filter(o => o.status === 'confirmed' || o.status === 'delivered');
   
   // Ventes de produits réelles (exclure product_id=999 recharges et 998 transferts)
   const confirmedPurchases = confirmedOrders.filter(o => Number(o.product_id) !== 999 && Number(o.product_id) !== 998);

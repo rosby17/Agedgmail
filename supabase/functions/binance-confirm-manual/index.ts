@@ -11,8 +11,8 @@ import { notifyTelegram } from '../_shared/supplier-db.ts'
 
 const ADMIN_EMAIL = 'rooseveltmkr@gmail.com'
 
-// Bonus de recharge par palier — DOIT rester identique à nowpayments-create /
-// cryptomus-create. Le crédit est recalculé ici côté serveur pour ne jamais
+// Bonus de recharge par palier — DOIT rester identique à celui de la RechargeView
+// côté client. Le crédit est recalculé ici côté serveur pour ne jamais
 // faire confiance au `credit_amount` inséré par le client (falsifiable).
 const BONUS_TIERS = [
   { min: 10000, pct: 4 },

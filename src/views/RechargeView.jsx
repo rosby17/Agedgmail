@@ -31,17 +31,14 @@ import SettingsTab from './SettingsTab';
 const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile, resumeOrder, clearResumeOrder, lang, t }) => {
   const [amountUsd, setAmountUsd] = useState(suggestedAmount || 5);
   const [gateway, setGateway] = useState(null); // null tant que le client n'a pas choisi de passerelle
-  const [payCurrency, setPayCurrency] = useState('usdttrc20');
   const [loading, setLoading] = useState(false);
   const [checkingPending, setCheckingPending] = useState(true);
-  const [step, setStep] = useState('form'); // 'form' | 'manual_usdt' | 'awaiting' | 'success' | 'success_manual'
+  const [step, setStep] = useState('form'); // 'form' | 'awaiting' | 'success'
   const [error, setError] = useState('');
-  const [payment, setPayment] = useState(null); // { orderId, payAddress, payAmount, payCurrency, bonusPct, creditAmount }
+  const [payment, setPayment] = useState(null); // { orderId, payAddress, payAmount, bonusPct, creditAmount }
   const [copied, setCopied] = useState(false);
-  const [minAmounts, setMinAmounts] = useState({}); // { btc: 18.78, eth: 18.78, ... }
   const [binanceSubStep, setBinanceSubStep] = useState('pay'); // 'pay' | 'verify' — Binance Pay uniquement
   const [binanceOrderIdInput, setBinanceOrderIdInput] = useState('');
-  const [usdtTxidInput, setUsdtTxidInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(600);
 
@@ -81,7 +78,7 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
         .select('*')
         .eq('user_id', session.user.id)
         .eq('status', 'pending')
-        .in('payment_method', ['usdt_trc20', 'binance_pay', 'mobile_money'])
+        .in('payment_method', ['binance_pay', 'mobile_money'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -89,14 +86,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       if (data) {
         if (data.payment_method === 'mobile_money') {
           await supabase.from('orders').update({ status: 'cancelled' }).eq('id', data.id);
-        } else if (data.payment_method === 'usdt_trc20') {
-          setPayment({
-            provider: 'usdt_trc20',
-            orderId: data.id,
-            expectedAmount: data.expected_amount,
-            address: 'TFy2DpPjsHhsbTeMVhtAQ8JuYxjUkKTMPu'
-          });
-          setStep('manual_usdt');
         } else if (data.payment_method === 'binance_pay') {
           setPayment({
             provider: 'binance_pay',
@@ -137,8 +126,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     if (clearResumeOrder) clearResumeOrder();
   }, [resumeOrder]);
 
-  // NOWPayments désactivé : plus besoin d'interroger les minimums de dépôt.
-
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     if (step !== 'awaiting' || payment?.provider !== 'binance_pay') return;
@@ -167,14 +154,8 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
 
   const close = () => navigate('dashboard');
   const bonusPct = bonusPercentFor(amountUsd);
-  // Devise crypto déduite de la passerelle choisie (btc / usdt_trc20 / ltc).
   const selectedGateway = PAYMENT_GATEWAYS.find(g => g.id === gateway);
-  const activePayCurrency = selectedGateway?.payCurrency || null;
-  const isCrypto = !!activePayCurrency;
-  // Minimum affiché/appliqué : le min statique de la méthode (Binance Pay $10,
-  // crypto $18), affiné par le min dynamique NOWPayments s'il est plus élevé.
-  const dynamicMin = activePayCurrency ? minAmounts[activePayCurrency] : undefined;
-  const selectedMin = Math.max(selectedGateway?.min || 0, typeof dynamicMin === 'number' ? dynamicMin : 0) || undefined;
+  const selectedMin = selectedGateway?.min || undefined;
   const belowMin = typeof selectedMin === 'number' && amountUsd < selectedMin;
   const remainingMs = payment?.expiresAt ? Math.max(0, payment.expiresAt - now) : 0;
   const remainingLabel = `${Math.floor(remainingMs / 60000)}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0')}`;
@@ -207,40 +188,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
     // Minimum dynamique ou statique appliqué.
     if (selectedMin && amountUsd < selectedMin) {
       setError(`Montant minimum pour ${selectedGateway?.name} : $${selectedMin.toFixed(2)}.`);
-      return;
-    }
-
-    if (gateway === 'usdt_trc20') {
-      setLoading(true);
-      setError('');
-      try {
-        const { data: orderData, error: orderErr } = await supabase.from('orders').insert({
-          user_id: session.user.id,
-          buyer_email: session.user.email,
-          product_id: 999,
-          product_name: 'Dépôt USDT (TRC20)',
-          quantity: 1,
-          total_price: amountUsd,
-          expected_amount: amountUsd,
-          credit_amount: amountUsd * (1 + bonusPct / 100),
-          payment_method: 'usdt_trc20',
-          status: 'pending'
-        }).select().single();
-
-        if (orderErr) throw orderErr;
-
-        setPayment({
-          provider: 'usdt_trc20',
-          orderId: orderData.id,
-          expectedAmount: amountUsd,
-          address: 'TFy2DpPjsHhsbTeMVhtAQ8JuYxjUkKTMPu'
-        });
-        setStep('manual_usdt');
-      } catch (err) {
-        setError(err.message || 'Une erreur est survenue.');
-      } finally {
-        setLoading(false);
-      }
       return;
     }
 
@@ -298,63 +245,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
       return;
     }
 
-    if (isCrypto) {
-      if (belowMin) { setError(`Montant minimum pour ${selectedGateway.name} : $${selectedMin.toFixed(2)}`); return; }
-
-      setLoading(true);
-      setError('');
-      try {
-        const { data: fnData, error: fnError } = await supabase.functions.invoke('nowpayments-create', {
-          body: { userId: session.user.id, email: session.user.email, amountUsd, payCurrency: activePayCurrency },
-        });
-
-        if (fnError) {
-          let realMessage = await extractFnErrorMessage(fnError);
-          if (/less than minimal/i.test(realMessage)) {
-            realMessage = `Ce montant est en dessous du minimum accepté pour ${selectedGateway.name}. Essaie un montant plus élevé ou une autre cryptomonnaie.`;
-          }
-          throw new Error(realMessage);
-        }
-        if (fnData?.error) throw new Error(fnData.error);
-        if (!fnData?.payAddress) throw new Error('Réponse NOWPayments invalide.');
-
-        setPayment({ provider: 'nowpayments', ...fnData });
-        setStep('awaiting');
-      } catch (err) {
-        setError(err.message || 'Une erreur est survenue.');
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    if (gateway === 'mobile_money') {
-      setLoading(true);
-      setError('');
-      try {
-        const { data: fnData, error: fnError } = await supabase.functions.invoke('moneroo-initialize', {
-          body: { userId: session.user.id, email: session.user.email, name: profile?.display_name || 'Client', amountUsd, creditAmount: amountUsd * (1 + bonusPct / 100) },
-        });
-
-        if (fnError) throw new Error(await extractFnErrorMessage(fnError));
-        if (fnData?.error) throw new Error(fnData.error);
-        if (!fnData?.url) throw new Error('Impossible d\'obtenir le lien de paiement Mobile Money.');
-
-        window.location.href = fnData.url;
-      } catch (err) {
-        setError(err.message || 'Une erreur est survenue.');
-        setLoading(false);
-      }
-      return;
-    }
-  };
-
-  const copyAddress = () => {
-    if (payment?.payAddress) {
-      navigator.clipboard?.writeText(payment.payAddress);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    }
   };
 
   // Poll le statut de la commande jusqu'à confirmation (le webhook NOWPayments crédite le solde côté serveur).
@@ -435,9 +325,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('choosePayment')}</label>
               <div className="grid grid-cols-2 gap-3">
                 {PAYMENT_GATEWAYS.map(g => {
-                  const gDynamic = g.payCurrency ? minAmounts[g.payCurrency] : undefined;
-                  const displayMin = Math.max(g.min || 0, typeof gDynamic === 'number' ? gDynamic : 0);
-                  
                   return (
                     <button
                       key={g.id}
@@ -493,15 +380,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
               </div>
             )}
 
-            {(isCrypto || (selectedGateway?.manual && gateway !== 'binance_pay')) && (
-              <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed border border-gray-100 dark:border-gray-700">
-                Dépôt en {selectedGateway.name} ({selectedGateway.sub}). Une adresse de dépôt et le montant exact te seront indiqués.
-                {typeof selectedMin === 'number' && (
-                  <> <span className="font-bold text-gray-700 dark:text-gray-300">Montant minimum : ${selectedMin.toFixed(2)}.</span></>
-                )}
-              </div>
-            )}
-
             {error === 'username_required' ? (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
                 <p className="text-sm text-amber-800 font-bold">Configure d'abord un pseudo dans tes paramètres — c'est lui qui sert à identifier tes paiements Binance Pay.</p>
@@ -526,96 +404,6 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                   : <><Send size={20} /> Créer un dépôt</>}
               </button>
             )}
-          </div>
-        )}
-
-        {step === 'manual_usdt' && (
-          <div className="px-8 pb-8 pt-2 space-y-6">
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-black text-gray-900 dark:text-white">Dépôt Manuel USDT</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Transférez exactement le montant ci-dessous via le réseau <span className="font-bold text-gray-900 dark:text-gray-200">Tron (TRC20)</span>.</p>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 flex flex-col items-center gap-6 border border-gray-100 dark:border-gray-700 shadow-inner">
-              <div className="text-center">
-                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1">Montant exact à envoyer</span>
-                <p className="text-4xl font-black text-primary font-mono">${Number(payment?.expectedAmount).toFixed(2)}</p>
-              </div>
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${payment?.address}`} alt="QR Code USDT TRC20" className="w-40 h-40" />
-              </div>
-              <div className="w-full space-y-2">
-                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Adresse USDT (TRC20)</label>
-                <div className="flex bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-                  <div className="flex-1 px-4 py-3 text-xs font-mono font-bold text-gray-600 dark:text-gray-300 truncate flex items-center">{payment?.address}</div>
-                  <button onClick={() => { navigator.clipboard.writeText(payment?.address); setCopied('address'); setTimeout(() => setCopied(''), 2000); }} className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-4 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors">
-                    {copied === 'address' ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Hash de la transaction (TXID)</label>
-              <input
-                type="text"
-                value={usdtTxidInput}
-                onChange={e => setUsdtTxidInput(e.target.value)}
-                placeholder="Ex: 5b6c..."
-                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary/20 outline-none font-mono text-sm dark:text-white"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400">Une fois le transfert effectué, colle le TXID ici pour que nous puissions valider le paiement.</p>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 dark:border-red-800">{error}</div>
-            )}
-
-            <div className="space-y-3">
-              <button
-                onClick={async () => {
-                  if (!usdtTxidInput.trim()) { setError('Veuillez entrer le hash (TXID) de votre transaction.'); return; }
-                  setVerifying(true);
-                  setError('');
-                  const { error: updateErr } = await supabase.from('orders')
-                    .update({ binance_tx_id: usdtTxidInput.trim() })
-                    .eq('id', payment.orderId);
-                  
-                  if (updateErr) {
-                    setError("Erreur lors de l'enregistrement de la transaction : " + updateErr.message);
-                  } else {
-                    setStep('success_manual');
-                  }
-                  setVerifying(false);
-                }}
-                disabled={verifying}
-                className="w-full py-4 rounded-2xl font-bold bg-primary text-white dark:text-gray-900 hover:bg-primaryDark transition-all disabled:opacity-50"
-              >
-                {verifying ? 'Enregistrement...' : 'Valider le paiement'}
-              </button>
-              <button onClick={cancelPendingOrder} disabled={loading} className="w-full py-3 rounded-2xl font-bold text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all disabled:opacity-50">
-                Annuler le dépôt
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 'success_manual' && (
-          <div className="px-8 pb-8 pt-2 text-center space-y-6">
-            <CheckCircle size={72} className="text-amber-500 mx-auto" />
-            <h3 className="text-2xl font-black text-gray-900 dark:text-white">Paiement enregistré</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
-              Ton TXID a bien été pris en compte. Un administrateur vérifiera ce dépôt et ton solde sera crédité sous peu.
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-              En cas de problème, n'hésite pas à contacter le support à : <br/><span className="font-bold text-gray-700 dark:text-gray-300">support@tools-cl.com</span>
-            </p>
-            <button
-              onClick={close}
-              className="w-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 py-4 rounded-2xl font-bold hover:bg-primary dark:hover:bg-primary transition-all"
-            >
-              Fermer et retourner au site
-            </button>
           </div>
         )}
 
@@ -771,42 +559,23 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
           </div>
         )}
 
-        {step === 'awaiting' && payment && payment.provider !== 'binance_pay' && (
+        {step === 'awaiting' && payment && payment.provider === 'mobile_money' && (
           <div className="px-8 pb-8 pt-2 text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
               <RefreshCcw size={32} className="text-primary animate-spin" />
             </div>
             <h3 className="text-2xl font-black text-gray-900">En attente de paiement</h3>
             <p className="text-gray-500 text-sm leading-relaxed">
-              {payment.provider === 'mobile_money'
-                ? "Contacte le support client via le widget en bas à droite pour finaliser ton dépôt par Mobile Money. Ton solde sera crédité manuellement par un administrateur."
-                : "Envoie exactement le montant ci-dessous à l'adresse indiquée. Ton solde sera crédité automatiquement après confirmation."}
+              Ton solde sera crédité automatiquement dès la confirmation du paiement Mobile Money.
               {payment.bonusPct > 0 && <> Avec le bonus, tu recevras <span className="font-black text-primary">${Number(payment.creditAmount).toFixed(2)}</span>.</>}
             </p>
 
-            {payment.provider === 'mobile_money' ? (
-              <button
-                onClick={cancelPendingOrder}
-                className="w-full mt-4 py-3 rounded-2xl font-bold text-red-500 hover:bg-red-50 transition-all flex items-center justify-center gap-2"
-              >
-                Annuler ce dépôt
-              </button>
-            ) : (
-              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Montant à envoyer</p>
-                  <p className="text-2xl font-black text-primary font-mono">{payment.payAmount} {String(payment.payCurrency).toUpperCase()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Adresse de dépôt</p>
-                  <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-3">
-                    <code className="text-xs font-mono text-gray-700 flex-grow break-all text-left">{payment.payAddress}</code>
-                    <button onClick={copyAddress} className="shrink-0 p-2 rounded-lg bg-gray-900 text-white dark:text-gray-900 hover:bg-primary transition-all"><Copy size={14} /></button>
-                  </div>
-                  {copied && <p className="text-xs text-primary font-bold mt-2">Adresse copiée !</p>}
-                </div>
-              </div>
-            )}
+            <button
+              onClick={cancelPendingOrder}
+              className="w-full mt-4 py-3 rounded-2xl font-bold text-red-500 hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+            >
+              Annuler ce dépôt
+            </button>
             <p className="text-xs text-gray-400">Cette page se met à jour automatiquement dès réception du paiement.</p>
           </div>
         )}

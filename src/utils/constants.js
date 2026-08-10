@@ -30,7 +30,6 @@ export const SUPPLIER_LABEL = { ytseller: 'YTSeller', smmshiba: 'SMMSHIBA', aged
 
 export const PAYMENT_GATEWAYS = [
   { id: 'binance_pay', name: 'Binance Pay', sub: 'Pay ID Binance', enabled: true, recommended: true, manual: false, icons: ['https://cryptologos.cc/logos/bnb-bnb-logo.svg?v=032'], min: 0.5, fee: 0 },
-  { id: 'usdt_trc20', name: 'USDT', sub: 'TRC20', enabled: true, manual: true, icons: ['https://cryptologos.cc/logos/tether-usdt-logo.svg?v=032'], min: 0.5, fee: 0 },
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Orange, MTN, Wave...', enabled: true, manual: false, icons: ['https://upload.wikimedia.org/wikipedia/commons/c/c8/Orange_logo.svg', 'https://upload.wikimedia.org/wikipedia/commons/9/93/MTN_Logo.svg'], min: 2, fee: 10 },
 ];
 
