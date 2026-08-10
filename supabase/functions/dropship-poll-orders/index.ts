@@ -28,17 +28,6 @@ const TIMEOUT_MIN = 60  // AgedSMM/SMMSHIBA peuvent prendre plus de temps à tra
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  // ── DÉSACTIVÉ : passage en fulfillment MANUEL ──────────────────────────────
-  // On n'achète plus automatiquement chez les fournisseurs. Les commandes de
-  // comptes restent en 'processing' jusqu'à ce que l'admin colle les identifiants
-  // achetés à la main (dashboard → « Livrer manuellement »). Aucun débit
-  // automatique du compte fournisseur. Pour réactiver l'automatique : retirer ce
-  // return et reprogrammer le cron dropship-poll-orders.
-  return new Response(JSON.stringify({ ok: true, disabled: 'manual fulfillment mode' }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-
-  // eslint-disable-next-line no-unreachable
   const admin = getAdmin()
   const summary = { checked: 0, completed: 0, partial: 0, canceled: 0, timed_out: 0, waiting: 0, recovered: 0, errors: 0 }
 
