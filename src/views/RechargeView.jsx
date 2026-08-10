@@ -336,7 +336,9 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
                         {g.recommended ? 'Recommandé' : g.manual ? 'Manuel' : g.enabled ? 'Auto' : 'Bientôt'}
                       </span>
                       <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        {g.icons ? (
+                        {g.id === 'mobile_money' ? (
+                          <Smartphone size={20} className="text-gray-600 dark:text-gray-300" />
+                        ) : g.icons ? (
                           <div className={`flex ${g.icons.length > 1 ? 'gap-0.5' : ''} items-center justify-center w-full h-full p-1.5`}>
                             {g.icons.map((icon, i) => (
                               <img key={i} src={icon} alt={g.name} className={`${g.icons.length > 1 ? 'w-4 h-4' : 'w-6 h-6'} object-contain`} />
