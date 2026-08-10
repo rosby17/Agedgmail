@@ -6,6 +6,11 @@
 -- deux requêtes concurrentes — cette contrainte unique est le filet de
 -- sécurité imparable : impossible d'avoir deux commandes 'confirmed'/
 -- 'delivered' portant le même binance_tx_id.
+-- Exclut le placeholder historique 'manual-confirm' (confirmations admin
+-- sans TXID saisi) : ce n'est pas une vraie transaction Binance, donc pas
+-- concerné par le rejeu — de nombreuses commandes le partagent légitimement.
 create unique index if not exists orders_binance_tx_id_confirmed_unique
   on public.orders (binance_tx_id)
-  where binance_tx_id is not null and status in ('confirmed', 'delivered');
+  where binance_tx_id is not null
+    and binance_tx_id <> 'manual-confirm'
+    and status in ('confirmed', 'delivered');

@@ -73,7 +73,7 @@ serve(async (req) => {
     await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: credit })
     await admin.from('orders').update({
       status: 'confirmed',
-      binance_tx_id: txRef ? String(txRef) : 'manual-confirm',
+      binance_tx_id: txRef ? String(txRef) : `manual-confirm-${orderId}`,
       confirmed_at: new Date().toISOString(),
     }).eq('id', orderId)
 
