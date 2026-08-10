@@ -152,7 +152,7 @@ serve(async (req) => {
           supplier_cost: supplierCost,
           quantity: 1,
           buyer_email: user.email,
-          status: 'confirmed',
+          status: 'delivered',
           delivery_data: { number: number, code: smsCode, provider: providerAlias },
           credentials: `Phone: ${number}\nSMS Code: ${smsCode}`
         });

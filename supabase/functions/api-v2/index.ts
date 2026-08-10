@@ -473,7 +473,7 @@ serve(async (req) => {
         }
 
         await db.from('orders').update({
-          status: 'confirmed',
+          status: 'delivered',
           credentials: `Phone: ${number}\nSMS Code: ${gotCode}\nProvider: ${providerName}`,
           delivery_data: { ...delivery, code: gotCode }
         }).eq('id', orderId)

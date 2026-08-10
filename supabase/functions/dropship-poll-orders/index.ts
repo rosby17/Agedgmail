@@ -111,7 +111,8 @@ serve(async (req) => {
           }
 
           await admin.from('orders').update({
-            status: 'confirmed', credentials: creds, data: creds,
+            status: 'delivered', delivered_at: new Date().toISOString(), handled_by: 'auto (dropship-poll-orders)',
+            credentials: creds, data: creds,
             ...(malformed.length > 0 ? { admin_note: `Format de livraison inattendu sur ${malformed.length}/${result.length} compte(s) — vérification manuelle recommandée.` } : {}),
           }).eq('id', orderId)
           summary.completed++
@@ -164,7 +165,8 @@ serve(async (req) => {
             await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: refund })
           }
           await admin.from('orders').update({
-            status: 'confirmed', credentials: creds, data: creds, supplier_status: 'Partial',
+            status: 'delivered', delivered_at: new Date().toISOString(), handled_by: 'auto (dropship-poll-orders)',
+            credentials: creds, data: creds, supplier_status: 'Partial',
             admin_note: `Livraison partielle : ${delivered}/${qty} compte(s). ${refund > 0 ? `${refund} USD remboursés.` : ''}`.trim(),
           }).eq('id', orderId)
 

@@ -88,7 +88,9 @@ const CartCheckoutModal = ({ open, onClose, cart, cartTotal, session, profile, n
           product_name: item.name,
           quantity: item.quantity,
           total_price: item.price * item.quantity,
-          status: 'confirmed',
+          status: 'delivered',
+          delivered_at: new Date().toISOString(),
+          handled_by: 'auto (instant stock)',
           credentials: deliveredCreds,
           data: deliveredCreds,
           created_at: new Date().toISOString()

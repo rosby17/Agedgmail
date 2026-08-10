@@ -86,7 +86,9 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
           product_name: product.name,
           quantity: qty,
           total_price: total,
-          status: 'confirmed',
+          status: 'delivered',
+          delivered_at: new Date().toISOString(),
+          handled_by: 'auto (instant stock)',
           credentials: deliveredCreds,
           data: deliveredCreds,
           created_at: new Date().toISOString()

@@ -55,15 +55,17 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
     fetchAllOrders();
   };
 
-  // Commande de compte livrable manuellement (pas une recharge, pas un SMS, pas déjà finalisée)
+  // Commande de compte livrable manuellement (pas une recharge, pas un SMS, pas déjà finalisée,
+  // pas déjà annulée) — inclut 'confirmed' (payée mais pas encore livrée : l'automatisation
+  // fournisseur a échoué ou pas encore réessayé) pour permettre à l'admin d'agir dessus.
   const canDeliver = (o) =>
-    o.product_id !== 999 &&
+    o.product_id !== 999 && o.product_id !== 998 &&
     !o.product_name?.toLowerCase().includes('sms') &&
-    (o.status === 'pending' || o.status === 'processing');
+    (o.status === 'pending' || o.status === 'processing' || o.status === 'confirmed');
 
   const filtered = allOrders.filter(o => {
-    // Exclude deposits from the general Orders view
-    if (o.product_id === 999) return false;
+    // Exclude deposits and credit transfers from the general Orders view
+    if (o.product_id === 999 || o.product_id === 998) return false;
 
     // Filter by Status
     if (filter !== 'all' && (o.status || 'pending') !== filter) return false;
@@ -239,10 +241,10 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                           <Eye size={14} />
                         </button>
                       )}
-                      {/* Annuler/Rembourser : uniquement tant que la commande
-                          n'est pas finalisée (en attente / en cours). Une
-                          commande déjà payée-livrée ne s'annule pas. */}
-                      {(order.status === 'pending' || order.status === 'processing') && (
+                      {/* Annuler/Rembourser : tant que la commande n'est pas
+                          finalisée (en attente / en cours / payée-non-livrée).
+                          Une commande déjà livrée ne s'annule pas. */}
+                      {(order.status === 'pending' || order.status === 'processing' || order.status === 'confirmed') && (
                         <button onClick={() => cancelOrder(order)}
                           className="p-2 rounded-lg bg-red-50 dark:bg-red-950/10 text-red-500 hover:bg-red-150 dark:hover:bg-red-900/20 transition-all border border-red-100 dark:border-red-900/20"
                           title="Annuler / Rembourser la commande"
