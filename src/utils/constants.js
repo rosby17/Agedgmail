@@ -33,9 +33,12 @@ export const PAYMENT_GATEWAYS = [
   { id: 'mobile_money', name: 'Mobile Money', sub: 'Orange, MTN, Wave...', enabled: true, manual: false, min: 2, fee: 10 },
 ];
 
+// DOIT rester identique aux paliers serveur (binance-create-order,
+// binance-confirm-manual) — sinon le bonus affiché au client diffère de
+// celui réellement crédité.
 export const BONUS_TIERS = [
-  { amount: 5, pct: 0 },
-  { amount: 10, pct: 0 },
-  { amount: 50, pct: 1 },
-  { amount: 100, pct: 2 },
+  { amount: 100, pct: 1 },
+  { amount: 500, pct: 2 },
+  { amount: 1000, pct: 3 },
+  { amount: 10000, pct: 4 },
 ];

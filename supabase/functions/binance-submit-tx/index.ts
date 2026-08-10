@@ -27,6 +27,19 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    // ── VÉRIFICATION JWT + OWNERSHIP ────────────────────────────────────────
+    // Sans ça, n'importe qui pouvait attacher un binanceOrderId à N'IMPORTE
+    // QUELLE commande (IDOR), pas seulement la sienne.
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) return json({ error: 'Unauthorized' }, 401)
+    const authed = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } },
+    )
+    const { data: { user }, error: authErr } = await authed.auth.getUser()
+    if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+
     const { orderId, binanceOrderId } = await req.json()
     if (!orderId) return json({ error: 'orderId requis' }, 400)
     if (!binanceOrderId || !String(binanceOrderId).trim()) {
@@ -42,7 +55,23 @@ serve(async (req) => {
     const { data: order, error: orderErr } = await admin
       .from('orders').select('*').eq('id', orderId).maybeSingle()
     if (orderErr || !order) return json({ error: 'Commande introuvable' }, 404)
+    if (order.user_id !== user.id) return json({ error: 'Forbidden' }, 403)
     if (order.status !== 'pending') return json({ error: `Commande déjà en statut "${order.status}"` }, 409)
+
+    // ── ANTI-REJEU ───────────────────────────────────────────────────────
+    // Un même binanceOrderId réel ne doit jamais pouvoir créditer plusieurs
+    // commandes distinctes. Contrôle applicatif ici (best-effort) + contrainte
+    // unique en base (voir migration) comme filet de sécurité anti-course.
+    const { data: existingUse } = await admin
+      .from('orders')
+      .select('id')
+      .eq('binance_tx_id', submittedId)
+      .in('status', ['confirmed', 'delivered'])
+      .neq('id', orderId)
+      .maybeSingle()
+    if (existingUse) {
+      return json({ error: 'Cette transaction Binance a déjà été utilisée pour créditer une autre commande.' }, 409)
+    }
 
     const { error: updErr } = await admin
       .from('orders')
@@ -56,19 +85,29 @@ serve(async (req) => {
       const match = await findMatchingIncomingPayment(submittedId, Number(order.expected_amount))
       if (match) {
         const credit = order.credit_amount ?? order.total_price
-        await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: credit })
-           await admin.from('orders').update({
-            status: 'confirmed',
-            confirmed_at: new Date().toISOString(),
-          }).eq('id', orderId)
-          await notifyTelegram(
-            `✅ <b>Recharge Binance Pay auto-confirmée</b>\n\n` +
-            `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
-            `• <b>Montant crédité :</b> $${Number(credit).toFixed(2)}\n` +
-            `• <b>Transaction Binance :</b> <code>${submittedId}</code>`
-          )
-          return json({ ok: true, autoConfirmed: true })
+        // Verrouille le statut EN PREMIER (protégé par la contrainte unique
+        // partielle sur binance_tx_id côté DB) — on ne crédite le solde QUE
+        // si cette transition réussit, pour ne jamais créditer deux fois la
+        // même transaction Binance en cas de course entre deux requêtes.
+        const { data: locked, error: lockErr } = await admin
+          .from('orders')
+          .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+          .eq('id', orderId)
+          .eq('status', 'pending')
+          .select('id')
+          .maybeSingle()
+        if (lockErr || !locked) {
+          console.error('binance-submit-tx: statut déjà verrouillé ou transaction déjà utilisée, crédit annulé.', lockErr?.message)
+          return json({ ok: true, autoConfirmed: false })
         }
+        await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: credit })
+        await notifyTelegram(
+          `✅ <b>Recharge Binance Pay auto-confirmée</b>\n\n` +
+          `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
+          `• <b>Montant crédité :</b> $${Number(credit).toFixed(2)}\n` +
+          `• <b>Transaction Binance :</b> <code>${submittedId}</code>`
+        )
+        return json({ ok: true, autoConfirmed: true })
       }
     } catch (verifyErr) {
       console.error('Vérification auto Binance Pay indisponible (fallback manuel):', (verifyErr as Error).message)
