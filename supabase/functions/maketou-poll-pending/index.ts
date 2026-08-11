@@ -13,13 +13,7 @@
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts'
 
 const BATCH = 25
 const TIMEOUT_MIN = 45
@@ -29,7 +23,11 @@ const TIMEOUT_MIN = 45
 const ORPHAN_TIMEOUT_MIN = 15
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const corsOpts = handleCors(req)
+  if (corsOpts) return corsOpts
+  const corsHeaders = getCorsHeaders(req)
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   const summary = { checked: 0, credited: 0, cancelled: 0, still_waiting: 0, errors: 0, orphans_cancelled: 0 }
 

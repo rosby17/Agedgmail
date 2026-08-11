@@ -1,14 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const corsOpts = handleCors(req);
+  if (corsOpts) return corsOpts;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const binanceRes = await fetch('https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', {

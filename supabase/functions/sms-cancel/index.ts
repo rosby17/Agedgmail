@@ -14,16 +14,12 @@
 import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { providerForAlias } from '../_shared/sms-pricing.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const corsOpts = handleCors(req);
+  if (corsOpts) return corsOpts;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const authHeader = req.headers.get('Authorization');

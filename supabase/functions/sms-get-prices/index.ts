@@ -2,11 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { aliasForProvider } from '../_shared/sms-pricing.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 
 // Types
 interface ProviderInfo {
@@ -103,9 +99,9 @@ async function getPvaRates(apiKey: string): Promise<PvaRate[]> {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const corsOpts = handleCors(req);
+  if (corsOpts) return corsOpts;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const body = await req.json().catch(() => ({}));

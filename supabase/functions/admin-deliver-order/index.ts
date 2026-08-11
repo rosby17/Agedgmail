@@ -8,18 +8,16 @@
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts'
 
 const ADMIN_EMAIL = 'rooseveltmkr@gmail.com'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const corsOpts = handleCors(req)
+  if (corsOpts) return corsOpts
+  const corsHeaders = getCorsHeaders(req)
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   try {
     const authHeader = req.headers.get('Authorization') ?? ''
@@ -43,7 +41,12 @@ serve(async (req) => {
     const { data: order, error: orderErr } = await admin
       .from('orders').select('id, user_id, buyer_email, product_name, status').eq('id', orderId).maybeSingle()
     if (orderErr || !order) return json({ error: 'Commande introuvable' }, 404)
-    if (order.status === 'cancelled') return json({ error: 'Commande annulée — impossible de livrer' }, 409)
+    // Allowlist plutôt que blocklist : seules ces états permettent une livraison.
+    // Empêche de re-livrer (écraser credentials/delivered_at) une commande déjà
+    // 'delivered', ou d'en livrer une qui n'est même pas encore payée.
+    if (!['pending', 'processing', 'confirmed'].includes(order.status)) {
+      return json({ error: `Commande en statut "${order.status}" — impossible de livrer` }, 409)
+    }
 
     const { error: updErr } = await admin.from('orders').update({
       credentials: creds,

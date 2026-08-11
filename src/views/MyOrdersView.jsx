@@ -125,7 +125,12 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
   const statusBadge = (order) => {
     const isSpecial = order.product_id === 999 || order.product_id === 998;
     const map = {
-      confirmed: { label: isSpecial ? 'Succès' : t('completed'), cls: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' },
+      // 'confirmed' pour un dépôt/transfert (product_id 999/998) = argent bien
+      // crédité, c'est un état final ("Succès"). Pour une commande de produit,
+      // 'confirmed' veut dire payé mais PAS ENCORE livré — distinct de 'delivered'.
+      confirmed: isSpecial
+        ? { label: 'Succès', cls: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' }
+        : { label: isFr ? 'Paiement reçu — en cours' : 'Payment received — processing', cls: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400' },
       delivered: { label: t('completed'), cls: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' },
       cancelled:  { label: t('failed'),    cls: 'bg-red-100 text-red-600 border-red-200 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400' },
       processing: { label: t('processing'), cls: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400' },

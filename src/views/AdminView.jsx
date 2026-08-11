@@ -513,22 +513,6 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
     setBusyId(null);
   };
 
-  const toggleAdmin = async (user) => {
-    const next = !user.is_admin;
-    const ok = await window.showConfirm(
-      "Confirmation",
-      next 
-        ? `Nommer ${user.email} comme Administrateur ? Il aura un accès complet au tableau de bord.`
-        : `Révoquer les droits d'administration de ${user.email} ?`
-    );
-    if (!ok) return;
-    setBusyId(user.id);
-    const { error } = await supabase.rpc('admin_set_admin', { p_user_id: user.id, p_is_admin: next });
-    if (error) await window.showAlert("Erreur", 'Erreur : ' + error.message);
-    else await fetchUsers();
-    setBusyId(null);
-  };
-
   const creditBalance = async (user) => {
     const raw = await window.showPrompt(`Créditer le solde de ${user.email} de ($) :`, '10');
     if (raw == null) return;
@@ -624,7 +608,7 @@ const ClientManagement = ({ allUsers, allOrders, fetchUsers, loading = false }) 
                             </span>
                           )}
                           {user.is_admin && (
-                            <span className="bg-primary/10 text-primary dark:text-primary text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-primary/20 shrink-0">
+                            <span title="Indicatif seulement — n'accorde aucun accès réel (seul l'email admin configuré a un accès complet)" className="bg-primary/10 text-primary dark:text-primary text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-primary/20 shrink-0">
                               Admin
                             </span>
                           )}
