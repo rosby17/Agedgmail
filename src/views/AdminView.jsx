@@ -363,6 +363,7 @@ const RecentActivityTable = ({ allOrders }) => {
   const statusBadge = (status) => {
     const s = status || 'pending';
     const map = {
+      delivered: { label: 'Delivered', cls: 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' },
       confirmed: { label: 'Confirmed', cls: 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400' },
       processing: { label: 'Processing', cls: 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400' },
       cancelled: { label: 'Cancelled', cls: 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400' },
@@ -378,7 +379,7 @@ const RecentActivityTable = ({ allOrders }) => {
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activité récente</h3>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-xl p-1">
-            {['all', 'confirmed', 'processing', 'pending', 'cancelled'].map(f => (
+            {['all', 'delivered', 'confirmed', 'processing', 'pending', 'cancelled'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all ${filter === f ? 'bg-primary text-white dark:text-gray-900' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white dark:text-gray-900'}`}>
                 {f === 'all' ? 'Toutes' : f}
