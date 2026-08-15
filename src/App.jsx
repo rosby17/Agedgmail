@@ -391,6 +391,13 @@ function App() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [quickOrderProduct, setQuickOrderProduct] = useState(null);
   const [session, setSession] = useState(null);
+  // Distingue "pas encore vérifié" de "pas connecté" — sans ça, les vues
+  // protégées (ex: /myorders) redirigent vers /auth au premier rendu, avant
+  // que supabase.auth.getSession() n'ait eu le temps de restaurer la session
+  // existante depuis le stockage local (arrivée directe sur l'URL, ex: lien
+  // d'un email). Le SIGNED_IN handler renvoie alors vers /shop après
+  // connexion, perdant la destination d'origine.
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [rechargeSuggestedAmount, setRechargeSuggestedAmount] = useState(null);
@@ -707,6 +714,7 @@ function App() {
 
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
+      setSessionChecked(true);
       if (initialSession) fetchProfile(initialSession.user.id);
     });
 
@@ -724,11 +732,15 @@ function App() {
           navigate('reset-password');
           return;
         }
-        // Redirection après connexion : si le path est vide (racine), 'landing', ou 'auth', on les envoie vers le shop.
+        // Redirection après connexion : si le path est vide (racine), 'landing', ou 'auth', on
+        // renvoie vers la page que l'utilisateur visait avant d'être envoyé sur /auth (ex: lien
+        // /myorders reçu par email), sinon vers le shop par défaut.
         if (event === 'SIGNED_IN') {
           const p = window.location.pathname.replace(/^\/+/, '');
           if (!p || p === 'auth' || p === 'landing') {
-            navigate('shop');
+            const redirectTo = sessionStorage.getItem('agedgmail_redirect_after_login');
+            sessionStorage.removeItem('agedgmail_redirect_after_login');
+            navigate(redirectTo || 'shop');
           }
         }
       } else {
@@ -843,18 +855,18 @@ function App() {
       )}
       <div className="flex-grow">
         <KeepAlive show={currentView === 'landing'}><LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} /></KeepAlive>
-        <KeepAlive show={currentView === 'sms'}><SmsView session={session} profile={profile} lang={lang} navigate={navigate} fetchProfile={fetchProfile} /></KeepAlive>
+        <KeepAlive show={currentView === 'sms'}><SmsView session={session} sessionChecked={sessionChecked} profile={profile} lang={lang} navigate={navigate} fetchProfile={fetchProfile} /></KeepAlive>
         <KeepAlive show={currentView === 'shop'}><HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} /></KeepAlive>
         <KeepAlive show={currentView === 'product' && !!selectedProduct}>
           {selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} lang={lang} />}
         </KeepAlive>
-        <KeepAlive show={currentView === 'api'}><ApiView navigate={navigate} session={session} lang={lang} /></KeepAlive>
+        <KeepAlive show={currentView === 'api'}><ApiView navigate={navigate} session={session} sessionChecked={sessionChecked} lang={lang} /></KeepAlive>
         <KeepAlive show={currentView === 'policies'}><PoliciesView navigate={navigate} lang={lang} /></KeepAlive>
         <KeepAlive show={currentView === 'auth'}><AuthView navigate={navigate} lang={lang} /></KeepAlive>
         <KeepAlive show={currentView === 'reset-password'}><ResetPasswordView navigate={navigate} lang={lang} /></KeepAlive>
-        <KeepAlive show={currentView === 'dashboard'}><MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} /></KeepAlive>
-        <KeepAlive show={currentView === 'settings'}><SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} lang={lang} t={t} /></KeepAlive>
-        <KeepAlive show={currentView === 'recharge'}><RechargeView profile={profile} session={session} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} /></KeepAlive>
+        <KeepAlive show={currentView === 'dashboard'}><MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} sessionChecked={sessionChecked} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} /></KeepAlive>
+        <KeepAlive show={currentView === 'settings'}><SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} sessionChecked={sessionChecked} lang={lang} t={t} /></KeepAlive>
+        <KeepAlive show={currentView === 'recharge'}><RechargeView profile={profile} session={session} sessionChecked={sessionChecked} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} /></KeepAlive>
         <KeepAlive show={currentView === 'admin'}>
           {isAdmin && (
             <AdminView

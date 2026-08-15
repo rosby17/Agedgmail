@@ -27,13 +27,14 @@ import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
-const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetchProfile, lang, t, loading = false }) => {
+const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessionChecked, fetchProfile, lang, t, loading = false }) => {
   const isFr = lang === 'fr';
   React.useEffect(() => {
-    if (!session) {
+    if (sessionChecked && !session) {
+      sessionStorage.setItem('agedgmail_redirect_after_login', 'dashboard');
       navigate('auth');
     }
-  }, [session, navigate]);
+  }, [sessionChecked, session, navigate]);
   const [viewOrder, setViewOrder] = useState(null);
   const [showTransfer, setShowTransfer] = useState(false);
   // Initialise la checkbox depuis le profil

@@ -26,9 +26,15 @@ import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
-const SettingsView = ({ profile, navigate, fetchProfile, session, lang, t }) => {
-  if (!session) { navigate('auth'); return null; }
-  
+const SettingsView = ({ profile, navigate, fetchProfile, session, sessionChecked, lang, t }) => {
+  useEffect(() => {
+    if (sessionChecked && !session) {
+      sessionStorage.setItem('agedgmail_redirect_after_login', 'settings');
+      navigate('auth');
+    }
+  }, [sessionChecked, session, navigate]);
+  if (!session) return null;
+
   return (
   <div className="max-w-5xl mx-auto px-6 py-16 font-sans text-gray-900 dark:text-white">
     <div className="flex items-center gap-4 mb-10">

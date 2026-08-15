@@ -28,7 +28,7 @@ import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
-const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggestedAmount, fetchProfile, resumeOrder, clearResumeOrder, lang, t }) => {
+const RechargeView = ({ profile, session, sessionChecked, navigate, suggestedAmount, setSuggestedAmount, fetchProfile, resumeOrder, clearResumeOrder, lang, t }) => {
   const [amountUsd, setAmountUsd] = useState(suggestedAmount || 5);
   const [gateway, setGateway] = useState(null); // null tant que le client n'a pas choisi de passerelle
   const [loading, setLoading] = useState(false);
@@ -62,10 +62,11 @@ const RechargeView = ({ profile, session, navigate, suggestedAmount, setSuggeste
   }, []);
 
   useEffect(() => {
-    if (!session) {
+    if (sessionChecked && !session) {
+      sessionStorage.setItem('agedgmail_redirect_after_login', 'recharge');
       navigate('auth');
     }
-  }, [session, navigate]);
+  }, [sessionChecked, session, navigate]);
 
   useEffect(() => {
     if (!session || resumeOrder) {
