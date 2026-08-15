@@ -37,6 +37,37 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
   const [deliverText, setDeliverText] = useState('');
   const [delivering, setDelivering] = useState(false);
 
+  // Relance automatique fournisseur (ex: solde fournisseur était insuffisant)
+  const [retryingId, setRetryingId] = useState(null);
+
+  const retrySupplierOrder = async (order) => {
+    setRetryingId(order.id);
+    const { data, error } = await supabase.functions.invoke('dropship-place-order', {
+      body: { orderId: order.id },
+    });
+    setRetryingId(null);
+    if (error || data?.error) {
+      await window.showAlert('Erreur', 'Relance échouée : ' + (data?.error || error?.message));
+      fetchAllOrders();
+      return;
+    }
+    if (data?.ok === false && data?.reason === 'insufficient_supplier_balance') {
+      await window.showAlert('Solde fournisseur insuffisant', 'Le solde du fournisseur est toujours insuffisant pour cette commande. Rechargez le compte fournisseur puis réessayez.');
+      return;
+    }
+    await window.showAlert('Commande relancée', 'La commande a été transmise au fournisseur. Elle sera livrée automatiquement dès confirmation.');
+    fetchAllOrders();
+  };
+
+  // Achat fournisseur pas encore passé (ex: solde insuffisant au moment du
+  // paiement) — sûr à relancer : c'est exactement ce que dropship-poll-orders
+  // retente déjà automatiquement toutes les ~60s pour ces mêmes commandes.
+  const canRetrySupplier = (o) =>
+    o.product_id !== 999 && o.product_id !== 998 &&
+    !o.product_name?.toLowerCase().includes('sms') &&
+    (o.status === 'pending' || o.status === 'processing') &&
+    !o.supplier_order_id;
+
   const submitManualDelivery = async () => {
     if (!deliverOrder) return;
     const creds = deliverText.trim();
@@ -229,6 +260,12 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                   </td>
                   <td className="py-5">
                     <div className="flex gap-2">
+                      {canRetrySupplier(order) && (
+                        <button onClick={() => retrySupplierOrder(order)} disabled={retryingId === order.id}
+                          className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50" title="Relancer l'achat automatique chez le fournisseur" aria-label="Relancer la commande fournisseur">
+                          <RefreshCcw size={14} className={retryingId === order.id ? 'animate-spin' : ''} /> {retryingId === order.id ? 'Relance…' : 'Relancer'}
+                        </button>
+                      )}
                       {canDeliver(order) && (
                         <button onClick={() => { setDeliverOrder(order); setDeliverText(''); }}
                           className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all" title="Livrer manuellement (coller les identifiants)" aria-label="Livrer manuellement">
