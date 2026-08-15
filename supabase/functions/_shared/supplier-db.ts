@@ -19,6 +19,37 @@ export function getAdmin() {
   )
 }
 
+/**
+ * Archive chaque compte livré (acheté en direct chez un fournisseur dropship)
+ * dans account_stock, marqué déjà "is_delivered" et lié à la commande. Sans
+ * ça, un compte acheté en live chez YTSeller/SMMSHIBA/AgedSMM n'existait
+ * QUE dans orders.credentials — aucune trace centralisée, aucun moyen de
+ * savoir un jour quels comptes précis sont sortis chez quels fournisseurs.
+ * Construit progressivement notre propre base d'adresses livrées : objectif
+ * dépendre de moins en moins des fournisseurs externes au fil du temps.
+ * Ne jette jamais (l'archivage ne doit pas faire échouer une livraison déjà
+ * effectuée chez le client).
+ */
+export async function archiveDeliveredAccounts(
+  admin: ReturnType<typeof getAdmin>,
+  entry: { productId: number | string; orderId: string; userId: string | null; credentials: string[] },
+) {
+  if (!entry.credentials || entry.credentials.length === 0) return
+  try {
+    await admin.from('account_stock').insert(
+      entry.credentials.map((credentials) => ({
+        product_id: Number(entry.productId),
+        credentials,
+        is_delivered: true,
+        order_id: String(entry.orderId),
+        delivered_to: entry.userId,
+      }))
+    )
+  } catch (e) {
+    console.error('archiveDeliveredAccounts a échoué:', (e as Error).message)
+  }
+}
+
 /** Écrit une entrée dans supplier_logs (ne jette jamais). */
 export async function logSupplier(
   admin: ReturnType<typeof getAdmin>,

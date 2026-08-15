@@ -15,7 +15,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import * as ytseller from '../_shared/ytseller.ts'
 import * as smmshiba from '../_shared/smmshiba.ts'
 import * as agedsmm from '../_shared/agedsmm.ts'
-import { getAdmin, logSupplier, alertAdmin, refundOrder, notifyTelegram, corsHeaders } from '../_shared/supplier-db.ts'
+import { getAdmin, logSupplier, alertAdmin, refundOrder, notifyTelegram, corsHeaders, archiveDeliveredAccounts } from '../_shared/supplier-db.ts'
 import { parseAccountDelivery } from '../_shared/parseAccountDelivery.ts'
 
 const ADAPTERS: Record<string, { getOrderStatus: typeof ytseller.getOrderStatus; getResult: typeof ytseller.getResult }> = {
@@ -34,7 +34,7 @@ serve(async (req) => {
   try {
     const { data: orders, error } = await admin
       .from('orders')
-      .select('id, user_id, buyer_email, product_name, quantity, total_price, created_at, supplier, supplier_order_id, supplier_attempts')
+      .select('id, user_id, buyer_email, product_id, product_name, quantity, total_price, created_at, supplier, supplier_order_id, supplier_attempts')
       .eq('status', 'processing')
       .in('supplier', Object.keys(ADAPTERS))
       .order('created_at', { ascending: true })
@@ -117,6 +117,10 @@ serve(async (req) => {
           }).eq('id', orderId)
           summary.completed++
 
+          await archiveDeliveredAccounts(admin, {
+            productId: order.product_id, orderId, userId: order.user_id, credentials: result,
+          })
+
           // Envoyer les credentials par email si le client a opté pour cette option
           admin.functions.invoke('send-delivery-email', { body: { orderId } })
             .catch(e => console.error('[poll] send-delivery-email failed:', (e as Error).message))
@@ -171,6 +175,11 @@ serve(async (req) => {
           }).eq('id', orderId)
 
           summary.partial++
+
+          await archiveDeliveredAccounts(admin, {
+            productId: order.product_id, orderId, userId: order.user_id, credentials: result,
+          })
+
           await logSupplier(admin, {
             order_id: orderId, action: 'deliver-partial', level: 'error', supplier,
             message: `Partiel : ${delivered}/${qty} livré(s), ${refund} USD remboursés (${supplier} #${order.supplier_order_id}).`,
