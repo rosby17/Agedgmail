@@ -9,15 +9,20 @@
 // un numéro moins cher que son vrai prix.
 // ============================================================
 
-// Marge dynamique (identique à sms-get-prices / api-v2).
+// Marge dynamique — seule et unique définition (sms-get-prices et api-v2
+// importent cette fonction au lieu d'en garder chacun une copie : avant, les
+// trois endroits divergeaient silencieusement dès qu'on changeait un chiffre
+// dans un seul des trois fichiers).
 const MARGIN_PCT = 0.20
 const MARKUP_MIN = 0.75
 const MARKUP_MAX = 1.00
+const PRICE_FLOOR = 1.00 // aucun numéro ne doit se vendre en dessous de ça
 
-/** marge = borne(20 % du coût, entre $0.75 et $1.00) ; prix = coût + marge. */
+/** marge = borne(20 % du coût, entre $0.75 et $1.00) ; prix = coût + marge, jamais < $1. */
 export function applyMargin(cost: number): number {
   const markup = Math.min(MARKUP_MAX, Math.max(cost * MARGIN_PCT, MARKUP_MIN))
-  return Math.ceil((cost + markup) * 100) / 100
+  const price = Math.ceil((cost + markup) * 100) / 100
+  return Math.max(price, PRICE_FLOOR)
 }
 
 // Nom de pays PVAPins par ISO (get_rates.php prend un nom, pas un ISO).

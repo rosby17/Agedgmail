@@ -17,6 +17,7 @@
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { applyMargin } from '../_shared/sms-pricing.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -48,18 +49,8 @@ async function parseParams(req: Request): Promise<Record<string, string>> {
   return Object.fromEntries(p.entries())
 }
 
-// Marge DYNAMIQUE (alignée sur la boutique) :
-//   marge = borne( 20 % du coût, entre $0.75 et $1.00 ) ; prix = coût + marge.
-// Petits numéros : grosse marge relative (plancher $0.75). Moyens : ≥ +20 %.
-// Gros numéros : marge plafonnée à $1 (ex: coût $7 → $8), jamais exclus.
-const MARGIN_PCT = 0.20   // marge cible en % du coût
-const MARKUP_MIN = 0.75   // marge absolue minimale (petits numéros)
-const MARKUP_MAX = 1.00   // marge absolue maximale (gros numéros)
-
-const applyMargin = (cost: number): number => {
-  const markup = Math.min(MARKUP_MAX, Math.max(cost * MARGIN_PCT, MARKUP_MIN))
-  return Math.ceil((cost + markup) * 100) / 100
-}
+// Marge DYNAMIQUE : logique définie une seule fois dans _shared/sms-pricing.ts
+// (importée ci-dessus) — prix jamais sous $1, quel que soit le coût fournisseur.
 
 // PVAPins : nom de pays par ISO (get_rates.php prend un nom de pays, pas un ISO).
 const PVA_ISO_TO_NAME: Record<string, string> = {

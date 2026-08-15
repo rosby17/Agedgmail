@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { aliasForProvider } from '../_shared/sms-pricing.ts';
+import { aliasForProvider, applyMargin } from '../_shared/sms-pricing.ts';
 import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 
 // Types
@@ -25,20 +25,11 @@ interface FormattedCountry {
 // ajuster tous les prix de la boutique.
 // Marge DYNAMIQUE :
 //   marge = borne( 20 % du coût, entre un plancher $0.75 et un plafond $1.00 )
-//   prix  = coût + marge, arrondi au centime supérieur.
-// → petits numéros : grosse marge relative (plancher $0.75, ex: $0.13 → $0.88)
+//   prix  = coût + marge, arrondi au centime supérieur, jamais sous $1.
+// → petits numéros : grosse marge relative (plancher $0.75, ex: $0.13 → $0.88 → $1.00)
 // → numéros moyens : au moins +20 %
 // → gros numéros  : marge plafonnée à $1 (ex: coût $7 → $8), jamais exclus.
-// Bénéfice garanti par numéro : entre $0.75 et $1.00. Ajuster ces 3 constantes
-// suffit à retoucher toute la grille.
-const MARGIN_PCT = 0.20;   // marge cible en % du coût
-const MARKUP_MIN = 0.75;   // marge absolue minimale (petits numéros)
-const MARKUP_MAX = 1.00;   // marge absolue maximale (gros numéros)
-
-const applyMargin = (cost: number): number => {
-  const markup = Math.min(MARKUP_MAX, Math.max(cost * MARGIN_PCT, MARKUP_MIN));
-  return Math.ceil((cost + markup) * 100) / 100;
-};
+// Logique définie une seule fois dans _shared/sms-pricing.ts (importée ci-dessus).
 
 // ── PVAPins : pays comparés (ISO -> nom PVAPins) ───────────────────────────
 // get_rates.php est PAR pays et la variante YouTube la moins chère (Youtube1,
