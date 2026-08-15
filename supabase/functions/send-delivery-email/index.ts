@@ -47,7 +47,7 @@ function buildEmailHtml(opts: {
     </table>
 
     <div style="text-align:center;">
-      ${ctaButton(`${SITE_URL}/myorders`, 'Voir mes commandes')}
+      ${ctaButton(`${SITE_URL}/app/myorders`, 'Voir mes commandes')}
     </div>
   `
 

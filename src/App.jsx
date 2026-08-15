@@ -344,6 +344,36 @@ const SupportChatWidget = ({ session, profile }) => {
   );
 };
 
+// Vues "application" (nécessitent une connexion) — servies sous /app/... —
+// distinctes des vues "vitrine" publiques (landing, shop, product, policies,
+// auth) qui restent à la racine. Voir viewToUrlPath / pathToView ci-dessous,
+// seul et unique endroit qui connaît cette règle : navigate(), le parsing
+// d'URL au montage et le handler popstate s'appuient tous dessus pour ne
+// jamais diverger entre eux.
+const APP_VIEWS = new Set(['dashboard', 'recharge', 'settings', 'admin', 'sms', 'api']);
+// Anciens chemins (avant l'introduction de /app) encore potentiellement en
+// dur dans des emails déjà envoyés ou des favoris clients -> redirigés.
+const LEGACY_APP_PATH_TO_VIEW = { myorders: 'dashboard', recharge: 'recharge', settings: 'settings', admin: 'admin', sms: 'sms', api: 'api' };
+
+/** Nom de vue interne -> chemin d'URL public (sans le slash de tête). */
+function viewToUrlPath(viewName) {
+  const pathName = viewName === 'dashboard' ? 'myorders' : viewName;
+  return APP_VIEWS.has(viewName) ? `app/${pathName}` : pathName;
+}
+
+/** Chemin d'URL (avec ou sans slash de tête) -> nom de vue interne, ou null si inconnu. */
+function pathToView(rawPath) {
+  const path = (rawPath || '').replace(/^\/+/, '');
+  if (!path) return 'landing';
+  if (path.startsWith('app/')) {
+    const sub = path.slice(4);
+    if (sub === 'myorders') return 'dashboard';
+    return APP_VIEWS.has(sub) ? sub : null;
+  }
+  if (LEGACY_APP_PATH_TO_VIEW[path]) return LEGACY_APP_PATH_TO_VIEW[path];
+  return path;
+}
+
 function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('agedgmail_lang') || 'fr');
   useEffect(() => {
@@ -371,10 +401,7 @@ function App() {
     if (rawHash.includes('type=recovery') || rawHash.includes('access_token=') || rawHash.includes('error=')) {
       return 'shop'; // Let the effect handle the OAuth hash
     }
-    const path = window.location.pathname.replace(/^\/+/, '');
-    if (path === 'myorders') return 'dashboard';
-    if (path === 'sms') return 'sms';
-    return path || 'landing';
+    return pathToView(window.location.pathname) || 'landing';
   });
   const [selectedProduct, setSelectedProduct] = useState(() => {
     const saved = localStorage.getItem('agedgmail_product');
@@ -694,9 +721,9 @@ function App() {
   const navigate = (v) => {
     if (v === 'landing') v = '';
     const [viewName, queryString] = (v || '').split('?');
-    const pathName = viewName === 'dashboard' ? 'myorders' : viewName;
-    const fullPath = queryString ? `/${pathName}?${queryString}` : `/${pathName}`;
-    
+    const urlPath = viewToUrlPath(viewName);
+    const fullPath = queryString ? `/${urlPath}?${queryString}` : `/${urlPath}`;
+
     window.history.pushState(null, '', fullPath);
     setCurrentView(viewName || 'landing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -751,12 +778,11 @@ function App() {
         if (event === 'SIGNED_OUT') {
           setCart([]);
           setCartOpen(false);
-          // Si on était sur une vue qui exige une session (dashboard, réglages,
-          // recharge, admin), on repart proprement sur le catalogue au lieu de
+          // Si on était sur une vue qui exige une session (tout ce qui est
+          // sous /app/...), on repart proprement sur le catalogue au lieu de
           // laisser un écran vide (les vues protégées ne rendent rien sans session).
-          const protectedViews = ['dashboard', 'myorders', 'settings', 'recharge', 'admin'];
           const p = window.location.pathname.replace(/^\/+/, '');
-          if (protectedViews.includes(p)) {
+          if (p.startsWith('app/')) {
             navigate('shop');
           }
         }
@@ -788,20 +814,14 @@ function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname.replace(/^\/+/, '');
-      if (path === 'myorders') {
-        setCurrentView('dashboard');
-      } else if (path === 'sms') {
-        setCurrentView('sms');
-      } else {
-        setCurrentView(path || 'landing');
-      }
+      setCurrentView(pathToView(window.location.pathname) || 'landing');
     };
 
     window.addEventListener('popstate', handlePopState);
 
     const params = new URLSearchParams(window.location.search);
     const rawHash = window.location.hash;
+    const rawPath = window.location.pathname.replace(/^\/+/, '');
 
     if (rawHash.includes('type=recovery')) {
       setCurrentView('reset-password');
@@ -810,9 +830,13 @@ function App() {
       setCurrentView('shop');
     } else if (params.get('paymentStatus')) {
       setCurrentView('dashboard');
-      window.history.replaceState(null, '', '/myorders');
-    } else if (window.location.pathname.replace(/^\/+/, '') === 'sms') {
+      window.history.replaceState(null, '', `/${viewToUrlPath('dashboard')}`);
+    } else if (rawPath === 'sms' || rawPath === 'app/sms') {
       setActiveCategory('sms');
+    } else if (LEGACY_APP_PATH_TO_VIEW[rawPath]) {
+      // Ancien lien (email déjà envoyé, favori) vers une page maintenant sous
+      // /app/... — on corrige l'URL sans casser le lien.
+      window.history.replaceState(null, '', `/${viewToUrlPath(LEGACY_APP_PATH_TO_VIEW[rawPath])}`);
     }
 
     return () => window.removeEventListener('popstate', handlePopState);

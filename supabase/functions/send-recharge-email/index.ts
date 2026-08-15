@@ -27,7 +27,7 @@ function buildEmailHtml(opts: { amountUsd: number; newBalance: number }): string
     ])}
 
     <div style="text-align:center;">
-      ${ctaButton(`${SITE_URL}/myorders`, 'Voir mon compte')}
+      ${ctaButton(`${SITE_URL}/app/myorders`, 'Voir mon compte')}
     </div>
   `
 
