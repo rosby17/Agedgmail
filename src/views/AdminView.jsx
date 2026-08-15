@@ -28,7 +28,11 @@ import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
 const RevenueChart = ({ confirmedOrders, allUsers = [], mappings = [], lang = 'fr' }) => {
-  const [range, setRange] = useState(7);
+  // Par défaut sur "à vie" pour matcher les cartes Financial Highlights
+  // au-dessus (elles aussi non filtrées par date) — un défaut sur 7 jours
+  // donnait l'impression trompeuse que le CA/bénéfice affichés en haut de
+  // page ne portaient que sur la semaine, alors qu'ils sont déjà lifetime.
+  const [range, setRange] = useState('lifetime');
   const [activeMetric, setActiveMetric] = useState('revenue'); // 'revenue' | 'users'
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
@@ -1036,6 +1040,15 @@ const AdminView = ({
   const pendingOnlyCount = allOrders.filter(o => (o.status || 'pending') === 'pending').length;
   const cancelledCount = allOrders.filter(o => o.status === 'cancelled').length;
 
+  // Métriques de performance client. Pas de "MRR"/taux mensuel : le modèle
+  // est de l'achat ponctuel (comptes, recharges), pas un abonnement — un
+  // revenu mensuel récurrent n'aurait pas de sens ici. On mesure plutôt la
+  // valeur générée par client et la part de la base qui a déjà payé.
+  const payingClientIds = new Set(confirmedPurchases.map(o => o.user_id).filter(Boolean));
+  const avgOrderValue = confirmedPurchases.length > 0 ? totalSold / confirmedPurchases.length : 0;
+  const avgClientValue = payingClientIds.size > 0 ? totalSold / payingClientIds.size : 0;
+  const payingClientRate = allUsers.length > 0 ? (payingClientIds.size / allUsers.length) * 100 : 0;
+
   // Commandes bloquées : en attente/en cours depuis plus de 15 min
   const STUCK_MIN = 15;
   const stuckOrders = allOrders.filter(o =>
@@ -1167,10 +1180,41 @@ const AdminView = ({
                 <FinanceCard
                   label="Marge estimée (%)"
                   value={`${realMarginPercent.toFixed(1)}%`}
-                  subtext="CA / Coût Fournisseur"
+                  subtext="Bénéfice net / Chiffre d'affaires"
                   color="violet"
                   icon={CircleDollarSign}
                   onClick={() => setFinancialDetailType('profit')}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 dark:text-slate-500 font-medium">
+                Chiffres sur toute la durée du site (à vie), pas sur une fenêtre de 30 jours.
+              </p>
+            </div>
+
+            {/* Performance clients */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">Performance Clients</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FinanceCard
+                  label="Valeur Client Moyenne"
+                  value={`$${avgClientValue.toFixed(2)}`}
+                  subtext={`${payingClientIds.size} client(s) ayant déjà acheté`}
+                  color="blue"
+                  icon={Users}
+                />
+                <FinanceCard
+                  label="Panier Moyen"
+                  value={`$${avgOrderValue.toFixed(2)}`}
+                  subtext={`Sur ${confirmedPurchases.length} commande(s)`}
+                  color="amber"
+                  icon={ShoppingCart}
+                />
+                <FinanceCard
+                  label="Taux de Clients Payants"
+                  value={`${payingClientRate.toFixed(1)}%`}
+                  subtext={`${payingClientIds.size} / ${allUsers.length} inscrits`}
+                  color="violet"
+                  icon={UserCheck}
                 />
               </div>
             </div>
