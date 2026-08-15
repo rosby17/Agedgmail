@@ -86,27 +86,9 @@ export const aliasForProvider = (provider: string): string => PROVIDER_ALIAS[pro
 export const providerForAlias = (alias: string): string => ALIAS_TO_PROVIDER[alias] || alias
 
 // ── Signature HMAC du securityId ───────────────────────────────────────────
-// Clé = SUPABASE_SERVICE_ROLE_KEY (secrète, disponible côté serveur uniquement,
-// jamais exposée au client). Séparateur '|' pour ne pas heurter les ':' du base.
-async function hmacHex(msg: string): Promise<string> {
-  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  )
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg))
-  return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return diff === 0
-}
+// Séparateur '|' pour ne pas heurter les ':' du base. hmacHex/timingSafeEqual
+// vivent dans _shared/hmac.ts (réutilisés par proxy-pricing.ts).
+import { hmacHex, timingSafeEqual } from './hmac.ts'
 
 /** Emballe le securityId de base avec le prix serveur + signature : base|prix|sig */
 export async function signSecurityId(base: string, price: number): Promise<string> {

@@ -85,6 +85,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
   const canRetrySupplier = (o) =>
     o.product_id !== 999 && o.product_id !== 998 &&
     !o.product_name?.toLowerCase().includes('sms') &&
+    !o.product_name?.toLowerCase().includes('proxy') &&
     (o.status === 'pending' || o.status === 'processing') &&
     !o.supplier_order_id;
 
@@ -112,6 +113,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
   const canDeliver = (o) =>
     o.product_id !== 999 && o.product_id !== 998 &&
     !o.product_name?.toLowerCase().includes('sms') &&
+    !o.product_name?.toLowerCase().includes('proxy') &&
     (o.status === 'pending' || o.status === 'processing' || o.status === 'confirmed');
 
   const filtered = allOrders.filter(o => {
@@ -128,7 +130,8 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
     
     // Filter by Product Category
     if (productFilter === 'sms') return o.product_name?.toLowerCase().includes('sms');
-    if (productFilter === 'accounts') return !o.product_name?.toLowerCase().includes('sms');
+    if (productFilter === 'proxy') return o.product_name?.toLowerCase().includes('proxy');
+    if (productFilter === 'accounts') return !o.product_name?.toLowerCase().includes('sms') && !o.product_name?.toLowerCase().includes('proxy');
     return true;
   });
 
@@ -231,6 +234,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
             { key: 'all', label: 'Tous produits' },
             { key: 'accounts', label: 'Comptes' },
             { key: 'sms', label: 'SMS' },
+            { key: 'proxy', label: 'Proxy' },
           ].map(f => (
             <button key={f.key} onClick={() => setProductFilter(f.key)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
