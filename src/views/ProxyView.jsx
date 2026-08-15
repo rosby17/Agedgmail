@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Globe2, Clock, CheckCircle2, BarChart3 } from 'lucide-react';
-import Navbar from '../components/layout/Navbar';
-import Footer from '../components/layout/Footer';
 import { supabase } from '../supabaseClient';
 import { ADMIN_EMAIL } from '../utils/constants';
 
@@ -45,8 +43,7 @@ const ProxyView = ({ navigate, session, profile, lang, t }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <Navbar navigate={navigate} session={session} profile={profile} currentView="proxy" lang={lang} t={t} cartTotal={0} cartCount={0} onCartClick={() => {}} setLang={() => {}} theme="light" setTheme={() => {}} />
+    <div className="flex flex-col">
       <main className="flex-1 max-w-xl mx-auto px-6 py-24 text-center w-full">
         <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-6">
           <Globe2 size={28} />
@@ -99,7 +96,6 @@ const ProxyView = ({ navigate, session, profile, lang, t }) => {
           </div>
         )}
       </main>
-      <Footer navigate={navigate} lang={lang} />
     </div>
   );
 };

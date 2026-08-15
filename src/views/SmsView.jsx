@@ -4,10 +4,8 @@ import { supabase } from '../supabaseClient';
 
 import { ADMIN_EMAIL, CATEGORIES, GROUP_LABELS, GROUP_ORDER, AVATAR_COLORS, JUNK_CATEGORIES, SUPPLIERS, API_BASE_URL } from '../utils/constants';
 import { categoryName, hashStr, detectFromText, categoryVisual, displayCategoryLabel, cleanProductName, getProductDetails } from '../utils/helpers';
-import { YouTubeLogo, GmailLogo, FacebookIcon, DiscordLogo, InstagramLogo, TwitterLogo, TikTokLogo, AppleLogo, TelegramLogo, SmsLogo, RedditLogo, MailGenericLogo, OutlookLogo, SnapchatLogo, AmazonLogo, GithubLogo, GoogleLogo, WhatsAppLogo } from '../components/ui/Logos';
+import { GmailLogo, FacebookIcon, TwitterLogo, AppleLogo, SmsLogo, RedditLogo, MailGenericLogo, OutlookLogo, SnapchatLogo, AmazonLogo, GithubLogo } from '../components/ui/Logos';
 import { SMS_SERVICES, DEFAULT_SMS_SERVICE, getSmsService } from '../utils/smsServices';
-
-const SMS_SERVICE_ICONS = { YouTubeLogo, GoogleLogo, WhatsAppLogo, TelegramLogo, DiscordLogo, InstagramLogo, TikTokLogo };
 import { Skeleton, SkeletonProductCard, SkeletonProductGrid, SkeletonRows, SkeletonMetricCards } from '../components/ui/Skeletons';
 import { TypewriterText } from '../components/ui/TypewriterText';
 import ProductCard from '../components/ui/ProductCard';
@@ -21,6 +19,18 @@ import QuickOrderModal from '../components/modals/QuickOrderModal';
 import TransferCreditsModal from '../components/modals/TransferCreditsModal';
 import OrderCredentialsModal from '../components/modals/OrderCredentialsModal';
 import NotificationBell from '../components/layout/NotificationBell';
+
+// Logo officiel de marque (Simple Icons, SVG, licence libre) — bien plus
+// fidèle que des tracés dessinés à la main. `color` optionnel : sans lui,
+// le CDN renvoie le SVG en noir/blanc par défaut.
+const BrandIcon = ({ slug, color, className = 'w-full h-full', alt = '' }) => (
+  <img
+    src={`https://cdn.simpleicons.org/${slug}${color ? `/${color}` : ''}`}
+    alt={alt}
+    className={className}
+    loading="lazy"
+  />
+);
 
 // Missing sub-views for Admin
 import SupplierAdmin from './SupplierAdmin';
@@ -81,7 +91,12 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   // identifiants réels par fournisseur (voir _shared/sms-services.ts).
   const [selectedService, setSelectedService] = useState(DEFAULT_SMS_SERVICE);
   const svc = getSmsService(selectedService);
-  const SvcIcon = SMS_SERVICE_ICONS[svc.icon] || YouTubeLogo;
+  // Cache client par service : re-sélectionner un service déjà chargé pendant
+  // cette session est instantané (pas de nouvel appel réseau, pas de flash de
+  // chargement) — la liste de prix ne bouge pas assez vite pour justifier de
+  // rappeler le serveur à chaque clic.
+  const pricesCacheRef = useRef({});
+  const [pricesLoading, setPricesLoading] = useState(false);
 
   useEffect(() => {
     if (status === 'IDLE') {
@@ -94,9 +109,23 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   }, [status, phoneNumber, securityId, smsCode, endTime, selectedCountry, currentPrice, currentProvider]);
 
   useEffect(() => {
-    // Fetch prices on component mount
+    // Changer de service ne doit JAMAIS remplacer toute la page par un
+    // skeleton — seule la liste de pays/prix se recharge, en gardant le
+    // reste de l'UI (sélecteur, étapes) visible et interactif. Résultat déjà
+    // en cache pour ce service pendant cette session -> affichage instantané,
+    // sans appel réseau ni indicateur de chargement.
+    const cached = pricesCacheRef.current[selectedService];
+    if (cached) {
+      setCountries(cached);
+      setSelectedCountry('');
+      setCurrentPrice(1.00);
+      setCurrentRawPrice(0.50);
+      setCurrentProvider('smscodes');
+      return;
+    }
+
     const fetchPrices = async () => {
-      setStatus('LOADING_PRICES');
+      setPricesLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke('sms-get-prices', {
           body: { serviceId: selectedService }
@@ -109,19 +138,20 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
         if (data.Prices && data.Prices.length > 0) {
           // Sort alphabetically by Country name
           const sorted = data.Prices.sort((a, b) => a.Country.localeCompare(b.Country));
+          pricesCacheRef.current[selectedService] = sorted;
           setCountries(sorted);
-          
+
           // Do not set a default country selection, keep it empty initially
           setSelectedCountry('');
           setCurrentPrice(1.00);
           setCurrentRawPrice(0.50);
           setCurrentProvider('smscodes');
         }
-        setStatus('IDLE');
       } catch (err) {
         console.error("Fetch prices error", err);
         setError(isFr ? `Erreur: ${err.message}` : `Error: ${err.message}`);
-        setStatus('IDLE');
+      } finally {
+        setPricesLoading(false);
       }
     };
 
@@ -401,7 +431,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
   const extractedCode = extractCode(smsCode);
 
-  if (status === 'LOADING_PRICES') {
+  // Skeleton plein écran uniquement au tout premier chargement (aucun pays
+  // encore connu) — jamais lors d'un changement de service, pour ne pas
+  // donner l'impression que toute la page recharge.
+  if (pricesLoading && countries.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-300">
         <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm">
@@ -460,53 +493,59 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
-      
-      {/* Sélecteur de service */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {SMS_SERVICES.map((s) => {
-          const Icon = SMS_SERVICE_ICONS[s.icon] || YouTubeLogo;
-          const active = s.id === selectedService;
-          return (
-            <button
-              key={s.id}
-              onClick={() => { if (s.id !== selectedService) setSelectedService(s.id); }}
-              disabled={status === 'LOADING_PRICES' || loading}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border disabled:opacity-50 ${
-                active
-                  ? 'bg-primary text-white dark:text-gray-900 border-primary shadow-sm'
-                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary/50'
-              }`}
-            >
-              <span className="w-5 h-5 shrink-0"><Icon className="w-full h-full" /></span>
-              {isFr ? s.labelFr : s.labelEn}
-            </button>
-          );
-        })}
-      </div>
+    <div className="max-w-5xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
 
-      {/* Service Selection */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-500/10 blur-3xl rounded-full"></div>
-        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full"></div>
-
-        <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-xl shadow-red-600/20 z-10">
-          <SvcIcon className="w-10 h-10 fill-current text-white" />
+      <div className="flex flex-col md:flex-row gap-6 mb-8">
+        {/* Sélecteur de service — vertical */}
+        <div className="w-full md:w-56 shrink-0 flex flex-col gap-2">
+          {SMS_SERVICES.map((s) => {
+            const active = s.id === selectedService;
+            return (
+              <button
+                key={s.id}
+                onClick={() => { if (s.id !== selectedService) setSelectedService(s.id); }}
+                disabled={loading}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border disabled:opacity-50 text-left ${
+                  active
+                    ? 'bg-primary text-white dark:text-gray-900 border-primary shadow-sm'
+                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                }`}
+              >
+                <span className="w-6 h-6 shrink-0 rounded-md overflow-hidden bg-white flex items-center justify-center p-1">
+                  <BrandIcon slug={s.iconSlug} color={s.iconColor} />
+                </span>
+                {isFr ? s.labelFr : s.labelEn}
+                {active && pricesLoading && (
+                  <div className="w-3 h-3 ml-auto border-2 border-white/40 border-t-white rounded-full animate-spin shrink-0" />
+                )}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex-1 text-center md:text-left space-y-2 z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-1">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            {isFr ? 'Service Actif' : 'Active Service'}
+
+        {/* Service Selection */}
+        <div className="flex-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-500/10 blur-3xl rounded-full"></div>
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full"></div>
+
+          <div className="w-20 h-20 bg-white rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-xl border border-gray-100 dark:border-gray-800 p-4 z-10">
+            <BrandIcon slug={svc.iconSlug} color={svc.iconColor} />
           </div>
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{isFr ? svc.labelFr : svc.labelEn} Verification</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl">
-            {isFr
-              ? `Vérifiez votre numéro ${svc.labelFr} pour recevoir le code SMS de confirmation instantanément.`
-              : `Verify your ${svc.labelEn} number to receive the SMS confirmation code instantly.`}
-          </p>
+          <div className="flex-1 text-center md:text-left space-y-2 z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-1">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+              {isFr ? 'Service Actif' : 'Active Service'}
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{isFr ? svc.labelFr : svc.labelEn} Verification</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl">
+              {isFr
+                ? `Vérifiez votre numéro ${svc.labelFr} pour recevoir le code SMS de confirmation instantanément.`
+                : `Verify your ${svc.labelEn} number to receive the SMS confirmation code instantly.`}
+            </p>
+          </div>
         </div>
       </div>
-      
+
       {/* Erreurs catégorisées (solde / pays indisponible / technique) : affichées
           uniquement à la place du numéro à l'étape 2, pas ici (évite le doublon). */}
       {error && !errorKind && (
@@ -531,7 +570,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                   <select 
                     value={selectedCountry}
                     onChange={handleCountryChange}
-                    disabled={status === 'LOADING_PRICES' || loading}
+                    disabled={pricesLoading || loading}
                     className="w-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 font-medium disabled:opacity-50"
                   >
                     <option value="">{isFr ? '-- Choisir un pays --' : '-- Choose a country --'}</option>
@@ -544,7 +583,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Prix du SMS ($)' : 'Price $ per SMS'}</label>
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3.5 border border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <span className="font-black text-gray-900 dark:text-white">${currentPrice.toFixed(2)}</span>
-                    {status === 'LOADING_PRICES' && <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />}
+                    {pricesLoading && <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />}
                   </div>
                </div>
             </div>
