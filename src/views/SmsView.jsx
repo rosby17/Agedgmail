@@ -575,8 +575,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                   </div>
                </div>
             </div>
-         </div>
+        </div>
+      </div>
 
+      <div className="space-y-6">
          {/* Step 2: Use the Number */}
          <div className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm transition-all duration-300 ${(!selectedCountry) ? 'opacity-50 grayscale-[20%]' : 'opacity-100'}`}>
             <div className="flex justify-between items-start mb-6">
