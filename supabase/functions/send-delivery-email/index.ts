@@ -15,6 +15,51 @@ import { emailShell, infoBox, ctaButton, escapeHtml } from '../_shared/email-tem
 const SITE_NAME = 'AgedGmailYT'
 const SITE_URL = 'https://agedgmail.tools-cl.com'
 
+// Comptes email uniquement (pas SMS/proxy — pas de compte à sécuriser dans
+// ces cas-là). Volontairement large (n'importe quel produit qui n'est PAS
+// SMS/proxy est traité comme un compte) plutôt que restreint à "gmail", car
+// la quasi-totalité du catalogue est ce type de produit.
+function isAccountDelivery(productName: string): boolean {
+  const p = (productName || '').toLowerCase()
+  return !p.includes('sms') && !p.includes('proxy')
+}
+
+/**
+ * Tutoriel de sécurisation post-livraison : 72h de "chauffe" avant de tout
+ * reprendre en main (mot de passe, récupération, 2FA), lien 2fa.live pour
+ * générer le code à partir du secret fourni, tutoriel vidéo, et clause de
+ * non-responsabilité si le client ne sécurise pas le compte à temps.
+ */
+function securityTutorialHtml(): string {
+  const steps = [
+    'Les premières 72h : ne touche à rien de sensible. Connecte-toi normalement, mais ne change ni mot de passe ni récupération tout de suite — ça laisse le compte "chauffer" et réduit le risque de blocage par Google.',
+    'Après 72h : change le mot de passe principal, puis l\'email de récupération par le tien, puis active TA propre validation en 2 étapes et retire l\'ancienne.',
+    'Vérifie qu\'aucun autre appareil/session n\'a encore accès (Paramètres → Sécurité → Vos appareils).',
+  ]
+  const stepsHtml = steps.map((s, i) => `
+    <tr>
+      <td style="padding:8px 0;vertical-align:top;width:28px;color:#0D7A52;font-size:14px;font-weight:900;">${i + 1}.</td>
+      <td style="padding:8px 0;color:#374151;font-size:13px;line-height:1.6;">${escapeHtml(s)}</td>
+    </tr>`).join('')
+
+  return `
+    <p style="color:#111827;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 12px;">⚠️ À faire impérativement — sécurise ton compte</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:16px 20px;margin:0 0 20px;">
+      <tbody>${stepsHtml}</tbody>
+    </table>
+    <p style="color:#374151;font-size:13px;line-height:1.7;margin:0 0 20px;">
+      Si un secret 2FA est fourni dans tes identifiants, génère le code à 6 chiffres sur
+      <a href="https://2fa.live/" style="color:#0D7A52;font-weight:700;text-decoration:none;">2fa.live</a> en y collant ce secret.
+      Tutoriel vidéo complet :
+      <a href="https://www.youtube.com/watch?v=R_uX8ck-E_I" style="color:#0D7A52;font-weight:700;text-decoration:none;">voir la vidéo</a>.
+    </p>
+    <p style="color:#9AA79F;font-size:11px;line-height:1.6;margin:0 0 28px;">
+      Passé ce délai de 72h, la sécurisation du compte (mot de passe, récupération, 2FA) est de ta responsabilité.
+      Nous ne sommes pas responsables si tu ne le fais pas à temps et perds l'accès au compte.
+    </p>
+  `
+}
+
 function buildEmailHtml(opts: {
   productName: string
   shortId: string
@@ -45,6 +90,8 @@ function buildEmailHtml(opts: {
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E7EFEC;border-radius:12px;overflow:hidden;margin:0 0 28px;">
       <tbody>${credsHtml}</tbody>
     </table>
+
+    ${isAccountDelivery(productName) ? securityTutorialHtml() : ''}
 
     <div style="text-align:center;">
       ${ctaButton(`${SITE_URL}/app/myorders`, 'Voir mes commandes')}
