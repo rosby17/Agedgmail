@@ -523,12 +523,20 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           })}
         </div>
 
+        {/* Colonne de gauche (Étapes 1+2) + colonne de droite (Étape 3) */}
+        <div className="flex-1 flex flex-col md:flex-row gap-6">
+        <div className="flex-1 space-y-6">
         {/* Service actif fusionné avec l'étape 1 : plus besoin de descendre
             pour voir le sélecteur de pays, le logo n'apparaît qu'une fois
             en plus de celui déjà dans la barre de gauche. */}
-        <div className="flex-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-500/10 blur-3xl rounded-full"></div>
-          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full"></div>
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative">
+          {/* overflow-hidden isolé sur ce calque décoratif uniquement — sur la
+              carte entière, ça coupait le menu déroulant du CustomSelect qui
+              doit pouvoir dépasser en dessous. */}
+          <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-500/10 blur-3xl rounded-full"></div>
+            <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full"></div>
+          </div>
 
           <div className="flex items-center gap-4 mb-6 z-10 relative">
             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-md border border-gray-100 dark:border-gray-800 p-2.5">
@@ -576,9 +584,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                </div>
             </div>
         </div>
-      </div>
 
-      <div className="space-y-6">
          {/* Step 2: Use the Number */}
          <div className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm transition-all duration-300 ${(!selectedCountry) ? 'opacity-50 grayscale-[20%]' : 'opacity-100'}`}>
             <div className="flex justify-between items-start mb-6">
@@ -645,9 +651,12 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               </div>
             )}
          </div>
+        </div>
 
+        {/* Colonne de droite : Étape 3 */}
+        <div className="flex-1">
          {/* Step 3: Receive SMS */}
-         <div className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm transition-all duration-300 ${status === 'COMPLETED' ? 'opacity-100 border-green-500/30' : (status === 'WAITING_SMS' ? 'opacity-100 border-primary/30' : 'opacity-50 grayscale-[50%]')}`}>
+         <div className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm transition-all duration-300 h-full ${status === 'COMPLETED' ? 'opacity-100 border-green-500/30' : (status === 'WAITING_SMS' ? 'opacity-100 border-primary/30' : 'opacity-50 grayscale-[50%]')}`}>
             <h3 className="text-sm font-black text-gray-900 dark:text-white mb-2 uppercase tracking-widest flex items-center gap-3">
               {isFr ? 'Étape 3 - Réception du SMS' : 'STEP THREE - RECEIVE THE SMS'}
               {status === 'WAITING_SMS' && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
@@ -708,6 +717,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               </div>
             )}
          </div>
+        </div>
+        </div>
       </div>
     </div>
   );
