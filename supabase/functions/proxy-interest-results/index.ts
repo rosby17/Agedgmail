@@ -29,14 +29,20 @@ serve(async (req) => {
     }
 
     const admin = getAdmin()
-    const { data: rows } = await admin.from('proxy_interest_votes').select('choice')
+    const { data: rows } = await admin
+      .from('proxy_interest_votes')
+      .select('choice, comment, created_at')
+      .order('created_at', { ascending: false })
 
     const counts = { yes: 0, maybe: 0, no: 0 }
     for (const r of rows || []) {
       if (r.choice in counts) counts[r.choice as keyof typeof counts]++
     }
+    const comments = (rows || [])
+      .filter((r) => r.comment && r.comment.trim())
+      .map((r) => ({ choice: r.choice, comment: r.comment, created_at: r.created_at }))
 
-    return json({ counts, total: (rows || []).length })
+    return json({ counts, total: (rows || []).length, comments })
   } catch (error) {
     return json({ error: (error as Error).message }, 500)
   }

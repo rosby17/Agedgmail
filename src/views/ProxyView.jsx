@@ -14,6 +14,8 @@ const ProxyView = ({ navigate, session, profile, lang, t }) => {
   const [voted, setVoted] = useState(() => !!localStorage.getItem(VOTE_KEY));
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState(null);
+  const [choice, setChoice] = useState('');
+  const [comment, setComment] = useState('');
 
   const isAdmin = session?.user?.email === ADMIN_EMAIL || profile?.is_admin;
 
@@ -24,12 +26,13 @@ const ProxyView = ({ navigate, session, profile, lang, t }) => {
       .catch(() => {});
   }, [isAdmin]);
 
-  const vote = async (choice) => {
-    if (voted || submitting) return;
+  const submitVote = async () => {
+    if (voted || submitting || !choice) return;
     setSubmitting(true);
     await supabase.from('proxy_interest_votes').insert({
       user_id: session?.user?.id || null,
       choice,
+      comment: comment.trim() || null,
     });
     localStorage.setItem(VOTE_KEY, choice);
     setVoted(true);
@@ -73,13 +76,41 @@ const ProxyView = ({ navigate, session, profile, lang, t }) => {
             {options.map((opt) => (
               <button
                 key={opt.id}
-                onClick={() => vote(opt.id)}
+                onClick={() => setChoice(opt.id)}
                 disabled={submitting}
-                className="w-full h-14 rounded-2xl bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 font-bold text-sm text-gray-700 dark:text-slate-300 hover:border-primary hover:text-primary transition-all disabled:opacity-50"
+                className={`w-full h-14 rounded-2xl border font-bold text-sm transition-all disabled:opacity-50 ${
+                  choice === opt.id
+                    ? 'bg-primary/10 border-primary text-primary'
+                    : 'bg-white dark:bg-slate-900/40 border-gray-100 dark:border-slate-800 text-gray-700 dark:text-slate-300 hover:border-primary/50'
+                }`}
               >
                 {opt.label}
               </button>
             ))}
+
+            <div className="pt-2 text-left">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                {isFr ? 'Un commentaire ? (optionnel)' : 'Any comment? (optional)'}
+              </label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                disabled={submitting}
+                rows={3}
+                placeholder={isFr
+                  ? 'Ex: seulement si moins cher que IPRoyal, ou tel besoin précis...'
+                  : 'E.g. only if cheaper than IPRoyal, or a specific need...'}
+                className="w-full text-sm bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-2xl px-4 py-3 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/40 resize-none disabled:opacity-50"
+              />
+            </div>
+
+            <button
+              onClick={submitVote}
+              disabled={!choice || submitting}
+              className="w-full h-12 rounded-2xl bg-primary text-white dark:text-gray-900 font-bold text-sm hover:bg-primaryDark transition-all disabled:opacity-40"
+            >
+              {isFr ? 'Envoyer mon avis' : 'Send my feedback'}
+            </button>
           </div>
         )}
 
@@ -93,6 +124,17 @@ const ProxyView = ({ navigate, session, profile, lang, t }) => {
               <div>Peut-être : {results.counts.maybe}</div>
               <div>Non : {results.counts.no}</div>
             </div>
+            {results.comments?.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-white/10 space-y-3 max-h-60 overflow-y-auto">
+                {results.comments.map((c, i) => (
+                  <div key={i} className="text-xs">
+                    <span className="font-black text-primary uppercase">{c.choice}</span>
+                    <span className="text-gray-400"> — {new Date(c.created_at).toLocaleDateString()}</span>
+                    <p className="text-gray-200 mt-0.5">{c.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>
