@@ -103,11 +103,10 @@ const QuickOrderModal = ({ product, session, profile, navigate, onClose, fetchPr
           delivered_to: session.user.id,
         }).in('id', stockIds);
 
-        // Envoyer les credentials par email si le client a opté pour cette option
-        if (profile?.send_email_on_delivery) {
-          supabase.functions.invoke('send-delivery-email', { body: { orderId: orderData.id } })
-            .catch(e => console.error('send-delivery-email error:', e));
-        }
+        // Envoyer les credentials par email — opt-out géré côté serveur
+        // (profiles.send_email_on_delivery === false désactive l'envoi).
+        supabase.functions.invoke('send-delivery-email', { body: { orderId: orderData.id } })
+          .catch(e => console.error('send-delivery-email error:', e));
       }
 
       setPurchaseSuccess(true);

@@ -74,6 +74,9 @@ serve(async (req) => {
       binance_tx_id: txRef ? String(txRef) : `manual-confirm-${orderId}`,
       confirmed_at: new Date().toISOString(),
     }).eq('id', orderId)
+    admin.functions.invoke('send-recharge-email', {
+      body: { userId: order.user_id, orderId, amountUsd: credit },
+    }).catch((e: unknown) => console.error('send-recharge-email failed:', (e as Error).message))
 
     await admin.from('notifications').insert({
       user_id: order.user_id,

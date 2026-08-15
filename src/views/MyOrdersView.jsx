@@ -37,11 +37,11 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, fetch
   const [viewOrder, setViewOrder] = useState(null);
   const [showTransfer, setShowTransfer] = useState(false);
   // Initialise la checkbox depuis le profil
-  const [sendEmailAll, setSendEmailAll] = useState(profile?.send_email_on_delivery ?? false);
+  const [sendEmailAll, setSendEmailAll] = useState(profile?.send_email_on_delivery ?? true);
 
   // Synchronise la checkbox si le profil change (ex: rechargement)
   React.useEffect(() => {
-    setSendEmailAll(profile?.send_email_on_delivery ?? false);
+    setSendEmailAll(profile?.send_email_on_delivery ?? true);
   }, [profile?.send_email_on_delivery]);
 
   // Sauvegarde la préférence email en base dès que la case est cochée/décochée

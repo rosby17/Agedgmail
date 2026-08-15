@@ -116,8 +116,12 @@ serve(async (req) => {
         .from("orders")
         .update({ status: "confirmed", updated_at: new Date().toISOString() })
         .eq("id", order.id);
-        
-      return new Response(JSON.stringify({ 
+
+      supabaseAdmin.functions.invoke('send-recharge-email', {
+        body: { userId: order.user_id, orderId: order.id, amountUsd: order.credit_amount },
+      }).catch((e: unknown) => console.error('send-recharge-email failed:', (e as Error).message))
+
+      return new Response(JSON.stringify({
         status: "success", 
         message: "Payment verified and account credited"
       }), {

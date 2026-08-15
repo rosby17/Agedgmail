@@ -148,7 +148,9 @@ serve(async (req) => {
       .eq('id', order.user_id)
       .single()
 
-    const wantsEmail = profile?.send_email_on_delivery === true
+    // Opt-out (envoyé par défaut) : seul un choix explicite à "false" par le
+    // client dans ses paramètres empêche l'envoi.
+    const wantsEmail = profile?.send_email_on_delivery !== false
     if (!wantsEmail) {
       return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'opt_out' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -92,6 +92,9 @@ serve(async (req) => {
             title: 'Dépôt confirmé',
             message: `Ton dépôt Mobile Money de $${Number(order.credit_amount).toFixed(2)} a été crédité automatiquement.`,
           }).then(() => {}, () => {})
+          admin.functions.invoke('send-recharge-email', {
+            body: { userId: order.user_id, orderId: order.id, amountUsd: order.credit_amount },
+          }).catch((e: unknown) => console.error('send-recharge-email failed:', (e as Error).message))
           summary.credited++
         } else if (cartStatus === 'abandoned' || cartStatus === 'payment_failed') {
           await admin.from('orders').update({ status: 'cancelled' }).eq('id', order.id)

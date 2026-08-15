@@ -99,6 +99,9 @@ serve(async (req) => {
           return json({ ok: true, autoConfirmed: false })
         }
         await admin.rpc('credit_balance', { p_user_id: order.user_id, p_amount: credit })
+        admin.functions.invoke('send-recharge-email', {
+          body: { userId: order.user_id, orderId: order.id, amountUsd: credit },
+        }).catch((e: unknown) => console.error('send-recharge-email failed:', (e as Error).message))
         await notifyTelegram(
           `✅ <b>Recharge Binance Pay auto-confirmée</b>\n\n` +
           `• <b>Client :</b> ${order.buyer_email || '—'}\n` +
