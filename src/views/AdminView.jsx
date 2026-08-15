@@ -22,6 +22,7 @@ import NotificationBell from '../components/layout/NotificationBell';
 
 // Missing sub-views for Admin
 import SupplierAdmin from './SupplierAdmin';
+import StockAdmin from './StockAdmin';
 import BinancePaymentsAdmin from './BinancePaymentsAdmin';
 import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
@@ -721,6 +722,7 @@ const FinanceCard = ({ label, value, subtext, color = 'emerald', icon: Icon, onC
     blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     violet: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
     amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    red: 'bg-red-500/10 text-red-400 border-red-500/20',
     'profit-accent': 'bg-white/15 text-white border-white/20',
   };
 
@@ -1049,6 +1051,11 @@ const AdminView = ({
   const avgClientValue = payingClientIds.size > 0 ? totalSold / payingClientIds.size : 0;
   const payingClientRate = allUsers.length > 0 ? (payingClientIds.size / allUsers.length) * 100 : 0;
 
+  // Solde actuellement disponible dans les comptes clients (distinct du total
+  // des dépôts historiques ci-dessous : une bonne partie a déjà été dépensée
+  // en achats, ce qui compte dans le Chiffre d'Affaires, pas ici).
+  const currentClientBalance = allUsers.reduce((s, u) => s + Number(u.balance || 0), 0);
+
   // Commandes bloquées : en attente/en cours depuis plus de 15 min
   const STUCK_MIN = 15;
   const stuckOrders = allOrders.filter(o =>
@@ -1081,6 +1088,7 @@ const AdminView = ({
               { id: 'users', label: lang === 'fr' ? "Clients" : "Client Management", icon: Users },
               { id: 'support', label: 'Support / Chat', icon: MessageCircle },
               { id: 'supplier', label: lang === 'fr' ? "Fournisseur" : "Supplier", icon: Database },
+              { id: 'stock', label: 'Stock manuel', icon: Package },
             ].map(item => (
               <button
                 key={item.id}
@@ -1191,6 +1199,40 @@ const AdminView = ({
               </p>
             </div>
 
+            {/* Dette envers les clients : argent déjà reçu (recharges) mais pas
+                encore dépensé — ce n'est PAS du chiffre d'affaires tant que le
+                client n'a rien acheté avec, c'est un passif qu'on doit encore
+                honorer en livraison le jour où il l'utilise. */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">Passif — Solde Client Non Dépensé</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FinanceCard
+                  label="Dette envers les clients"
+                  value={`$${currentClientBalance.toFixed(2)}`}
+                  subtext="Solde disponible non encore dépensé"
+                  color="red"
+                  icon={Wallet}
+                  onClick={() => setActiveTab('users')}
+                />
+                <FinanceCard
+                  label="Clients avec solde > 0"
+                  value={String(allUsers.filter(u => Number(u.balance || 0) > 0).length)}
+                  subtext={`Sur ${allUsers.length} inscrits`}
+                  color="amber"
+                  icon={Users}
+                  onClick={() => setActiveTab('users')}
+                />
+                <FinanceCard
+                  label="Total historique déposé"
+                  value={`$${totalDeposited.toFixed(2)}`}
+                  subtext={`Dont $${currentClientBalance.toFixed(2)} encore en attente d'être dépensé`}
+                  color="blue"
+                  icon={DollarSign}
+                  onClick={() => setFinancialDetailType('deposit')}
+                />
+              </div>
+            </div>
+
             {/* Performance clients */}
             <div className="space-y-3">
               <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">Performance Clients</h2>
@@ -1224,7 +1266,7 @@ const AdminView = ({
               <h3 className="text-xs font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">Operational Metrics</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div onClick={() => setFinancialDetailType('deposit')} className="cursor-pointer group hover:bg-gray-50 dark:hover:bg-slate-800/50 p-3 -m-3 rounded-2xl transition-all">
-                  <div className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase group-hover:text-primary transition-colors">Dépôts Clients (Recharges)</div>
+                  <div className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase group-hover:text-primary transition-colors">Dépôts Clients (total historique)</div>
                   <div className="text-xl font-bold text-gray-900 dark:text-slate-300 font-mono mt-1">${totalDeposited.toFixed(2)}</div>
                 </div>
                 <div>
@@ -1260,6 +1302,8 @@ const AdminView = ({
           {activeTab === 'support' && <SupportAdmin session={session} />}
 
           {activeTab === 'supplier' && <SupplierAdmin products={products} fetchProducts={fetchProducts} />}
+
+          {activeTab === 'stock' && <StockAdmin products={products} />}
 
           {financialDetailType && (
             <FinancialDetailsModal

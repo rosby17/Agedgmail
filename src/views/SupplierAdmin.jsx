@@ -42,15 +42,6 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('name_asc');
 
-  // Stock manuel (account_stock) — vérifié en priorité par dropship-place-order
-  // avant tout achat fournisseur.
-  const [stockProductId, setStockProductId] = useState('');
-  const [stockProductQuery, setStockProductQuery] = useState('');
-  const [stockText, setStockText] = useState('');
-  const [stockCounts, setStockCounts] = useState({}); // { [product_id]: available_count }
-  const [stockSubmitting, setStockSubmitting] = useState(false);
-  const [stockMsg, setStockMsg] = useState('');
-
   const productName = (id) => products.find(p => p.id === id)?.name || `#${id}`;
 
   const fetchAll = async () => {
@@ -71,40 +62,7 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
     setLogs(l.data || []);
   };
 
-  const fetchStockCount = async (productId) => {
-    if (!supabase || !productId) return;
-    const { count } = await supabase.from('account_stock').select('id', { count: 'exact', head: true })
-      .eq('product_id', productId).eq('is_delivered', false);
-    setStockCounts(prev => ({ ...prev, [productId]: count ?? 0 }));
-  };
-
   useEffect(() => { fetchAll(); }, []);
-  useEffect(() => { if (stockProductId) fetchStockCount(stockProductId); }, [stockProductId]);
-
-  const handleAddStock = async () => {
-    if (!stockProductId) { setStockMsg('Choisis un produit.'); return; }
-    const lines = stockText.split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length === 0) { setStockMsg('Colle au moins un identifiant (une ligne par compte).'); return; }
-
-    setStockSubmitting(true); setStockMsg('');
-    try {
-      const { error } = await supabase.from('account_stock').insert(
-        lines.map(credentials => ({ product_id: Number(stockProductId), credentials, is_delivered: false }))
-      );
-      if (error) throw error;
-      setStockMsg(`${lines.length} compte(s) ajouté(s) au stock de « ${productName(Number(stockProductId))} ».`);
-      setStockText('');
-      fetchStockCount(stockProductId);
-    } catch (err) {
-      setStockMsg('Erreur : ' + err.message);
-    } finally {
-      setStockSubmitting(false);
-    }
-  };
-
-  const stockProductMatches = stockProductQuery.trim()
-    ? products.filter(p => p.name.toLowerCase().includes(stockProductQuery.toLowerCase())).slice(0, 8)
-    : [];
 
   const handleSync = async (supplier) => {
     setSyncing(supplier); setMsg('');
@@ -288,66 +246,6 @@ const SupplierAdmin = ({ products = [], fetchProducts }) => {
       </div>
 
       {msg && <div className="text-sm font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-2xl px-5 py-3">{msg}</div>}
-
-      {/* Stock manuel — vérifié en priorité par le système avant tout achat fournisseur */}
-      <div className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft space-y-6">
-        <div>
-          <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-            <Database size={18} className="text-primary" /> Ajouter du stock manuel
-          </h3>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-            Comptes déjà en main (récupérés, achetés en avance...). Dès qu'un client paie ce produit, le système livre
-            en priorité depuis ce stock — il n'achète chez le fournisseur que si le stock est vide.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Produit</label>
-            <input
-              type="text"
-              value={stockProductId ? productName(Number(stockProductId)) : stockProductQuery}
-              onChange={e => { setStockProductId(''); setStockProductQuery(e.target.value); }}
-              placeholder="Rechercher un produit..."
-              className="w-full h-12 px-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent text-sm"
-            />
-            {stockProductMatches.length > 0 && !stockProductId && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg max-h-64 overflow-y-auto">
-                {stockProductMatches.map(p => (
-                  <button key={p.id} onClick={() => { setStockProductId(String(p.id)); setStockProductQuery(''); }}
-                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Stock disponible actuel</label>
-            <div className="h-12 px-4 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/40 flex items-center font-mono font-bold text-gray-900 dark:text-white">
-              {stockProductId ? `${stockCounts[stockProductId] ?? '…'} compte(s)` : '—'}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Identifiants (une ligne par compte)</label>
-          <textarea
-            value={stockText}
-            onChange={e => setStockText(e.target.value)}
-            rows={5}
-            placeholder={"email1:motdepasse:recovery\nemail2:motdepasse2:recovery2"}
-            className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm font-mono outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-          />
-        </div>
-
-        {stockMsg && <div className="text-sm font-bold text-gray-600 dark:text-gray-300">{stockMsg}</div>}
-
-        <button onClick={handleAddStock} disabled={stockSubmitting || !stockProductId}
-          className="h-12 px-6 rounded-xl bg-primary text-white dark:text-gray-900 font-bold text-sm flex items-center gap-2 hover:bg-primaryDark transition-all disabled:opacity-50">
-          <Plus size={16} /> {stockSubmitting ? 'Ajout…' : 'Ajouter au stock'}
-        </button>
-      </div>
 
       {/* Marge globale */}
       <div className="bg-white dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-10 shadow-soft">
