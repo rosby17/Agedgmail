@@ -493,7 +493,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
+    <div className="max-w-7xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
 
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         {/* Sélecteur de service — vertical */}
@@ -632,7 +632,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                         readOnly 
                         value={phoneNumber || (loading ? (isFr ? 'Génération du numéro en cours...' : 'Generating number...') : '')} 
                         placeholder={isFr ? "Génération automatique..." : "Automatic generation..."} 
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-xl font-mono font-bold text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-colors group-hover:border-primary/30" 
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-base md:text-lg font-mono font-bold tracking-tight text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-colors group-hover:border-primary/30 truncate"
                       />
                       {phoneNumber && (
                          <button onClick={() => copyToClipboard(phoneNumber)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors">
@@ -710,7 +710,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                       readOnly 
                       value={smsCode} 
                       rows={2} 
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-4 text-xl font-mono font-bold outline-none resize-none animate-pulse" 
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-4 text-sm md:text-base font-mono font-bold outline-none resize-none animate-pulse"
                       placeholder={status === 'WAITING_SMS' ? (isFr ? 'En attente de réception...' : 'Waiting for SMS...') : ''}
                     ></textarea>
                  </div>
