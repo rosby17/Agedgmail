@@ -18,11 +18,20 @@ const MARKUP_MIN = 0.75
 const MARKUP_MAX = 1.00
 const PRICE_FLOOR = 1.00 // aucun numéro ne doit se vendre en dessous de ça
 
-/** marge = borne(20 % du coût, entre $0.75 et $1.00) ; prix = coût + marge, jamais < $1. */
+/**
+ * marge = borne(20 % du coût, entre $0.75 et $1.00) ; prix = coût + marge,
+ * jamais < $1. Sous le plancher, on ne plaque PAS tout le monde sur $1.00
+ * pile — un client qui compare plusieurs numéros et les voit tous au prix
+ * strictement identique trouve ça suspect. On garde une petite variation
+ * proportionnelle au coût réel (jusqu'à +$0.15), pour rester groupé près
+ * du plancher tout en gardant les numéros distinguables entre eux.
+ */
 export function applyMargin(cost: number): number {
   const markup = Math.min(MARKUP_MAX, Math.max(cost * MARGIN_PCT, MARKUP_MIN))
   const price = Math.ceil((cost + markup) * 100) / 100
-  return Math.max(price, PRICE_FLOOR)
+  if (price >= PRICE_FLOOR) return price
+  const jitter = Math.min(0.15, cost * 0.15)
+  return Math.round((PRICE_FLOOR + jitter) * 100) / 100
 }
 
 // Nom de pays PVAPins par ISO (get_rates.php prend un nom, pas un ISO).
