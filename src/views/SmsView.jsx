@@ -6,6 +6,7 @@ import { ADMIN_EMAIL, CATEGORIES, GROUP_LABELS, GROUP_ORDER, AVATAR_COLORS, JUNK
 import { categoryName, hashStr, detectFromText, categoryVisual, displayCategoryLabel, cleanProductName, getProductDetails } from '../utils/helpers';
 import { GmailLogo, FacebookIcon, TwitterLogo, AppleLogo, SmsLogo, RedditLogo, MailGenericLogo, OutlookLogo, SnapchatLogo, AmazonLogo, GithubLogo } from '../components/ui/Logos';
 import { SMS_SERVICES, DEFAULT_SMS_SERVICE, getSmsService } from '../utils/smsServices';
+import CustomSelect from '../components/ui/CustomSelect';
 import { Skeleton, SkeletonProductCard, SkeletonProductGrid, SkeletonRows, SkeletonMetricCards } from '../components/ui/Skeletons';
 import { TypewriterText } from '../components/ui/TypewriterText';
 import ProductCard from '../components/ui/ProductCard';
@@ -158,8 +159,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     fetchPrices();
   }, [selectedService, isFr]);
 
-  const handleCountryChange = (e) => {
-    const iso = e.target.value;
+  const handleCountryChange = (iso) => {
 
     if (status === 'WAITING_SMS' && securityId && phoneNumber) {
       releaseNumber();
@@ -523,61 +523,49 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           })}
         </div>
 
-        {/* Service Selection */}
-        <div className="flex-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+        {/* Service actif fusionné avec l'étape 1 : plus besoin de descendre
+            pour voir le sélecteur de pays, le logo n'apparaît qu'une fois
+            en plus de celui déjà dans la barre de gauche. */}
+        <div className="flex-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-500/10 blur-3xl rounded-full"></div>
           <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full"></div>
 
-          <div className="w-20 h-20 bg-white rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-xl border border-gray-100 dark:border-gray-800 p-4 z-10">
-            <BrandIcon slug={svc.iconSlug} color={svc.iconColor} />
-          </div>
-          <div className="flex-1 text-center md:text-left space-y-2 z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-1">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-              {isFr ? 'Service Actif' : 'Active Service'}
+          <div className="flex items-center gap-4 mb-6 z-10 relative">
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-md border border-gray-100 dark:border-gray-800 p-2.5">
+              <BrandIcon slug={svc.iconSlug} color={svc.iconColor} />
             </div>
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{isFr ? svc.labelFr : svc.labelEn} Verification</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl">
-              {isFr
-                ? `Vérifiez votre numéro ${svc.labelFr} pour recevoir le code SMS de confirmation instantanément.`
-                : `Verify your ${svc.labelEn} number to receive the SMS confirmation code instantly.`}
-            </p>
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-1">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                {isFr ? 'Service Actif' : 'Active Service'}
+              </div>
+              <h2 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">{isFr ? svc.labelFr : svc.labelEn} Verification</h2>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Erreurs catégorisées (solde / pays indisponible / technique) : affichées
-          uniquement à la place du numéro à l'étape 2, pas ici (évite le doublon). */}
-      {error && !errorKind && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 mb-8 shadow-sm">
-          <AlertCircle size={20} className="shrink-0" /> <span className="flex-1">{error}</span>
-        </div>
-      )}
+          {error && !errorKind && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 mb-6 shadow-sm z-10 relative">
+              <AlertCircle size={20} className="shrink-0" /> <span className="flex-1">{error}</span>
+            </div>
+          )}
 
-      <div className="space-y-6">
-         {/* Step 1: Select Country */}
-         <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative overflow-hidden">
-            <h3 className="text-sm font-black text-gray-900 dark:text-white mb-2 uppercase tracking-widest">
-              {isFr ? 'Étape 1 - Sélecteur de pays' : 'STEP ONE - SELECT THE COUNTRY'}
-            </h3>
-            <p className="text-gray-500 text-sm mb-6">
-              {isFr ? 'Après avoir sélectionné le pays, le prix du SMS s\'affichera.' : 'After selecting the country the price of the SMS message will be displayed.'}
-            </p>
-            
+          <h3 className="text-sm font-black text-gray-900 dark:text-white mb-2 uppercase tracking-widest z-10 relative">
+            {isFr ? 'Étape 1 - Sélecteur de pays' : 'STEP ONE - SELECT THE COUNTRY'}
+          </h3>
+          <p className="text-gray-500 text-sm mb-6 z-10 relative">
+            {isFr ? 'Après avoir sélectionné le pays, le prix du SMS s\'affichera.' : 'After selecting the country the price of the SMS message will be displayed.'}
+          </p>
+
             <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6 items-end">
                <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Pays du numéro' : 'Phone Number Country'}</label>
-                  <select 
+                  <CustomSelect
                     value={selectedCountry}
                     onChange={handleCountryChange}
                     disabled={pricesLoading || loading}
-                    className="w-full text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 font-medium disabled:opacity-50"
-                  >
-                    <option value="">{isFr ? '-- Choisir un pays --' : '-- Choose a country --'}</option>
-                    {countries.map(c => (
-                      <option key={c.Iso} value={c.Iso}>{c.Country} ({c.Iso})</option>
-                    ))}
-                  </select>
+                    placeholder={isFr ? '-- Choisir un pays --' : '-- Choose a country --'}
+                    options={countries.map(c => ({ value: c.Iso, label: `${c.Country} (${c.Iso})` }))}
+                  />
                </div>
                <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Prix du SMS ($)' : 'Price $ per SMS'}</label>
