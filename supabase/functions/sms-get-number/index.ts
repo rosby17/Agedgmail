@@ -3,7 +3,9 @@ import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { checkRateLimit, getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 import { notifyTelegram } from '../_shared/supplier-db.ts';
-import { applyMargin, getPvaCheapestYt, signSecurityId, aliasForProvider, providerForAlias } from '../_shared/sms-pricing.ts';
+import { applyMargin, getPvaCheapestYt, signSecurityId, aliasForProvider, providerForAlias, LEGACY_PROVIDERS } from '../_shared/sms-pricing.ts';
+import { buy5simNumber } from '../_shared/provider-5sim.ts';
+import { markProviderExhausted } from '../_shared/sms-provider-selector.ts';
 
 serve(async (req) => {
   const corsOpts = handleCors(req);
@@ -164,6 +166,17 @@ serve(async (req) => {
       } catch (pvpError) {
         throw new Error(`PVAPins failed: ${pvpError.message}`);
       }
+    } else if (currentProvider === 'fivesim') {
+      const bought = await buy5simNumber(targetIso);
+      if (!bought) throw new Error(`no free channels (5sim): country ${targetIso} not supported`);
+      const sellingPrice = applyMargin(bought.cost);
+      const base = `${aliasForProvider('fivesim')}:${bought.externalId}`;
+      providerData = {
+        Status: "200",
+        Number: bought.number,
+        SecurityId: await signSecurityId(base, sellingPrice),
+        Price: sellingPrice,
+      };
     } else {
       throw new Error(`Unknown provider: ${currentProvider}`);
     }
@@ -179,7 +192,14 @@ serve(async (req) => {
     if (lower.includes('nocreditsinaccount') || lower.includes('insufficient funds') || lower.includes('not enough balance') || lower.includes('balance too low')) {
        // Alert admin in background
        notifyTelegram(`⚠️ *Alerte Fournisseur SMS* ⚠️\n\nLe compte de l'API SMS n'a plus de crédits !\nErreur exacte : ${errorMessage}`).catch(console.error);
-       
+
+       // Si c'est un fournisseur historique (stock déjà payé), on le marque
+       // épuisé pour que sms-get-prices le relègue derrière 5sim/onlinesim
+       // dès le prochain appel, sans intervention manuelle.
+       if (LEGACY_PROVIDERS.has(currentProvider)) {
+         markProviderExhausted(currentProvider, { exhausted: true, lastError: errorMessage }).catch(console.error);
+       }
+
        // Hide error from user
        errorMessage = 'Une erreur technique est survenue chez Agedgmail. Veuillez réessayer plus tard ou choisir un autre pays.';
     }

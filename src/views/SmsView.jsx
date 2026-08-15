@@ -182,7 +182,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           // Libère le numéro côté fournisseur avant de réinitialiser (best-effort).
           if (securityId && phoneNumber) {
             supabase.functions.invoke('sms-cancel', {
-              body: { securityId, number: phoneNumber, provider: currentProvider }
+              body: { securityId, number: phoneNumber, provider: currentProvider, reason: 'timeout' }
             }).catch(e => console.warn('sms-cancel (timeout):', e));
           }
           setStatus('IDLE');
@@ -359,7 +359,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const releaseNumber = () => {
     if (!securityId || !phoneNumber) return;
     supabase.functions.invoke('sms-cancel', {
-      body: { securityId, number: phoneNumber, provider: currentProvider }
+      body: { securityId, number: phoneNumber, provider: currentProvider, reason: 'user_cancelled' }
     }).catch(e => console.warn('sms-cancel:', e));
   };
 

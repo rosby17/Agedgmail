@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { verifySignedSecurityId, providerForAlias } from '../_shared/sms-pricing.ts';
 import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
+import { poll5simCode } from '../_shared/provider-5sim.ts';
 
 serve(async (req) => {
   const corsOpts = handleCors(req);
@@ -100,6 +101,14 @@ serve(async (req) => {
          } else {
             dataObj = { message: "Empty code received" };
          }
+      }
+    } else if (providerName === 'fivesim') {
+      const { code } = await poll5simCode(externalSecurityId);
+      if (code) {
+        status = "success";
+        smsCode = code;
+      } else {
+        dataObj = { message: "waiting" };
       }
     }
 

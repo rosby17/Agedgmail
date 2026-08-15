@@ -1,8 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { aliasForProvider, applyMargin } from '../_shared/sms-pricing.ts';
+import { aliasForProvider, applyMargin, LEGACY_PROVIDERS } from '../_shared/sms-pricing.ts';
 import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
+import { FIVESIM_ISO_TO_COUNTRY } from '../_shared/provider-5sim.ts';
+import { getAdmin } from '../_shared/supplier-db.ts';
 
 // Types
 interface ProviderInfo {
@@ -10,6 +12,7 @@ interface ProviderInfo {
   RawPrice: number;
   Price?: string;
   App?: string; // (PVAPins) nom exact de la variante YouTube la moins chère à acheter
+  _RealName?: string; // usage interne au tri, jamais renvoyé au client
 }
 
 interface FormattedCountry {
@@ -124,7 +127,7 @@ serve(async (req) => {
               if (!c.Iso || !c.Price) return;
               const price = parseFloat(c.Price);
               const countryObj = getCountry(c.Iso, c.Country);
-              countryObj.Providers.push({ Name: aliasForProvider('smscodes'), RawPrice: price });
+              countryObj.Providers.push({ Name: aliasForProvider('smscodes'), RawPrice: price, _RealName: 'smscodes' });
             });
           }
         } catch (e) {
@@ -146,22 +149,76 @@ serve(async (req) => {
         // Crée le pays s'il n'était pas listé par SMSCodes (couverture élargie),
         // sinon ajoute PVAPins comme alternative comparée au même pays.
         const countryObj = getCountry(pr.iso, pr.name);
-        countryObj.Providers.push({ Name: aliasForProvider('pvapins'), RawPrice: pr.rate, App: pr.app });
+        countryObj.Providers.push({ Name: aliasForProvider('pvapins'), RawPrice: pr.rate, App: pr.app, _RealName: 'pvapins' });
       }
     }
 
-    // Tri (moins cher d'abord), marge dynamique, puis formatage.
+    // 3. 5sim — produit "google" (Google/YouTube), endpoint public (pas de clé
+    //    requise). Fournisseur de repli une fois les historiques épuisés.
+    try {
+      const res = await fetch('https://5sim.net/v1/guest/prices?product=google');
+      const data = await res.json();
+      const byCountry = data?.google || {};
+      const isoByCountry: Record<string, string> = {};
+      for (const [iso, slug] of Object.entries(FIVESIM_ISO_TO_COUNTRY)) isoByCountry[slug] = iso;
+      for (const [countrySlug, operators] of Object.entries(byCountry as Record<string, any>)) {
+        const iso = isoByCountry[countrySlug];
+        if (!iso) continue;
+        let cheapest: number | null = null;
+        for (const op of Object.values(operators as Record<string, any>)) {
+          const cost = Number(op?.cost);
+          const count = Number(op?.count) || 0;
+          if (!Number.isFinite(cost) || cost <= 0 || count <= 0) continue;
+          if (cheapest === null || cost < cheapest) cheapest = cost;
+        }
+        if (cheapest === null) continue;
+        const countryObj = getCountry(iso, iso);
+        countryObj.Providers.push({ Name: aliasForProvider('fivesim'), RawPrice: cheapest, _RealName: 'fivesim' });
+      }
+    } catch (e) {
+      console.error("Error fetching 5sim prices", e);
+    }
+
+    // Fournisseurs historiques épuisés : relégués derrière 5sim/onlinesim
+    // (sans être retirés du code — ils reprennent la priorité automatiquement
+    // si on les recrédite, cf. sms-provider-selector.ts).
+    const exhaustedLegacy = new Set<string>();
+    try {
+      const admin = getAdmin();
+      const { data: statuses } = await admin
+        .from('sms_provider_status')
+        .select('provider, exhausted, last_checked_at')
+        .in('provider', Array.from(LEGACY_PROVIDERS));
+      const STALE_AFTER_MS = 30 * 60 * 1000;
+      for (const s of statuses || []) {
+        if (!s.exhausted) continue;
+        const age = Date.now() - new Date(s.last_checked_at).getTime();
+        if (age < STALE_AFTER_MS) exhaustedLegacy.add(s.provider);
+      }
+    } catch (e) {
+      console.error("Error fetching sms_provider_status", e);
+    }
+
+    // Tri : historiques non épuisés d'abord (moins cher des deux), puis les
+    // nouveaux fournisseurs par prix, puis les historiques épuisés en dernier.
+    const priority = (p: ProviderInfo): number => {
+      if (!p._RealName || !LEGACY_PROVIDERS.has(p._RealName)) return 1;
+      return exhaustedLegacy.has(p._RealName) ? 2 : 0;
+    };
+
     const finalPrices = Array.from(countriesMap.values())
       .map(c => {
-        // Trier par PRIX croissant : le moins cher est choisi en premier
-        // (Providers[0]). Le failover essaiera ensuite le suivant le moins cher.
-        c.Providers.sort((a, b) => a.RawPrice - b.RawPrice);
+        c.Providers.sort((a, b) => {
+          const pa = priority(a), pb = priority(b);
+          if (pa !== pb) return pa - pb;
+          return a.RawPrice - b.RawPrice;
+        });
 
-        // Appliquer la marge dynamique à chaque fournisseur.
-        c.Providers = c.Providers.map(p => ({
-          ...p,
-          Price: applyMargin(p.RawPrice).toFixed(2)
-        }));
+        // Appliquer la marge dynamique, puis retirer le champ interne _RealName.
+        c.Providers = c.Providers.map(p => {
+          const { _RealName, ...rest } = p;
+          return { ...rest, Price: applyMargin(p.RawPrice).toFixed(2) };
+        });
 
         return c;
       })

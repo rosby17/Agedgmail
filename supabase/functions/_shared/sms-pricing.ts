@@ -78,8 +78,10 @@ export async function getPvaCheapestYt(
 // réseau ou le stockage local ne doit pas pouvoir déterminer qui sont nos
 // fournisseurs. Alias opaques utilisés partout côté client ; converties vers
 // le vrai nom uniquement côté serveur au moment d'appeler l'API fournisseur.
-export const PROVIDER_ALIAS: Record<string, string> = { pvapins: 'p1', smscodes: 'p2' }
-export const ALIAS_TO_PROVIDER: Record<string, string> = { p1: 'pvapins', p2: 'smscodes' }
+export const PROVIDER_ALIAS: Record<string, string> = { pvapins: 'p1', smscodes: 'p2', fivesim: 'p3', onlinesim: 'p4' }
+export const ALIAS_TO_PROVIDER: Record<string, string> = { p1: 'pvapins', p2: 'smscodes', p3: 'fivesim', p4: 'onlinesim' }
+// Fournisseurs historiques (stock déjà payé) : priorité tant qu'ils ne sont pas épuisés.
+export const LEGACY_PROVIDERS = new Set(['pvapins', 'smscodes'])
 export const aliasForProvider = (provider: string): string => PROVIDER_ALIAS[provider] || provider
 export const providerForAlias = (alias: string): string => ALIAS_TO_PROVIDER[alias] || alias
 
