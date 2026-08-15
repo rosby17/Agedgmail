@@ -44,7 +44,11 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
     name: lang === 'fr' ? 'Vérification SMS YouTube' : 'YouTube SMS Verification',
   };
 
-  const topProducts = [...gmailUsPicks, smsService];
+  // La vérification SMS YouTube est le service le plus vendu : elle prend la
+  // place centrale mise en avant, encadrée par les 2 meilleurs comptes Gmail.
+  const topProducts = gmailUsPicks.length >= 2
+    ? [gmailUsPicks[0], smsService, gmailUsPicks[1]]
+    : [smsService, ...gmailUsPicks];
 
   const handleProductSelect = (product) => {
     if (setSelectedProduct) setSelectedProduct(product);
@@ -308,7 +312,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                   subtitle = "Choix N°1 des créateurs";
                 }
                 if (product.isSmsService) {
-                  badgeText = lang === 'fr' ? 'Service le + demandé' : 'Most requested service';
+                  badgeText = lang === 'fr' ? 'Top 1 des ventes' : 'Top seller';
                   subtitle = lang === 'fr' ? 'Débloquez votre chaîne en 1 min' : 'Unlock your channel in 1 min';
                 }
                 // Slogan neutre par défaut (le produit n'est pas toujours un Gmail)
@@ -347,7 +351,7 @@ const LandingView = ({ navigate, session, products = [], setSelectedProduct, lan
                     <p className="text-l-primary font-label-sm text-sm mb-8 font-medium">{subtitle}</p>
                     <p className="text-on-surface-variant mb-12 flex-grow leading-relaxed">"{tagline}".</p>
                     {priceNode}
-                    <button onClick={onSelect} className="w-full bg-white/5 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary hover:text-white dark:text-gray-900 transition-all duration-300">{product.isSmsService ? (lang === 'fr' ? 'Vérifier ma chaîne' : 'Verify my channel') : (lang === 'fr' ? 'Sélectionner' : 'Select')}</button>
+                    <button onClick={onSelect} className="w-full bg-white text-gray-900 border border-white/10 py-5 rounded-2xl font-bold hover:bg-l-primary transition-all duration-300">{product.isSmsService ? (lang === 'fr' ? 'Vérifier ma chaîne' : 'Verify my channel') : (lang === 'fr' ? 'Sélectionner' : 'Select')}</button>
                   </div>
                 );
               })}

@@ -53,7 +53,7 @@ export function emailShell(opts: { preheader: string; heroTitle: string; heroSub
             <a href="${WHATSAPP_URL}" style="color:${BRAND_GREEN};font-weight:700;text-decoration:none;">groupe WhatsApp</a>.
           </p>
           <p style="margin:0;color:#9AA79F;font-size:11px;text-align:center;">
-            © 2026 AgedGmailYT. Tous droits réservés. ·
+            © 2026 Agedgmail. Tous droits réservés. ·
             <a href="${SITE_URL}" style="color:#9AA79F;text-decoration:underline;">${SITE_URL.replace('https://', '')}</a>
           </p>
         </td></tr>

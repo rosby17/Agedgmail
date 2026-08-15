@@ -69,7 +69,7 @@ const Footer = ({ navigate, lang }) => (
 
       <div className="mt-20 pt-8 border-t border-surface-container flex flex-col items-center justify-center gap-6">
         <p className="text-[11px] font-medium text-on-surface-variant/60 leading-relaxed tracking-tighter lowercase">
-          © 2026 agedgmailyt. {lang === 'fr' ? 'tous droits réservés.' : 'all rights reserved.'}
+          © 2026 Agedgmail. {lang === 'fr' ? 'tous droits réservés.' : 'all rights reserved.'}
         </p>
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-l-primary hover:bg-surface-container-highest transition-all">
           <ChevronUp size={18} />
