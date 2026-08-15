@@ -577,7 +577,7 @@ const SettingsTab = ({ profile, session, onUpdate, lang, t, navigate }) => {
                                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-bold uppercase tracking-wider">À vie</span>
                               )}
                             </div>
-                            <div className="font-mono text-xs text-gray-705 dark:text-slate-300 truncate">
+                            <div className="font-mono text-xs text-gray-700 dark:text-slate-300 truncate">
                               {displayKey}
                             </div>
                           </div>

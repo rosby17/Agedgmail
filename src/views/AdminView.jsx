@@ -287,7 +287,7 @@ const AdminView = ({
             </div>
             <button
               onClick={() => navigate('shop')}
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-gray-205 dark:hover:bg-slate-700 hover:text-gray-950 dark:hover:text-white transition-all"
+              className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-gray-950 dark:hover:text-white transition-all"
             >
               <ArrowLeft size={14} /> {t('backToSite')}
             </button>
