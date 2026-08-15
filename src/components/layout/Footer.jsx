@@ -38,7 +38,8 @@ const Footer = ({ navigate, lang }) => (
           <h6 className="font-headline-lg font-bold text-on-surface mb-8 uppercase tracking-widest text-[11px]">Navigation</h6>
           <ul className="space-y-6">
             <li><button onClick={() => navigate('shop')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">{lang === 'fr' ? 'Catalogue' : 'Catalog'}</button></li>
-            <li><button onClick={() => navigate('shop')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">SMS</button></li>
+            <li><button onClick={() => navigate('sms')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">SMS</button></li>
+            <li><button onClick={() => navigate('proxy')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">Proxy</button></li>
             <li><button onClick={() => navigate('api')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">API</button></li>
             <li><button onClick={() => navigate('dashboard')} className="text-on-surface-variant hover:text-l-primary transition-colors text-sm font-medium">{lang === 'fr' ? 'Mes commandes' : 'My Orders'}</button></li>
           </ul>

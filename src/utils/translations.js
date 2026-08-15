@@ -3,6 +3,7 @@ export const TRANSLATIONS = {
     // Navbar
     products: "Produits",
     sms: "SMS YouTube",
+    proxy: "Proxy",
     api: "API",
     myOrders: "Mes commandes",
     balance: "Mon Solde",
@@ -63,6 +64,7 @@ export const TRANSLATIONS = {
     // Navbar
     products: "Products",
     sms: "SMS YouTube",
+    proxy: "Proxy",
     api: "API",
     myOrders: "My orders",
     balance: "My Balance",

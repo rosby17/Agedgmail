@@ -44,7 +44,7 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
       <nav className="hidden lg:flex items-center gap-8">
         <button onClick={() => go('shop', 'all', 'all')} className={linkCls(currentView === 'shop' || currentView === 'landing')}>{lang === 'fr' ? 'Catalogue' : 'Catalog'}</button>
         <button onClick={() => navigate('sms')} className={linkCls(currentView === 'sms')}>{t('sms')}</button>
-        <button onClick={() => navigate('api')} className={linkCls(currentView === 'api')}>{t('api')}</button>
+        <button onClick={() => navigate('proxy')} className={linkCls(currentView === 'proxy')}>{t('proxy')}</button>
         {session && (
           <button onClick={() => navigate('dashboard')} className={linkCls(currentView === 'dashboard')}>{t('myOrders')}</button>
         )}
@@ -116,8 +116,8 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
           <button onClick={() => { setIsMobileMenuOpen(false); navigate('sms'); }} className={`text-left p-2 rounded-lg ${currentView === 'sms' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300'}`}>
             {t('sms')}
           </button>
-          <button onClick={() => { setIsMobileMenuOpen(false); navigate('api'); }} className={`text-left p-2 rounded-lg ${currentView === 'api' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300'}`}>
-            {t('api')}
+          <button onClick={() => { setIsMobileMenuOpen(false); navigate('proxy'); }} className={`text-left p-2 rounded-lg ${currentView === 'proxy' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300'}`}>
+            {t('proxy')}
           </button>
           {session && (
             <button onClick={() => { setIsMobileMenuOpen(false); navigate('dashboard'); }} className={`text-left p-2 rounded-lg ${currentView === 'dashboard' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300'}`}>
