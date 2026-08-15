@@ -284,7 +284,10 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                   </td>
                   <td className="py-5">{statusBadge(order.status)}</td>
                   <td className="py-5 text-xs text-gray-400 dark:text-slate-500 whitespace-nowrap">
-                    {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {new Date((order.status === 'delivered' && order.delivered_at) || order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {order.status === 'delivered' && order.delivered_at && (
+                      <span className="block text-[9px] text-green-500 dark:text-green-400 font-bold uppercase tracking-wide">Livrée</span>
+                    )}
                   </td>
                   <td className="py-5">
                     <div className="flex gap-2">
