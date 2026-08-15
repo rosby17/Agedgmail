@@ -80,6 +80,13 @@ const AuthView = ({ navigate, lang }) => {
           },
         });
         if (error) throw error;
+
+        // Email de bienvenue (best-effort, distinct de l'email de confirmation
+        // natif Supabase Auth) — ne bloque jamais l'inscription si ça échoue.
+        supabase.functions.invoke('send-welcome-email', {
+          body: { email, displayName: username || firstName },
+        }).catch(e => console.error('send-welcome-email error:', e));
+
         if (data?.session) {
           navigate('shop');
         } else {

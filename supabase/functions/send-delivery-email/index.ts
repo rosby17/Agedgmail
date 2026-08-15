@@ -1,20 +1,22 @@
 // ============================================================
 // send-delivery-email
 // Envoie les credentials d'une commande confirmée par email au client,
-// si profiles.send_email_on_delivery = true.
-// Utilise Brevo (https://brevo.com) — API key à configurer dans
-// Supabase > Project Settings > Edge Functions > Secrets : BREVO_API_KEY
+// sauf si profiles.send_email_on_delivery === false (opt-out).
+// Envoi via le relais Vercel/nodemailer (voir _shared/email.ts) — pas
+// l'API REST Brevo, qui nécessite un produit "Transactional" séparé non
+// activé sur ce compte, ni le SMTP direct depuis Deno, qui plante sur le
+// STARTTLS dans le sandbox Supabase Edge Functions.
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { getAdmin, corsHeaders } from '../_shared/supplier-db.ts'
+import { sendEmail } from '../_shared/email.ts'
+import { emailShell, infoBox, ctaButton, escapeHtml } from '../_shared/email-template.ts'
 
-const SITE_NAME = 'AgedGmail'
-const FROM_EMAIL = Deno.env.get('BREVO_FROM_EMAIL') ?? 'noreply@agedgmail.com'
+const SITE_NAME = 'AgedGmailYT'
+const SITE_URL = 'https://agedgmail.tools-cl.com'
 
-/** Construit le HTML de l'email de livraison (style proche YTSeller). */
 function buildEmailHtml(opts: {
   productName: string
-  orderId: string
   shortId: string
   credentials: string
   totalPrice: number
@@ -23,97 +25,38 @@ function buildEmailHtml(opts: {
   const { productName, shortId, credentials, totalPrice, quantity } = opts
   const lines = credentials.split('\n').filter(Boolean)
 
-  const credsHtml = lines.map(line =>
-    `<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-family:monospace;font-size:12px;color:#333;word-break:break-all;">${escapeHtml(line)}</td></tr>`
-  ).join('')
+  const credsHtml = lines.map(line => `
+    <tr><td style="padding:12px 16px;border-bottom:1px solid #E7EFEC;font-family:'SFMono-Regular',Consolas,monospace;font-size:12px;color:#0D7A52;word-break:break-all;background:#F7FAF9;">${escapeHtml(line)}</td></tr>
+  `).join('')
 
-  return `<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your order is complete</title></head>
-<body style="margin:0;padding:0;background:#f9f9f9;font-family:Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f9;padding:40px 0;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-        <!-- Header -->
-        <tr><td style="background:#111827;padding:32px 40px;text-align:center;">
-          <h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:900;letter-spacing:-0.5px;">Your order is complete</h1>
-        </td></tr>
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
+      Merci pour ton achat ! Ta commande est confirmée et tes identifiants sont prêts ci-dessous. Conserve cet email précieusement.
+    </p>
 
-        <!-- Intro -->
-        <tr><td style="padding:32px 40px 16px;">
-          <p style="color:#555;font-size:15px;line-height:1.6;margin:0;">
-            Thank you for your purchase! Your order has been completed and your purchased items are included below. Please keep this email safe for your records.
-          </p>
-        </td></tr>
+    ${infoBox([
+      { label: 'Produit', value: escapeHtml(productName) },
+      { label: 'Quantité', value: String(quantity) },
+      { label: 'Total payé', value: `$${totalPrice.toFixed(2)}`, big: true, accent: true },
+      { label: 'N° commande', value: `#${escapeHtml(shortId)}` },
+    ])}
 
-        <!-- Order table -->
-        <tr><td style="padding:0 40px 24px;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e8e8e8;border-radius:8px;overflow:hidden;">
-            <thead>
-              <tr style="background:#f8f8f8;">
-                <th style="padding:12px 16px;text-align:left;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e8e8e8;">Item</th>
-                <th style="padding:12px 16px;text-align:center;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e8e8e8;">Quantity</th>
-                <th style="padding:12px 16px;text-align:right;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e8e8e8;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="padding:16px;font-size:14px;font-weight:700;color:#111;border-bottom:1px solid #f0f0f0;">${escapeHtml(productName)}</td>
-                <td style="padding:16px;font-size:14px;color:#555;text-align:center;border-bottom:1px solid #f0f0f0;">${quantity}</td>
-                <td style="padding:16px;font-size:14px;font-weight:700;color:#111;text-align:right;border-bottom:1px solid #f0f0f0;">$${totalPrice.toFixed(2)}</td>
-              </tr>
-              <!-- Credentials box -->
-              ${credsHtml}
-            </tbody>
-          </table>
-        </td></tr>
+    <p style="color:#111827;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 12px;">Tes identifiants</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E7EFEC;border-radius:12px;overflow:hidden;margin:0 0 28px;">
+      <tbody>${credsHtml}</tbody>
+    </table>
 
-        <!-- Total row -->
-        <tr><td style="padding:0 40px 24px;">
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="font-size:15px;font-weight:700;color:#111;">Total</td>
-              <td style="font-size:15px;font-weight:900;color:#111;text-align:right;">$${totalPrice.toFixed(2)}</td>
-            </tr>
-          </table>
-        </td></tr>
+    <div style="text-align:center;">
+      ${ctaButton(`${SITE_URL}/myorders`, 'Voir mes commandes')}
+    </div>
+  `
 
-        <!-- IDs -->
-        <tr><td style="padding:0 40px 24px;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f8f8;border-radius:8px;padding:16px;">
-            <tr>
-              <td style="font-size:13px;color:#888;">ID</td>
-              <td style="font-size:13px;color:#888;text-align:right;">Payment Method</td>
-            </tr>
-            <tr>
-              <td style="font-size:16px;font-weight:900;color:#111;">${escapeHtml(shortId)}</td>
-              <td style="font-size:14px;color:#555;text-align:right;">balance</td>
-            </tr>
-          </table>
-        </td></tr>
-
-        <!-- CTA -->
-        <tr><td style="padding:0 40px 32px;text-align:center;">
-          <a href="https://agedgmail.com/#dashboard" style="display:inline-block;background:#111827;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;">View my orders</a>
-        </td></tr>
-
-        <!-- Footer -->
-        <tr><td style="background:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #ececec;">
-          <p style="color:#aaa;font-size:12px;margin:0;line-height:1.6;">
-            If you have any trouble with your order, contact our support at
-            <a href="mailto:rooseveltmkr@gmail.com" style="color:#555;font-weight:700;">${SITE_NAME}</a> — we're here to help.<br><br>
-            You are receiving this important transactional email because you paid for the order.
-          </p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+  return emailShell({
+    preheader: `Ta commande #${shortId} est livrée — identifiants inclus.`,
+    heroTitle: 'Commande livrée ✅',
+    heroSubtitle: `#${shortId} — ${productName}`,
+    bodyHtml: body,
+  })
 }
 
 /** Génère le même shortId que le front (6 chiffres déterministe depuis UUID). */
@@ -127,7 +70,6 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   const admin = getAdmin()
-  const brevoKey = Deno.env.get('BREVO_API_KEY')
 
   try {
     const { orderId } = await req.json()
@@ -169,47 +111,24 @@ serve(async (req) => {
 
     const shortId = shortOrderId(String(order.id))
     const html = buildEmailHtml({
-      productName: order.product_name || 'Your order',
-      orderId: String(order.id),
+      productName: order.product_name || 'Ta commande',
       shortId,
       credentials,
       totalPrice: Number(order.total_price) || 0,
       quantity: Number(order.quantity) || 1,
     })
 
-    if (!brevoKey) {
-      // Pas de clé Brevo configurée — log et retour OK (ne bloque pas la livraison)
-      console.warn(`[send-delivery-email] BREVO_API_KEY non configuré. Email non envoyé pour commande ${orderId}. Destinataire : ${toEmail}`)
-      return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'no_brevo_key' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // 3. Envoyer via Brevo
-    const res = await fetch('https://api.brevo.com/v3/smtp/emails', {
-      method: 'POST',
-      headers: {
-        'api-key': brevoKey,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: {
-          name: SITE_NAME,
-          email: FROM_EMAIL,
-        },
-        to: [{ email: toEmail }],
-        subject: `[${SITE_NAME}] Order #${shortId} — your products`,
-        htmlContent: html,
-      }),
+    // 3. Envoyer via le relais
+    const result = await sendEmail({
+      to: toEmail,
+      subject: `[${SITE_NAME}] Commande #${shortId} livrée`,
+      html,
+      fromName: SITE_NAME,
     })
 
-    const resBody = await res.json()
-    if (!res.ok) throw new Error(`Brevo error: ${JSON.stringify(resBody)}`)
+    console.log(`[send-delivery-email] ${result.skipped ? 'Ignoré' : 'Envoyé'} à ${toEmail} pour commande ${orderId}`)
 
-    console.log(`[send-delivery-email] Email envoyé à ${toEmail} pour commande ${orderId} (Brevo messageId: ${resBody.messageId})`)
-
-    return new Response(JSON.stringify({ ok: true, email: toEmail, message_id: resBody.messageId }), {
+    return new Response(JSON.stringify({ ...result, email: toEmail }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
