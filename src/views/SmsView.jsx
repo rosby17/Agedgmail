@@ -4,7 +4,10 @@ import { supabase } from '../supabaseClient';
 
 import { ADMIN_EMAIL, CATEGORIES, GROUP_LABELS, GROUP_ORDER, AVATAR_COLORS, JUNK_CATEGORIES, SUPPLIERS, API_BASE_URL } from '../utils/constants';
 import { categoryName, hashStr, detectFromText, categoryVisual, displayCategoryLabel, cleanProductName, getProductDetails } from '../utils/helpers';
-import { YouTubeLogo, GmailLogo, FacebookIcon, DiscordLogo, InstagramLogo, TwitterLogo, TikTokLogo, AppleLogo, TelegramLogo, SmsLogo, RedditLogo, MailGenericLogo, OutlookLogo, SnapchatLogo, AmazonLogo, GithubLogo } from '../components/ui/Logos';
+import { YouTubeLogo, GmailLogo, FacebookIcon, DiscordLogo, InstagramLogo, TwitterLogo, TikTokLogo, AppleLogo, TelegramLogo, SmsLogo, RedditLogo, MailGenericLogo, OutlookLogo, SnapchatLogo, AmazonLogo, GithubLogo, GoogleLogo, WhatsAppLogo } from '../components/ui/Logos';
+import { SMS_SERVICES, DEFAULT_SMS_SERVICE, getSmsService } from '../utils/smsServices';
+
+const SMS_SERVICE_ICONS = { YouTubeLogo, GoogleLogo, WhatsAppLogo, TelegramLogo, DiscordLogo, InstagramLogo, TikTokLogo };
 import { Skeleton, SkeletonProductCard, SkeletonProductGrid, SkeletonRows, SkeletonMetricCards } from '../components/ui/Skeletons';
 import { TypewriterText } from '../components/ui/TypewriterText';
 import ProductCard from '../components/ui/ProductCard';
@@ -73,8 +76,12 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   // Failover state: tracks which providers failed for which country in this session
   const [failedProviders, setFailedProviders] = useState({});
   
-  // Service ID pour YouTube sur smscodes.io
-  const [selectedService, setSelectedService] = useState('8a97735e-9a14-427e-8a88-e9d999bf3429'); 
+  // Slug canonique du service SMS choisi (voir src/utils/smsServices.js) —
+  // YouTube par défaut/mis en avant, résolu ensuite côté serveur en
+  // identifiants réels par fournisseur (voir _shared/sms-services.ts).
+  const [selectedService, setSelectedService] = useState(DEFAULT_SMS_SERVICE);
+  const svc = getSmsService(selectedService);
+  const SvcIcon = SMS_SERVICE_ICONS[svc.icon] || YouTubeLogo;
 
   useEffect(() => {
     if (status === 'IDLE') {
@@ -148,7 +155,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     const country = countries.find(c => c.Iso === iso);
     if (country && country.Providers) {
       // Find the first available provider that hasn't failed yet for this country
-      const failed = failedProviders[iso] || [];
+      const failed = failedProviders[`${selectedService}:${iso}`] || [];
       const availableProviders = country.Providers.filter(p => !failed.includes(p.Name));
       
       if (availableProviders.length > 0) {
@@ -215,7 +222,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               price: currentPrice,
               supplier_cost: currentRawPrice,
               provider: currentProvider,
-              description: `SMS Verification (YouTube, ${selectedCountry})` 
+              description: `SMS Verification (${svc.labelEn}, ${selectedCountry})`
             }
           });
           
@@ -243,7 +250,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     return () => {
       clearInterval(pollInterval);
     };
-  }, [status, securityId, phoneNumber, currentPrice, currentProvider, selectedCountry, fetchProfile]);
+  }, [status, securityId, phoneNumber, currentPrice, currentProvider, selectedCountry, selectedService, fetchProfile]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -251,7 +258,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider, rawPriceVal = currentRawPrice, appVal = null, currentFailedList = failedProviders[selectedCountry] || []) => {
+  const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider, rawPriceVal = currentRawPrice, appVal = null, currentFailedList = failedProviders[`${selectedService}:${selectedCountry}`] || []) => {
     if (!session) {
       navigate('auth');
       return;
@@ -315,7 +322,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       // Stock épuisé OU souci technique : on tente automatiquement le
       // fournisseur suivant avant d'abandonner (transparent pour le client).
       const newFailed = [...currentFailedList, providerVal];
-      setFailedProviders(prev => ({ ...prev, [isoVal]: newFailed }));
+      setFailedProviders(prev => ({ ...prev, [`${selectedService}:${isoVal}`]: newFailed }));
 
       const country = countries.find(c => c.Iso === isoVal);
       const availableProviders = (country?.Providers || []).filter(p => !newFailed.includes(p.Name));
@@ -366,7 +373,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   const cancelRequest = () => {
     releaseNumber();
     if (selectedCountry && currentProvider) {
-      setFailedProviders(prev => ({ ...prev, [selectedCountry]: [...(prev[selectedCountry] || []), currentProvider] }));
+      const key = `${selectedService}:${selectedCountry}`;
+      setFailedProviders(prev => ({ ...prev, [key]: [...(prev[key] || []), currentProvider] }));
     }
 
     setStatus('IDLE');
@@ -454,22 +462,47 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
       
+      {/* Sélecteur de service */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {SMS_SERVICES.map((s) => {
+          const Icon = SMS_SERVICE_ICONS[s.icon] || YouTubeLogo;
+          const active = s.id === selectedService;
+          return (
+            <button
+              key={s.id}
+              onClick={() => { if (s.id !== selectedService) setSelectedService(s.id); }}
+              disabled={status === 'LOADING_PRICES' || loading}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border disabled:opacity-50 ${
+                active
+                  ? 'bg-primary text-white dark:text-gray-900 border-primary shadow-sm'
+                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary/50'
+              }`}
+            >
+              <span className="w-5 h-5 shrink-0"><Icon className="w-full h-full" /></span>
+              {isFr ? s.labelFr : s.labelEn}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Service Selection */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-500/10 blur-3xl rounded-full"></div>
         <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full"></div>
-        
+
         <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-xl shadow-red-600/20 z-10">
-          <YouTubeLogo className="w-10 h-10 fill-current text-white" />
+          <SvcIcon className="w-10 h-10 fill-current text-white" />
         </div>
         <div className="flex-1 text-center md:text-left space-y-2 z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-1">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
             {isFr ? 'Service Actif' : 'Active Service'}
           </div>
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">YouTube Verification</h2>
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{isFr ? svc.labelFr : svc.labelEn} Verification</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl">
-            {isFr ? "Vérifiez le numéro de votre chaîne YouTube pour débloquer immédiatement les fonctionnalités intermédiaires (vidéos de plus de 15 minutes, miniatures personnalisées, diffusion en direct)." : "Verify your YouTube channel number to immediately unlock intermediate features (videos over 15 minutes, custom thumbnails, live streaming)."}
+            {isFr
+              ? `Vérifiez votre numéro ${svc.labelFr} pour recevoir le code SMS de confirmation instantanément.`
+              : `Verify your ${svc.labelEn} number to receive the SMS confirmation code instantly.`}
           </p>
         </div>
       </div>
@@ -600,9 +633,9 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
               <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-xl p-3 mb-6 flex items-start gap-3">
                 <AlertCircle className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" size={16} />
                 <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium leading-relaxed">
-                  {isFr 
-                    ? "Si le SMS n'arrive pas après 5 minutes, c'est que YouTube (ou le service) n'a pas envoyé le SMS à ce numéro spécifique, ou que l'opérateur local le bloque. Cliquez sur \"Annuler / Remboursement\" pour annuler sans frais et essayer un autre numéro ou un autre pays."
-                    : "If the SMS doesn't arrive after 5 minutes, YouTube (or the service) likely didn't send the SMS to this specific number, or the local carrier blocked it. Click \"Cancel / Refund\" to cancel without being charged and try another number or country."}
+                  {isFr
+                    ? `Si le SMS n'arrive pas après 5 minutes, c'est que ${svc.labelFr} n'a pas envoyé le SMS à ce numéro spécifique, ou que l'opérateur local le bloque. Cliquez sur "Annuler / Remboursement" pour annuler sans frais et essayer un autre numéro ou un autre pays.`
+                    : `If the SMS doesn't arrive after 5 minutes, ${svc.labelEn} likely didn't send the SMS to this specific number, or the local carrier blocked it. Click "Cancel / Refund" to cancel without being charged and try another number or country.`}
                 </p>
               </div>
             )}

@@ -3,9 +3,10 @@ import { getCode } from "https://esm.sh/country-list@2.3.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { checkRateLimit, getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 import { notifyTelegram } from '../_shared/supplier-db.ts';
-import { applyMargin, getPvaCheapestYt, signSecurityId, aliasForProvider, providerForAlias, LEGACY_PROVIDERS } from '../_shared/sms-pricing.ts';
+import { applyMargin, getPvaCheapestForService, signSecurityId, aliasForProvider, providerForAlias, LEGACY_PROVIDERS } from '../_shared/sms-pricing.ts';
 import { buy5simNumber } from '../_shared/provider-5sim.ts';
 import { markProviderExhausted, isProviderEnabled } from '../_shared/sms-provider-selector.ts';
+import { resolveSmsService } from '../_shared/sms-services.ts';
 
 serve(async (req) => {
   const corsOpts = handleCors(req);
@@ -63,7 +64,10 @@ serve(async (req) => {
     }
 
     const targetIso = iso || 'US';
-    const targetServ = serviceId || '1'; // Placeholder
+    // Slug canonique envoyé par le client (ex: "whatsapp"), résolu ici en
+    // identifiants réels par fournisseur — repli sûr sur youtube si inconnu.
+    const service = resolveSmsService(serviceId);
+    const targetServ = service.smscodesServiceId;
 
     let providerData = { Status: "Error", Error: "Provider not implemented", SecurityId: "", Number: "", Price: 0 };
 
@@ -132,11 +136,11 @@ serve(async (req) => {
           countryName = pvaCountryMap[targetIso] || targetIso;
         }
         
-        // Variante YouTube la moins chère + coût réel : RECALCULÉS serveur
-        // (on ne fait PAS confiance au `app`/`price` du client). Le prix de
-        // vente est ensuite signé dans le securityId.
-        const best = await getPvaCheapestYt(targetIso, countryName);
-        const appName = best?.app || app || "YouTube";
+        // Variante la moins chère pour ce service + coût réel : RECALCULÉS
+        // serveur (on ne fait PAS confiance au `app`/`price` du client). Le
+        // prix de vente est ensuite signé dans le securityId.
+        const best = await getPvaCheapestForService(targetIso, service.pvaSubstrings, countryName);
+        const appName = best?.app || app || service.labelFr;
         const cost = best?.cost ?? 1.60;
         const sellingPrice = applyMargin(cost);
 
@@ -174,7 +178,7 @@ serve(async (req) => {
         throw new Error(`PVAPins failed: ${pvpError.message}`);
       }
     } else if (currentProvider === 'fivesim') {
-      const bought = await buy5simNumber(targetIso);
+      const bought = await buy5simNumber(targetIso, service.fiveSimProduct);
       if (!bought) throw new Error(`no free channels (5sim): country ${targetIso} not supported`);
       const sellingPrice = applyMargin(bought.cost);
       const base = `${aliasForProvider('fivesim')}:${bought.externalId}`;

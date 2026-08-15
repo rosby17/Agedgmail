@@ -8,10 +8,6 @@
 
 const BASE = 'https://5sim.net/v1'
 
-// Produit "Google/YouTube" chez 5sim : les deux services sont vendus sous un
-// seul et même produit ("google"), il n'existe pas de slug "youtube" séparé.
-const PRODUCT = 'google'
-
 // Slugs pays 5sim confirmés dans leur doc (liste "Countries list"). ISO-2 →
 // slug. Uniquement les pays déjà gérés ailleurs dans le projet (PVA_ISO_TO_NAME) ;
 // à étendre au besoin. La Russie/Ukraine n'apparaissent pas dans la liste
@@ -48,10 +44,11 @@ function normalizeError(raw: string): Error {
 
 export async function buy5simNumber(
   iso: string,
+  product: string,
 ): Promise<{ cost: number; externalId: string; number: string } | null> {
   const country = FIVESIM_ISO_TO_COUNTRY[iso]
   if (!country) return null
-  const res = await fetch(`${BASE}/user/buy/activation/${country}/any/${PRODUCT}`, {
+  const res = await fetch(`${BASE}/user/buy/activation/${country}/any/${product}`, {
     headers: authHeaders(),
   })
   const data = await res.json()

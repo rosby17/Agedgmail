@@ -45,13 +45,21 @@ export const PVA_ISO_TO_NAME: Record<string, string> = {
   AR: 'Argentina', CO: 'Colombia', RU: 'Russia', UA: 'Ukraine',
 }
 
-/** Variante YouTube la MOINS chère (coût + nom d'app) pour un pays PVAPins. */
-export async function getPvaCheapestYt(
+/**
+ * Variante la MOINS chère (coût + nom d'app) pour un service donné, pour un
+ * pays PVAPins — généralisation de l'ancien getPvaCheapestYt (youtube en dur)
+ * pour couvrir tous les services du catalogue (voir sms-services.ts). Le
+ * champ `app` de PVAPins est du texte libre avec des variantes numérotées
+ * (ex: "Whatsapp 44", "Telegram 11") — `substrings` porte les mots-clés
+ * confirmés en direct pour chaque service.
+ */
+export async function getPvaCheapestForService(
   iso: string,
+  substrings: string[],
   countryName?: string,
 ): Promise<{ cost: number; app: string } | null> {
   const apiKey = Deno.env.get('PVAPINS_API_KEY')
-  if (!apiKey) return null
+  if (!apiKey || substrings.length === 0) return null
   const name = countryName || PVA_ISO_TO_NAME[iso] || iso
   try {
     const r = await fetch(`https://api.pvapins.com/user/api/get_rates.php?customer=${apiKey}&country=${encodeURIComponent(name)}`)
@@ -59,7 +67,9 @@ export async function getPvaCheapestYt(
     if (!Array.isArray(arr)) return null
     let best: { cost: number; app: string } | null = null
     for (const x of arr) {
-      if (!x || !String(x.app).toLowerCase().includes('youtube')) continue
+      if (!x) continue
+      const appLower = String(x.app).toLowerCase()
+      if (!substrings.some((s) => appLower.includes(s))) continue
       const rate = parseFloat(x.rate)
       if (!Number.isFinite(rate) || rate <= 0) continue
       if (!best || rate < best.cost) best = { cost: rate, app: String(x.app) }

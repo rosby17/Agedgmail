@@ -5,6 +5,7 @@ import { aliasForProvider, applyMargin, LEGACY_PROVIDERS } from '../_shared/sms-
 import { getCorsHeaders, handleCors } from '../_shared/rate-limit.ts';
 import { FIVESIM_ISO_TO_COUNTRY } from '../_shared/provider-5sim.ts';
 import { getAdmin } from '../_shared/supplier-db.ts';
+import { resolveSmsService } from '../_shared/sms-services.ts';
 
 // Types
 interface ProviderInfo {
@@ -54,13 +55,16 @@ const PVA_POPULAR: Record<string, string> = {
 };
 
 interface PvaRate { iso: string; name: string; rate: number; app: string; }
-// Cache mémoire (par isolate warm) pour éviter de rappeler PVAPins à chaque
-// visite. TTL 10 min : largement suffisant, les tarifs bougent lentement.
-let pvaCache: { at: number; rates: PvaRate[] } | null = null;
+// Cache mémoire (par isolate warm), keyé PAR SERVICE — un seul slot global
+// servirait les tarifs d'un mauvais service dès qu'on en propose plusieurs.
+// TTL 10 min : largement suffisant, les tarifs bougent lentement.
+const pvaCache = new Map<string, { at: number; rates: PvaRate[] }>();
 const PVA_CACHE_TTL_MS = 10 * 60 * 1000;
 
-async function getPvaRates(apiKey: string): Promise<PvaRate[]> {
-  if (pvaCache && Date.now() - pvaCache.at < PVA_CACHE_TTL_MS) return pvaCache.rates;
+async function getPvaRates(apiKey: string, serviceId: string, substrings: string[]): Promise<PvaRate[]> {
+  const cached = pvaCache.get(serviceId);
+  if (cached && Date.now() - cached.at < PVA_CACHE_TTL_MS) return cached.rates;
+  if (substrings.length === 0) return [];
 
   const fetchCheapest = async (iso: string, name: string): Promise<PvaRate | null> => {
     try {
@@ -71,7 +75,7 @@ async function getPvaRates(apiKey: string): Promise<PvaRate[]> {
       for (const x of arr) {
         if (!x || !x.app) continue;
         const appName = String(x.app).toLowerCase();
-        if (!appName.includes('youtube') && !appName.includes('google')) continue;
+        if (!substrings.some((s) => appName.includes(s))) continue;
         const rate = parseFloat(x.rate);
         if (!Number.isFinite(rate) || rate <= 0) continue;
         if (!best || rate < best.rate) best = { iso, name, rate, app: String(x.app) };
@@ -88,7 +92,7 @@ async function getPvaRates(apiKey: string): Promise<PvaRate[]> {
     if (r.status === 'fulfilled' && r.value) rates.push(r.value);
   }
   // On ne met en cache que si on a obtenu quelque chose (sinon on réessaiera).
-  if (rates.length > 0) pvaCache = { at: Date.now(), rates };
+  if (rates.length > 0) pvaCache.set(serviceId, { at: Date.now(), rates });
   return rates;
 }
 
@@ -99,7 +103,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const targetService = body.serviceId || '8a97735e-9a14-427e-8a88-e9d999bf3429';
+    // Slug canonique envoyé par le client (ex: "whatsapp"), repli sûr sur
+    // youtube si inconnu/absent — voir _shared/sms-services.ts.
+    const service = resolveSmsService(body.serviceId);
 
     // Map of Iso to country data
     const countriesMap = new Map<string, FormattedCountry>();
@@ -119,7 +125,7 @@ serve(async (req) => {
     if (smsCodesKey) {
       promises.push((async () => {
         try {
-          const url = `https://code.smscodes.io/api/sms/GetServicePrices?key=${smsCodesKey}&serviceId=${targetService}`;
+          const url = `https://code.smscodes.io/api/sms/GetServicePrices?key=${smsCodesKey}&serviceId=${service.smscodesServiceId}`;
           const res = await fetch(url);
           const data = await res.json();
           if (data.Status === "200" || data.Status === "Success") {
@@ -144,7 +150,7 @@ serve(async (req) => {
     //    1er fournisseur n'a pas de numéro. RawPrice = coût ; marge ajoutée après.
     const pvaPinsKey = Deno.env.get('PVAPINS_API_KEY');
     if (pvaPinsKey) {
-      const pvaRates = await getPvaRates(pvaPinsKey);
+      const pvaRates = await getPvaRates(pvaPinsKey, service.id, service.pvaSubstrings);
       for (const pr of pvaRates) {
         // Crée le pays s'il n'était pas listé par SMSCodes (couverture élargie),
         // sinon ajoute PVAPins comme alternative comparée au même pays.
@@ -153,12 +159,12 @@ serve(async (req) => {
       }
     }
 
-    // 3. 5sim — produit "google" (Google/YouTube), endpoint public (pas de clé
-    //    requise). Fournisseur de repli une fois les historiques épuisés.
+    // 3. 5sim — produit résolu pour le service demandé, endpoint public (pas
+    //    de clé requise). Fournisseur de repli une fois les historiques épuisés.
     try {
-      const res = await fetch('https://5sim.net/v1/guest/prices?product=google');
+      const res = await fetch(`https://5sim.net/v1/guest/prices?product=${service.fiveSimProduct}`);
       const data = await res.json();
-      const byCountry = data?.google || {};
+      const byCountry = data?.[service.fiveSimProduct] || {};
       const isoByCountry: Record<string, string> = {};
       for (const [iso, slug] of Object.entries(FIVESIM_ISO_TO_COUNTRY)) isoByCountry[slug] = iso;
       for (const [countrySlug, operators] of Object.entries(byCountry as Record<string, any>)) {
