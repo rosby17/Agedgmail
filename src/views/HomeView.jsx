@@ -21,7 +21,7 @@ import NotificationBell from '../components/layout/NotificationBell';
 
 // Missing sub-views for Admin
 import SupplierAdmin from './SupplierAdmin';
-import BinancePaymentsAdmin from './BinancePaymentsAdmin';
+import DepositsAdmin from './DepositsAdmin';
 import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';

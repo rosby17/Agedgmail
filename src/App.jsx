@@ -368,6 +368,10 @@ function pathToView(rawPath) {
   if (path.startsWith('app/')) {
     const sub = path.slice(4);
     if (sub === 'myorders') return 'dashboard';
+    // /app/admin/<tab> (ex: /app/admin/orders) : la console admin gère ses
+    // propres sous-onglets, le routeur global n'a besoin de reconnaître que
+    // la vue 'admin' elle-même.
+    if (sub === 'admin' || sub.startsWith('admin/')) return 'admin';
     return APP_VIEWS.has(sub) ? sub : null;
   }
   if (LEGACY_APP_PATH_TO_VIEW[path]) return LEGACY_APP_PATH_TO_VIEW[path];

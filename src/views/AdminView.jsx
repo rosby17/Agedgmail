@@ -23,7 +23,7 @@ import NotificationBell from '../components/layout/NotificationBell';
 // Missing sub-views for Admin
 import SupplierAdmin from './SupplierAdmin';
 import StockAdmin from './StockAdmin';
-import BinancePaymentsAdmin from './BinancePaymentsAdmin';
+import DepositsAdmin from './DepositsAdmin';
 import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
@@ -897,7 +897,38 @@ const AdminView = ({
   session, profile, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
   actionStatus, setActionStatus, lang, setLang, t, dataLoading = false,
 }) => {
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('agedgmail_admin_tab') || "dashboard");
+  // Sous-route de la console admin : /app/admin/<tab> (ex: /app/admin/orders).
+  // Lue depuis l'URL en priorité (permet de partager/recharger un lien direct
+  // vers un onglet précis), puis le dernier onglet visité en fallback.
+  const ADMIN_TABS = ['dashboard', 'orders', 'deposits', 'users', 'support', 'supplier', 'stock'];
+  const tabFromPath = () => {
+    const parts = window.location.pathname.replace(/^\/+/, '').split('/');
+    // parts = ['app', 'admin', '<tab>?']
+    const sub = parts[2];
+    return ADMIN_TABS.includes(sub) ? sub : null;
+  };
+  const [activeTab, setActiveTabState] = useState(() => tabFromPath() || localStorage.getItem('agedgmail_admin_tab') || "dashboard");
+
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    const path = tab === 'dashboard' ? '/app/admin' : `/app/admin/${tab}`;
+    window.history.pushState(null, '', path);
+  };
+
+  // Historique navigateur (précédent/suivant) à l'intérieur de la console admin.
+  useEffect(() => {
+    const onPopState = () => {
+      const fromPath = tabFromPath();
+      if (fromPath) setActiveTabState(fromPath);
+    };
+    window.addEventListener('popstate', onPopState);
+    // Normalise l'URL au premier montage si on est arrivé sur /app/admin nu
+    // (ou un onglet invalide) alors qu'un onglet différent était mémorisé.
+    if (!tabFromPath()) {
+      window.history.replaceState(null, '', activeTab === 'dashboard' ? '/app/admin' : `/app/admin/${activeTab}`);
+    }
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const [supplierBalance, setSupplierBalance] = useState(null);
   const [mappings, setMappings] = useState([]);
   const [loginEmail, setLoginEmail] = useState('');
@@ -1085,7 +1116,7 @@ const AdminView = ({
             {[
               { id: 'dashboard', label: lang === 'fr' ? "Vue d'ensemble" : "Overview", icon: LayoutDashboard },
               { id: 'orders', label: lang === 'fr' ? "Commandes" : "Orders", icon: FileText },
-              { id: 'payments', label: 'Dépôts / Recharges', icon: Wallet },
+              { id: 'deposits', label: 'Dépôts / Recharges', icon: Wallet },
               { id: 'users', label: lang === 'fr' ? "Clients" : "Client Management", icon: Users },
               { id: 'support', label: 'Support / Chat', icon: MessageCircle },
               { id: 'supplier', label: lang === 'fr' ? "Fournisseur" : "Supplier", icon: Database },
@@ -1298,7 +1329,7 @@ const AdminView = ({
             <ClientManagement allUsers={allUsers} allOrders={allOrders} fetchUsers={fetchUsers} loading={dataLoading} />
           )}
 
-          {activeTab === 'payments' && <BinancePaymentsAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />}
+          {activeTab === 'deposits' && <DepositsAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} />}
 
           {activeTab === 'support' && <SupportAdmin session={session} />}
 

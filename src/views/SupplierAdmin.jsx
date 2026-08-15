@@ -21,7 +21,7 @@ import OrderCredentialsModal from '../components/modals/OrderCredentialsModal';
 import NotificationBell from '../components/layout/NotificationBell';
 
 // Missing sub-views for Admin
-import BinancePaymentsAdmin from './BinancePaymentsAdmin';
+import DepositsAdmin from './DepositsAdmin';
 import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';

@@ -25,7 +25,7 @@ import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
-const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
+const DepositsAdmin = ({ allOrders, fetchAllOrders }) => {
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState('');
   const [codeByUser, setCodeByUser] = useState({});
@@ -118,7 +118,7 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
-              <th className="pb-4">Client</th><th className="pb-4">Méthode</th><th className="pb-4">Pseudo (note)</th><th className="pb-4">TXID / Réf</th><th className="pb-4">Montant</th><th className="pb-4">Crédit</th>
+              <th className="pb-4">Client</th><th className="pb-4">Méthode</th><th className="pb-4">Pseudo (note)</th><th className="pb-4">TXID / Réf</th><th className="pb-4">Montant crédité</th>
               <th className="pb-4">Date</th><th className="pb-4">Actions</th>
             </tr>
           </thead>
@@ -136,9 +136,15 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                     </span>
                   </td>
                   <td className="py-4 font-mono font-black text-primary tracking-widest">{isBinance ? (codeByUser[o.user_id] || '—') : '—'}</td>
-                  <td className="py-4 font-mono font-black tracking-widest truncate max-w-[120px]" title={o.binance_tx_id}>{o.binance_tx_id || <span className="text-gray-300 dark:text-slate-650 font-normal italic">non soumis</span>}</td>
-                  <td className="py-4 font-mono font-black">${Number(o.expected_amount).toFixed(2)}</td>
-                  <td className="py-4 font-mono font-bold">${Number(o.credit_amount ?? o.total_price).toFixed(2)}</td>
+                  <td className="py-4 font-mono font-black tracking-widest text-gray-700 dark:text-gray-350 truncate max-w-[120px]" title={o.binance_tx_id}>{o.binance_tx_id || <span className="text-gray-300 dark:text-slate-650">non soumis</span>}</td>
+                  <td className="py-4 font-mono font-black">
+                    ${Number(o.credit_amount ?? o.total_price).toFixed(2)}
+                    {Number(o.expected_amount) !== Number(o.credit_amount ?? o.total_price) && (
+                      <span className="block text-[10px] font-mono font-normal text-gray-400 dark:text-slate-500">
+                        ${Number(o.expected_amount).toFixed(2)} payé
+                      </span>
+                    )}
+                  </td>
                   <td className="py-4 text-xs text-gray-400 dark:text-slate-500 whitespace-nowrap">
                     {new Date(o.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     {isBinance && expired && <span className="ml-2 text-[9px] text-red-500 font-bold bg-red-50 dark:bg-red-950/30 px-1 py-0.5 rounded">Expiré</span>}
@@ -164,11 +170,11 @@ const BinancePaymentsAdmin = ({ allOrders, fetchAllOrders }) => {
                 </tr>
               );
             })}
-            {filteredDeposits.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400 dark:text-slate-550">Aucun dépôt trouvé.</td></tr>}
+            {filteredDeposits.length === 0 && <tr><td colSpan={7} className="py-8 text-center text-gray-400 dark:text-slate-550">Aucun dépôt trouvé.</td></tr>}
           </tbody>
         </table>
       </div>
     </div>
   );
 };
-export default BinancePaymentsAdmin;
+export default DepositsAdmin;
