@@ -39,7 +39,7 @@ serve(async (req) => {
     // 1. Charger la commande
     const { data: order, error: oErr } = await admin
       .from('orders')
-      .select('id, product_id, quantity, status, supplier_order_id')
+      .select('id, user_id, product_id, quantity, status, supplier_order_id')
       .eq('id', orderId)
       .single()
     if (oErr || !order) throw new Error('Commande introuvable: ' + orderId)
@@ -52,6 +52,68 @@ serve(async (req) => {
     }
     if (order.status !== 'processing' && order.status !== 'pending') {
       throw new Error(`Statut commande inattendu: ${order.status}`)
+    }
+
+    // 1.5. Stock manuel disponible pour ce produit (ex: compte récupéré d'un
+    // incident de double-achat fournisseur, invendu) -> livraison instantanée
+    // SANS dépenser chez le fournisseur. Toujours vérifié en premier, même
+    // pour les produits dropship : ne jamais racheter quand on a déjà payé
+    // pour un compte inutilisé qui traîne.
+    const qty = Number(order.quantity) || 1
+    const { data: stockRows, error: stockErr } = await admin
+      .from('account_stock')
+      .select('id, credentials')
+      .eq('product_id', order.product_id)
+      .eq('is_delivered', false)
+      .limit(qty)
+    if (stockErr) throw new Error(stockErr.message)
+
+    if (stockRows && stockRows.length >= qty) {
+      const stockIds = stockRows.map(r => r.id)
+      // Claim atomique : ne marque "livré" que les lignes encore is_delivered=false
+      // au moment de l'UPDATE, pour éviter qu'un appel concurrent (double-clic,
+      // cron) livre deux fois le même compte.
+      const { data: claimed, error: claimErr } = await admin
+        .from('account_stock')
+        .update({ is_delivered: true, order_id: String(orderId), delivered_to: order.user_id })
+        .in('id', stockIds)
+        .eq('is_delivered', false)
+        .select('id')
+      if (claimErr) throw new Error(claimErr.message)
+
+      if (claimed && claimed.length === qty) {
+        const credentials = stockRows.map(r => r.credentials).join('\n')
+        await admin.from('orders').update({
+          status: 'delivered',
+          delivered_at: new Date().toISOString(),
+          handled_by: 'auto (stock)',
+          credentials,
+          data: credentials,
+        }).eq('id', orderId)
+
+        admin.functions.invoke('send-delivery-email', { body: { orderId } })
+          .catch((e: unknown) => console.error('send-delivery-email failed:', (e as Error).message))
+
+        await logSupplier(admin, {
+          order_id: orderId, action: 'deliver-from-stock', level: 'info',
+          message: `Commande livrée depuis le stock manuel (${qty}x account_stock) sans achat fournisseur.`,
+          payload: { stockIds },
+        })
+
+        return new Response(JSON.stringify({ ok: true, delivered_from_stock: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Un appel concurrent a pris tout ou partie de ce stock entre le SELECT
+      // et l'UPDATE : on libère ce qu'on a réussi à claim et on retombe dans
+      // le flux dropship normal ci-dessous plutôt que de livrer un compte en
+      // moins que la quantité commandée.
+      if (claimed && claimed.length > 0) {
+        await admin.from('account_stock')
+          .update({ is_delivered: false, order_id: null, delivered_to: null })
+          .in('id', claimed.map(r => r.id))
+      }
     }
 
     // 2. Mapping actif pour ce produit, peu importe le fournisseur — c'est
