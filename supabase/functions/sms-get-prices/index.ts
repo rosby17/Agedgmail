@@ -182,16 +182,21 @@ serve(async (req) => {
     // Fournisseurs historiques épuisés : relégués derrière 5sim/onlinesim
     // (sans être retirés du code — ils reprennent la priorité automatiquement
     // si on les recrédite, cf. sms-provider-selector.ts).
+    // `enabled` en revanche est un choix MANUEL admin (dashboard Supply SMS) :
+    // un fournisseur désactivé est retiré COMPLÈTEMENT de la liste, jamais
+    // juste déclassé — l'algorithme ne doit plus jamais le proposer.
     const exhaustedLegacy = new Set<string>();
+    const disabledProviders = new Set<string>();
     try {
       const admin = getAdmin();
       const { data: statuses } = await admin
         .from('sms_provider_status')
-        .select('provider, exhausted, last_checked_at')
-        .in('provider', Array.from(LEGACY_PROVIDERS));
+        .select('provider, enabled, exhausted, last_checked_at')
+        .in('provider', ['pvapins', 'smscodes', 'fivesim', 'onlinesim']);
       const STALE_AFTER_MS = 30 * 60 * 1000;
       for (const s of statuses || []) {
-        if (!s.exhausted) continue;
+        if (s.enabled === false) disabledProviders.add(s.provider);
+        if (!s.exhausted || !LEGACY_PROVIDERS.has(s.provider)) continue;
         const age = Date.now() - new Date(s.last_checked_at).getTime();
         if (age < STALE_AFTER_MS) exhaustedLegacy.add(s.provider);
       }
@@ -208,6 +213,10 @@ serve(async (req) => {
 
     const finalPrices = Array.from(countriesMap.values())
       .map(c => {
+        // Retrait complet des fournisseurs désactivés manuellement, AVANT le
+        // tri (jamais juste relégués — l'admin veut qu'ils soient invisibles).
+        c.Providers = c.Providers.filter(p => !p._RealName || !disabledProviders.has(p._RealName));
+
         c.Providers.sort((a, b) => {
           const pa = priority(a), pb = priority(b);
           if (pa !== pb) return pa - pb;

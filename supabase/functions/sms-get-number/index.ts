@@ -5,7 +5,7 @@ import { checkRateLimit, getCorsHeaders, handleCors } from '../_shared/rate-limi
 import { notifyTelegram } from '../_shared/supplier-db.ts';
 import { applyMargin, getPvaCheapestYt, signSecurityId, aliasForProvider, providerForAlias, LEGACY_PROVIDERS } from '../_shared/sms-pricing.ts';
 import { buy5simNumber } from '../_shared/provider-5sim.ts';
-import { markProviderExhausted } from '../_shared/sms-provider-selector.ts';
+import { markProviderExhausted, isProviderEnabled } from '../_shared/sms-provider-selector.ts';
 
 serve(async (req) => {
   const corsOpts = handleCors(req);
@@ -43,6 +43,13 @@ serve(async (req) => {
     // Le client envoie un alias opaque ('p1'/'p2'), jamais le vrai nom du
     // fournisseur — converti ici, côté serveur uniquement (voir sms-pricing.ts).
     const currentProvider = providerForAlias(provider || 'p2');
+
+    // Filet de sécurité : si l'admin a désactivé ce fournisseur (dashboard
+    // Supply SMS) depuis que le client a chargé la liste de prix, on refuse
+    // même si le client rejoue un ancien payload de prix.
+    if (!(await isProviderEnabled(currentProvider))) {
+      throw new Error('Ce fournisseur n\'est plus disponible. Merci de recharger la page.');
+    }
 
     // Check balance
     const { data: profile } = await supabase

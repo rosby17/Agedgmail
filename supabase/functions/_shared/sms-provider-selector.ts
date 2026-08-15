@@ -27,17 +27,49 @@ export async function isProviderExhausted(provider: string): Promise<boolean> {
   }
 }
 
+/**
+ * Interrupteur MANUEL de l'admin (colonne `enabled`), distinct de `exhausted`
+ * (automatique, réévalué avec le temps). Contrairement à isProviderExhausted,
+ * on fail-CLOSED sur une erreur de requête : une coupure DB ne doit jamais
+ * réactiver silencieusement un fournisseur que l'admin a désactivé. On ne
+ * fail-open que si la ligne n'existe simplement pas encore (fournisseur
+ * jamais vu, traité comme activé par défaut).
+ */
+export async function isProviderEnabled(provider: string): Promise<boolean> {
+  try {
+    const admin = getAdmin()
+    const { data, error } = await admin
+      .from('sms_provider_status')
+      .select('enabled')
+      .eq('provider', provider)
+      .maybeSingle()
+    if (error) return false
+    if (!data) return true
+    return data.enabled !== false
+  } catch {
+    return false
+  }
+}
+
 export async function markProviderExhausted(
   provider: string,
-  opts: { exhausted: boolean; cachedBalance?: number | null; lastError?: string },
+  opts: { exhausted?: boolean; cachedBalance?: number | null; lastError?: string },
 ): Promise<void> {
   try {
     const admin = getAdmin()
+    // Merge partiel : ne pas écraser exhausted/last_error existants quand
+    // l'appelant ne fournit que cachedBalance (ex: rafraîchissement de solde
+    // en lecture seule depuis le dashboard admin).
+    const { data: existing } = await admin
+      .from('sms_provider_status')
+      .select('exhausted, last_error')
+      .eq('provider', provider)
+      .maybeSingle()
     await admin.from('sms_provider_status').upsert({
       provider,
-      exhausted: opts.exhausted,
+      exhausted: opts.exhausted ?? existing?.exhausted ?? false,
       cached_balance: opts.cachedBalance ?? null,
-      last_error: opts.lastError ?? null,
+      last_error: opts.lastError ?? existing?.last_error ?? null,
       last_checked_at: new Date().toISOString(),
     })
   } catch {

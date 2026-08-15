@@ -22,6 +22,7 @@ import NotificationBell from '../components/layout/NotificationBell';
 
 // Missing sub-views for Admin
 import SupplierAdmin from './SupplierAdmin';
+import SmsSupplyAdmin from './SmsSupplyAdmin';
 import StockAdmin from './StockAdmin';
 import DepositsAdmin from './DepositsAdmin';
 import SupportAdmin from './SupportAdmin';
@@ -41,7 +42,7 @@ const AdminView = ({
   // Sous-route de la console admin : /app/admin/<tab> (ex: /app/admin/orders).
   // Lue depuis l'URL en priorité (permet de partager/recharger un lien direct
   // vers un onglet précis), puis le dernier onglet visité en fallback.
-  const ADMIN_TABS = ['dashboard', 'orders', 'deposits', 'users', 'support', 'supplier', 'stock'];
+  const ADMIN_TABS = ['dashboard', 'orders', 'deposits', 'users', 'support', 'supplier', 'sms-supply', 'stock'];
   const tabFromPath = () => {
     const parts = window.location.pathname.replace(/^\/+/, '').split('/');
     // parts = ['app', 'admin', '<tab>?']
@@ -261,6 +262,7 @@ const AdminView = ({
               { id: 'users', label: lang === 'fr' ? "Clients" : "Client Management", icon: Users },
               { id: 'support', label: 'Support / Chat', icon: MessageCircle },
               { id: 'supplier', label: lang === 'fr' ? "Fournisseur" : "Supplier", icon: Database },
+              { id: 'sms-supply', label: 'Supply SMS', icon: Smartphone },
               { id: 'stock', label: 'Stock manuel', icon: Package },
             ].map(item => (
               <button
@@ -475,6 +477,7 @@ const AdminView = ({
           {activeTab === 'support' && <SupportAdmin session={session} />}
 
           {activeTab === 'supplier' && <SupplierAdmin products={products} fetchProducts={fetchProducts} />}
+          {activeTab === 'sms-supply' && <SmsSupplyAdmin />}
 
           {activeTab === 'stock' && <StockAdmin products={products} />}
 
