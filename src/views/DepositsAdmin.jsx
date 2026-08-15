@@ -94,7 +94,7 @@ const DepositsAdmin = ({ allOrders, fetchAllOrders }) => {
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dépôts / Recharges</h2>
       </div>
-      <p className="text-xs text-gray-400 dark:text-slate-450 mb-6">Gestion de tous les dépôts : historique, validation en attente, annulations.</p>
+      <p className="text-xs text-gray-400 dark:text-slate-400 mb-6">Gestion de tous les dépôts : historique, validation en attente, annulations.</p>
       
       <div className="flex gap-2 mb-6 flex-wrap">
         {[
@@ -128,7 +128,7 @@ const DepositsAdmin = ({ allOrders, fetchAllOrders }) => {
               const isBinance = o.payment_method === 'binance_pay';
               const isMobileMoney = o.payment_method === 'mobile_money' || (!o.payment_method && o.product_name?.includes('Mobile Money'));
               return (
-                <tr key={o.id} className="text-gray-700 dark:text-gray-350 hover:bg-gray-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                <tr key={o.id} className="text-gray-700 dark:text-gray-300 hover:bg-gray-50/50 dark:hover:bg-slate-800/20 transition-colors">
                   <td className="py-4 font-bold text-gray-900 dark:text-white">{o.buyer_email}</td>
                   <td className="py-4">
                     <span className={`px-2 py-1 rounded text-[10px] font-bold ${isBinance ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : isMobileMoney ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
@@ -136,7 +136,7 @@ const DepositsAdmin = ({ allOrders, fetchAllOrders }) => {
                     </span>
                   </td>
                   <td className="py-4 font-mono font-black text-primary tracking-widest">{isBinance ? (codeByUser[o.user_id] || '—') : '—'}</td>
-                  <td className="py-4 font-mono font-black tracking-widest text-gray-700 dark:text-gray-350 truncate max-w-[120px]" title={o.binance_tx_id}>{o.binance_tx_id || <span className="text-gray-300 dark:text-slate-650">non soumis</span>}</td>
+                  <td className="py-4 font-mono font-black tracking-widest text-gray-700 dark:text-gray-300 truncate max-w-[120px]" title={o.binance_tx_id}>{o.binance_tx_id || <span className="text-gray-300 dark:text-slate-500">non soumis</span>}</td>
                   <td className="py-4 font-mono font-black">
                     ${Number(o.credit_amount ?? o.total_price).toFixed(2)}
                     {Number(o.expected_amount) !== Number(o.credit_amount ?? o.total_price) && (
@@ -170,7 +170,7 @@ const DepositsAdmin = ({ allOrders, fetchAllOrders }) => {
                 </tr>
               );
             })}
-            {filteredDeposits.length === 0 && <tr><td colSpan={7} className="py-8 text-center text-gray-400 dark:text-slate-550">Aucun dépôt trouvé.</td></tr>}
+            {filteredDeposits.length === 0 && <tr><td colSpan={7} className="py-8 text-center text-gray-400 dark:text-slate-500">Aucun dépôt trouvé.</td></tr>}
           </tbody>
         </table>
       </div>

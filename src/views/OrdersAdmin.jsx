@@ -358,7 +358,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
               ].map(([label, val, Icon]) => (
                 <div key={label} className="flex justify-between items-center group">
                   <span className="text-gray-400 dark:text-slate-400 font-medium text-xs flex items-center gap-2">
-                    <Icon size={14} className="text-gray-300 dark:text-slate-650 group-hover:text-primary transition-colors" /> {label}
+                    <Icon size={14} className="text-gray-300 dark:text-slate-500 group-hover:text-primary transition-colors" /> {label}
                   </span>
                   <span className="font-bold text-gray-900 dark:text-white text-sm">{val}</span>
                 </div>
@@ -476,7 +476,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
 
               <button
                 onClick={() => setCancelPromptOrder(null)}
-                className="w-full py-4 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-350 rounded-2xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"
+                className="w-full py-4 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded-2xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"
               >
                 Ne rien faire (fermer)
               </button>

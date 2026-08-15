@@ -92,7 +92,7 @@ const AttachmentPreview = ({ type, url, filename }) => {
       href={url} 
       target="_blank" 
       rel="noreferrer" 
-      className="flex items-center gap-2 my-1 px-3 py-2 bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-800 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-850 transition-colors text-xs font-bold text-gray-800 dark:text-gray-200"
+      className="flex items-center gap-2 my-1 px-3 py-2 bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-800 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-xs font-bold text-gray-800 dark:text-gray-200"
     >
       <FileText size={14} className="text-gray-400" />
       <span className="truncate max-w-[150px]">{filename || 'Télécharger le fichier'}</span>
@@ -318,7 +318,7 @@ const SupportChatWidget = ({ session, profile }) => {
             <button 
               onClick={() => fileInputRef.current?.click()} 
               disabled={sending || uploading}
-              className="w-10 h-10 shrink-0 rounded-full bg-gray-105 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-750 transition-all disabled:opacity-40"
+              className="w-10 h-10 shrink-0 rounded-full bg-gray-105 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-40"
               title="Ajouter un fichier"
             >
               <Upload size={16} className={uploading ? 'animate-bounce' : ''} />
@@ -945,7 +945,7 @@ function App() {
                     dialogState.resolve(null);
                     setDialogState(null);
                   }}
-                  className="px-5 py-2.5 rounded-xl border border-gray-150 dark:border-slate-800 text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-800 transition-all text-gray-650 dark:text-slate-350"
+                  className="px-5 py-2.5 rounded-xl border border-gray-150 dark:border-slate-800 text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-800 transition-all text-gray-600 dark:text-slate-400"
                 >
                   {lang === 'fr' ? 'Annuler' : 'Cancel'}
                 </button>
