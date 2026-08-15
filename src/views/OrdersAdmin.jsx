@@ -391,6 +391,20 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
               </div>
             </div>
 
+            {!(selectedOrder.product_name || '').toLowerCase().includes('sms') &&
+             !(selectedOrder.product_name || '').toLowerCase().includes('proxy') && (
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">Tutoriel de sécurisation envoyé au client (par email)</label>
+                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-3xl p-6 text-xs text-gray-700 dark:text-slate-300 leading-relaxed space-y-2">
+                  <p><strong>1.</strong> Premières 72h : ne rien changer (laisser le compte "chauffer").</p>
+                  <p><strong>2.</strong> Après 72h : changer mot de passe + email de récupération + activer sa propre 2FA (retirer l'ancienne).</p>
+                  <p><strong>3.</strong> Vérifier les appareils/sessions connectés (Paramètres → Sécurité).</p>
+                  <p>Code 2FA (si secret fourni) : <a href="https://2fa.live/" target="_blank" rel="noreferrer" className="text-primary font-bold underline">2fa.live</a> — Tutoriel vidéo : <a href="https://www.youtube.com/watch?v=R_uX8ck-E_I" target="_blank" rel="noreferrer" className="text-primary font-bold underline">voir</a>.</p>
+                  <p className="text-gray-500 dark:text-slate-500">Passé ce délai, la sécurisation est de la responsabilité du client — non-responsabilité en cas de perte d'accès.</p>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}
