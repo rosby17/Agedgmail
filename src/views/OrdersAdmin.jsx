@@ -41,22 +41,42 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
   const [retryingId, setRetryingId] = useState(null);
 
   const retrySupplierOrder = async (order) => {
+    // Reste désactivé (voir disabled={retryingId === order.id} sur le
+    // bouton) pendant TOUTE l'opération, alertes comprises — sinon un admin
+    // qui ne voit pas de retour immédiat re-clique, et deux relances
+    // concurrentes peuvent partir avant que la première n'ait fini d'écrire
+    // son statut. Le verrou définitif est côté serveur (dropship-place-order),
+    // mais ça évite déjà la cause la plus fréquente.
     setRetryingId(order.id);
-    const { data, error } = await supabase.functions.invoke('dropship-place-order', {
-      body: { orderId: order.id },
-    });
-    setRetryingId(null);
-    if (error || data?.error) {
-      await window.showAlert('Erreur', 'Relance échouée : ' + (data?.error || error?.message));
+    try {
+      const { data, error } = await supabase.functions.invoke('dropship-place-order', {
+        body: { orderId: order.id },
+      });
+      if (error || data?.error) {
+        await window.showAlert('Erreur', 'Relance échouée : ' + (data?.error || error?.message));
+        return;
+      }
+      if (data?.ok === false && data?.reason === 'insufficient_supplier_balance') {
+        await window.showAlert('Solde fournisseur insuffisant', 'Le solde du fournisseur est toujours insuffisant pour cette commande. Rechargez le compte fournisseur puis réessayez.');
+        return;
+      }
+      // Commande transmise (ou déjà transmise) au fournisseur — on déclenche
+      // tout de suite un poll au lieu d'attendre le prochain passage du cron
+      // (~60s), pour pouvoir annoncer le résultat RÉEL plutôt que de laisser
+      // l'admin deviner.
+      await supabase.functions.invoke('dropship-poll-orders');
+      const { data: fresh } = await supabase.from('orders').select('status').eq('id', order.id).maybeSingle();
+      if (fresh?.status === 'delivered') {
+        await window.showAlert('Livrée ✅', 'Achetée chez le fournisseur et livrée automatiquement au client. Les identifiants sont visibles via l\'icône œil sur cette commande.');
+      } else if (fresh?.status === 'cancelled') {
+        await window.showAlert('Commande annulée', 'Le fournisseur a refusé ou l\'achat a échoué — le client a été remboursé automatiquement. Voir le détail dans les logs fournisseur.');
+      } else {
+        await window.showAlert('Commande transmise', 'Achetée chez le fournisseur, en attente de confirmation. Elle sera livrée automatiquement dès que le fournisseur confirme — inutile de recliquer sur Relancer, le bouton disparaît une fois la commande transmise.');
+      }
+    } finally {
+      setRetryingId(null);
       fetchAllOrders();
-      return;
     }
-    if (data?.ok === false && data?.reason === 'insufficient_supplier_balance') {
-      await window.showAlert('Solde fournisseur insuffisant', 'Le solde du fournisseur est toujours insuffisant pour cette commande. Rechargez le compte fournisseur puis réessayez.');
-      return;
-    }
-    await window.showAlert('Commande relancée', 'La commande a été transmise au fournisseur. Elle sera livrée automatiquement dès confirmation.');
-    fetchAllOrders();
   };
 
   // Achat fournisseur pas encore passé (ex: solde insuffisant au moment du
@@ -98,8 +118,13 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
     // Exclude deposits and credit transfers from the general Orders view
     if (o.product_id === 999 || o.product_id === 998) return false;
 
-    // Filter by Status
-    if (filter !== 'all' && (o.status || 'pending') !== filter) return false;
+    // Filter by Status — 'processing' regroupe pending/processing/confirmed
+    // (toutes les commandes payées pas encore livrées ni annulées), pour ne
+    // pas noyer l'admin dans des sous-états internes qui n'ont pas d'action
+    // différente associée.
+    const s = o.status || 'pending';
+    if (filter === 'processing' && !(s === 'pending' || s === 'processing' || s === 'confirmed')) return false;
+    if (filter !== 'all' && filter !== 'processing' && s !== filter) return false;
     
     // Filter by Product Category
     if (productFilter === 'sms') return o.product_name?.toLowerCase().includes('sms');
@@ -151,9 +176,14 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
   const statusBadge = (status) => {
     const s = status || 'pending';
     const map = {
-      pending: { label: 'En attente', icon: Clock, cls: 'bg-yellow-100 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/30' },
+      // pending / processing / confirmed sont regroupés sous un seul badge
+      // "En cours" — ce sont des sous-états internes (pas encore transmis au
+      // fournisseur, transmis et en attente, payé mais pas livré) qui n'ont
+      // pas d'action admin différente : dans tous les cas on attend ou on
+      // relance.
+      pending: { label: 'En cours', icon: RefreshCcw, cls: 'bg-blue-100 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900/30' },
       processing: { label: 'En cours', icon: RefreshCcw, cls: 'bg-blue-100 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900/30' },
-      confirmed: { label: 'Payé (non livré)', icon: AlertTriangle, cls: 'bg-amber-100 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/30' },
+      confirmed: { label: 'En cours', icon: RefreshCcw, cls: 'bg-blue-100 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900/30' },
       delivered: { label: 'Livrée', icon: CheckCircle, cls: 'bg-green-100 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/30' },
       cancelled: { label: 'Annulé', icon: X, cls: 'bg-red-100 dark:bg-red-950/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/30' },
     };
@@ -180,9 +210,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
         <div className="flex gap-2 flex-wrap">
           {[
             { key: 'all', label: 'Toutes', icon: FileText },
-            { key: 'pending', label: 'En attente', icon: Clock },
             { key: 'processing', label: 'En cours', icon: RefreshCcw },
-            { key: 'confirmed', label: 'Payées non livrées', icon: AlertTriangle },
             { key: 'delivered', label: 'Livrées', icon: CheckCircle },
             { key: 'cancelled', label: 'Annulées', icon: X },
           ].map(f => (

@@ -114,8 +114,41 @@ serve(async (req) => {
       })
     }
 
-    // 4. Passer la commande chez le bon fournisseur
-    const supplierOrderId = await adapter.addProductOrder(map.supplier_product_id, quantity)
+    // 4. Verrou atomique AVANT l'achat réel : deux appels concurrents (double-
+    // clic admin, ou admin + cron dropship-poll-orders en même temps)
+    // pouvaient tous les deux lire supplier_order_id=null et acheter chacun
+    // chez le fournisseur -> double débit + double livraison au client.
+    // UPDATE conditionné sur supplier_order_id IS NULL : un seul des appels
+    // concurrents peut gagner ce verrou, l'autre reçoit 0 ligne affectée.
+    const claimSentinel = `DISPATCHING-${crypto.randomUUID()}`
+    const { data: claimed, error: claimErr } = await admin
+      .from('orders')
+      .update({ supplier, supplier_order_id: claimSentinel })
+      .eq('id', orderId)
+      .is('supplier_order_id', null)
+      .in('status', ['pending', 'processing'])
+      .select('id')
+    if (claimErr) throw new Error(claimErr.message)
+    if (!claimed || claimed.length === 0) {
+      // Verrou déjà pris par un autre appel concurrent (ou commande déjà
+      // transmise entre-temps) : rien à faire, ce n'est pas une erreur.
+      return new Response(JSON.stringify({ ok: true, already: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // 5. Passer la commande chez le bon fournisseur (achat réel, un seul appel garanti)
+    let supplierOrderId: string
+    try {
+      supplierOrderId = await adapter.addProductOrder(map.supplier_product_id, quantity)
+    } catch (purchaseErr) {
+      // Libère le verrou pour permettre une relance ultérieure — sinon la
+      // commande resterait bloquée avec un sentinel, invisible au retry et
+      // jamais remboursée par le catch générique (qui, lui, a besoin du
+      // orderId, déjà disponible, donc ok, mais on nettoie explicitement).
+      await admin.from('orders').update({ supplier_order_id: null }).eq('id', orderId)
+      throw purchaseErr
+    }
 
     await admin.from('orders').update({
       supplier,
