@@ -314,7 +314,7 @@ const OrdersAdmin = ({ allOrders, fetchAllOrders, lang = 'fr', loading = false }
                           Une commande déjà livrée ne s'annule pas. */}
                       {(order.status === 'pending' || order.status === 'processing' || order.status === 'confirmed') && (
                         <button onClick={() => cancelOrder(order)}
-                          className="p-2 rounded-lg bg-red-50 dark:bg-red-950/10 text-red-500 hover:bg-red-150 dark:hover:bg-red-900/20 transition-all border border-red-100 dark:border-red-900/20"
+                          className="p-2 rounded-lg bg-red-50 dark:bg-red-950/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all border border-red-100 dark:border-red-900/20"
                           title="Annuler / Rembourser la commande"
                           aria-label="Annuler la commande"
                         >
