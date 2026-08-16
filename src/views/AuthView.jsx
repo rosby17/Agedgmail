@@ -172,47 +172,47 @@ const AuthView = ({ navigate, lang }) => {
   // mais sans couleur de texte fixée elle hérite du blanc du thème sombre
   // global (html { color: var(--color-dark) } passe presque blanc en mode
   // sombre) → texte invisible sur fond clair. Toujours forcer un texte sombre ici.
-  const inputCls = "w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-medium text-sm text-gray-900 placeholder:text-gray-400 transition-all";
+  const inputCls = "w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-medium text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all";
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-16 px-6 font-sans">
-      <div className="w-full max-w-[400px] bg-white p-8 md:p-10 rounded-3xl shadow-[0_24px_70px_-24px_rgba(0,0,0,0.12)] border border-gray-100">
+      <div className="w-full max-w-[400px] bg-white dark:bg-gray-900 p-8 md:p-10 rounded-3xl shadow-[0_24px_70px_-24px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_70px_-24px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-gray-800">
 
         {tfaPending ? (
           <div className="text-center animate-in fade-in zoom-in duration-300">
             <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
               <ShieldCheck size={28} className="text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">{lang === 'fr' ? 'Double authentification' : 'Two-Factor Authentication'}</h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-4">
-              {lang === 'fr' 
-                ? 'Saisis le code de vérification à 6 chiffres envoyé à ton adresse e-mail pour confirmer ton identité.' 
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{lang === 'fr' ? 'Double authentification' : 'Two-Factor Authentication'}</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-4">
+              {lang === 'fr'
+                ? 'Saisis le code de vérification à 6 chiffres envoyé à ton adresse e-mail pour confirmer ton identité.'
                 : 'Enter the 6-digit verification code sent to your email address to confirm your identity.'}
             </p>
 
-            <div className="bg-amber-50 text-amber-600 p-3.5 rounded-2xl text-xs font-bold border border-amber-100 mb-6 text-left space-y-1">
+            <div className="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 p-3.5 rounded-2xl text-xs font-bold border border-amber-100 dark:border-amber-500/20 mb-6 text-left space-y-1">
               <span className="block font-black uppercase tracking-wider text-[10px]">{lang === 'fr' ? 'Mode Test / Dev :' : 'Test / Dev Mode:'}</span>
               <span>{lang === 'fr' ? 'Le code de vérification généré est :' : 'The generated verification code is:'} <strong className="font-mono text-sm underline">{tfaExpectedCode}</strong></span>
             </div>
 
-            {errorMessage && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
+            {errorMessage && <div className="bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 p-3 rounded-xl text-xs font-bold border border-red-100 dark:border-red-500/20 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
 
             <form onSubmit={handleVerify2FA} className="space-y-4">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 maxLength={6}
-                required 
-                value={tfaCodeInput} 
-                onChange={e => setTfaCodeInput(e.target.value.replace(/\D/g, ''))} 
-                className="w-full text-center h-12 px-4 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-mono text-xl tracking-[0.5em] font-bold text-gray-900 placeholder:text-gray-400"
-                placeholder="000000" 
+                required
+                value={tfaCodeInput}
+                onChange={e => setTfaCodeInput(e.target.value.replace(/\D/g, ''))}
+                className="w-full text-center h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none font-mono text-xl tracking-[0.5em] font-bold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                placeholder="000000"
               />
 
               <button type="submit" className="w-full h-12 bg-primary text-white dark:text-gray-900 rounded-xl font-bold text-sm hover:bg-primaryDark transition-all flex items-center justify-center gap-2 shadow-lg">
                 {lang === 'fr' ? 'Confirmer' : 'Confirm'}
               </button>
-              
-              <button type="button" onClick={handleCancel2FA} className="text-xs text-gray-400 font-bold hover:text-primary transition-colors block w-full text-center mt-2">
+
+              <button type="button" onClick={handleCancel2FA} className="text-xs text-gray-400 dark:text-gray-500 font-bold hover:text-primary transition-colors block w-full text-center mt-2">
                 {lang === 'fr' ? '← Annuler la connexion' : '← Cancel login'}
               </button>
             </form>
@@ -223,20 +223,20 @@ const AuthView = ({ navigate, lang }) => {
             <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Mail size={28} className="text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">{lang === 'fr' ? 'Confirme ton email' : 'Confirm your email'}</h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-1">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{lang === 'fr' ? 'Confirme ton email' : 'Confirm your email'}</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-1">
               {lang === 'fr' ? 'Un lien de confirmation a été envoyé à' : 'A confirmation link has been sent to'}<br />
-              <span className="font-bold text-gray-900">{pendingConfirmEmail}</span>
+              <span className="font-bold text-gray-900 dark:text-white">{pendingConfirmEmail}</span>
             </p>
-            <p className="text-gray-400 text-xs mb-6">{lang === 'fr' ? 'Clique dessus pour activer ton compte (pense aux spams).' : 'Click on it to activate your account (check your spam folder).'}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs mb-6">{lang === 'fr' ? 'Clique dessus pour activer ton compte (pense aux spams).' : 'Click on it to activate your account (check your spam folder).'}</p>
 
-            {infoMessage && <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 mb-4">{infoMessage}</div>}
-            {errorMessage && <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
+            {infoMessage && <div className="bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 p-3 rounded-xl text-xs font-bold border border-green-100 dark:border-green-500/20 mb-4">{infoMessage}</div>}
+            {errorMessage && <div className="bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 p-3 rounded-xl text-xs font-bold border border-red-100 dark:border-red-500/20 mb-4 flex items-center justify-center gap-2"><AlertTriangle size={14} /> {errorMessage}</div>}
 
-            <button onClick={handleResendConfirmation} disabled={loading} className="w-full h-12 bg-gray-900 text-white dark:text-gray-900 rounded-xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-3">
+            <button onClick={handleResendConfirmation} disabled={loading} className="w-full h-12 bg-gray-900 dark:bg-primary text-white dark:text-gray-900 rounded-xl font-bold text-sm hover:bg-primary dark:hover:bg-primaryDark transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-3">
               {loading && <RefreshCcw size={15} className="animate-spin" />} {lang === 'fr' ? 'Renvoyer l\'email' : 'Resend email'}
             </button>
-            <button onClick={() => { setPendingConfirmEmail(''); setIsLogin(true); setErrorMessage(''); setInfoMessage(''); }} className="text-xs text-gray-400 font-bold hover:text-primary transition-colors">
+            <button onClick={() => { setPendingConfirmEmail(''); setIsLogin(true); setErrorMessage(''); setInfoMessage(''); }} className="text-xs text-gray-400 dark:text-gray-500 font-bold hover:text-primary transition-colors">
               {lang === 'fr' ? '← Retour à la connexion' : '← Back to login'}
             </button>
           </div>
@@ -244,26 +244,26 @@ const AuthView = ({ navigate, lang }) => {
         <>
           {/* En-tête */}
           <div className="text-center mb-7">
-            <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <img src="/favicon.svg" alt="Logo" className="w-full h-full object-contain" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{isLogin ? (lang === 'fr' ? 'Content de te revoir' : 'Welcome back') : (lang === 'fr' ? 'Crée ton compte' : 'Create an account')}</h2>
-            <p className="text-gray-400 text-sm mt-1">{isLogin ? (lang === 'fr' ? 'Connecte-toi pour continuer.' : 'Log in to continue.') : (lang === 'fr' ? 'Rejoins la marketplace n°1 de comptes certifiés.' : 'Join the #1 marketplace for certified accounts.')}</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{isLogin ? (lang === 'fr' ? 'Content de te revoir' : 'Welcome back') : (lang === 'fr' ? 'Crée ton compte' : 'Create an account')}</h2>
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">{isLogin ? (lang === 'fr' ? 'Connecte-toi pour continuer.' : 'Log in to continue.') : (lang === 'fr' ? 'Rejoins la marketplace n°1 de comptes certifiés.' : 'Join the #1 marketplace for certified accounts.')}</p>
           </div>
 
           {/* Google — toujours visible, en haut */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-50 hover:border-gray-300 transition-all group mb-5"
+            className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all group mb-5"
           >
             <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-            <span className="text-gray-700 font-bold text-sm">{lang === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}</span>
+            <span className="text-gray-700 dark:text-gray-200 font-bold text-sm">{lang === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}</span>
           </button>
 
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-grow h-px bg-gray-100" />
-            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{lang === 'fr' ? 'ou' : 'or'}</span>
-            <div className="flex-grow h-px bg-gray-100" />
+            <div className="flex-grow h-px bg-gray-100 dark:bg-gray-800" />
+            <span className="text-[10px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-widest">{lang === 'fr' ? 'ou' : 'or'}</span>
+            <div className="flex-grow h-px bg-gray-100 dark:bg-gray-800" />
           </div>
 
           <form className="space-y-3.5" onSubmit={handleAuth}>
@@ -279,26 +279,26 @@ const AuthView = ({ navigate, lang }) => {
             <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder={lang === 'fr' ? 'ton@email.com' : 'your@email.com'} />
             <div className="relative">
               <input type={showPw ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} className={inputCls + " pr-12"} placeholder={lang === 'fr' ? 'Mot de passe' : 'Password'} />
-              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
 
             {isLogin && (
               <div className="flex justify-end">
-                <button type="button" onClick={handleResetPassword} className="text-xs font-bold text-gray-400 hover:text-primary transition-colors">
+                <button type="button" onClick={handleResetPassword} className="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-primary transition-colors">
                   {lang === 'fr' ? 'Mot de passe oublié ?' : 'Forgot password?'}
                 </button>
               </div>
             )}
 
             {errorMessage && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs font-bold border border-red-100 flex items-center gap-2">
+              <div className="bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 p-3 rounded-xl text-xs font-bold border border-red-100 dark:border-red-500/20 flex items-center gap-2">
                 <AlertTriangle size={14} /> {errorMessage}
               </div>
             )}
             {infoMessage && (
-              <div className="bg-green-50 text-green-600 p-3 rounded-xl text-xs font-bold border border-green-100 flex items-center gap-2">
+              <div className="bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 p-3 rounded-xl text-xs font-bold border border-green-100 dark:border-green-500/20 flex items-center gap-2">
                 <CheckCircle size={14} /> {infoMessage}
               </div>
             )}
@@ -309,7 +309,7 @@ const AuthView = ({ navigate, lang }) => {
             </button>
           </form>
 
-          <div className="text-center mt-6 text-sm text-gray-400">
+          <div className="text-center mt-6 text-sm text-gray-400 dark:text-gray-500">
             {isLogin ? (lang === 'fr' ? "Pas encore de compte ?" : "Don't have an account?") : (lang === 'fr' ? "Déjà un compte ?" : "Already have an account?")}{' '}
             <button onClick={() => { setIsLogin(!isLogin); setErrorMessage(''); setInfoMessage(''); }} className="font-bold text-primary hover:underline">
               {isLogin ? (lang === 'fr' ? "S'inscrire" : "Sign up") : (lang === 'fr' ? "Se connecter" : "Log in")}
