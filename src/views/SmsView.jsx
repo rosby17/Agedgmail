@@ -455,7 +455,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                   classes (padding, rounded, bordures) que le contenu réel,
                   seul le texte est remplacé par des barres, pour garantir
                   des hauteurs identiques et éviter tout saut visuel. */}
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm">
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm h-full">
                 <div className="flex gap-4 md:gap-5">
                   <div className="hidden sm:flex flex-col items-center shrink-0 pt-1">
                     <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 animate-pulse shrink-0"></div>
@@ -558,7 +558,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
             carte reliée par un rail numéroté, au lieu de deux cadres épais
             redondants. Le badge de service (déjà visible dans la sidebar de
             gauche) devient une simple pastille discrète à côté du titre. */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative">
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative h-full">
+          {/* h-full : sans ça, cette carte reste à sa hauteur de contenu
+              pendant que sa colonne s'étire pour matcher la carte Étape 3 —
+              elle paraît alors plus courte que sa voisine. */}
           {/* overflow-hidden isolé sur ce calque décoratif uniquement — sur la
               carte entière, ça coupait le menu déroulant du CustomSelect qui
               doit pouvoir dépasser en dessous. */}
