@@ -67,11 +67,13 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
 
         
         {/* Cart Button */}
-        <button onClick={onCartClick} className="bg-gray-900 dark:bg-primary text-white dark:text-gray-900 px-3 md:px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 md:gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
-          <ShoppingCart size={18} />
-          {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
-          <span className="hidden sm:inline border-l border-white/20 pl-2 md:pl-3">CART / ${cartTotal.toFixed(2)}</span>
-        </button>
+        {session && (
+          <button onClick={onCartClick} className="bg-gray-900 dark:bg-primary text-white dark:text-gray-900 px-3 md:px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 md:gap-3 hover:bg-black dark:hover:bg-primaryDark transition-all shadow-lg shadow-black/10 relative">
+            <ShoppingCart size={18} />
+            {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />}
+            <span className="hidden sm:inline border-l border-white/20 pl-2 md:pl-3">CART / ${cartTotal.toFixed(2)}</span>
+          </button>
+        )}
 
         {session ? (
           <div className="flex items-center gap-4">
