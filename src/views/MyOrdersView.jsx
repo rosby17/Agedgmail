@@ -16,7 +16,6 @@ import Footer from '../components/layout/Footer';
 import CartDrawer from '../components/modals/CartDrawer';
 import CartCheckoutModal from '../components/modals/CartCheckoutModal';
 import QuickOrderModal from '../components/modals/QuickOrderModal';
-import TransferCreditsModal from '../components/modals/TransferCreditsModal';
 import OrderCredentialsModal from '../components/modals/OrderCredentialsModal';
 import NotificationBell from '../components/layout/NotificationBell';
 
@@ -36,7 +35,6 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
     }
   }, [sessionChecked, session, navigate]);
   const [viewOrder, setViewOrder] = useState(null);
-  const [showTransfer, setShowTransfer] = useState(false);
   const [orderSection, setOrderSection] = useState('gmail');
   // Initialise la checkbox depuis le profil
   const [sendEmailAll, setSendEmailAll] = useState(profile?.send_email_on_delivery ?? true);
@@ -164,50 +162,9 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
         </div>
       )}
       {viewOrder && <OrderCredentialsModal order={viewOrder} onClose={() => setViewOrder(null)} lang={lang} />}
-      {showTransfer && (
-        <TransferCreditsModal
-          profile={profile}
-          session={session}
-          fetchProfile={fetchProfile}
-          onClose={() => setShowTransfer(false)}
-          lang={lang}
-          t={t}
-        />
-      )}
 
       <div className="flex items-center justify-between mb-10">
         <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{t('myOrders')}</h1>
-      </div>
-
-      {/* Notice de confidentialité / suppression des commandes */}
-      <div className="mb-8 bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400 rounded-3xl p-5 flex items-start gap-4 animate-in fade-in duration-300">
-        <Info size={20} className="shrink-0 mt-0.5" />
-        <div>
-          <h4 className="text-xs font-black uppercase tracking-widest mb-1">{isFr ? 'NOTE IMPORTANTE' : 'IMPORTANT NOTICE'}</h4>
-          <p className="text-xs leading-relaxed opacity-90 font-medium">
-            {isFr 
-              ? "Les données de vos commandes sont automatiquement supprimées le 2 de chaque mois pour protéger votre vie privée. Seuls les 30 derniers jours sont conservés. Assurez-vous d'enregistrer vos informations de votre côté."
-              : "Order data is automatically deleted on the 2nd of each month for privacy protection. Only the most recent 30 days of orders are kept. Please make sure to store your data on your side."}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 mb-10">
-        <div className="bg-gray-900 rounded-[2rem] p-8 relative overflow-hidden flex flex-col justify-between">
-          <div className="relative z-10 mb-8">
-            <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">{t('currentBalance')}</div>
-            <div className="text-5xl font-black font-price text-white">${profile?.balance?.toFixed(2) || "0.00"}</div>
-          </div>
-          <div className="relative z-10 flex flex-col sm:flex-row gap-4 max-w-xl">
-            <button onClick={() => navigate('recharge')} className="flex-1 bg-primary text-white dark:text-gray-900 py-4 rounded-2xl font-bold text-sm hover:bg-primaryDark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-              <Plus size={18} /> {t('topUpBtn')}
-            </button>
-            <button onClick={() => setShowTransfer(true)} className="flex-1 bg-white/10 border border-white/20 text-white py-4 rounded-2xl font-bold text-sm hover:bg-white/20 transition-all flex items-center justify-center gap-2">
-              <Send size={16} /> {t('transferBtn')}
-            </button>
-          </div>
-          <Wallet size={180} className="absolute -bottom-10 -right-10 text-white/5 pointer-events-none" />
-        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
