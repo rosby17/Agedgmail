@@ -433,60 +433,73 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
   // Skeleton plein écran uniquement au tout premier chargement (aucun pays
   // encore connu) — jamais lors d'un changement de service, pour ne pas
-  // donner l'impression que toute la page recharge.
+  // donner l'impression que toute la page recharge. La structure ci-dessous
+  // reproduit exactement celle du contenu réel (même largeur max-w-7xl,
+  // même sidebar de services, même disposition 2 colonnes) pour éviter tout
+  // saut de mise en page quand les données arrivent.
   if (pricesLoading && countries.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-300">
-        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 mb-8 shadow-sm">
-          <div className="flex items-start gap-4">
-             <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse shrink-0"></div>
-             <div className="flex-1 w-full">
-               <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-               <div className="h-[46px] max-w-sm bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse mb-3"></div>
-               <div className="h-2 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
-             </div>
+      <div className="max-w-7xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-300">
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
+          {/* Sélecteur de service */}
+          <div className="w-full md:w-56 shrink-0 flex flex-col gap-2">
+            {SMS_SERVICES.map((s) => (
+              <div key={s.id} className="h-[46px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+            ))}
           </div>
-        </div>
 
-        <div className="space-y-6">
-           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm">
-              <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-              <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-8"></div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6 items-end">
-                 <div>
-                    <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-                    <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-                 </div>
-                 <div>
-                    <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-                    <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-                 </div>
+          <div className="flex-1 flex flex-col md:flex-row gap-6">
+            <div className="flex-1 space-y-6">
+              {/* Carte fusionnée : service actif + Étape 1 */}
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse shrink-0"></div>
+                  <div>
+                    <div className="h-4 w-24 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse mb-2"></div>
+                    <div className="h-5 w-40 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                  </div>
+                </div>
+
+                <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+                <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-6"></div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6 items-end">
+                   <div>
+                      <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                      <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                   </div>
+                   <div>
+                      <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                      <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                   </div>
+                </div>
               </div>
-           </div>
 
-           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm opacity-70">
-              <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-              <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-8"></div>
+              {/* Étape 2 */}
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm opacity-50">
+                <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+                <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-6"></div>
 
-              <div className="flex flex-col md:flex-row gap-4 items-end">
-                 <div className="flex-1 w-full">
-                    <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-                    <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-                 </div>
-                 <div className="w-full md:w-auto">
-                    <div className="h-[54px] w-full md:w-40 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-                 </div>
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                   <div className="flex-1 w-full">
+                      <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                      <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                   </div>
+                </div>
               </div>
-           </div>
+            </div>
 
-           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm opacity-50">
-              <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-              <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-8"></div>
+            {/* Étape 3 */}
+            <div className="flex-1">
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm opacity-50 h-full">
+                <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+                <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-6"></div>
 
-              <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-              <div className="h-[68px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-           </div>
+                <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                <div className="h-[68px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -496,8 +509,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     <div className="max-w-7xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-500">
 
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        {/* Sélecteur de service — vertical */}
-        <div className="w-full md:w-56 shrink-0 flex flex-col gap-2">
+        {/* Sélecteur de service — vertical, étiré sur toute la hauteur des colonnes voisines */}
+        <div className="w-full md:w-56 shrink-0 flex flex-col gap-2 md:h-auto">
           {SMS_SERVICES.map((s) => {
             const active = s.id === selectedService;
             return (
@@ -505,7 +518,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                 key={s.id}
                 onClick={() => { if (s.id !== selectedService) setSelectedService(s.id); }}
                 disabled={loading}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border disabled:opacity-50 text-left ${
+                className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border disabled:opacity-50 text-left ${
                   active
                     ? 'bg-primary text-white dark:text-gray-900 border-primary shadow-sm'
                     : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary/50'
