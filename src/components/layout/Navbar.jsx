@@ -46,7 +46,10 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
         <button onClick={() => navigate('sms')} className={linkCls(currentView === 'sms')}>{t('sms')}</button>
         <button onClick={() => navigate('proxy')} className={linkCls(currentView === 'proxy')}>{t('proxy')}</button>
         {session && (
-          <button onClick={() => navigate('dashboard')} className={linkCls(currentView === 'dashboard')}>{t('myOrders')}</button>
+          <>
+            <button onClick={() => navigate('proxies')} className={linkCls(currentView === 'proxies')}>{lang === 'fr' ? 'Mes proxies' : 'My proxies'}</button>
+            <button onClick={() => navigate('dashboard')} className={linkCls(currentView === 'dashboard')}>{t('myOrders')}</button>
+          </>
         )}
       </nav>
 
@@ -122,9 +125,10 @@ const Navbar = ({ cartTotal, cartCount, navigate, session, profile, currentView,
             {t('proxy')}
           </button>
           {session && (
-            <button onClick={() => { setIsMobileMenuOpen(false); navigate('dashboard'); }} className={`text-left p-2 rounded-lg ${currentView === 'dashboard' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300'}`}>
-              {t('myOrders')}
-            </button>
+            <>
+              <button onClick={() => { setIsMobileMenuOpen(false); navigate('proxies'); }} className={`text-left p-2 rounded-lg ${currentView === 'proxies' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300'}`}>{lang === 'fr' ? 'Mes proxies' : 'My proxies'}</button>
+              <button onClick={() => { setIsMobileMenuOpen(false); navigate('dashboard'); }} className={`text-left p-2 rounded-lg ${currentView === 'dashboard' ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-300'}`}>{t('myOrders')}</button>
+            </>
           )}
 
           {/* Sélecteur de langue — vit ici sur mobile pour libérer la barre du haut */}

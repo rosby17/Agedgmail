@@ -1,6 +1,6 @@
 import { netProfitOf, orderSupplierCost } from '../utils/helpers';
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Server, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 import { ADMIN_EMAIL, CATEGORIES, GROUP_LABELS, GROUP_ORDER, AVATAR_COLORS, JUNK_CATEGORIES, SUPPLIERS, API_BASE_URL } from '../utils/constants';
@@ -34,6 +34,7 @@ import RecentActivityTable from './admin/RecentActivityTable';
 import ClientManagement from './admin/ClientManagement';
 import FinanceCard from './admin/FinanceCard';
 import FinancialDetailsModal from './admin/FinancialDetailsModal';
+import ProxyManagementAdmin from './admin/ProxyManagementAdmin';
 
 const AdminView = ({
   session, profile, navigate, products, fetchProducts, allOrders, fetchAllOrders, allUsers, fetchUsers,
@@ -42,7 +43,7 @@ const AdminView = ({
   // Sous-route de la console admin : /app/admin/<tab> (ex: /app/admin/orders).
   // Lue depuis l'URL en priorité (permet de partager/recharger un lien direct
   // vers un onglet précis), puis le dernier onglet visité en fallback.
-  const ADMIN_TABS = ['dashboard', 'orders', 'deposits', 'users', 'support', 'supplier', 'sms-supply', 'stock'];
+  const ADMIN_TABS = ['dashboard', 'orders', 'proxies', 'deposits', 'users', 'support', 'supplier', 'sms-supply', 'stock'];
   const tabFromPath = () => {
     const parts = window.location.pathname.replace(/^\/+/, '').split('/');
     // parts = ['app', 'admin', '<tab>?']
@@ -258,6 +259,7 @@ const AdminView = ({
             {[
               { id: 'dashboard', label: lang === 'fr' ? "Vue d'ensemble" : "Overview", icon: LayoutDashboard },
               { id: 'orders', label: lang === 'fr' ? "Commandes" : "Orders", icon: FileText },
+              { id: 'proxies', label: lang === 'fr' ? "Proxies vendus" : "Sold proxies", icon: Server },
               { id: 'deposits', label: 'Dépôts / Recharges', icon: Wallet },
               { id: 'users', label: lang === 'fr' ? "Clients" : "Client Management", icon: Users },
               { id: 'support', label: 'Support / Chat', icon: MessageCircle },
@@ -467,6 +469,7 @@ const AdminView = ({
           </div>
         )}
           {activeTab === 'orders' && <OrdersAdmin allOrders={allOrders} fetchAllOrders={fetchAllOrders} lang={lang} loading={dataLoading} />}
+          {activeTab === 'proxies' && <ProxyManagementAdmin orders={allOrders} />}
 
           {activeTab === 'users' && (
             <ClientManagement allUsers={allUsers} allOrders={allOrders} fetchUsers={fetchUsers} loading={dataLoading} />

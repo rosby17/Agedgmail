@@ -15,6 +15,7 @@ import { TypewriterText } from './components/ui/TypewriterText';
 import LandingView from './views/LandingView';
 import SmsView from './views/SmsView';
 import ProxyView from './views/ProxyView';
+import ProxyManagementView from './views/ProxyManagementView';
 import ApiView from './views/ApiView';
 import PoliciesView from './views/PoliciesView';
 import AuthView from './views/AuthView';
@@ -548,6 +549,7 @@ function App() {
         <KeepAlive show={currentView === 'landing'}><LandingView navigate={navigate} session={session} products={products} setSelectedProduct={setSelectedProduct} lang={lang} setLang={setLang} /></KeepAlive>
         <KeepAlive show={currentView === 'sms'}><SmsView session={session} sessionChecked={sessionChecked} profile={profile} lang={lang} navigate={navigate} fetchProfile={fetchProfile} /></KeepAlive>
         <KeepAlive show={currentView === 'proxy'}><ProxyView session={session} profile={profile} lang={lang} navigate={navigate} t={t} fetchProfile={fetchProfile} /></KeepAlive>
+        <KeepAlive show={currentView === 'proxies'}><ProxyManagementView orders={orders} session={session} sessionChecked={sessionChecked} navigate={navigate} /></KeepAlive>
         <KeepAlive show={currentView === 'shop'}><HomeView activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeCategory={activeCategory} setActiveCategory={setActiveCategory} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredProducts={filteredProducts} addToCart={addToCart} navigate={navigate} setSelectedProduct={setSelectedProduct} onBuyNow={setQuickOrderProduct} groups={productGroups} subCategories={productSubCategories} groupOf={categoryVisual} lang={lang} t={t} loading={productsLoading} /></KeepAlive>
         <KeepAlive show={currentView === 'product' && !!selectedProduct}>
           {selectedProduct && <ProductView product={selectedProduct} addToCart={addToCart} navigate={navigate} onCartClick={() => setCartOpen(true)} onBuyNow={setQuickOrderProduct} lang={lang} />}

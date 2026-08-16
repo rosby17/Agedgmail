@@ -4,10 +4,10 @@
 // seul et unique endroit qui connaît cette règle : navigate(), le parsing
 // d'URL au montage et le handler popstate s'appuient tous dessus pour ne
 // jamais diverger entre eux.
-export const APP_VIEWS = new Set(['dashboard', 'recharge', 'settings', 'admin', 'sms', 'proxy', 'api']);
+export const APP_VIEWS = new Set(['dashboard', 'recharge', 'settings', 'admin', 'sms', 'proxy', 'proxies', 'api']);
 // Anciens chemins (avant l'introduction de /app) encore potentiellement en
 // dur dans des emails déjà envoyés ou des favoris clients -> redirigés.
-export const LEGACY_APP_PATH_TO_VIEW = { myorders: 'dashboard', recharge: 'recharge', settings: 'settings', admin: 'admin', sms: 'sms', proxy: 'proxy', api: 'api' };
+export const LEGACY_APP_PATH_TO_VIEW = { myorders: 'dashboard', recharge: 'recharge', settings: 'settings', admin: 'admin', sms: 'sms', proxy: 'proxy', proxies: 'proxies', api: 'api' };
 
 /** Nom de vue interne -> chemin d'URL public (sans le slash de tête). */
 export function viewToUrlPath(viewName) {
