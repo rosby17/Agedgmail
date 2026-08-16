@@ -1,6 +1,6 @@
 import { shortOrderId } from '../utils/helpers';
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
+import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, Globe2, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 import { ADMIN_EMAIL, CATEGORIES, GROUP_LABELS, GROUP_ORDER, AVATAR_COLORS, JUNK_CATEGORIES, SUPPLIERS, API_BASE_URL } from '../utils/constants';
@@ -37,6 +37,7 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
   }, [sessionChecked, session, navigate]);
   const [viewOrder, setViewOrder] = useState(null);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [orderSection, setOrderSection] = useState('gmail');
   // Initialise la checkbox depuis le profil
   const [sendEmailAll, setSendEmailAll] = useState(profile?.send_email_on_delivery ?? true);
 
@@ -55,8 +56,16 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(orders.length / itemsPerPage);
-  const displayOrders = orders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const sectionOf = (order) => {
+    if (order.product_id === 999 || order.product_id === 998) return 'recharge';
+    if (order.delivery_data?.type === 'static_proxy' || /proxy/i.test(order.product_name || '')) return 'proxy';
+    if (order.delivery_data?.number || order.delivery_data?.sms || /\bsms\b|phone number/i.test(order.product_name || '')) return 'sms';
+    return 'gmail';
+  };
+  const sectionOrders = orders.filter(order => sectionOf(order) === orderSection);
+  const totalPages = Math.ceil(sectionOrders.length / itemsPerPage);
+  const displayOrders = sectionOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  React.useEffect(() => setPage(1), [orderSection]);
 
   // Parse les options d'un nom de produit YTSeller :
   // "Gmail Accounts 2FA/ BACKUP CODE/ APP PASSWORD (3 Months)" → baseName + options
@@ -201,6 +210,20 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
         </div>
       </div>
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {[
+          ['gmail', 'Mes Gmail', Mail],
+          ['proxy', 'Mes proxies', Globe2],
+          ['sms', 'Mes SMS', Smartphone],
+          ['recharge', 'Recharges', Wallet],
+        ].map(([id, label, Icon]) => {
+          const count = orders.filter(order => sectionOf(order) === id).length;
+          return <button key={id} onClick={() => setOrderSection(id)} className={`min-h-20 px-4 rounded-2xl border flex items-center gap-3 text-left transition ${orderSection === id ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/10' : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-300 hover:border-primary/50'}`}>
+            <Icon size={20} className="shrink-0" /><span><span className="block text-sm font-black">{label}</span><span className="block text-xs opacity-60 mt-0.5">{count} commande{count > 1 ? 's' : ''}</span></span>
+          </button>;
+        })}
+      </div>
+
       <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 shadow-soft">
         {/* Barre d'options */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -213,11 +236,12 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
             />
             <span>{t('emailDeliveryOptIn')}</span>
           </label>
+          {orderSection === 'proxy' && <button onClick={() => navigate('proxies')} className="h-10 px-4 rounded-xl bg-primary text-gray-950 text-xs font-black flex items-center gap-2"><Globe2 size={15} /> Gérer mes proxies</button>}
         </div>
 
         {loading ? (
           <div className="py-4"><SkeletonRows rows={5} cols={6} /></div>
-        ) : orders.length === 0 ? (
+        ) : sectionOrders.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 dark:bg-slate-800 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-700">
             <p className="text-gray-400 dark:text-gray-500 font-bold">{t('noOrders')}</p>
           </div>
