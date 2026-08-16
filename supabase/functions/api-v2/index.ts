@@ -17,7 +17,7 @@
 // ============================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { applyMargin } from '../_shared/sms-pricing.ts'
+import { aliasForProvider, applyMargin, providerForAlias } from '../_shared/sms-pricing.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -32,7 +32,8 @@ const admin = () => createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.ge
 // Statut interne -> statut style panel
 function mapStatus(s: string | null): string {
   switch (s) {
-    case 'confirmed': return 'Completed'
+    case 'confirmed':
+    case 'delivered': return 'Completed'
     case 'cancelled': return 'Canceled'
     case 'processing': return 'Processing'
     default: return 'Pending'
@@ -109,8 +110,10 @@ serve(async (req) => {
 
     // Authentification par clé API
     const { data: keyRow } = await db
-      .from('api_keys').select('user_id, active').eq('api_key', key).maybeSingle()
-    if (!keyRow || !keyRow.active) return json({ error: 'Clé API invalide' }, 401)
+      .from('api_keys').select('user_id, active, expires_at').eq('api_key', key).maybeSingle()
+    if (!keyRow || !keyRow.active || (keyRow.expires_at && new Date(keyRow.expires_at) <= new Date())) {
+      return json({ error: 'Clé API invalide ou expirée' }, 401)
+    }
     const userId = keyRow.user_id
     db.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('api_key', key).then(() => {})
 
@@ -218,7 +221,7 @@ serve(async (req) => {
       const { data: order } = await db
         .from('orders').select('id, status, credentials, data, user_id').eq('id', orderId).maybeSingle()
       if (!order || order.user_id !== userId) return json({ error: 'Commande introuvable' }, 404)
-      if (order.status !== 'confirmed') return json({ result: [], status: mapStatus(order.status) })
+      if (!['confirmed', 'delivered'].includes(order.status)) return json({ result: [], status: mapStatus(order.status) })
       const raw = order.credentials || order.data || ''
       const result = String(raw).split('\n').map((l) => l.trim()).filter(Boolean)
       return json({ result })
@@ -290,7 +293,7 @@ serve(async (req) => {
           country: c.country,
           iso: c.iso,
           rate: applyMargin(c.price),
-          provider: c.provider,
+          provider: aliasForProvider(c.provider),
         }))
       return json(list)
     }
@@ -308,7 +311,7 @@ serve(async (req) => {
 
       const iso = params.iso || 'US'
       const service = params.service || 'youtube'
-      const provider = params.provider || 'pvapins'
+      const provider = providerForAlias(params.provider || 'p1')
 
       const { price: sellingPrice, cost: supplierCost, app: pvaApp } = await getSmsPrice(iso, provider)
 
@@ -390,9 +393,9 @@ serve(async (req) => {
       const { data: order } = await db.from('orders').select('*').eq('id', orderId).maybeSingle()
       if (!order || order.user_id !== userId) return json({ error: 'Commande introuvable' }, 404)
 
-      if (order.status === 'confirmed') {
+      if (['confirmed', 'delivered'].includes(order.status)) {
         const credentialsText = order.credentials || order.data || ''
-        let code = ''
+        let code = order.delivery_data?.code || ''
         if (credentialsText.includes('SMS Code:')) {
           code = credentialsText.split('SMS Code:')[1].split('\n')[0].trim()
         }
@@ -483,7 +486,7 @@ serve(async (req) => {
       const { data: order } = await db.from('orders').select('*').eq('id', orderId).maybeSingle()
       if (!order || order.user_id !== userId) return json({ error: 'Commande introuvable' }, 404)
 
-      if (order.status === 'confirmed') return json({ error: 'Impossible d\'annuler une commande déjà complétée' }, 400)
+      if (['confirmed', 'delivered'].includes(order.status)) return json({ error: 'Impossible d\'annuler une commande déjà complétée' }, 400)
       if (order.status === 'cancelled') return json({ status: 'Canceled' })
 
       await db.from('orders').update({ status: 'cancelled' }).eq('id', orderId)
