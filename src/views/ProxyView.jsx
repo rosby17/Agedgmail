@@ -61,17 +61,13 @@ function CountrySelect({ areas, value, onChange }) {
   </div>;
 }
 
-function AttributeSelect({ label, value, options, onChange }) {
-  return <label className="block">
-    <span className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">{label}</span>
-    <span className="relative block">
-      <select value={value} onChange={event => onChange(event.target.value)} className="appearance-none w-full h-14 px-4 pr-11 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition">
-        {options.map(option => <option key={option} value={option}>{option}</option>)}
-      </select>
-      <ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
-    </span>
-  </label>;
-}
+const areaLabel = area => {
+  if (area.ip_version === 'IPv6') return 'IPv6 Datacenter';
+  if (/niche/i.test(area.region)) return 'IPv4 Promotionnelle';
+  if (/zone [cd]/i.test(area.region)) return 'IPv4 Spécialisée';
+  if (/residential/i.test(area.region)) return area.ip_type === 'STATIC_ISP_PRO' ? 'ISP Pro' : 'ISP Résidentielle';
+  return 'IPv4 Standard';
+};
 
 export default function ProxyView({ navigate, session, profile, lang, fetchProfile }) {
   const fr = lang === 'fr';
@@ -80,8 +76,6 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
   const [enabled, setEnabled] = useState(false);
   const [type, setType] = useState('STATIC_DATACENTER');
   const [countryCode, setCountryCode] = useState('');
-  const [region, setRegion] = useState('');
-  const [ipVersion, setIpVersion] = useState('');
   const [areaId, setAreaId] = useState('');
   const [days, setDays] = useState(30);
   const [quantity, setQuantity] = useState(1);
@@ -100,9 +94,6 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
   const typeList = useMemo(() => [...new Set(areas.map(a => a.ip_type))].filter(t => TYPES[t]), [areas]);
   const filteredAreas = useMemo(() => areas.filter(a => a.ip_type === type), [areas, type]);
   const countryAreas = useMemo(() => filteredAreas.filter(a => a.country_code === countryCode), [filteredAreas, countryCode]);
-  const regions = useMemo(() => [...new Set(countryAreas.map(a => a.region))], [countryAreas]);
-  const regionAreas = useMemo(() => countryAreas.filter(a => a.region === region), [countryAreas, region]);
-  const versions = useMemo(() => [...new Set(regionAreas.map(a => a.ip_version))], [regionAreas]);
   const area = areas.find(a => a.id === areaId);
   const plan = plans.find(p => p.Id === planId) || plans[0];
 
@@ -122,14 +113,8 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
     if (!filteredAreas.some(a => a.country_code === countryCode)) setCountryCode(filteredAreas[0]?.country_code || '');
   }, [filteredAreas, countryCode]);
   useEffect(() => {
-    if (!countryAreas.some(a => a.region === region)) setRegion(countryAreas[0]?.region || '');
-  }, [countryAreas, region]);
-  useEffect(() => {
-    if (!regionAreas.some(a => a.ip_version === ipVersion)) setIpVersion(regionAreas[0]?.ip_version || '');
-  }, [regionAreas, ipVersion]);
-  useEffect(() => {
-    setAreaId(regionAreas.find(a => a.ip_version === ipVersion)?.id || '');
-  }, [regionAreas, ipVersion]);
+    if (!countryAreas.some(a => a.id === areaId)) setAreaId(countryAreas[0]?.id || '');
+  }, [countryAreas, areaId]);
   useEffect(() => {
     if (mode !== 'static' || !areaId) { setQuote(null); return undefined; }
     let active = true;
@@ -191,9 +176,14 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
             <h2 className="font-black mb-5">2. Configurez votre commande</h2>
             <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Pays</label>
             <CountrySelect areas={filteredAreas} value={countryCode} onChange={setCountryCode} />
-            <div className="grid sm:grid-cols-2 gap-4 mb-6">
-              <AttributeSelect label="Zone" value={region} options={regions} onChange={setRegion} />
-              <AttributeSelect label="Version IP" value={ipVersion} options={versions} onChange={setIpVersion} />
+            <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Type d’IP et zone</label>
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+              {countryAreas.map(option => <button type="button" key={option.id} onClick={() => setAreaId(option.id)} className={`relative min-h-24 p-4 rounded-2xl border text-left transition ${areaId === option.id ? 'border-primary bg-primary/5 ring-2 ring-primary/10' : 'border-gray-200 dark:border-slate-700 hover:border-primary/50'}`}>
+                {areaId === option.id && <Check size={15} className="absolute right-3 top-3 text-primary" />}
+                <span className="block text-sm font-black pr-5">{areaLabel(option)}</span>
+                <span className="block text-xs text-gray-500 dark:text-slate-400 mt-1">{option.region} · {option.ip_version}</span>
+                <span className="block text-sm font-black text-primary mt-2">${option.display_price}<span className="text-[10px] text-gray-400 font-bold"> / IP</span></span>
+              </button>)}
             </div>
             <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Durée</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">{DURATIONS.map(value => <button key={value} onClick={() => setDays(value)} className={`h-12 rounded-xl border text-sm font-bold ${days === value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 dark:border-slate-700'}`}>{value} jours</button>)}</div>
