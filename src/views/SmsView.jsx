@@ -450,42 +450,40 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
           </div>
 
           <div className="flex-1 flex flex-col md:flex-row gap-6">
-            <div className="flex-1 space-y-6">
-              {/* Carte fusionnée : service actif + Étape 1 */}
+            <div className="flex-1">
+              {/* Carte unifiée : rail numéroté + Étapes 1 et 2 */}
               <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse shrink-0"></div>
-                  <div>
-                    <div className="h-4 w-24 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse mb-2"></div>
-                    <div className="h-5 w-40 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                <div className="flex gap-4 md:gap-5">
+                  <div className="hidden sm:flex flex-col items-center shrink-0 pt-1">
+                    <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 animate-pulse shrink-0"></div>
+                    <div className="w-0.5 flex-1 my-1 min-h-[72px] bg-gray-100 dark:bg-gray-800"></div>
+                    <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 animate-pulse shrink-0"></div>
                   </div>
-                </div>
 
-                <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-                <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-6"></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="h-4 w-36 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                      <div className="h-5 w-20 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse"></div>
+                    </div>
+                    <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-6"></div>
 
-                <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6 items-end">
-                   <div>
-                      <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-                      <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-                   </div>
-                   <div>
-                      <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-                      <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-                   </div>
-                </div>
-              </div>
+                    <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4 items-end">
+                       <div>
+                          <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                          <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                       </div>
+                       <div>
+                          <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                          <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                       </div>
+                    </div>
 
-              {/* Étape 2 */}
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm opacity-50">
-                <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-                <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-6"></div>
-
-                <div className="flex flex-col md:flex-row gap-4 items-end">
-                   <div className="flex-1 w-full">
-                      <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-                      <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-                   </div>
+                    <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 opacity-50">
+                      <div className="h-4 w-40 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
+                      <div className="h-3 w-56 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-4"></div>
+                      <div className="h-3 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -539,10 +537,11 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
         {/* Colonne de gauche (Étapes 1+2) + colonne de droite (Étape 3) */}
         <div className="flex-1 flex flex-col md:flex-row gap-6">
-        <div className="flex-1 space-y-6">
-        {/* Service actif fusionné avec l'étape 1 : plus besoin de descendre
-            pour voir le sélecteur de pays, le logo n'apparaît qu'une fois
-            en plus de celui déjà dans la barre de gauche. */}
+        <div className="flex-1">
+        {/* Carte unifiée "stepper" : les étapes 1 et 2 partagent une même
+            carte reliée par un rail numéroté, au lieu de deux cadres épais
+            redondants. Le badge de service (déjà visible dans la sidebar de
+            gauche) devient une simple pastille discrète à côté du titre. */}
         <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm relative">
           {/* overflow-hidden isolé sur ce calque décoratif uniquement — sur la
               carte entière, ça coupait le menu déroulant du CustomSelect qui
@@ -552,119 +551,123 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
             <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full"></div>
           </div>
 
-          <div className="flex items-center gap-4 mb-6 z-10 relative">
-            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-md border border-gray-100 dark:border-gray-800 p-2.5">
-              <BrandIcon slug={svc.iconSlug} color={svc.iconColor} />
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-1">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                {isFr ? 'Service Actif' : 'Active Service'}
-              </div>
-              <h2 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">{isFr ? svc.labelFr : svc.labelEn} Verification</h2>
-            </div>
-          </div>
-
           {error && !errorKind && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 mb-6 shadow-sm z-10 relative">
               <AlertCircle size={20} className="shrink-0" /> <span className="flex-1">{error}</span>
             </div>
           )}
 
-          <h3 className="text-sm font-black text-gray-900 dark:text-white mb-2 uppercase tracking-widest z-10 relative">
-            {isFr ? 'Étape 1 - Sélecteur de pays' : 'STEP ONE - SELECT THE COUNTRY'}
-          </h3>
-          <p className="text-gray-500 text-sm mb-6 z-10 relative">
-            {isFr ? 'Après avoir sélectionné le pays, le prix du SMS s\'affichera.' : 'After selecting the country the price of the SMS message will be displayed.'}
-          </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6 items-end">
-               <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Pays du numéro' : 'Phone Number Country'}</label>
-                  <CustomSelect
-                    value={selectedCountry}
-                    onChange={handleCountryChange}
-                    disabled={pricesLoading || loading}
-                    placeholder={isFr ? '-- Choisir un pays --' : '-- Choose a country --'}
-                    options={countries.map(c => ({ value: c.Iso, label: `${c.Country} (${c.Iso})` }))}
-                  />
-               </div>
-               <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Prix du SMS ($)' : 'Price $ per SMS'}</label>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3.5 border border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                    <span className="font-black text-gray-900 dark:text-white">${currentPrice.toFixed(2)}</span>
-                    {pricesLoading && <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />}
-                  </div>
-               </div>
+          <div className="flex gap-4 md:gap-5 z-10 relative">
+            {/* Rail numéroté reliant les étapes */}
+            <div className="hidden sm:flex flex-col items-center shrink-0 pt-1">
+              <div className="w-7 h-7 rounded-full bg-primary text-white dark:text-gray-900 text-xs font-black flex items-center justify-center shrink-0">1</div>
+              <div className={`w-0.5 flex-1 my-1 min-h-[72px] transition-colors duration-300 ${selectedCountry ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+              <div className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 border-2 transition-colors duration-300 ${selectedCountry ? 'bg-primary text-white dark:text-gray-900 border-primary' : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600'}`}>2</div>
             </div>
-        </div>
 
-         {/* Step 2: Use the Number */}
-         <div className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm transition-all duration-300 ${(!selectedCountry) ? 'opacity-50 grayscale-[20%]' : 'opacity-100'}`}>
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="text-sm font-black text-gray-900 dark:text-white mb-2 uppercase tracking-widest">
-                  {isFr ? 'Étape 2 - Numéro de téléphone' : 'STEP TWO - PHONE NUMBER'}
+            <div className="flex-1 min-w-0">
+              {/* Étape 1 */}
+              <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
+                <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+                  {isFr ? 'Choisis le pays' : 'Choose the country'}
                 </h3>
-                <p className="text-gray-500 text-sm max-w-xl">
-                  {isFr ? 'Utilisez ce numéro de téléphone pour déclencher l\'envoi du code de vérification.' : 'Use this phone number to trigger the sending of the verification code.'}
-                </p>
+                <span className="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded-full shrink-0">
+                  <span className="w-4 h-4 rounded-full overflow-hidden bg-white flex items-center justify-center p-0.5">
+                    <BrandIcon slug={svc.iconSlug} color={svc.iconColor} />
+                  </span>
+                  {isFr ? svc.labelFr : svc.labelEn}
+                </span>
               </div>
-            </div>
+              <p className="text-gray-500 text-sm mb-5">
+                {isFr ? 'Après avoir sélectionné le pays, le prix du SMS s\'affichera.' : 'After selecting the country the price of the SMS message will be displayed.'}
+              </p>
 
-            {!selectedCountry ? (
-              <div className="text-center py-6 text-yellow-600 dark:text-yellow-400 font-bold bg-yellow-50/50 dark:bg-yellow-950/10 rounded-2xl border border-dashed border-yellow-200/50 dark:border-yellow-900/20">
-                {isFr ? "⚠️ Veuillez d'abord sélectionner un pays à l'étape 1" : "⚠️ Please select a country in step 1 first"}
-              </div>
-            ) : errorKind && !phoneNumber && !loading ? (
-              // Message clair à la place du numéro (jamais de jargon technique
-              // ni de nom de fournisseur) : solde / pays indisponible / technique.
-              <div className={`rounded-2xl p-5 flex items-start gap-3 border animate-in fade-in duration-300 ${
-                errorKind === 'balance'
-                  ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-400'
-                  : errorKind === 'unavailable'
-                  ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-900/30 text-orange-700 dark:text-orange-400'
-                  : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400'
-              }`}>
-                <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-bold text-sm">{error}</p>
-                  {errorKind === 'balance' && (
-                    <button onClick={() => navigate('recharge')} className="mt-3 text-xs font-black uppercase tracking-widest underline hover:no-underline">
-                      {isFr ? 'Recharger mon solde →' : 'Top up my balance →'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col md:flex-row gap-4 items-end animate-in fade-in slide-in-from-bottom-2 duration-300">
-                 <div className="flex-1 w-full">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Numéro de téléphone' : 'Phone Number'}</label>
-                    <div className="relative group">
-                      <input 
-                        type="text" 
-                        readOnly 
-                        value={phoneNumber || (loading ? (isFr ? 'Génération du numéro en cours...' : 'Generating number...') : '')} 
-                        placeholder={isFr ? "Génération automatique..." : "Automatic generation..."} 
-                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-base md:text-lg font-mono font-bold tracking-tight text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-colors group-hover:border-primary/30 truncate"
-                      />
-                      {phoneNumber && (
-                         <button onClick={() => copyToClipboard(phoneNumber)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors">
-                           <Copy size={18} />
-                         </button>
-                      )}
+              <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4 items-end">
+                 <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Pays du numéro' : 'Phone Number Country'}</label>
+                    <CustomSelect
+                      value={selectedCountry}
+                      onChange={handleCountryChange}
+                      disabled={pricesLoading || loading}
+                      placeholder={isFr ? '-- Choisir un pays --' : '-- Choose a country --'}
+                      options={countries.map(c => ({ value: c.Iso, label: `${c.Country} (${c.Iso})` }))}
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Prix du SMS ($)' : 'Price $ per SMS'}</label>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3.5 border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                      <span className="font-black text-gray-900 dark:text-white">${currentPrice.toFixed(2)}</span>
+                      {pricesLoading && <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />}
                     </div>
                  </div>
-                 <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
-                    {(status === 'WAITING_SMS' || status === 'COMPLETED') && (
-                      <button onClick={cancelRequest} className="w-full md:w-auto bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold py-3.5 px-8 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-red-500 dark:hover:text-red-400 transition-colors h-[54px]">
-                        {isFr ? 'Annuler' : 'Cancel / Refund'}
-                      </button>
-                    )}
-                 </div>
               </div>
-            )}
-         </div>
+
+              {/* Étape 2 : pliée dans la même carte, atténuée tant que le pays
+                  n'est pas choisi — pas de second cadre redondant. */}
+              <div className={`mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 transition-opacity duration-300 ${(!selectedCountry) ? 'opacity-50' : 'opacity-100'}`}>
+                <h3 className="text-sm font-black text-gray-900 dark:text-white mb-1 uppercase tracking-widest">
+                  {isFr ? 'Numéro de téléphone' : 'Phone number'}
+                </h3>
+                <p className="text-gray-500 text-sm mb-4 max-w-xl">
+                  {isFr ? 'Utilisez ce numéro de téléphone pour déclencher l\'envoi du code de vérification.' : 'Use this phone number to trigger the sending of the verification code.'}
+                </p>
+
+                {!selectedCountry ? (
+                  <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">
+                    {isFr ? "Sélectionne d'abord un pays ci-dessus." : "Select a country above first."}
+                  </p>
+                ) : errorKind && !phoneNumber && !loading ? (
+                  // Message clair à la place du numéro (jamais de jargon technique
+                  // ni de nom de fournisseur) : solde / pays indisponible / technique.
+                  <div className={`rounded-2xl p-5 flex items-start gap-3 border animate-in fade-in duration-300 ${
+                    errorKind === 'balance'
+                      ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-400'
+                      : errorKind === 'unavailable'
+                      ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-900/30 text-orange-700 dark:text-orange-400'
+                      : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400'
+                  }`}>
+                    <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">{error}</p>
+                      {errorKind === 'balance' && (
+                        <button onClick={() => navigate('recharge')} className="mt-3 text-xs font-black uppercase tracking-widest underline hover:no-underline">
+                          {isFr ? 'Recharger mon solde →' : 'Top up my balance →'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col md:flex-row gap-4 items-end animate-in fade-in slide-in-from-bottom-2 duration-300">
+                     <div className="flex-1 w-full">
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{isFr ? 'Numéro de téléphone' : 'Phone Number'}</label>
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            readOnly
+                            value={phoneNumber || (loading ? (isFr ? 'Génération du numéro en cours...' : 'Generating number...') : '')}
+                            placeholder={isFr ? "Génération automatique..." : "Automatic generation..."}
+                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 text-base md:text-lg font-mono font-bold tracking-tight text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-colors group-hover:border-primary/30 truncate"
+                          />
+                          {phoneNumber && (
+                             <button onClick={() => copyToClipboard(phoneNumber)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors">
+                               <Copy size={18} />
+                             </button>
+                          )}
+                        </div>
+                     </div>
+                     <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
+                        {(status === 'WAITING_SMS' || status === 'COMPLETED') && (
+                          <button onClick={cancelRequest} className="w-full md:w-auto bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold py-3.5 px-8 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-red-500 dark:hover:text-red-400 transition-colors h-[54px]">
+                            {isFr ? 'Annuler' : 'Cancel / Refund'}
+                          </button>
+                        )}
+                     </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
         </div>
 
         {/* Colonne de droite : Étape 3 */}
