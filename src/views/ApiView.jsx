@@ -1,138 +1,52 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, User, Search, CheckCircle, Headphones, Mail, ShieldAlert, Filter, ChevronRight, ChevronUp, PlayCircle, CircleDollarSign, ArrowLeft, Trash2, LogOut, Plus, Minus, Share2, Copy, ExternalLink, Wallet, Zap, Clock, Info, ShieldCheck, RefreshCcw, ArrowUpDown, CreditCard, History, Settings, LayoutDashboard, Eye, EyeOff, X, Download, MapPin, Shield, Database, Users, TrendingUp, AlertTriangle, AlertCircle, Smartphone, Package, PackageX, DollarSign, Activity, FileText, Trash, MessageCircle, Send, MessageSquare, Upload, Save, Edit, Hash, Sun, Moon, RotateCcw, Ban, UserCheck, Calendar, ShoppingBag, Bell, Menu } from 'lucide-react';
-import { supabase } from '../supabaseClient';
+import React, { useState } from 'react';
+import { AlertTriangle, ArrowRight, BookOpen, Check, ChevronDown, Clipboard, Code2, KeyRound, MessageSquareText, Package, ShieldCheck } from 'lucide-react';
+import { API_BASE_URL } from '../utils/constants';
 
-import { ADMIN_EMAIL, CATEGORIES, GROUP_LABELS, GROUP_ORDER, AVATAR_COLORS, JUNK_CATEGORIES, SUPPLIERS, API_BASE_URL } from '../utils/constants';
-import { categoryName, hashStr, detectFromText, categoryVisual, displayCategoryLabel, cleanProductName, getProductDetails } from '../utils/helpers';
-import { YouTubeLogo, GmailLogo, FacebookIcon, DiscordLogo, InstagramLogo, TwitterLogo, TikTokLogo, AppleLogo, TelegramLogo, SmsLogo, RedditLogo, MailGenericLogo, OutlookLogo, SnapchatLogo, AmazonLogo, GithubLogo } from '../components/ui/Logos';
-import { Skeleton, SkeletonProductCard, SkeletonProductGrid, SkeletonRows, SkeletonMetricCards } from '../components/ui/Skeletons';
-import { TypewriterText } from '../components/ui/TypewriterText';
-import ProductCard from '../components/ui/ProductCard';
-import ProductVisual from '../components/ui/ProductVisual';
-import DeliveredAccountCard from '../components/ui/DeliveredAccountCard';
-import Navbar from '../components/layout/Navbar';
-import Footer from '../components/layout/Footer';
-import CartDrawer from '../components/modals/CartDrawer';
-import CartCheckoutModal from '../components/modals/CartCheckoutModal';
-import QuickOrderModal from '../components/modals/QuickOrderModal';
-import TransferCreditsModal from '../components/modals/TransferCreditsModal';
-import OrderCredentialsModal from '../components/modals/OrderCredentialsModal';
-import NotificationBell from '../components/layout/NotificationBell';
+const groups = [
+  { id: 'catalogue', title: 'Catalogue et compte', icon: Code2, endpoints: [
+    { action: 'balance', title: 'Consulter le solde', description: 'Retourne le crédit disponible sur votre compte.', response: '{\n  "balance": 42.50,\n  "currency": "USD"\n}' },
+    { action: 'products', title: 'Lister les produits', description: 'Retourne le catalogue revendable, vos prix et le stock disponible.', response: '[\n  {\n    "product": 128,\n    "name": "Gmail aged 2018",\n    "category": "gmail",\n    "rate": 6.60,\n    "available": 120,\n    "status": "In stock",\n    "description": "..."\n  }\n]' },
+  ]},
+  { id: 'commandes', title: 'Commandes de produits', icon: Package, endpoints: [
+    { action: 'add_order', alias: 'add_product_order', title: 'Créer une commande', description: 'Débite votre solde et lance la livraison automatique.', limit: '30/minute', params: [['product', 'number', 'Identifiant retourné par products'], ['quantity', 'number', 'Quantité, minimum 1']], response: '{\n  "order": "550e8400-e29b-41d4-a716-446655440000"\n}' },
+    { action: 'order_status', alias: 'product_order_status', title: 'Suivre une commande', description: 'Interrogez toutes les 15 à 30 secondes jusqu’à un état final.', params: [['order', 'string', 'Identifiant de commande']], response: '{\n  "status": "Completed",\n  "charge": "6.60",\n  "currency": "USD"\n}' },
+    { action: 'result', alias: 'result_product', title: 'Récupérer la livraison', description: 'Retourne les lignes livrées lorsque la commande est terminée.', params: [['order', 'string', 'Identifiant de commande']], response: '{\n  "result": [\n    "email:password:recovery"\n  ]\n}' },
+  ]},
+  { id: 'sms', title: 'Vérifications SMS', icon: MessageSquareText, endpoints: [
+    { action: 'sms_prices', title: 'Lister les tarifs SMS', description: 'Retourne les pays disponibles et leurs tarifs.', params: [['service', 'string', 'Optionnel, youtube par défaut']], response: '[\n  {\n    "country": "United States",\n    "iso": "US",\n    "rate": 1.25,\n    "provider": "p1"\n  }\n]' },
+    { action: 'sms_get_number', title: 'Réserver un numéro', description: 'Réserve un numéro. Le prix est débité uniquement à la réception du code.', limit: '15/minute', params: [['iso', 'string', 'Code pays ISO, ex. US'], ['service', 'string', 'Optionnel, youtube par défaut'], ['provider', 'string', 'Identifiant retourné par sms_prices']], response: '{\n  "order": "550e8400-e29b-41d4-a716-446655440000",\n  "number": "+12025550123",\n  "status": "processing"\n}' },
+    { action: 'sms_get_code', title: 'Récupérer le code', description: 'Interrogez toutes les 5 à 10 secondes. Un code reçu reste ensuite accessible.', params: [['order', 'string', 'Identifiant de réservation']], response: '{\n  "status": "Completed",\n  "sms": "482913"\n}' },
+    { action: 'sms_cancel', title: 'Annuler une réservation', description: 'Annule une réservation encore en cours.', params: [['order', 'string', 'Identifiant de réservation']], response: '{\n  "status": "Canceled"\n}' },
+  ]},
+];
 
-// Missing sub-views for Admin
-import SupplierAdmin from './SupplierAdmin';
-import DepositsAdmin from './DepositsAdmin';
-import SupportAdmin from './SupportAdmin';
-import OrdersAdmin from './OrdersAdmin';
-import SettingsTab from './SettingsTab';
-
-const ApiView = ({ navigate, session, lang }) => {
-  const [apiKey, setApiKey] = useState(null);
-  const [loading, setLoading] = useState(false);
+const CodeBlock = ({ children, label = 'JSON' }) => {
   const [copied, setCopied] = useState(false);
+  const copy = async () => { await navigator.clipboard?.writeText(children); setCopied(true); setTimeout(() => setCopied(false), 1300); };
+  return <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[#07101f]"><div className="flex items-center justify-between border-b border-slate-800 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500"><span>{label}</span><button onClick={copy} className="flex items-center gap-1.5 hover:text-white">{copied ? <Check size={13}/> : <Clipboard size={13}/>} {copied ? 'Copié' : 'Copier'}</button></div><pre className="overflow-x-auto p-4 text-xs leading-6 text-slate-200"><code>{children}</code></pre></div>;
+};
 
-  useEffect(() => {
-    if (!session || !supabase) return;
-    supabase.from('api_keys').select('api_key').eq('user_id', session.user.id).eq('active', true)
-      .order('created_at', { ascending: false }).limit(1).maybeSingle()
-      .then(({ data }) => { if (data) setApiKey(data.api_key); });
-  }, [session]);
+const Endpoint = ({ item }) => {
+  const [open, setOpen] = useState(true);
+  const params = item.params || [];
+  const curl = `curl -X POST "${API_BASE_URL}" \\\n+  -H "Content-Type: application/x-www-form-urlencoded" \\\n+  -d "key=YOUR_API_KEY" \\\n+  -d "action=${item.action}"${params.map(([name]) => ` \\\n+  -d "${name}=YOUR_${name.toUpperCase()}"`).join('')}`;
+  return <article id={item.action} className="scroll-mt-28 overflow-hidden rounded-[1.6rem] border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <button onClick={() => setOpen(!open)} className="flex w-full items-start justify-between gap-4 p-6 text-left"><div><div className="mb-2 flex flex-wrap items-center gap-2"><span className="rounded-lg bg-primary/10 px-2.5 py-1 font-mono text-xs font-black text-primary">POST</span><code className="text-sm font-black text-gray-900 dark:text-white">action={item.action}</code>{item.limit && <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">{item.limit}</span>}</div><h3 className="text-lg font-black text-gray-900 dark:text-white">{item.title}</h3><p className="mt-1 text-sm leading-6 text-gray-500 dark:text-slate-400">{item.description}</p>{item.alias && <p className="mt-2 text-xs font-bold text-gray-400">Alias compatible : {item.alias}</p>}</div><ChevronDown size={20} className={`mt-2 shrink-0 text-gray-400 transition ${open ? 'rotate-180' : ''}`}/></button>
+    {open && <div className="grid gap-6 border-t border-gray-100 p-6 dark:border-slate-800 lg:grid-cols-2"><div className="space-y-5"><div><h4 className="mb-3 text-xs font-black uppercase tracking-widest text-gray-400">Paramètres spécifiques</h4>{params.length ? <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-slate-800">{params.map(([name,type,help]) => <div key={name} className="grid grid-cols-[100px_70px_1fr] gap-2 border-b border-gray-100 p-3 text-xs last:border-0 dark:border-slate-800"><code className="font-bold text-primary">{name}</code><span className="text-gray-400">{type}</span><span className="text-gray-500 dark:text-slate-400">{help}</span></div>)}</div> : <p className="rounded-xl bg-gray-50 p-4 text-xs text-gray-500 dark:bg-slate-950/50">Aucun paramètre supplémentaire.</p>}</div><CodeBlock label="Requête cURL">{curl}</CodeBlock></div><div><h4 className="mb-3 text-xs font-black uppercase tracking-widest text-gray-400">Réponse réussie</h4><CodeBlock>{item.response}</CodeBlock></div></div>}
+  </article>;
+};
 
-  const generateKey = async () => {
-    if (!session) { navigate('auth'); return; }
-    setLoading(true);
-    const key = 'ak_' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
-    const { error } = await supabase.from('api_keys').insert({ user_id: session.user.id, api_key: key, label: 'default' });
-    if (!error) setApiKey(key);
-    setLoading(false);
-  };
-
-  const copyKey = () => { if (apiKey) { navigator.clipboard?.writeText(apiKey); setCopied(true); setTimeout(() => setCopied(false), 1500); } };
-
-  const actions = lang === 'fr' ? [
-    ['balance', 'key, action', '{ "balance": 42.5, "currency": "USD" }', 'Vérifiez votre solde revendeur.'],
-    ['products', 'key, action', '[ { "product": 12, "name": "…", "rate": 6.60, "available": 120, "status": "In stock" } ]', 'Lister le catalogue, vos prix et le stock en temps réel.'],
-    ['add_order', 'key, action, product, quantity', '{ "order": 10231 }', 'Passer une commande. Débite votre solde, livraison automatique.'],
-    ['order_status', 'key, action, order', '{ "status": "Completed", "charge": "6.60", "currency": "USD" }', 'Statuts : Pending, Processing, Completed, Canceled.'],
-    ['result', 'key, action, order', '{ "result": ["mail:pass:recovery", "…"] }', 'Récupérer les comptes livrés (une ligne par compte).'],
-  ] : [
-    ['balance', 'key, action', '{ "balance": 42.5, "currency": "USD" }', 'Check your reseller balance.'],
-    ['products', 'key, action', '[ { "product": 12, "name": "…", "rate": 6.60, "available": 120, "status": "In stock" } ]', 'List the catalog, your prices, and real-time stock.'],
-    ['add_order', 'key, action, product, quantity', '{ "order": 10231 }', 'Place an order. Debits your balance, automatic delivery.'],
-    ['order_status', 'key, action, order', '{ "status": "Completed", "charge": "6.60", "currency": "USD" }', 'Statuses: Pending, Processing, Completed, Canceled.'],
-    ['result', 'key, action, order', '{ "result": ["mail:pass:recovery", "…"] }', 'Retrieve delivered accounts (one line per account).'],
-  ];
-
-  return (
-    <div className="max-w-5xl mx-auto px-6 py-16 font-sans">
-      {/* En-tête */}
-      <div className="max-w-3xl mb-12">
-        <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
-          <Zap size={14} /> {lang === 'fr' ? 'API Revendeur' : 'Reseller API'}
-        </div>
-        <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
-          {lang === 'fr' ? 'Revendez notre catalogue ' : 'Resell our catalog '} 
-          <span className="text-primary">{lang === 'fr' ? 'via notre API' : 'via our API'}</span>
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed">
-          {lang === 'fr' 
-            ? 'Intégrez notre catalogue à votre propre boutique. Achetez de manière programmatique, passez vos commandes et livrez vos clients automatiquement, 24/7. Réponses JSON, authentification par clé.' 
-            : 'Integrate our catalog into your own store. Buy programmatically, place your orders, and deliver to your clients automatically, 24/7. JSON responses, key authentication.'}
-        </p>
-      </div>
-
-      {/* Clé API */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] p-8 shadow-soft mb-10">
-        <h2 className="text-lg font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Shield size={18} className="text-primary" /> {lang === 'fr' ? 'Votre Clé API' : 'Your API Key'}
-        </h2>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <p className="text-gray-500 dark:text-gray-400 text-sm flex-grow">
-            {lang === 'fr' 
-              ? 'Votre clé API unique est requise pour authentifier toutes vos requêtes. Pour des raisons de sécurité, vous devez la générer et la copier depuis votre page de Paramètres.' 
-              : 'Your unique API key is required to authenticate all your requests. For security reasons, you must generate and copy it from your Settings page.'}
-          </p>
-          <button onClick={() => navigate('settings?tab=api')} className="bg-primary text-white dark:text-gray-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-primaryDark transition-all shrink-0">
-            {lang === 'fr' ? 'Gérer ma clé API' : 'Manage my API Key'}
-          </button>
-        </div>
-      </div>
-
-      {/* Connexion */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] p-8 shadow-soft mb-10">
-        <h2 className="text-lg font-black text-gray-900 dark:text-white mb-4">{lang === 'fr' ? 'Connexion' : 'Connection'}</h2>
-        <div className="space-y-2 text-sm">
-          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Endpoint</span><code className="text-primary dark:text-primaryLight font-mono break-all">{API_BASE_URL}</code></div>
-          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">{lang === 'fr' ? 'Méthode' : 'Method'}</span><span className="text-gray-700 dark:text-gray-300 font-mono">POST</span></div>
-          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">Content-Type</span><span className="text-gray-700 dark:text-gray-300 font-mono">application/x-www-form-urlencoded</span></div>
-          <div className="flex gap-4"><span className="w-28 text-gray-400 font-bold shrink-0">{lang === 'fr' ? 'Réponse' : 'Response'}</span><span className="text-gray-700 dark:text-gray-300 font-mono">JSON</span></div>
-        </div>
-        <div className="mt-6 bg-gray-900 rounded-2xl p-5 overflow-x-auto">
-          <pre className="text-[12px] text-gray-255 font-mono leading-relaxed">{`curl -X POST ${API_BASE_URL} \\
-  -d "key=YOUR_API_KEY" \\
-  -d "action=products"`}</pre>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] p-8 shadow-soft">
-        <h2 className="text-lg font-black text-gray-900 dark:text-white mb-6">{lang === 'fr' ? 'Actions disponibles' : 'Available actions'}</h2>
-        <div className="space-y-6">
-          {actions.map(([name, params, example, desc]) => (
-            <div key={name} className="border-b border-gray-50 dark:border-slate-800 last:border-0 pb-6 last:pb-0">
-              <div className="flex items-center gap-3 mb-2">
-                <code className="text-primary dark:text-primaryLight font-mono font-black text-sm">action={name}</code>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{desc}</p>
-              <p className="text-xs text-gray-400 mb-3"><span className="font-bold">{lang === 'fr' ? 'Paramètres :' : 'Parameters :'}</span> <code className="font-mono">{params}</code></p>
-              <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
-                <pre className="text-[12px] text-gray-200 font-mono">{example}</pre>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+const ApiView = ({ navigate, session }) => {
+  const firstRequest = `curl -X POST "${API_BASE_URL}" \\\n+  -H "Content-Type: application/x-www-form-urlencoded" \\\n+  -d "key=YOUR_API_KEY" \\\n+  -d "action=products"`;
+  const errors = [['400','Requête invalide','Corriger les paramètres'],['401','Clé invalide ou expirée','Renouveler la clé'],['402','Solde insuffisant','Recharger le compte'],['404','Ressource introuvable','Vérifier l’identifiant'],['409','Stock insuffisant','Actualiser le catalogue'],['429','Limite dépassée','Attendre avec backoff'],['502 / 503','Service indisponible','Réessayer sans dupliquer'],['500','Erreur interne','Contacter le support']];
+  return <div className="mx-auto max-w-7xl px-5 py-12 font-sans sm:px-8 lg:py-16">
+    <header className="mb-10 max-w-4xl"><div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-primary"><BookOpen size={14}/> Documentation API v2</div><h1 className="text-4xl font-black leading-tight text-gray-900 dark:text-white md:text-5xl">Construisez avec l’API <span className="text-primary">AgedGmailYT</span></h1><p className="mt-5 max-w-3xl text-lg leading-8 text-gray-500 dark:text-slate-400">Accédez au catalogue, automatisez vos commandes et recevez des numéros SMS depuis votre propre application. Toutes les réponses sont en JSON.</p></header>
+    <div className="grid items-start gap-8 lg:grid-cols-[220px_minmax(0,1fr)]"><aside className="hidden lg:sticky lg:top-24 lg:block"><nav className="space-y-1 rounded-2xl border border-gray-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">{[['demarrage','Démarrage'],...groups.map(g=>[g.id,g.title]),['erreurs','Erreurs']].map(([id,label])=><a key={id} href={`#${id}`} className="block rounded-xl px-3 py-2.5 text-sm font-bold text-gray-500 transition hover:bg-primary/10 hover:text-primary dark:text-slate-400">{label}</a>)}</nav></aside>
+      <main className="min-w-0 space-y-10"><section id="demarrage" className="scroll-mt-28 space-y-5"><div className="grid gap-4 sm:grid-cols-3">{[['Endpoint',API_BASE_URL],['Transport','POST · HTTPS'],['Corps','Form URL encoded · JSON']].map(([a,b])=><div key={a} className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"><span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{a}</span><p className="mt-2 break-all text-sm font-black text-gray-900 dark:text-white">{b}</p></div>)}</div><div className="rounded-[1.6rem] border border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"><div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h2 className="flex items-center gap-2 text-xl font-black text-gray-900 dark:text-white"><KeyRound className="text-primary" size={20}/> Authentification</h2><p className="mt-2 text-sm leading-6 text-gray-500 dark:text-slate-400">Envoyez <code className="text-primary">key</code> et <code className="text-primary">action</code> dans chaque requête.</p></div><button onClick={()=>session?navigate('settings?tab=api'):navigate('auth')} className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-slate-950">{session?'Gérer mes clés':'Se connecter'} <ArrowRight size={16}/></button></div><CodeBlock label="Première requête">{firstRequest}</CodeBlock></div><div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300"><ShieldCheck size={20} className="shrink-0"/><p><strong>Sécurité :</strong> votre clé doit rester côté serveur. Ne la placez jamais dans le navigateur, une application non sécurisée ou un dépôt Git.</p></div></section>
+        {groups.map(g=><section key={g.id} id={g.id} className="scroll-mt-28 space-y-4"><div><p className="text-xs font-black uppercase tracking-[.2em] text-primary">Référence</p><h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-gray-900 dark:text-white"><g.icon size={22} className="text-primary"/>{g.title}</h2></div>{g.endpoints.map(item=><Endpoint key={item.action} item={item}/>)}</section>)}
+        <section id="erreurs" className="scroll-mt-28 space-y-4"><div><p className="text-xs font-black uppercase tracking-[.2em] text-primary">Référence</p><h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-gray-900 dark:text-white"><AlertTriangle size={22} className="text-primary"/>Erreurs et statuts</h2></div><div className="overflow-x-auto rounded-[1.6rem] border border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900"><table className="w-full min-w-[620px] text-left text-sm"><thead className="bg-gray-50 text-xs uppercase text-gray-400 dark:bg-slate-950/50"><tr><th className="p-4">HTTP</th><th className="p-4">Signification</th><th className="p-4">Action</th></tr></thead><tbody className="divide-y divide-gray-100 dark:divide-slate-800">{errors.map(r=><tr key={r[0]}><td className="p-4 font-mono font-black text-primary">{r[0]}</td><td className="p-4 text-gray-700 dark:text-slate-300">{r[1]}</td><td className="p-4 text-gray-500 dark:text-slate-400">{r[2]}</td></tr>)}</tbody></table></div><CodeBlock label="Format d’erreur">{'{\n  "error": "Description lisible de l’erreur"\n}'}</CodeBlock></section>
+        <footer className="rounded-[1.6rem] bg-gray-900 p-7 text-white dark:bg-slate-900 dark:ring-1 dark:ring-slate-800"><h2 className="text-lg font-black">Besoin d’aide ?</h2><p className="mt-2 text-sm leading-6 text-slate-400">Envoyez l’action, l’heure, le code HTTP et l’identifiant de commande au support. Ne transmettez jamais votre clé API.</p></footer>
+      </main></div>
+  </div>;
 };
 export default ApiView;
