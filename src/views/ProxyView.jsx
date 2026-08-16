@@ -21,8 +21,9 @@ function CountrySelect({ areas, value, onChange }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const root = useRef(null);
-  const selected = areas.find(item => item.id === value);
-  const visible = areas.filter(item => `${item.country} ${item.country_code} ${item.region} ${item.ip_version}`.toLowerCase().includes(search.toLowerCase()));
+  const countries = [...new Map(areas.map(item => [item.country_code, item])).values()];
+  const selected = countries.find(item => item.country_code === value);
+  const visible = countries.filter(item => `${item.country} ${item.country_code}`.toLowerCase().includes(search.toLowerCase()));
 
   useEffect(() => {
     const close = event => { if (!root.current?.contains(event.target)) setOpen(false); };
@@ -36,7 +37,7 @@ function CountrySelect({ areas, value, onChange }) {
       <FlagIcon code={selected?.country_code} />
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-black truncate">{selected?.country || 'Sélectionner un pays'}</span>
-        {selected && <span className="block text-xs text-gray-500 dark:text-slate-400 truncate">{selected.region} · {selected.ip_version}</span>}
+        {selected && <span className="block text-xs text-gray-500 dark:text-slate-400 truncate">{selected.country_code}</span>}
       </span>
       <ChevronDown size={18} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
@@ -48,16 +49,28 @@ function CountrySelect({ areas, value, onChange }) {
         </div>
       </div>
       <div className="max-h-72 overflow-y-auto p-2">
-        {visible.map(item => <button type="button" key={item.id} onClick={() => { onChange(item.id); setOpen(false); setSearch(''); }}
-          className={`w-full px-3 py-3 rounded-xl flex items-center gap-3 text-left transition ${item.id === value ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
+        {visible.map(item => <button type="button" key={item.country_code} onClick={() => { onChange(item.country_code); setOpen(false); setSearch(''); }}
+          className={`w-full px-3 py-3 rounded-xl flex items-center gap-3 text-left transition ${item.country_code === value ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
           <FlagIcon code={item.country_code} />
-          <span className="min-w-0 flex-1"><span className="block text-sm font-bold truncate">{item.country}</span><span className="block text-xs text-gray-500 dark:text-slate-400 truncate">{item.region} · {item.ip_version}</span></span>
-          {item.id === value && <Check size={17} className="shrink-0" />}
+          <span className="min-w-0 flex-1"><span className="block text-sm font-bold truncate">{item.country}</span><span className="block text-xs text-gray-500 dark:text-slate-400">{item.country_code}</span></span>
+          {item.country_code === value && <Check size={17} className="shrink-0" />}
         </button>)}
         {!visible.length && <div className="py-8 text-center text-sm text-gray-400">Aucun pays trouvé</div>}
       </div>
     </div>}
   </div>;
+}
+
+function AttributeSelect({ label, value, options, onChange }) {
+  return <label className="block">
+    <span className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">{label}</span>
+    <span className="relative block">
+      <select value={value} onChange={event => onChange(event.target.value)} className="appearance-none w-full h-14 px-4 pr-11 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition">
+        {options.map(option => <option key={option} value={option}>{option}</option>)}
+      </select>
+      <ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+    </span>
+  </label>;
 }
 
 export default function ProxyView({ navigate, session, profile, lang, fetchProfile }) {
@@ -66,6 +79,9 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
   const [areas, setAreas] = useState([]);
   const [enabled, setEnabled] = useState(false);
   const [type, setType] = useState('STATIC_DATACENTER');
+  const [countryCode, setCountryCode] = useState('');
+  const [region, setRegion] = useState('');
+  const [ipVersion, setIpVersion] = useState('');
   const [areaId, setAreaId] = useState('');
   const [days, setDays] = useState(30);
   const [quantity, setQuantity] = useState(1);
@@ -83,6 +99,10 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
 
   const typeList = useMemo(() => [...new Set(areas.map(a => a.ip_type))].filter(t => TYPES[t]), [areas]);
   const filteredAreas = useMemo(() => areas.filter(a => a.ip_type === type), [areas, type]);
+  const countryAreas = useMemo(() => filteredAreas.filter(a => a.country_code === countryCode), [filteredAreas, countryCode]);
+  const regions = useMemo(() => [...new Set(countryAreas.map(a => a.region))], [countryAreas]);
+  const regionAreas = useMemo(() => countryAreas.filter(a => a.region === region), [countryAreas, region]);
+  const versions = useMemo(() => [...new Set(regionAreas.map(a => a.ip_version))], [regionAreas]);
   const area = areas.find(a => a.id === areaId);
   const plan = plans.find(p => p.Id === planId) || plans[0];
 
@@ -99,8 +119,17 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
   }, []);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (!filteredAreas.some(a => a.id === areaId)) setAreaId(filteredAreas[0]?.id || '');
-  }, [filteredAreas, areaId]);
+    if (!filteredAreas.some(a => a.country_code === countryCode)) setCountryCode(filteredAreas[0]?.country_code || '');
+  }, [filteredAreas, countryCode]);
+  useEffect(() => {
+    if (!countryAreas.some(a => a.region === region)) setRegion(countryAreas[0]?.region || '');
+  }, [countryAreas, region]);
+  useEffect(() => {
+    if (!regionAreas.some(a => a.ip_version === ipVersion)) setIpVersion(regionAreas[0]?.ip_version || '');
+  }, [regionAreas, ipVersion]);
+  useEffect(() => {
+    setAreaId(regionAreas.find(a => a.ip_version === ipVersion)?.id || '');
+  }, [regionAreas, ipVersion]);
   useEffect(() => {
     if (mode !== 'static' || !areaId) { setQuote(null); return undefined; }
     let active = true;
@@ -160,8 +189,12 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
           </div>
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] p-6">
             <h2 className="font-black mb-5">2. Configurez votre commande</h2>
-            <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Pays et région</label>
-            <CountrySelect areas={filteredAreas} value={areaId} onChange={setAreaId} />
+            <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Pays</label>
+            <CountrySelect areas={filteredAreas} value={countryCode} onChange={setCountryCode} />
+            <div className="grid sm:grid-cols-2 gap-4 mb-6">
+              <AttributeSelect label="Zone" value={region} options={regions} onChange={setRegion} />
+              <AttributeSelect label="Version IP" value={ipVersion} options={versions} onChange={setIpVersion} />
+            </div>
             <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Durée</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">{DURATIONS.map(value => <button key={value} onClick={() => setDays(value)} className={`h-12 rounded-xl border text-sm font-bold ${days === value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 dark:border-slate-700'}`}>{value} jours</button>)}</div>
             <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Quantité</label>
