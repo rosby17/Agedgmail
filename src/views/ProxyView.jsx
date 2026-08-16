@@ -178,11 +178,11 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
             <CountrySelect areas={filteredAreas} value={countryCode} onChange={setCountryCode} />
             <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Type d’IP et zone</label>
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
-              {countryAreas.map(option => <button type="button" key={option.id} onClick={() => setAreaId(option.id)} className={`relative min-h-24 p-4 rounded-2xl border text-left transition ${areaId === option.id ? 'border-primary bg-primary/5 ring-2 ring-primary/10' : 'border-gray-200 dark:border-slate-700 hover:border-primary/50'}`}>
+              {countryAreas.map(option => <button type="button" key={option.id} onClick={() => setAreaId(option.id)} className={`relative min-h-28 p-4 rounded-2xl border text-center flex flex-col items-center justify-center transition ${areaId === option.id ? 'border-primary bg-primary/5 ring-2 ring-primary/10' : 'border-gray-200 dark:border-slate-700 hover:border-primary/50'}`}>
                 {areaId === option.id && <Check size={15} className="absolute right-3 top-3 text-primary" />}
-                <span className="block text-sm font-black pr-5">{areaLabel(option)}</span>
-                <span className="block text-xs text-gray-500 dark:text-slate-400 mt-1">{option.region} · {option.ip_version}</span>
-                <span className="block text-sm font-black text-primary mt-2">${option.display_price}<span className="text-[10px] text-gray-400 font-bold"> / IP</span></span>
+                <span className="block text-sm font-black px-4">{areaLabel(option)}{/zone [cd]/i.test(option.region) ? ' 🔥' : ''}</span>
+                <span className="block text-xl font-black text-primary mt-1">${option.display_price}<span className="text-xs font-black">/IP</span></span>
+                <span className="block text-[11px] text-gray-500 dark:text-slate-400 mt-1">{option.region} · {option.ip_version}</span>
               </button>)}
             </div>
             <label className="block text-xs font-black uppercase tracking-wider text-gray-400 mb-2">Durée</label>
