@@ -1,6 +1,6 @@
 // ============================================================
 // _shared/proxy-pricing.ts
-// Tarification proxy résidentiel (IPRoyal) côté serveur + signature du
+// Tarification proxy résidentiel côté serveur + signature du
 // devis. Domaine différent de sms-pricing.ts : un GB est un produit continu
 // (pas un numéro discret), donc pas de bornes/jitter — marge en pourcentage
 // plat. Même principe de sécurité que les numéros SMS : le prix ne doit
@@ -9,23 +9,27 @@
 // ============================================================
 import { hmacHex, timingSafeEqual } from './hmac.ts'
 
-const MARGIN_PCT = 0.30
+const DEFAULT_MARGIN_PCT = 0.30
+const DEFAULT_IPFOXY_COST_PER_GB = 1.30
+const DEFAULT_IPROYAL_COST_PER_GB = 5.31
 
-// Coût de référence ($/GB) : celui du palier "Starter" (2GB) chez IPRoyal —
-// c'est le palier par lequel on démarre réellement (test + premier crédit),
-// donc la marge doit être calculée sur ce vrai coût de départ, pas sur un
-// palier de gros qu'on n'a pas encore atteint. À remonter à $4.69 (Standard)
-// ou $4.37 (Advanced) le jour où le compte est rechargé à ce volume-là.
-const COST_PER_GB = 5.31
-
-export function applyProxyMargin(costPerGb: number = COST_PER_GB): number {
-  return Math.ceil(costPerGb * (1 + MARGIN_PCT) * 100) / 100
+export function proxyCostPerGb(): number {
+  const provider = (Deno.env.get('PROXY_PROVIDER') || 'ipfoxy').toLowerCase()
+  const fallback = provider === 'iproyal' ? DEFAULT_IPROYAL_COST_PER_GB : DEFAULT_IPFOXY_COST_PER_GB
+  const configured = Number(Deno.env.get(`${provider.toUpperCase()}_COST_PER_GB`))
+  return Number.isFinite(configured) && configured > 0 ? configured : fallback
 }
 
-// Paliers revendus au client, calqués sur les paliers IPRoyal eux-mêmes
-// (Starter/Standard/Advanced) pour rester simple à réconcilier avec le coût
-// réel — pas de tarification par pays, le ciblage géographique se fait côté
-// connexion (username_country-xx), pas à l'achat (confirmé dans leur doc).
+export function applyProxyMargin(costPerGb: number = proxyCostPerGb()): number {
+  const configuredMargin = Number(Deno.env.get('PROXY_MARGIN_PCT'))
+  const margin = Number.isFinite(configuredMargin) && configuredMargin >= 0
+    ? configuredMargin / 100
+    : DEFAULT_MARGIN_PCT
+  return Math.ceil(costPerGb * (1 + margin) * 100) / 100
+}
+
+// Le ciblage géographique se fait dans le nom d'utilisateur de connexion,
+// pas au moment de l'achat du trafic.
 export interface ProxyPlan { id: string; gb: number; label: string }
 export const PROXY_PLANS: ProxyPlan[] = [
   { id: 'starter', gb: 2, label: '2 GB' },

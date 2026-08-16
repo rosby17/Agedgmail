@@ -44,15 +44,15 @@ import SupportChatWidget from './components/support/SupportChatWidget';
 function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('agedgmail_lang') || 'fr');
   useEffect(() => {
+    // Source de vérité unique pour tout le site : le réglage clair/sombre de
+    // l'appareil pilote la classe Tailwind `dark` et les variables CSS.
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e) => {
-      if (e.matches) document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
+    const applySystemTheme = (event) => {
+      document.documentElement.classList.toggle('dark', event.matches);
     };
-    
-    handleChange(mediaQuery);
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    applySystemTheme(mediaQuery);
+    mediaQuery.addEventListener('change', applySystemTheme);
+    return () => mediaQuery.removeEventListener('change', applySystemTheme);
   }, []);
 
   useEffect(() => {

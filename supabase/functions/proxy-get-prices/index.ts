@@ -15,6 +15,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
+    const enabled = Deno.env.get('PROXY_SALES_ENABLED') === 'true';
     const plans = await Promise.all(PROXY_PLANS.map(async (plan) => {
       const price = applyProxyMargin();
       const total = Math.ceil(price * plan.gb * 100) / 100;
@@ -28,7 +29,10 @@ serve(async (req) => {
       };
     }));
 
-    return new Response(JSON.stringify({ Status: "200", Plans: plans }), {
+    return new Response(JSON.stringify({
+      Status: "200", Enabled: enabled, Plans: plans,
+      Message: enabled ? null : 'Proxy sales are awaiting provider reseller approval.',
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

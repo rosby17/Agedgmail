@@ -1,5 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Le thème sombre ne peut être activé que par une classe explicite.
+  // Aucune classe `dark` n'est ajoutée actuellement : mode clair garanti.
+  darkMode: 'class',
 
   content: [
     "./index.html",

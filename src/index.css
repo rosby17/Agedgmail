@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@media (min-width: 900px) {
+  .proxy-purchase-layout {
+    grid-template-columns: minmax(0, 1fr) 350px;
+  }
+}
+
 @layer base {
   :root {
     /* Shop Colors */
@@ -27,30 +33,28 @@
     --color-inverse-on-surface: #F9FAFB;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      /* Shop Colors */
-      --color-primary: #6ffcba;
-      --color-primary-dark: #4edf9f;
-      --color-primary-light: #b4fce2;
-      --color-primary-soft: rgba(111, 252, 186, 0.15);
-      --color-primary-mist: rgba(111, 252, 186, 0.05);
-      --color-dark: #d9e4f1;
-      --color-canvas: #050f18;
-      --color-background: #0a141d;
+  .dark {
+    /* Shop Colors */
+    --color-primary: #6ffcba;
+    --color-primary-dark: #4edf9f;
+    --color-primary-light: #b4fce2;
+    --color-primary-soft: rgba(111, 252, 186, 0.15);
+    --color-primary-mist: rgba(111, 252, 186, 0.05);
+    --color-dark: #d9e4f1;
+    --color-canvas: #050f18;
+    --color-background: #0a141d;
 
-      /* Landing Colors (Original Dark Mode) */
-      --color-l-primary: #6ffcba;
-      --color-l-background: #0a141d;
-      --color-surface: #0a141d;
-      --color-on-surface: #d9e4f1;
-      --color-on-surface-variant: #bbcabf;
-      --color-surface-container: #16212a;
-      --color-inverse-surface: #d9e4f1;
-      --color-surface-container-high: #212b35;
-      --color-surface-glass: rgba(64, 71, 81, 0.4);
-      --color-inverse-on-surface: #27323b;
-    }
+    /* Landing Colors */
+    --color-l-primary: #6ffcba;
+    --color-l-background: #0a141d;
+    --color-surface: #0a141d;
+    --color-on-surface: #d9e4f1;
+    --color-on-surface-variant: #bbcabf;
+    --color-surface-container: #16212a;
+    --color-inverse-surface: #d9e4f1;
+    --color-surface-container-high: #212b35;
+    --color-surface-glass: rgba(64, 71, 81, 0.4);
+    --color-inverse-on-surface: #27323b;
   }
 
   html {
