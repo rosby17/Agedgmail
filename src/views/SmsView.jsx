@@ -451,7 +451,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
 
           <div className="flex-1 flex flex-col md:flex-row gap-6">
             <div className="flex-1">
-              {/* Carte unifiée : rail numéroté + Étapes 1 et 2 */}
+              {/* Carte unifiée : rail numéroté + Étapes 1 et 2 — mêmes
+                  classes (padding, rounded, bordures) que le contenu réel,
+                  seul le texte est remplacé par des barres, pour garantir
+                  des hauteurs identiques et éviter tout saut visuel. */}
               <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm">
                 <div className="flex gap-4 md:gap-5">
                   <div className="hidden sm:flex flex-col items-center shrink-0 pt-1">
@@ -461,41 +464,54 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                      <div className="h-4 w-36 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
-                      <div className="h-5 w-20 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse"></div>
+                    <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+                      <div className="h-[18px] w-36 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                      <div className="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+                        <span className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></span>
+                        <span className="h-2.5 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span>
+                      </div>
                     </div>
-                    <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-6"></div>
+                    <div className="h-[18px] w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-5"></div>
 
                     <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4 items-end">
                        <div>
                           <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-                          <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                          <div className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 flex items-center justify-between">
+                            <div className="h-3.5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                            <div className="h-3.5 w-3.5 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                          </div>
                        </div>
                        <div>
                           <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-                          <div className="h-[54px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3.5 border border-gray-200 dark:border-gray-700">
+                            <div className="h-3.5 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                          </div>
                        </div>
                     </div>
 
                     <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 opacity-50">
-                      <div className="h-4 w-40 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-                      <div className="h-3 w-56 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-4"></div>
-                      <div className="h-3 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                      <div className="h-[18px] w-40 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                      <div className="h-3.5 w-full max-w-xs bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-1.5"></div>
+                      <div className="h-3.5 w-2/3 max-w-[10rem] bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-4"></div>
+                      <div className="h-3.5 w-52 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Étape 3 */}
+            {/* Étape 3 — mêmes classes que l'état inactif réel (titre, texte,
+                label + zone de message vide). */}
             <div className="flex-1">
               <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] p-6 md:p-8 shadow-sm opacity-50 h-full">
-                <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-3"></div>
-                <div className="h-3 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-6"></div>
+                <div className="h-[18px] w-48 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                <div className="h-3.5 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-4"></div>
 
-                <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
-                <div className="h-[68px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+                <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mb-2"></div>
+                <div className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-4">
+                  <div className="h-3.5 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2"></div>
+                  <div className="h-3.5 w-1/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                </div>
               </div>
             </div>
           </div>
