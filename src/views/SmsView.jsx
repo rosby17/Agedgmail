@@ -216,14 +216,10 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
       timer = setInterval(() => {
         const remaining = Math.floor((endTime - Date.now()) / 1000);
         if (remaining <= 0) {
-          // Libère le numéro côté fournisseur avant de réinitialiser (best-effort).
-          if (securityId && phoneNumber) {
-            supabase.functions.invoke('sms-cancel', {
-              body: { securityId, number: phoneNumber, provider: currentProvider, reason: 'timeout' }
-            }).catch(e => console.warn('sms-cancel (timeout):', e));
-          }
+          // Le suivi visible finit à 15 min, mais le serveur continue jusqu'à
+          // 25 min et sauvegarde tout code tardif dans « Mes SMS ».
           setStatus('IDLE');
-          setError(isFr ? "Délai d'attente expiré. Aucun code reçu. Vous n'avez pas été débité." : "Timeout expired. No code received. You were not charged.");
+          setError(isFr ? "Délai d'affichage terminé. Le suivi continue en arrière-plan dans Mes SMS." : "Display timeout ended. Background tracking continues in My SMS.");
           setPhoneNumber('');
           setSecurityId('');
           setEndTime(0);

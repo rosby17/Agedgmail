@@ -124,7 +124,7 @@ serve(async (req) => {
         .from('orders')
         .select('id')
         .eq('user_id', user.id)
-        .eq('status', 'confirmed')
+        .in('status', ['confirmed', 'delivered'])
         .filter('delivery_data->>number', 'eq', String(number))
         .limit(1)
         .maybeSingle();
@@ -148,7 +148,7 @@ serve(async (req) => {
       // champ que le client peut lire (MyOrdersView télécharge delivery_data/
       // credentials tels quels) : on stocke l'alias opaque, jamais "pvapins"/
       // "smscodes" en clair.
-      await supabaseAdmin
+      const { data: createdOrder, error: insertError } = await supabaseAdmin
         .from('orders')
         .insert({
           user_id: user.id,
@@ -160,7 +160,14 @@ serve(async (req) => {
           status: 'delivered',
           delivery_data: { number: number, code: smsCode, provider: providerAlias },
           credentials: `Phone: ${number}\nSMS Code: ${smsCode}`
-        });
+        }).select('id').single();
+      if (insertError) {
+        await supabaseAdmin.rpc('credit_balance', { p_user_id: user.id, p_amount: smsPrice });
+        throw insertError;
+      }
+      await supabaseAdmin.from('sms_pending_sessions').update({
+        status: 'completed', order_id: createdOrder.id, updated_at: new Date().toISOString(),
+      }).eq('user_id', user.id).eq('number', String(number));
 
       // Notification
       await supabaseAdmin.from('notifications').insert({
