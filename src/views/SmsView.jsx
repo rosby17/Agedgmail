@@ -441,10 +441,11 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
     return (
       <div className="max-w-7xl mx-auto px-6 py-12 font-sans animate-in fade-in duration-300">
         <div className="flex flex-col md:flex-row gap-6 mb-8">
-          {/* Sélecteur de service */}
+          {/* Sélecteur de service — mêmes boutons flex-1 que le contenu réel,
+              pour s'étirer sur toute la hauteur des colonnes voisines. */}
           <div className="w-full md:w-56 shrink-0 flex flex-col gap-2">
             {SMS_SERVICES.map((s) => (
-              <div key={s.id} className="h-[46px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
+              <div key={s.id} className="flex-1 min-h-[46px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
             ))}
           </div>
 
