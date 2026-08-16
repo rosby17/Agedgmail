@@ -199,7 +199,7 @@ export default function ProxyView({ navigate, session, profile, lang, fetchProfi
           <div className="flex justify-between text-lg pt-2"><strong>Total</strong><strong>{quoting && mode === 'static' ? <Loader2 size={17} className="animate-spin" /> : `$${total || '0.00'}`}</strong></div>
         </div>
         {!canBuy && !loading && <div className="mt-5 text-xs rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 p-3">{mode === 'static' ? 'La vente sera activée dès que le compte fournisseur sera approvisionné.' : 'Offre rotative en attente de validation fournisseur.'}</div>}
-        <button onClick={buy} disabled={!canBuy || buying || quoting} className="w-full h-12 mt-6 rounded-2xl bg-primary text-white font-black text-sm flex items-center justify-center gap-2 disabled:opacity-50">{buying ? <Loader2 size={18} className="animate-spin" /> : <Wallet size={18} />}{session ? 'Acheter maintenant' : 'Se connecter pour acheter'}</button>
+        <button onClick={buy} disabled={!canBuy || buying || quoting} className="w-full h-12 mt-6 rounded-2xl bg-primary text-gray-950 font-black text-sm flex items-center justify-center gap-2 hover:bg-primaryDark disabled:opacity-50">{buying ? <Loader2 size={18} className="animate-spin" /> : <Wallet size={18} />}{session ? 'Acheter maintenant' : 'Se connecter pour acheter'}</button>
         <p className="text-[10px] text-gray-400 mt-4 text-center">Prix final garanti par le devis serveur. Livraison automatique après confirmation IPFoxy.</p>
       </aside>
     </div>}
