@@ -76,6 +76,43 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   // (aucun fournisseur en stock pour ce pays) | 'technical' (souci de notre
   // côté). Ne révèle jamais de nom de fournisseur au client.
   const [errorKind, setErrorKind] = useState('');
+  const audioContextRef = useRef(null);
+  const smsAlertPlayedRef = useRef(false);
+
+  const unlockSmsAudio = () => {
+    try {
+      if (!audioContextRef.current) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioContextRef.current = new AudioContext();
+      }
+      audioContextRef.current?.resume();
+    } catch (audioError) {
+      console.warn('Impossible d’activer le son SMS', audioError);
+    }
+  };
+
+  const playSmsAlert = () => {
+    if (smsAlertPlayedRef.current) return;
+    smsAlertPlayedRef.current = true;
+    try {
+      const context = audioContextRef.current;
+      if (!context) return;
+      context.resume();
+      [0, 0.22, 0.44].forEach((delay, index) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = index === 1 ? 1046 : 784;
+        gain.gain.setValueAtTime(0.0001, context.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.45, context.currentTime + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + delay + 0.18);
+        oscillator.connect(gain); gain.connect(context.destination);
+        oscillator.start(context.currentTime + delay); oscillator.stop(context.currentTime + delay + 0.2);
+      });
+    } catch (audioError) {
+      console.warn('Alerte sonore SMS indisponible', audioError);
+    }
+  };
   
   // Dynamic pricing states
   const [countries, setCountries] = useState([]);
@@ -256,14 +293,7 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
             setSmsCode(data.sms);
             setStatus('COMPLETED');
             
-            // Play a loud notification sound
-            try {
-              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-              audio.volume = 1.0;
-              audio.play().catch(e => console.log('Audio play failed:', e));
-            } catch(e) {
-              console.log("Audio notification failed:", e);
-            }
+            playSmsAlert();
 
              if (fetchProfile && session?.user?.id) fetchProfile(session.user.id);
           }
@@ -285,6 +315,8 @@ const SmsView = ({ session, profile, lang, navigate, fetchProfile }) => {
   };
 
   const requestNumber = async (isoVal = selectedCountry, priceVal = currentPrice, providerVal = currentProvider, rawPriceVal = currentRawPrice, appVal = null, currentFailedList = failedProviders[`${selectedService}:${selectedCountry}`] || []) => {
+    unlockSmsAudio();
+    smsAlertPlayedRef.current = false;
     if (!session) {
       navigate('auth');
       return;
