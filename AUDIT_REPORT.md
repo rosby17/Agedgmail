@@ -3,6 +3,12 @@
 Date: 2026-08-10
 Scope: `supabase/functions/`, `supabase/migrations/`, `src/` (Vite+React)
 
+> **Document historique.** Ce rapport décrit l’état observé le 10 août 2026.
+> Plusieurs constats ont depuis été corrigés, notamment l’unicité Binance,
+> la distinction `confirmed`/`delivered`, l’intégration IPFoxy et la persistance
+> des SMS tardifs. Pour l’état actuel, consulter `docs/SECURITY.md` et revalider
+> chaque constat dans le code et les migrations les plus récents.
+
 ---
 
 ## 1. Executive Summary
