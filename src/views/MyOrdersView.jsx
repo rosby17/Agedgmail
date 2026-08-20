@@ -267,8 +267,8 @@ const MyOrdersView = ({ profile, navigate, orders = [], smsPending = [], onResum
                     const st = smsStatusMap[row.status] || smsStatusMap.waiting;
                     return (
                       <tr key={row.key} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="py-5 pr-4 font-bold text-gray-900 dark:text-white text-sm">{row.service || '—'}</td>
-                        <td className="py-5 pr-4 font-mono text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.number || '—'}</td>
+                        <td className="py-5 pr-4 font-bold text-gray-900 dark:text-white text-sm whitespace-nowrap">{row.service || '—'}</td>
+                        <td className="py-5 pr-4 font-mono text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap max-w-[140px] truncate" title={row.number}>{row.number || '—'}</td>
                         <td className="py-5 pr-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                           {row.country ? <span>{isoToFlag(row.country)} {row.country.toUpperCase()}</span> : '—'}
                         </td>
