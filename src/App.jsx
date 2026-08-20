@@ -95,6 +95,7 @@ function App() {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [smsPending, setSmsPending] = useState([]);
   const [rechargeSuggestedAmount, setRechargeSuggestedAmount] = useState(null);
   const [resumeOrder, setResumeOrder] = useState(null); // commande Binance Pay 'pending' à reprendre
   const [allOrders, setAllOrders] = useState([]);
@@ -201,6 +202,38 @@ function App() {
     };
   }, [session]);
 
+  // Real-time SMS attempts — "Mes SMS" reflète le statut (en attente/expiré/
+  // échoué) sans que le client ait à recharger la page pendant que le cron
+  // sms-poll-pending tourne en arrière-plan.
+  useEffect(() => {
+    if (!session || !supabase) return;
+
+    const smsPendingChannel = supabase
+      .channel(`my-sms-pending-${session.user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sms_pending_sessions',
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        async () => {
+          const { data } = await supabase
+            .from('sms_pending_sessions')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false });
+          if (data) setSmsPending(data);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(smsPendingChannel);
+    };
+  }, [session]);
+
 
 
   useEffect(() => {
@@ -302,6 +335,11 @@ function App() {
       setProfile(profileData);
       const { data: orderData } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
       if (orderData) setOrders(orderData);
+      // Tentatives SMS n'ayant jamais abouti (expirées/échouées/en attente) —
+      // invisibles dans `orders`, nécessaires pour que "Mes SMS" ne semble
+      // pas vide alors que le client a bien tenté un achat.
+      const { data: smsPendingData } = await supabase.from('sms_pending_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+      if (smsPendingData) setSmsPending(smsPendingData);
       setOrdersLoading(false);
     } else if (session) {
       // Create new profile with Google metadata if it's the first login
@@ -558,7 +596,7 @@ function App() {
         <KeepAlive show={currentView === 'policies'}><PoliciesView navigate={navigate} lang={lang} /></KeepAlive>
         <KeepAlive show={currentView === 'auth'}><AuthView navigate={navigate} lang={lang} /></KeepAlive>
         <KeepAlive show={currentView === 'reset-password'}><ResetPasswordView navigate={navigate} lang={lang} /></KeepAlive>
-        <KeepAlive show={currentView === 'dashboard'}><MyOrdersView profile={profile} navigate={navigate} orders={orders} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} sessionChecked={sessionChecked} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} /></KeepAlive>
+        <KeepAlive show={currentView === 'dashboard'}><MyOrdersView profile={profile} navigate={navigate} orders={orders} smsPending={smsPending} onResume={(order) => { setResumeOrder(order); navigate('recharge'); }} session={session} sessionChecked={sessionChecked} fetchProfile={fetchProfile} lang={lang} t={t} loading={ordersLoading} /></KeepAlive>
         <KeepAlive show={currentView === 'settings'}><SettingsView profile={profile} navigate={navigate} fetchProfile={fetchProfile} session={session} sessionChecked={sessionChecked} lang={lang} t={t} /></KeepAlive>
         <KeepAlive show={currentView === 'recharge'}><RechargeView profile={profile} session={session} sessionChecked={sessionChecked} navigate={navigate} suggestedAmount={rechargeSuggestedAmount} setSuggestedAmount={setRechargeSuggestedAmount} fetchProfile={fetchProfile} resumeOrder={resumeOrder} clearResumeOrder={() => setResumeOrder(null)} lang={lang} t={t} /></KeepAlive>
         <KeepAlive show={currentView === 'admin'}>

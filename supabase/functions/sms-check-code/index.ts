@@ -144,6 +144,13 @@ serve(async (req) => {
         throw new Error('Insufficient balance at time of charge or user not found');
       }
 
+      // Pays/service pour l'historique client ("Mes SMS") — stockés côté
+      // sms_pending_sessions à l'achat, relus ici pour enrichir delivery_data.
+      const { data: pendingSession } = await supabaseAdmin
+        .from('sms_pending_sessions')
+        .select('country, service_label')
+        .eq('user_id', user.id).eq('number', String(number)).maybeSingle();
+
       // Log order — le vrai nom fournisseur ne doit jamais atterrir dans un
       // champ que le client peut lire (MyOrdersView télécharge delivery_data/
       // credentials tels quels) : on stocke l'alias opaque, jamais "pvapins"/
@@ -158,7 +165,11 @@ serve(async (req) => {
           quantity: 1,
           buyer_email: user.email,
           status: 'delivered',
-          delivery_data: { number: number, code: smsCode, provider: providerAlias },
+          delivery_data: {
+            number: number, code: smsCode, provider: providerAlias,
+            country: pendingSession?.country || null,
+            service: pendingSession?.service_label || null,
+          },
           credentials: `Phone: ${number}\nSMS Code: ${smsCode}`
         }).select('id').single();
       if (insertError) {

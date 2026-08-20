@@ -26,7 +26,14 @@ import SupportAdmin from './SupportAdmin';
 import OrdersAdmin from './OrdersAdmin';
 import SettingsTab from './SettingsTab';
 
-const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessionChecked, fetchProfile, lang, t, loading = false }) => {
+// alpha-2 ISO country code → emoji flag (formule regional indicator, pas de lib).
+const isoToFlag = (iso = '') => {
+  const code = String(iso).trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) return '';
+  return String.fromCodePoint(...[...code].map(c => 127397 + c.charCodeAt(0)));
+};
+
+const MyOrdersView = ({ profile, navigate, orders = [], smsPending = [], onResume, session, sessionChecked, fetchProfile, lang, t, loading = false }) => {
   const isFr = lang === 'fr';
   React.useEffect(() => {
     if (sessionChecked && !session) {
@@ -61,8 +68,45 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
     return 'gmail';
   };
   const sectionOrders = orders.filter(order => sectionOf(order) === orderSection);
-  const totalPages = Math.ceil(sectionOrders.length / itemsPerPage);
+
+  // Historique SMS unifié : commandes livrées (delivery_data rempli) +
+  // tentatives qui n'ont jamais reçu de code (sms_pending_sessions), sinon
+  // ces dernières restent invisibles alors que le client a bien payé/tenté.
+  const smsStatusMap = {
+    delivered: { label: 'Reçu', cls: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' },
+    waiting:   { label: 'En attente', cls: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400' },
+    processing:{ label: 'En attente', cls: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400' },
+    failed:    { label: 'Échec', cls: 'bg-red-100 text-red-600 border-red-200 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400' },
+    expired:   { label: 'Expiré', cls: 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400' },
+    cancelled: { label: 'Annulé', cls: 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400' },
+  };
+  const smsOrderRows = orders.filter(order => sectionOf(order) === 'sms').map(order => ({
+    key: `order-${order.id}`,
+    order,
+    service: order.delivery_data?.service || cleanProductName(order.product_name, lang),
+    number: order.delivery_data?.number || '',
+    country: order.delivery_data?.country || '',
+    code: order.delivery_data?.code || order.delivery_data?.sms || '',
+    status: 'delivered',
+    time: order.created_at,
+  }));
+  // order_id posé dès qu'une session a produit une commande : on l'exclut ici
+  // pour ne pas afficher la même tentative deux fois.
+  const smsPendingRows = smsPending.filter(s => !s.order_id).map(s => ({
+    key: `pending-${s.id}`,
+    service: s.service_label || (s.description || '').replace(/^SMS Verification - /, ''),
+    number: s.number || '',
+    country: s.country || '',
+    code: '',
+    status: s.status,
+    time: s.created_at,
+  }));
+  const smsRows = [...smsOrderRows, ...smsPendingRows].sort((a, b) => new Date(b.time) - new Date(a.time));
+
+  const isSmsSection = orderSection === 'sms';
+  const totalPages = Math.ceil((isSmsSection ? smsRows.length : sectionOrders.length) / itemsPerPage);
   const displayOrders = sectionOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const displaySmsRows = smsRows.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   React.useEffect(() => setPage(1), [orderSection]);
 
   // Parse les options d'un nom de produit YTSeller :
@@ -174,7 +218,9 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
           ['sms', 'Mes SMS', Smartphone],
           ['recharge', 'Recharges', Wallet],
         ].map(([id, label, Icon]) => {
-          const count = orders.filter(order => sectionOf(order) === id).length;
+          const count = id === 'sms'
+            ? orders.filter(order => sectionOf(order) === 'sms').length + smsPending.filter(s => !s.order_id).length
+            : orders.filter(order => sectionOf(order) === id).length;
           return <button key={id} onClick={() => setOrderSection(id)} className={`min-h-20 px-4 rounded-2xl border flex items-center gap-3 text-left transition ${orderSection === id ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/10' : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-300 hover:border-primary/50'}`}>
             <Icon size={20} className="shrink-0" /><span><span className="block text-sm font-black">{label}</span><span className="block text-xs opacity-60 mt-0.5">{count} commande{count > 1 ? 's' : ''}</span></span>
           </button>;
@@ -198,6 +244,48 @@ const MyOrdersView = ({ profile, navigate, orders = [], onResume, session, sessi
 
         {loading ? (
           <div className="py-4"><SkeletonRows rows={5} cols={6} /></div>
+        ) : isSmsSection ? (
+          smsRows.length === 0 ? (
+            <div className="text-center py-20 bg-gray-50 dark:bg-slate-800 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-700">
+              <p className="text-gray-400 dark:text-gray-500 font-bold">{t('noOrders')}</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                    <th className="pb-5 pr-4 whitespace-nowrap">Service</th>
+                    <th className="pb-5 pr-4 whitespace-nowrap">Numéro</th>
+                    <th className="pb-5 pr-4 whitespace-nowrap">Pays</th>
+                    <th className="pb-5 pr-4 whitespace-nowrap">Code</th>
+                    <th className="pb-5 pr-4 whitespace-nowrap">{t('status')}</th>
+                    <th className="pb-5 pr-4 whitespace-nowrap">Heure</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+                  {displaySmsRows.map(row => {
+                    const st = smsStatusMap[row.status] || smsStatusMap.waiting;
+                    return (
+                      <tr key={row.key} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="py-5 pr-4 font-bold text-gray-900 dark:text-white text-sm">{row.service || '—'}</td>
+                        <td className="py-5 pr-4 font-mono text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.number || '—'}</td>
+                        <td className="py-5 pr-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          {row.country ? <span>{isoToFlag(row.country)} {row.country.toUpperCase()}</span> : '—'}
+                        </td>
+                        <td className="py-5 pr-4 font-mono font-black text-sm text-gray-900 dark:text-white whitespace-nowrap">{row.code || '—'}</td>
+                        <td className="py-5 pr-4">
+                          <span className={`text-xs font-bold px-3 py-1 rounded-full border ${st.cls}`}>{st.label}</span>
+                        </td>
+                        <td className="py-5 pr-4 text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                          {new Date(row.time).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
         ) : sectionOrders.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 dark:bg-slate-800 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-700">
             <p className="text-gray-400 dark:text-gray-500 font-bold">{t('noOrders')}</p>

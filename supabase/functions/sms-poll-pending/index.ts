@@ -66,7 +66,7 @@ serve(async () => {
       const { data: order, error: orderError } = await admin.from('orders').insert({
         user_id: session.user_id, product_name: session.description, total_price: verified.price,
         supplier_cost: session.supplier_cost || 0, quantity: 1, buyer_email: session.buyer_email,
-        status: 'delivered', delivery_data: { number: session.number, code, provider: alias },
+        status: 'delivered', delivery_data: { number: session.number, code, provider: alias, country: session.country || null, service: session.service_label || null },
         credentials: `Phone: ${session.number}\nSMS Code: ${code}`,
       }).select('id').single()
       if (orderError) {

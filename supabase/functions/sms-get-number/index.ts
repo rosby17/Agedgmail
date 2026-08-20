@@ -197,6 +197,7 @@ serve(async (req) => {
       user_id: user.id, buyer_email: user.email, number: String(providerData.Number),
       security_id: providerData.SecurityId, description: `SMS Verification - ${service.labelFr}`,
       sale_price: Number(providerData.Price), status: 'waiting',
+      country: targetIso, service_label: service.labelFr,
       expires_at: new Date(Date.now() + 25 * 60_000).toISOString(), updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,number' });
     if (sessionError) throw new Error(`Impossible de sécuriser la session SMS: ${sessionError.message}`);
